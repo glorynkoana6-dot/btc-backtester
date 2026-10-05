@@ -1,47 +1,45 @@
 /* ============================================================
-   MKAYFX BTC PRECISION PULLBACK V2
+   MKAYFX BTC VOLUME PROFILE INTELLIGENCE V3
    /api/btc.js
 
    SOURCE
    ------
-   Coinbase Exchange Public API
+   Coinbase Exchange public API
 
    PRODUCT
    -------
    BTC-USD
 
-   NO API KEY REQUIRED
+   PURPOSE
+   -------
+   Volume Profile + Market Intelligence
 
-   STRATEGY
+   FEATURES
    --------
-   H4 = macro trend
-   H1 = intraday trend
-   M15 = rejection + entry
+   - Session volume profile
+   - POC
+   - VAH
+   - VAL
+   - Developing POC / VAH / VAL
+   - Session VWAP
+   - Previous completed session profile
+   - Naked POC tracking
+   - H1 / H4 trend context
+   - Market state engine
+   - Profile pullback entries
+   - Profile rejection entries
+   - RAW / BALANCED / SELECTIVE modes
 
-   BUY
-   ---
-   H4 EMA20 > EMA50
-   H4 close > EMA20
+   IMPORTANT
+   ---------
+   Coinbase historical OHLCV does not contain exact volume at
+   every price level.
 
-   H1 EMA50 > EMA200
-   H1 close > EMA200
+   This engine approximates profile volume by distributing each
+   M5 candle's volume across the price bins covered by that
+   candle.
 
-   M15 recently interacts with EMA20/EMA50 zone
-   M15 rejects upward
-   M15 closes above EMA20 + EMA50
-   Close is in top 25% of candle
-   RSI between 52 and 68
-   Candle body >= 55%
-   Price not stretched > 0.80 ATR from EMA20
-
-   SELL
-   ----
-   Opposite rules
-
-   RISK
-   ----
-   SL = structural / ATR stop
-   TP = 1.5R
+   NO API KEY REQUIRED.
 ============================================================ */
 
 
@@ -49,11 +47,25 @@ const PRODUCT =
   "BTC-USD";
 
 
-const COINBASE =
+const BASE_URL =
   "https://api.exchange.coinbase.com";
 
 
 const SETTINGS = {
+
+  /* ========================================================
+     PROFILE
+  ======================================================== */
+
+  profileBins:
+    42,
+
+  valueAreaPercent:
+    0.70,
+
+  minimumProfileBars:
+    8,
+
 
   /* ========================================================
      INDICATORS
@@ -65,23 +77,34 @@ const SETTINGS = {
   rsiPeriod:
     14,
 
-  m15EmaFast:
-    20,
-
-  m15EmaSlow:
+  h1FastEMA:
     50,
 
-  h1EmaFast:
-    50,
-
-  h1EmaSlow:
+  h1SlowEMA:
     200,
 
-  h4EmaFast:
+  h4FastEMA:
     20,
 
-  h4EmaSlow:
+  h4SlowEMA:
     50,
+
+
+  /* ========================================================
+     ENTRY
+  ======================================================== */
+
+  pullbackLookback:
+    3,
+
+  minimumBodyPercent:
+    0.42,
+
+  minimumRejectionWick:
+    0.12,
+
+  maxDistanceATR:
+    1.10,
 
 
   /* ========================================================
@@ -89,73 +112,68 @@ const SETTINGS = {
   ======================================================== */
 
   buyRsiMin:
-    52,
-
-  buyRsiMax:
-    68,
-
-  sellRsiMin:
-    32,
-
-  sellRsiMax:
     48,
 
+  buyRsiMax:
+    72,
 
-  /* ========================================================
-     ENTRY QUALITY
-  ======================================================== */
+  sellRsiMin:
+    28,
 
-  pullbackLookback:
-    3,
-
-  minBodyPercent:
-    0.55,
-
-  buyCloseLocation:
-    0.75,
-
-  sellCloseLocation:
-    0.25,
-
-  minRejectionWickPercent:
-    0.12,
-
-  maxDistanceFromEma20Atr:
-    0.80,
+  sellRsiMax:
+    52,
 
 
   /* ========================================================
      VOLATILITY
   ======================================================== */
 
-  minAtrPercent:
-    0.10,
+  minimumATRPercent:
+    0.08,
 
-  maxAtrPercent:
-    2.50,
+  maximumATRPercent:
+    3.50,
 
 
   /* ========================================================
      RISK
   ======================================================== */
 
-  stopAtr:
-    1.10,
+  stopATR:
+    1.00,
 
-  structureBufferAtr:
-    0.10,
+  structureBufferATR:
+    0.12,
 
   targetR:
-    1.50
+    1.50,
+
+
+  /* ========================================================
+     MODES
+  ======================================================== */
+
+  modeScores: {
+
+    RAW:
+      48,
+
+    BALANCED:
+      60,
+
+    SELECTIVE:
+      72
+
+  }
 
 };
 
 
 /* ============================================================
-   HELPERS
+   BASIC HELPERS
 ============================================================ */
 
-function num(
+function number(
   value,
   fallback = null
 ) {
@@ -195,9 +213,8 @@ function round(
   }
 
 
-  const power =
-    10 **
-    digits;
+  const p =
+    10 ** digits;
 
 
   return (
@@ -205,9 +222,55 @@ function round(
       Number(
         value
       ) *
-      power
+      p
     ) /
-    power
+    p
+  );
+
+}
+
+
+function clamp(
+  value,
+  minimum,
+  maximum
+) {
+
+  return Math.max(
+    minimum,
+    Math.min(
+      maximum,
+      value
+    )
+  );
+
+}
+
+
+function average(
+  values
+) {
+
+  if (
+    !values.length
+  ) {
+
+    return 0;
+
+  }
+
+
+  return (
+    values.reduce(
+      (
+        total,
+        value
+      ) =>
+        total +
+        value,
+      0
+    ) /
+    values.length
   );
 
 }
@@ -297,7 +360,7 @@ async function getJSON(
               "application/json",
 
             "User-Agent":
-              "MKAYFX-BTC-PRECISION-V2"
+              "MKAYFX-BTC-VOLUME-PROFILE-V3"
 
           },
 
@@ -308,7 +371,7 @@ async function getJSON(
       );
 
 
-    const text =
+    const raw =
       await response.text();
 
 
@@ -319,7 +382,7 @@ async function getJSON(
 
       data =
         JSON.parse(
-          text
+          raw
         );
 
     }
@@ -392,10 +455,10 @@ async function fetchCandles(
   granularity
 ) {
 
-  const raw =
+  const data =
     await getJSON(
 
-      `${COINBASE}/products/${PRODUCT}/candles` +
+      `${BASE_URL}/products/${PRODUCT}/candles` +
       `?granularity=${granularity}`
 
     );
@@ -403,19 +466,19 @@ async function fetchCandles(
 
   if (
     !Array.isArray(
-      raw
+      data
     )
   ) {
 
     throw new Error(
-      "Coinbase candles response was not an array"
+      "Coinbase candle response was not an array"
     );
 
   }
 
 
   const candles =
-    raw
+    data
       .map(
         row => ({
 
@@ -466,21 +529,17 @@ async function fetchCandles(
           candle.timestamp >
             0 &&
 
-          Number.isFinite(
-            candle.open
-          ) &&
+          candle.open >
+            0 &&
 
-          Number.isFinite(
-            candle.high
-          ) &&
+          candle.high >
+            0 &&
 
-          Number.isFinite(
-            candle.low
-          ) &&
+          candle.low >
+            0 &&
 
-          Number.isFinite(
-            candle.close
-          )
+          candle.close >
+            0
 
       )
       .sort(
@@ -494,7 +553,7 @@ async function fetchCandles(
 
 
   /*
-     Remove potentially still-forming bar.
+     Ignore the newest potentially still-forming candle.
   */
 
   if (
@@ -513,168 +572,14 @@ async function fetchCandles(
 
 
 /* ============================================================
-   TICKER
+   LIVE TICKER
 ============================================================ */
 
 async function fetchTicker() {
 
   return getJSON(
-    `${COINBASE}/products/${PRODUCT}/ticker`
+    `${BASE_URL}/products/${PRODUCT}/ticker`
   );
-
-}
-
-
-/* ============================================================
-   H1 -> H4 RESAMPLE
-============================================================ */
-
-function resampleH4(
-  h1
-) {
-
-  const interval =
-    4 *
-    60 *
-    60 *
-    1000;
-
-
-  const map =
-    new Map();
-
-
-  for (
-    const candle of
-    h1
-  ) {
-
-    const key =
-      Math.floor(
-        candle.timestamp /
-        interval
-      ) *
-      interval;
-
-
-    if (
-      !map.has(
-        key
-      )
-    ) {
-
-      map.set(
-        key,
-        {
-
-          timestamp:
-            key,
-
-          datetime:
-            new Date(
-              key
-            ).toISOString(),
-
-          open:
-            candle.open,
-
-          high:
-            candle.high,
-
-          low:
-            candle.low,
-
-          close:
-            candle.close,
-
-          volume:
-            candle.volume
-
-        }
-      );
-
-    }
-
-    else {
-
-      const bucket =
-        map.get(
-          key
-        );
-
-
-      bucket.high =
-        Math.max(
-          bucket.high,
-          candle.high
-        );
-
-
-      bucket.low =
-        Math.min(
-          bucket.low,
-          candle.low
-        );
-
-
-      bucket.close =
-        candle.close;
-
-
-      bucket.volume +=
-        candle.volume;
-
-    }
-
-  }
-
-
-  const result =
-    [
-      ...map.values()
-    ].sort(
-      (
-        a,
-        b
-      ) =>
-        a.timestamp -
-        b.timestamp
-    );
-
-
-  /*
-     H1 data already contains completed H1 bars.
-     But the final H4 bucket may not contain all four H1 bars.
-
-     Remove it unless 4 hours have elapsed.
-  */
-
-  if (
-    result.length
-  ) {
-
-    const latest =
-      result.at(-1);
-
-
-    const expectedEnd =
-      latest.timestamp +
-      interval;
-
-
-    if (
-      expectedEnd >
-      Date.now()
-    ) {
-
-      result.pop();
-
-    }
-
-  }
-
-
-  return result;
 
 }
 
@@ -752,13 +657,11 @@ function ema(
   ) {
 
     current =
-
       (
         values[i] -
         current
       ) *
       multiplier +
-
       current;
 
 
@@ -842,29 +745,26 @@ function rsi(
   }
 
 
-  let averageGain =
+  let avgGain =
     gains /
     period;
 
 
-  let averageLoss =
+  let avgLoss =
     losses /
     period;
 
 
   output[period] =
-
-    averageLoss ===
+    avgLoss ===
     0
-
       ? 100
-
       : 100 -
         100 /
         (
           1 +
-          averageGain /
-          averageLoss
+          avgGain /
+          avgLoss
         );
 
 
@@ -896,9 +796,9 @@ function rsi(
       );
 
 
-    averageGain =
+    avgGain =
       (
-        averageGain *
+        avgGain *
         (
           period -
           1
@@ -908,9 +808,9 @@ function rsi(
       period;
 
 
-    averageLoss =
+    avgLoss =
       (
-        averageLoss *
+        avgLoss *
         (
           period -
           1
@@ -921,18 +821,15 @@ function rsi(
 
 
     output[i] =
-
-      averageLoss ===
+      avgLoss ===
       0
-
         ? 100
-
         : 100 -
           100 /
           (
             1 +
-            averageGain /
-            averageLoss
+            avgGain /
+            avgLoss
           );
 
   }
@@ -1065,7 +962,989 @@ function atr(
 
 
 /* ============================================================
-   CANDLE METRICS
+   H1 -> H4
+============================================================ */
+
+function buildH4(
+  h1
+) {
+
+  const interval =
+    4 *
+    60 *
+    60 *
+    1000;
+
+
+  const map =
+    new Map();
+
+
+  for (
+    const candle of
+    h1
+  ) {
+
+    const key =
+      Math.floor(
+        candle.timestamp /
+        interval
+      ) *
+      interval;
+
+
+    if (
+      !map.has(
+        key
+      )
+    ) {
+
+      map.set(
+        key,
+        {
+
+          timestamp:
+            key,
+
+          closeTime:
+            key +
+            interval,
+
+          open:
+            candle.open,
+
+          high:
+            candle.high,
+
+          low:
+            candle.low,
+
+          close:
+            candle.close,
+
+          volume:
+            candle.volume
+
+        }
+      );
+
+    }
+
+    else {
+
+      const bar =
+        map.get(
+          key
+        );
+
+
+      bar.high =
+        Math.max(
+          bar.high,
+          candle.high
+        );
+
+
+      bar.low =
+        Math.min(
+          bar.low,
+          candle.low
+        );
+
+
+      bar.close =
+        candle.close;
+
+
+      bar.volume +=
+        candle.volume;
+
+    }
+
+  }
+
+
+  const result =
+    [
+      ...map.values()
+    ].sort(
+      (
+        a,
+        b
+      ) =>
+        a.timestamp -
+        b.timestamp
+    );
+
+
+  /*
+     Live engine only uses completed H4 bars.
+  */
+
+  return result.filter(
+    bar =>
+      bar.closeTime <=
+      Date.now()
+  );
+
+}
+
+
+/* ============================================================
+   SESSION DEFINITIONS
+
+   UTC
+   ---
+   ASIA       00:00 - 08:00
+   LONDON     08:00 - 13:00
+   NEW YORK   13:00 - 21:00
+   LATE       21:00 - 24:00
+
+   BTC trades 24/7, but these blocks let us examine where
+   volume is building through the major global sessions.
+============================================================ */
+
+function sessionInfo(
+  timestamp
+) {
+
+  const date =
+    new Date(
+      timestamp
+    );
+
+
+  const midnight =
+    Date.UTC(
+
+      date.getUTCFullYear(),
+
+      date.getUTCMonth(),
+
+      date.getUTCDate()
+
+    );
+
+
+  const hour =
+    date.getUTCHours();
+
+
+  if (
+    hour <
+    8
+  ) {
+
+    return {
+
+      name:
+        "ASIA",
+
+      start:
+        midnight,
+
+      end:
+        midnight +
+        8 *
+        3600000
+
+    };
+
+  }
+
+
+  if (
+    hour <
+    13
+  ) {
+
+    return {
+
+      name:
+        "LONDON",
+
+      start:
+        midnight +
+        8 *
+        3600000,
+
+      end:
+        midnight +
+        13 *
+        3600000
+
+    };
+
+  }
+
+
+  if (
+    hour <
+    21
+  ) {
+
+    return {
+
+      name:
+        "NEW YORK",
+
+      start:
+        midnight +
+        13 *
+        3600000,
+
+      end:
+        midnight +
+        21 *
+        3600000
+
+    };
+
+  }
+
+
+  return {
+
+    name:
+      "LATE",
+
+    start:
+      midnight +
+      21 *
+      3600000,
+
+    end:
+      midnight +
+      24 *
+      3600000
+
+  };
+
+}
+
+
+/* ============================================================
+   GROUP M5 CANDLES INTO SESSIONS
+============================================================ */
+
+function groupSessions(
+  candles
+) {
+
+  const groups =
+    [];
+
+
+  let current =
+    null;
+
+
+  for (
+    const candle of
+    candles
+  ) {
+
+    const session =
+      sessionInfo(
+        candle.timestamp
+      );
+
+
+    const key =
+      `${session.start}:${session.name}`;
+
+
+    if (
+      !current ||
+      current.key !==
+      key
+    ) {
+
+      current = {
+
+        key,
+
+        name:
+          session.name,
+
+        start:
+          session.start,
+
+        end:
+          session.end,
+
+        candles:
+          []
+
+      };
+
+
+      groups.push(
+        current
+      );
+
+    }
+
+
+    current.candles.push(
+      candle
+    );
+
+  }
+
+
+  return groups;
+
+}
+
+
+/* ============================================================
+   VOLUME PROFILE
+
+   Each candle volume is spread across the price bins touched
+   by that candle.
+
+   This is an OHLCV approximation rather than true tick-level
+   volume-at-price.
+============================================================ */
+
+function buildVolumeProfile(
+  candles,
+  binsCount =
+    SETTINGS.profileBins
+) {
+
+  if (
+    !candles ||
+    candles.length <
+    SETTINGS.minimumProfileBars
+  ) {
+
+    return null;
+
+  }
+
+
+  const low =
+    Math.min(
+      ...candles.map(
+        candle =>
+          candle.low
+      )
+    );
+
+
+  const high =
+    Math.max(
+      ...candles.map(
+        candle =>
+          candle.high
+      )
+    );
+
+
+  const range =
+    high -
+    low;
+
+
+  if (
+    range <=
+    0
+  ) {
+
+    return null;
+
+  }
+
+
+  const binSize =
+    range /
+    binsCount;
+
+
+  const bins =
+    Array.from(
+      {
+        length:
+          binsCount
+      },
+      (
+        _,
+        index
+      ) => ({
+
+        index,
+
+        low:
+          low +
+          index *
+          binSize,
+
+        high:
+          low +
+          (
+            index +
+            1
+          ) *
+          binSize,
+
+        price:
+          low +
+          (
+            index +
+            0.5
+          ) *
+          binSize,
+
+        volume:
+          0
+
+      })
+    );
+
+
+  for (
+    const candle of
+    candles
+  ) {
+
+    const first =
+
+      clamp(
+
+        Math.floor(
+          (
+            candle.low -
+            low
+          ) /
+          binSize
+        ),
+
+        0,
+
+        binsCount -
+        1
+
+      );
+
+
+    const last =
+
+      clamp(
+
+        Math.floor(
+          (
+            candle.high -
+            low
+          ) /
+          binSize
+        ),
+
+        0,
+
+        binsCount -
+        1
+
+      );
+
+
+    const touched =
+      Math.max(
+        1,
+        last -
+        first +
+        1
+      );
+
+
+    /*
+       Give a little extra importance to the candle's typical
+       price while still spreading the volume across its range.
+    */
+
+    const typicalPrice =
+      (
+        candle.high +
+        candle.low +
+        candle.close
+      ) /
+      3;
+
+
+    let typicalIndex =
+
+      Math.floor(
+        (
+          typicalPrice -
+          low
+        ) /
+        binSize
+      );
+
+
+    typicalIndex =
+      clamp(
+        typicalIndex,
+        0,
+        binsCount -
+        1
+      );
+
+
+    const spreadVolume =
+      candle.volume *
+      0.70;
+
+
+    const concentratedVolume =
+      candle.volume *
+      0.30;
+
+
+    const perBin =
+      spreadVolume /
+      touched;
+
+
+    for (
+      let index =
+        first;
+      index <=
+        last;
+      index++
+    ) {
+
+      bins[index].volume +=
+        perBin;
+
+    }
+
+
+    bins[
+      typicalIndex
+    ].volume +=
+      concentratedVolume;
+
+  }
+
+
+  const totalVolume =
+    bins.reduce(
+      (
+        total,
+        bin
+      ) =>
+        total +
+        bin.volume,
+      0
+    );
+
+
+  if (
+    totalVolume <=
+    0
+  ) {
+
+    return null;
+
+  }
+
+
+  let pocIndex =
+    0;
+
+
+  for (
+    let i = 1;
+    i <
+      bins.length;
+    i++
+  ) {
+
+    if (
+      bins[i].volume >
+      bins[pocIndex].volume
+    ) {
+
+      pocIndex =
+        i;
+
+    }
+
+  }
+
+
+  /*
+     Build 70% value area outward from POC.
+  */
+
+  const targetVolume =
+    totalVolume *
+    SETTINGS.valueAreaPercent;
+
+
+  let includedVolume =
+    bins[pocIndex].volume;
+
+
+  let lowIndex =
+    pocIndex;
+
+
+  let highIndex =
+    pocIndex;
+
+
+  while (
+
+    includedVolume <
+    targetVolume &&
+
+    (
+      lowIndex >
+        0 ||
+      highIndex <
+        bins.length -
+        1
+    )
+
+  ) {
+
+    const lowerVolume =
+
+      lowIndex >
+      0
+
+        ? bins[
+          lowIndex -
+          1
+        ].volume
+
+        : -1;
+
+
+    const upperVolume =
+
+      highIndex <
+      bins.length -
+      1
+
+        ? bins[
+          highIndex +
+          1
+        ].volume
+
+        : -1;
+
+
+    if (
+      upperVolume >=
+      lowerVolume
+    ) {
+
+      if (
+        highIndex <
+        bins.length -
+        1
+      ) {
+
+        highIndex++;
+
+        includedVolume +=
+          bins[
+            highIndex
+          ].volume;
+
+      }
+
+      else {
+
+        lowIndex--;
+
+        includedVolume +=
+          bins[
+            lowIndex
+          ].volume;
+
+      }
+
+    }
+
+    else {
+
+      if (
+        lowIndex >
+        0
+      ) {
+
+        lowIndex--;
+
+        includedVolume +=
+          bins[
+            lowIndex
+          ].volume;
+
+      }
+
+      else {
+
+        highIndex++;
+
+        includedVolume +=
+          bins[
+            highIndex
+          ].volume;
+
+      }
+
+    }
+
+  }
+
+
+  const poc =
+    bins[
+      pocIndex
+    ].price;
+
+
+  const val =
+    bins[
+      lowIndex
+    ].low;
+
+
+  const vah =
+    bins[
+      highIndex
+    ].high;
+
+
+  return {
+
+    low,
+
+    high,
+
+    binSize,
+
+    totalVolume,
+
+    poc,
+
+    vah,
+
+    val,
+
+    bins
+
+  };
+
+}
+
+
+/* ============================================================
+   VWAP
+============================================================ */
+
+function calculateVWAP(
+  candles
+) {
+
+  let totalVolume =
+    0;
+
+
+  let priceVolume =
+    0;
+
+
+  for (
+    const candle of
+    candles
+  ) {
+
+    const typical =
+      (
+        candle.high +
+        candle.low +
+        candle.close
+      ) /
+      3;
+
+
+    priceVolume +=
+      typical *
+      candle.volume;
+
+
+    totalVolume +=
+      candle.volume;
+
+  }
+
+
+  if (
+    totalVolume <=
+    0
+  ) {
+
+    return null;
+
+  }
+
+
+  return (
+    priceVolume /
+    totalVolume
+  );
+
+}
+
+
+/* ============================================================
+   NAKED POC
+
+   A completed session POC remains "naked" while subsequent
+   candles have not traded through that price.
+============================================================ */
+
+function findNakedPOCs(
+  sessions,
+  currentPrice
+) {
+
+  const naked =
+    [];
+
+
+  for (
+    let i = 0;
+    i <
+      sessions.length -
+      1;
+    i++
+  ) {
+
+    const session =
+      sessions[i];
+
+
+    const profile =
+      buildVolumeProfile(
+        session.candles
+      );
+
+
+    if (
+      !profile
+    ) {
+
+      continue;
+
+    }
+
+
+    const poc =
+      profile.poc;
+
+
+    let tested =
+      false;
+
+
+    for (
+      let j =
+        i +
+        1;
+      j <
+        sessions.length;
+      j++
+    ) {
+
+      for (
+        const candle of
+        sessions[j].candles
+      ) {
+
+        if (
+
+          candle.low <=
+            poc &&
+
+          candle.high >=
+            poc
+
+        ) {
+
+          tested =
+            true;
+
+          break;
+
+        }
+
+      }
+
+
+      if (
+        tested
+      ) {
+
+        break;
+
+      }
+
+    }
+
+
+    if (
+      !tested
+    ) {
+
+      naked.push({
+
+        session:
+          session.name,
+
+        timestamp:
+          session.start,
+
+        poc,
+
+        distance:
+          Math.abs(
+            currentPrice -
+            poc
+          )
+
+      });
+
+    }
+
+  }
+
+
+  return naked
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.distance -
+        b.distance
+    )
+    .slice(
+      0,
+      8
+    );
+
+}
+
+
+/* ============================================================
+   CANDLE QUALITY
 ============================================================ */
 
 function candleMetrics(
@@ -1084,38 +1963,31 @@ function candleMetrics(
 
     return {
 
-      bodyPercent:
+      body:
+        0,
+
+      lowerWick:
+        0,
+
+      upperWick:
         0,
 
       closeLocation:
-        0.5,
-
-      upperWickPercent:
-        0,
-
-      lowerWickPercent:
-        0
+        0.5
 
     };
 
   }
 
 
-  const body =
-    Math.abs(
-      candle.close -
-      candle.open
-    );
-
-
-  const upperBody =
+  const bodyHigh =
     Math.max(
       candle.open,
       candle.close
     );
 
 
-  const lowerBody =
+  const bodyLow =
     Math.min(
       candle.open,
       candle.close
@@ -1124,27 +1996,37 @@ function candleMetrics(
 
   return {
 
-    bodyPercent:
-      body /
+    body:
+
+      Math.abs(
+        candle.close -
+        candle.open
+      ) /
       range,
 
-    closeLocation:
+
+    lowerWick:
+
       (
-        candle.close -
+        bodyLow -
         candle.low
       ) /
       range,
 
-    upperWickPercent:
+
+    upperWick:
+
       (
         candle.high -
-        upperBody
+        bodyHigh
       ) /
       range,
 
-    lowerWickPercent:
+
+    closeLocation:
+
       (
-        lowerBody -
+        candle.close -
         candle.low
       ) /
       range
@@ -1155,76 +2037,36 @@ function candleMetrics(
 
 
 /* ============================================================
-   EMA ZONE INTERACTION
+   PROFILE TOUCH
 ============================================================ */
 
-function recentZoneInteraction(
-
+function touchedLevel(
   candles,
-
-  ema20,
-
-  ema50,
-
-  index,
-
-  lookback
-
+  level,
+  lookback,
+  tolerance
 ) {
 
-  const start =
-    Math.max(
-
-      0,
-
-      index -
-      lookback +
-      1
-
+  const recent =
+    candles.slice(
+      -lookback
     );
 
 
   for (
-    let i =
-      start;
-    i <=
-      index;
-    i++
+    const candle of
+    recent
   ) {
 
     if (
-      ema20[i] ===
-        null ||
-      ema50[i] ===
-        null
-    ) {
 
-      continue;
+      candle.low <=
+        level +
+        tolerance &&
 
-    }
-
-
-    const zoneHigh =
-      Math.max(
-        ema20[i],
-        ema50[i]
-      );
-
-
-    const zoneLow =
-      Math.min(
-        ema20[i],
-        ema50[i]
-      );
-
-
-    if (
-
-      candles[i].low <=
-        zoneHigh &&
-
-      candles[i].high >=
-        zoneLow
+      candle.high >=
+        level -
+        tolerance
 
     ) {
 
@@ -1241,47 +2083,398 @@ function recentZoneInteraction(
 
 
 /* ============================================================
-   STRUCTURAL STOP
+   MARKET STATE
 ============================================================ */
 
-function recentSwingLow(
-  candles,
-  lookback = 4
-) {
+function buildMarketState({
 
-  const recent =
-    candles.slice(
-      -lookback
+  price,
+
+  previousProfile,
+
+  developingProfile,
+
+  sessionVWAP,
+
+  h1Bullish,
+
+  h1Bearish,
+
+  h4Bullish,
+
+  h4Bearish,
+
+  nearestNakedPOC,
+
+  atrValue
+
+}) {
+
+  let bullish =
+    0;
+
+
+  let bearish =
+    0;
+
+
+  const bullishReasons =
+    [];
+
+
+  const bearishReasons =
+    [];
+
+
+  /* ========================================================
+     HTF
+  ======================================================== */
+
+  if (
+    h4Bullish
+  ) {
+
+    bullish +=
+      18;
+
+
+    bullishReasons.push(
+      "H4 bullish"
+    );
+
+  }
+
+
+  if (
+    h4Bearish
+  ) {
+
+    bearish +=
+      18;
+
+
+    bearishReasons.push(
+      "H4 bearish"
+    );
+
+  }
+
+
+  if (
+    h1Bullish
+  ) {
+
+    bullish +=
+      18;
+
+
+    bullishReasons.push(
+      "H1 bullish"
+    );
+
+  }
+
+
+  if (
+    h1Bearish
+  ) {
+
+    bearish +=
+      18;
+
+
+    bearishReasons.push(
+      "H1 bearish"
+    );
+
+  }
+
+
+  /* ========================================================
+     DEVELOPING PROFILE
+  ======================================================== */
+
+  if (
+    developingProfile
+  ) {
+
+    if (
+      price >
+      developingProfile.poc
+    ) {
+
+      bullish +=
+        12;
+
+
+      bullishReasons.push(
+        "Price above developing POC"
+      );
+
+    }
+
+    else {
+
+      bearish +=
+        12;
+
+
+      bearishReasons.push(
+        "Price below developing POC"
+      );
+
+    }
+
+
+    if (
+      price >
+      developingProfile.vah
+    ) {
+
+      bullish +=
+        8;
+
+
+      bullishReasons.push(
+        "Price above developing value"
+      );
+
+    }
+
+
+    if (
+      price <
+      developingProfile.val
+    ) {
+
+      bearish +=
+        8;
+
+
+      bearishReasons.push(
+        "Price below developing value"
+      );
+
+    }
+
+  }
+
+
+  /* ========================================================
+     PREVIOUS SESSION PROFILE
+  ======================================================== */
+
+  if (
+    previousProfile
+  ) {
+
+    if (
+      price >
+      previousProfile.poc
+    ) {
+
+      bullish +=
+        8;
+
+    }
+
+    else {
+
+      bearish +=
+        8;
+
+    }
+
+  }
+
+
+  /* ========================================================
+     VWAP
+  ======================================================== */
+
+  if (
+    Number.isFinite(
+      sessionVWAP
+    )
+  ) {
+
+    if (
+      price >
+      sessionVWAP
+    ) {
+
+      bullish +=
+        12;
+
+
+      bullishReasons.push(
+        "Price above session VWAP"
+      );
+
+    }
+
+    else {
+
+      bearish +=
+        12;
+
+
+      bearishReasons.push(
+        "Price below session VWAP"
+      );
+
+    }
+
+  }
+
+
+  /* ========================================================
+     NAKED POC MAGNET
+  ======================================================== */
+
+  if (
+    nearestNakedPOC &&
+    atrValue >
+    0
+  ) {
+
+    const distanceATR =
+
+      nearestNakedPOC.distance /
+      atrValue;
+
+
+    if (
+      distanceATR <=
+      2
+    ) {
+
+      if (
+        nearestNakedPOC.poc >
+        price
+      ) {
+
+        bullish +=
+          5;
+
+
+        bullishReasons.push(
+          "Untested POC above may act as magnet"
+        );
+
+      }
+
+      else {
+
+        bearish +=
+          5;
+
+
+        bearishReasons.push(
+          "Untested POC below may act as magnet"
+        );
+
+      }
+
+    }
+
+  }
+
+
+  let bias =
+    "NEUTRAL";
+
+
+  const gap =
+    Math.abs(
+      bullish -
+      bearish
     );
 
 
-  return Math.min(
-    ...recent.map(
-      candle =>
-        candle.low
-    )
-  );
+  if (
 
-}
+    bullish >
+      bearish &&
+
+    gap >=
+      12
+
+  ) {
+
+    bias =
+      "BULLISH";
+
+  }
 
 
-function recentSwingHigh(
-  candles,
-  lookback = 4
-) {
+  if (
 
-  const recent =
-    candles.slice(
-      -lookback
+    bearish >
+      bullish &&
+
+    gap >=
+      12
+
+  ) {
+
+    bias =
+      "BEARISH";
+
+  }
+
+
+  let strength =
+    "WEAK";
+
+
+  const best =
+    Math.max(
+      bullish,
+      bearish
     );
 
 
-  return Math.max(
-    ...recent.map(
-      candle =>
-        candle.high
-    )
-  );
+  if (
+    best >=
+    55
+  ) {
+
+    strength =
+      "STRONG";
+
+  }
+
+  else if (
+    best >=
+    38
+  ) {
+
+    strength =
+      "MODERATE";
+
+  }
+
+
+  return {
+
+    bias,
+
+    strength,
+
+    bullishScore:
+      bullish,
+
+    bearishScore:
+      bearish,
+
+    gap,
+
+    bullishReasons,
+
+    bearishReasons
+
+  };
 
 }
 
@@ -1308,9 +2501,31 @@ async function handler(
 
   try {
 
+    const requestedMode =
+      String(
+        req.query?.mode ||
+        "BALANCED"
+      )
+      .toUpperCase();
+
+
+    const mode =
+      SETTINGS.modeScores[
+        requestedMode
+      ]
+        ? requestedMode
+        : "BALANCED";
+
+
+    const minimumScore =
+      SETTINGS.modeScores[
+        mode
+      ];
+
+
     const [
 
-      m15,
+      m5,
 
       h1,
 
@@ -1320,7 +2535,7 @@ async function handler(
       await Promise.all([
 
         fetchCandles(
-          900
+          300
         ),
 
         fetchCandles(
@@ -1332,19 +2547,13 @@ async function handler(
       ]);
 
 
-    const h4 =
-      resampleH4(
-        h1
-      );
-
-
     if (
-      m15.length <
-      100
+      m5.length <
+      80
     ) {
 
       throw new Error(
-        `Only ${m15.length} M15 candles returned`
+        `Only ${m5.length} M5 candles available`
       );
 
     }
@@ -1356,10 +2565,16 @@ async function handler(
     ) {
 
       throw new Error(
-        `Only ${h1.length} H1 candles returned`
+        `Only ${h1.length} H1 candles available`
       );
 
     }
+
+
+    const h4 =
+      buildH4(
+        h1
+      );
 
 
     if (
@@ -1368,56 +2583,67 @@ async function handler(
     ) {
 
       throw new Error(
-        `Only ${h4.length} completed H4 candles available`
+        "Not enough completed H4 history"
       );
 
     }
 
 
+    const price =
+      number(
+        ticker?.price,
+        m5.at(-1)
+          .close
+      );
+
+
     /* ======================================================
-       M15 INDICATORS
+       M5 INDICATORS
     ====================================================== */
 
-    const m15Closes =
-      m15.map(
+    const m5Close =
+      m5.map(
         candle =>
           candle.close
       );
 
 
-    const m15EMA20 =
-      ema(
-        m15Closes,
-        SETTINGS.m15EmaFast
-      );
-
-
-    const m15EMA50 =
-      ema(
-        m15Closes,
-        SETTINGS.m15EmaSlow
-      );
-
-
-    const m15RSI =
+    const m5RSI =
       rsi(
-        m15Closes,
+        m5Close,
         SETTINGS.rsiPeriod
       );
 
 
-    const m15ATR =
+    const m5ATR =
       atr(
-        m15,
+        m5,
         SETTINGS.atrPeriod
       );
+
+
+    const mi =
+      m5.length -
+      1;
+
+
+    const rsiNow =
+      m5RSI[
+        mi
+      ];
+
+
+    const atrNow =
+      m5ATR[
+        mi
+      ];
 
 
     /* ======================================================
        H1
     ====================================================== */
 
-    const h1Closes =
+    const h1Close =
       h1.map(
         candle =>
           candle.close
@@ -1426,23 +2652,62 @@ async function handler(
 
     const h1EMA50 =
       ema(
-        h1Closes,
-        SETTINGS.h1EmaFast
+        h1Close,
+        SETTINGS.h1FastEMA
       );
 
 
     const h1EMA200 =
       ema(
-        h1Closes,
-        SETTINGS.h1EmaSlow
+        h1Close,
+        SETTINGS.h1SlowEMA
       );
+
+
+    const hi =
+      h1.length -
+      1;
+
+
+    const h1Bullish =
+
+      h1[
+        hi
+      ].close >
+      h1EMA200[
+        hi
+      ] &&
+
+      h1EMA50[
+        hi
+      ] >
+      h1EMA200[
+        hi
+      ];
+
+
+    const h1Bearish =
+
+      h1[
+        hi
+      ].close <
+      h1EMA200[
+        hi
+      ] &&
+
+      h1EMA50[
+        hi
+      ] <
+      h1EMA200[
+        hi
+      ];
 
 
     /* ======================================================
        H4
     ====================================================== */
 
-    const h4Closes =
+    const h4Close =
       h4.map(
         candle =>
           candle.close
@@ -1451,30 +2716,16 @@ async function handler(
 
     const h4EMA20 =
       ema(
-        h4Closes,
-        SETTINGS.h4EmaFast
+        h4Close,
+        SETTINGS.h4FastEMA
       );
 
 
     const h4EMA50 =
       ema(
-        h4Closes,
-        SETTINGS.h4EmaSlow
+        h4Close,
+        SETTINGS.h4SlowEMA
       );
-
-
-    /* ======================================================
-       CURRENT
-    ====================================================== */
-
-    const mi =
-      m15.length -
-      1;
-
-
-    const hi =
-      h1.length -
-      1;
 
 
     const h4i =
@@ -1482,147 +2733,138 @@ async function handler(
       1;
 
 
-    const candle =
-      m15[mi];
+    const h4Bullish =
+
+      h4EMA20[
+        h4i
+      ] >
+      h4EMA50[
+        h4i
+      ] &&
+
+      h4[
+        h4i
+      ].close >
+      h4EMA20[
+        h4i
+      ];
 
 
-    const h1Candle =
-      h1[hi];
+    const h4Bearish =
+
+      h4EMA20[
+        h4i
+      ] <
+      h4EMA50[
+        h4i
+      ] &&
+
+      h4[
+        h4i
+      ].close <
+      h4EMA20[
+        h4i
+      ];
 
 
-    const h4Candle =
-      h4[h4i];
+    /* ======================================================
+       SESSIONS
+    ====================================================== */
 
-
-    const livePrice =
-      num(
-        ticker?.price,
-        candle.close
+    const sessions =
+      groupSessions(
+        m5
       );
 
 
-    const ema20Now =
-      m15EMA20[mi];
-
-
-    const ema50Now =
-      m15EMA50[mi];
-
-
-    const rsiNow =
-      m15RSI[mi];
-
-
-    const atrNow =
-      m15ATR[mi];
-
-
-    const h1EMA50Now =
-      h1EMA50[hi];
-
-
-    const h1EMA200Now =
-      h1EMA200[hi];
-
-
-    const h4EMA20Now =
-      h4EMA20[h4i];
-
-
-    const h4EMA50Now =
-      h4EMA50[h4i];
-
-
     if (
-
-      ema20Now ===
-        null ||
-
-      ema50Now ===
-        null ||
-
-      rsiNow ===
-        null ||
-
-      atrNow ===
-        null ||
-
-      h1EMA50Now ===
-        null ||
-
-      h1EMA200Now ===
-        null ||
-
-      h4EMA20Now ===
-        null ||
-
-      h4EMA50Now ===
-        null
-
+      sessions.length <
+      2
     ) {
 
       throw new Error(
-        "Indicators are not ready"
+        "Not enough session history"
       );
 
     }
 
 
-    /* ======================================================
-       TREND
-    ====================================================== */
-
-    const h4Bullish =
-
-      h4EMA20Now >
-      h4EMA50Now &&
-
-      h4Candle.close >
-      h4EMA20Now;
+    const currentSession =
+      sessions.at(-1);
 
 
-    const h4Bearish =
-
-      h4EMA20Now <
-      h4EMA50Now &&
-
-      h4Candle.close <
-      h4EMA20Now;
+    const previousSession =
+      sessions.at(-2);
 
 
-    const h1Bullish =
-
-      h1EMA50Now >
-      h1EMA200Now &&
-
-      h1Candle.close >
-      h1EMA200Now;
+    const developingProfile =
+      buildVolumeProfile(
+        currentSession.candles
+      );
 
 
-    const h1Bearish =
-
-      h1EMA50Now <
-      h1EMA200Now &&
-
-      h1Candle.close <
-      h1EMA200Now;
+    const previousProfile =
+      buildVolumeProfile(
+        previousSession.candles
+      );
 
 
-    const bullishAlignment =
+    const sessionVWAP =
+      calculateVWAP(
+        currentSession.candles
+      );
 
-      h4Bullish &&
-      h1Bullish;
+
+    const nakedPOCs =
+      findNakedPOCs(
+        sessions,
+        price
+      );
 
 
-    const bearishAlignment =
-
-      h4Bearish &&
-      h1Bearish;
+    const nearestNakedPOC =
+      nakedPOCs[0] ||
+      null;
 
 
     /* ======================================================
-       M15 QUALITY
+       STATE
     ====================================================== */
+
+    const state =
+      buildMarketState({
+
+        price,
+
+        previousProfile,
+
+        developingProfile,
+
+        sessionVWAP,
+
+        h1Bullish,
+
+        h1Bearish,
+
+        h4Bullish,
+
+        h4Bearish,
+
+        nearestNakedPOC,
+
+        atrValue:
+          atrNow
+
+      });
+
+
+    /* ======================================================
+       ENTRY CONDITIONS
+    ====================================================== */
+
+    const candle =
+      m5.at(-1);
+
 
     const metrics =
       candleMetrics(
@@ -1630,79 +2872,137 @@ async function handler(
       );
 
 
-    const zoneInteraction =
-      recentZoneInteraction(
+    const tolerance =
 
-        m15,
-
-        m15EMA20,
-
-        m15EMA50,
-
-        mi,
-
-        SETTINGS.pullbackLookback
-
-      );
+      atrNow *
+      0.15;
 
 
-    const bullishCandle =
+    const touchedPOC =
+
+      developingProfile
+
+        ? touchedLevel(
+
+          m5,
+
+          developingProfile.poc,
+
+          SETTINGS.pullbackLookback,
+
+          tolerance
+
+        )
+
+        : false;
+
+
+    const touchedVWAP =
+
+      Number.isFinite(
+        sessionVWAP
+      )
+
+        ? touchedLevel(
+
+          m5,
+
+          sessionVWAP,
+
+          SETTINGS.pullbackLookback,
+
+          tolerance
+
+        )
+
+        : false;
+
+
+    const touchedVAL =
+
+      developingProfile
+
+        ? touchedLevel(
+
+          m5,
+
+          developingProfile.val,
+
+          SETTINGS.pullbackLookback,
+
+          tolerance
+
+        )
+
+        : false;
+
+
+    const touchedVAH =
+
+      developingProfile
+
+        ? touchedLevel(
+
+          m5,
+
+          developingProfile.vah,
+
+          SETTINGS.pullbackLookback,
+
+          tolerance
+
+        )
+
+        : false;
+
+
+    const bullishRejection =
 
       candle.close >
-      candle.open;
+      candle.open &&
 
+      metrics.body >=
+      SETTINGS.minimumBodyPercent &&
 
-    const bearishCandle =
-
-      candle.close <
-      candle.open;
-
-
-    const buyRejection =
-
-      bullishCandle &&
-
-      metrics.lowerWickPercent >=
-      SETTINGS.minRejectionWickPercent &&
+      metrics.lowerWick >=
+      SETTINGS.minimumRejectionWick &&
 
       metrics.closeLocation >=
-      SETTINGS.buyCloseLocation &&
-
-      candle.close >
-      ema20Now &&
-
-      candle.close >
-      ema50Now;
+      0.65;
 
 
-    const sellRejection =
+    const bearishRejection =
 
-      bearishCandle &&
+      candle.close <
+      candle.open &&
 
-      metrics.upperWickPercent >=
-      SETTINGS.minRejectionWickPercent &&
+      metrics.body >=
+      SETTINGS.minimumBodyPercent &&
+
+      metrics.upperWick >=
+      SETTINGS.minimumRejectionWick &&
 
       metrics.closeLocation <=
-      SETTINGS.sellCloseLocation &&
-
-      candle.close <
-      ema20Now &&
-
-      candle.close <
-      ema50Now;
+      0.35;
 
 
-    const bodyStrong =
+    const atrPercent =
 
-      metrics.bodyPercent >=
-      SETTINGS.minBodyPercent;
+      atrNow /
+      candle.close *
+      100;
 
 
-    /* ======================================================
-       RSI WINDOW
-    ====================================================== */
+    const volatilityOK =
 
-    const buyRsiOk =
+      atrPercent >=
+      SETTINGS.minimumATRPercent &&
+
+      atrPercent <=
+      SETTINGS.maximumATRPercent;
+
+
+    const buyRSIOK =
 
       rsiNow >=
       SETTINGS.buyRsiMin &&
@@ -1711,7 +3011,7 @@ async function handler(
       SETTINGS.buyRsiMax;
 
 
-    const sellRsiOk =
+    const sellRSIOK =
 
       rsiNow >=
       SETTINGS.sellRsiMin &&
@@ -1721,23 +3021,231 @@ async function handler(
 
 
     /* ======================================================
-       STRETCH
+       SIGNAL SCORES
     ====================================================== */
 
-    const distanceFromEMA20 =
+    let buyScore =
+      state.bullishScore;
 
-      Math.abs(
-        candle.close -
-        ema20Now
+
+    let sellScore =
+      state.bearishScore;
+
+
+    const buyReasons =
+      [
+        ...state.bullishReasons
+      ];
+
+
+    const sellReasons =
+      [
+        ...state.bearishReasons
+      ];
+
+
+    /* ======================================================
+       PROFILE PULLBACK
+    ====================================================== */
+
+    if (
+      touchedPOC
+    ) {
+
+      if (
+        price >
+        developingProfile.poc
+      ) {
+
+        buyScore +=
+          12;
+
+
+        buyReasons.push(
+          "Developing POC reclaimed"
+        );
+
+      }
+
+
+      if (
+        price <
+        developingProfile.poc
+      ) {
+
+        sellScore +=
+          12;
+
+
+        sellReasons.push(
+          "Developing POC rejected"
+        );
+
+      }
+
+    }
+
+
+    if (
+      touchedVWAP
+    ) {
+
+      if (
+        price >
+        sessionVWAP
+      ) {
+
+        buyScore +=
+          10;
+
+
+        buyReasons.push(
+          "Session VWAP reclaimed"
+        );
+
+      }
+
+
+      if (
+        price <
+        sessionVWAP
+      ) {
+
+        sellScore +=
+          10;
+
+
+        sellReasons.push(
+          "Session VWAP rejected"
+        );
+
+      }
+
+    }
+
+
+    if (
+      touchedVAL &&
+      price >
+      developingProfile.val
+    ) {
+
+      buyScore +=
+        10;
+
+
+      buyReasons.push(
+        "Value-area low rejected"
+      );
+
+    }
+
+
+    if (
+      touchedVAH &&
+      price <
+      developingProfile.vah
+    ) {
+
+      sellScore +=
+        10;
+
+
+      sellReasons.push(
+        "Value-area high rejected"
+      );
+
+    }
+
+
+    if (
+      bullishRejection
+    ) {
+
+      buyScore +=
+        10;
+
+
+      buyReasons.push(
+        "Bullish M5 rejection"
+      );
+
+    }
+
+
+    if (
+      bearishRejection
+    ) {
+
+      sellScore +=
+        10;
+
+
+      sellReasons.push(
+        "Bearish M5 rejection"
+      );
+
+    }
+
+
+    if (
+      buyRSIOK
+    ) {
+
+      buyScore +=
+        5;
+
+    }
+
+
+    if (
+      sellRSIOK
+    ) {
+
+      sellScore +=
+        5;
+
+    }
+
+
+    buyScore =
+      clamp(
+        buyScore,
+        0,
+        100
       );
 
 
-    const distanceFromEMA20ATR =
+    sellScore =
+      clamp(
+        sellScore,
+        0,
+        100
+      );
 
+
+    /* ======================================================
+       PROFILE DISTANCE CONTROL
+    ====================================================== */
+
+    let referenceLevel =
+      developingProfile
+        ?.poc ??
+      sessionVWAP;
+
+
+    const distanceATR =
+
+      Number.isFinite(
+        referenceLevel
+      ) &&
       atrNow >
       0
 
-        ? distanceFromEMA20 /
+        ? Math.abs(
+          price -
+          referenceLevel
+        ) /
           atrNow
 
         : 999;
@@ -1745,28 +3253,8 @@ async function handler(
 
     const notStretched =
 
-      distanceFromEMA20ATR <=
-      SETTINGS.maxDistanceFromEma20Atr;
-
-
-    /* ======================================================
-       VOLATILITY
-    ====================================================== */
-
-    const atrPercent =
-
-      atrNow /
-      candle.close *
-      100;
-
-
-    const volatilityOk =
-
-      atrPercent >=
-      SETTINGS.minAtrPercent &&
-
-      atrPercent <=
-      SETTINGS.maxAtrPercent;
+      distanceATR <=
+      SETTINGS.maxDistanceATR;
 
 
     /* ======================================================
@@ -1777,177 +3265,70 @@ async function handler(
       "WAIT";
 
 
-    const reasons =
-      [];
-
-
     if (
 
-      bullishAlignment &&
+      buyScore >=
+        minimumScore &&
 
-      zoneInteraction &&
+      buyScore >
+        sellScore +
+        8 &&
 
-      buyRejection &&
+      state.bias !==
+        "BEARISH" &&
 
-      bodyStrong &&
+      bullishRejection &&
 
-      buyRsiOk &&
+      (
+        touchedPOC ||
+        touchedVWAP ||
+        touchedVAL
+      ) &&
 
-      notStretched &&
+      buyRSIOK &&
 
-      volatilityOk
+      volatilityOK &&
+
+      notStretched
 
     ) {
 
       signal =
         "BUY";
 
-
-      reasons.push(
-
-        "H4 and H1 trends are bullish",
-
-        "M15 pulled into EMA20/EMA50 zone",
-
-        "M15 produced bullish rejection",
-
-        "Candle closed in top 25% of its range",
-
-        `RSI ${round(
-          rsiNow,
-          1
-        )} is inside BUY momentum window`,
-
-        "Confirmation candle body is strong",
-
-        "Entry is not stretched from EMA20",
-
-        "ATR volatility filter passed"
-
-      );
-
     }
 
 
-    else if (
+    if (
 
-      bearishAlignment &&
+      sellScore >=
+        minimumScore &&
 
-      zoneInteraction &&
+      sellScore >
+        buyScore +
+        8 &&
 
-      sellRejection &&
+      state.bias !==
+        "BULLISH" &&
 
-      bodyStrong &&
+      bearishRejection &&
 
-      sellRsiOk &&
+      (
+        touchedPOC ||
+        touchedVWAP ||
+        touchedVAH
+      ) &&
 
-      notStretched &&
+      sellRSIOK &&
 
-      volatilityOk
+      volatilityOK &&
+
+      notStretched
 
     ) {
 
       signal =
         "SELL";
-
-
-      reasons.push(
-
-        "H4 and H1 trends are bearish",
-
-        "M15 pulled into EMA20/EMA50 zone",
-
-        "M15 produced bearish rejection",
-
-        "Candle closed in bottom 25% of its range",
-
-        `RSI ${round(
-          rsiNow,
-          1
-        )} is inside SELL momentum window`,
-
-        "Confirmation candle body is strong",
-
-        "Entry is not stretched from EMA20",
-
-        "ATR volatility filter passed"
-
-      );
-
-    }
-
-
-    else {
-
-      reasons.push(
-
-        bullishAlignment
-          ? "H4 + H1 bullish alignment"
-          : bearishAlignment
-            ? "H4 + H1 bearish alignment"
-            : "H4 and H1 are not aligned"
-
-      );
-
-
-      reasons.push(
-
-        zoneInteraction
-          ? "Recent M15 EMA pullback exists"
-          : "Waiting for M15 EMA pullback"
-
-      );
-
-
-      reasons.push(
-
-        buyRejection
-          ? "Bullish M15 rejection confirmed"
-          : sellRejection
-            ? "Bearish M15 rejection confirmed"
-            : "Waiting for strong M15 rejection"
-
-      );
-
-
-      reasons.push(
-
-        `M15 RSI ${round(
-          rsiNow,
-          1
-        )}`
-
-      );
-
-
-      reasons.push(
-
-        `Candle body ${round(
-          metrics.bodyPercent *
-          100,
-          1
-        )}%`
-
-      );
-
-
-      reasons.push(
-
-        `EMA20 distance ${round(
-          distanceFromEMA20ATR,
-          2
-        )} ATR`
-
-      );
-
-
-      reasons.push(
-
-        volatilityOk
-          ? "ATR volatility acceptable"
-          : "ATR volatility blocked"
-
-      );
 
     }
 
@@ -1964,11 +3345,7 @@ async function handler(
       null;
 
 
-    let takeProfit1 =
-      null;
-
-
-    let takeProfit2 =
+    let target =
       null;
 
 
@@ -1985,9 +3362,9 @@ async function handler(
         candle.close;
 
 
-      const recentBars =
-        m15.slice(
-          -4
+      const recent =
+        m5.slice(
+          -5
         );
 
 
@@ -1996,96 +3373,219 @@ async function handler(
         "BUY"
       ) {
 
+        const recentLow =
+          Math.min(
+            ...recent.map(
+              bar =>
+                bar.low
+            )
+          );
+
+
         const atrStop =
 
           entry -
-          atrNow *
-          SETTINGS.stopAtr;
-
-
-        const swingStop =
-
-          recentSwingLow(
-            recentBars,
-            4
-          ) -
 
           atrNow *
-          SETTINGS.structureBufferAtr;
+          SETTINGS.stopATR;
+
+
+        const structuralStop =
+
+          recentLow -
+
+          atrNow *
+          SETTINGS.structureBufferATR;
 
 
         stopLoss =
           Math.min(
             atrStop,
-            swingStop
+            structuralStop
           );
 
 
         riskDistance =
-
           entry -
           stopLoss;
 
 
-        takeProfit1 =
+        target =
 
           entry +
+
           riskDistance *
           SETTINGS.targetR;
-
-
-        takeProfit2 =
-          takeProfit1;
 
       }
 
 
       else {
 
+        const recentHigh =
+          Math.max(
+            ...recent.map(
+              bar =>
+                bar.high
+            )
+          );
+
+
         const atrStop =
 
           entry +
-          atrNow *
-          SETTINGS.stopAtr;
-
-
-        const swingStop =
-
-          recentSwingHigh(
-            recentBars,
-            4
-          ) +
 
           atrNow *
-          SETTINGS.structureBufferAtr;
+          SETTINGS.stopATR;
+
+
+        const structuralStop =
+
+          recentHigh +
+
+          atrNow *
+          SETTINGS.structureBufferATR;
 
 
         stopLoss =
           Math.max(
             atrStop,
-            swingStop
+            structuralStop
           );
 
 
         riskDistance =
-
           stopLoss -
           entry;
 
 
-        takeProfit1 =
+        target =
 
           entry -
+
           riskDistance *
           SETTINGS.targetR;
-
-
-        takeProfit2 =
-          takeProfit1;
 
       }
 
     }
+
+
+    /* ======================================================
+       VALUE STATE
+    ====================================================== */
+
+    let valueState =
+      "UNKNOWN";
+
+
+    if (
+      developingProfile
+    ) {
+
+      if (
+        price >
+        developingProfile.vah
+      ) {
+
+        valueState =
+          "ABOVE VALUE";
+
+      }
+
+      else if (
+        price <
+        developingProfile.val
+      ) {
+
+        valueState =
+          "BELOW VALUE";
+
+      }
+
+      else {
+
+        valueState =
+          "INSIDE VALUE";
+
+      }
+
+    }
+
+
+    const pocState =
+
+      developingProfile
+
+        ? price >
+          developingProfile.poc
+
+          ? "PRICE ABOVE POC"
+
+          : "PRICE BELOW POC"
+
+        : "UNKNOWN";
+
+
+    const vwapState =
+
+      Number.isFinite(
+        sessionVWAP
+      )
+
+        ? price >
+          sessionVWAP
+
+          ? "ABOVE VWAP"
+
+          : "BELOW VWAP"
+
+        : "UNKNOWN";
+
+
+    /* ======================================================
+       CONFLICT
+    ====================================================== */
+
+    const conflict =
+
+      Math.abs(
+        buyScore -
+        sellScore
+      ) <
+      12
+
+        ? "HIGH"
+
+        : Math.abs(
+          buyScore -
+          sellScore
+        ) <
+          25
+
+          ? "MEDIUM"
+
+          : "LOW";
+
+
+    const guidance =
+
+      signal !==
+      "WAIT"
+
+        ? `${signal} SETUP`
+
+        : conflict ===
+          "HIGH"
+
+          ? "NO TRADE"
+
+          : state.bias ===
+            "NEUTRAL"
+
+            ? "WAIT"
+
+            : `WAIT FOR ${state.bias} PROFILE REJECTION`;
 
 
     /* ======================================================
@@ -2099,23 +3599,24 @@ async function handler(
         ok:
           true,
 
+        engine:
+          "MKAYFX BTC VOLUME PROFILE V3",
+
         source:
           "Coinbase Exchange",
 
         product:
           PRODUCT,
 
-        strategy:
-          "H4 + H1 Trend / M15 EMA Rejection",
+        mode,
+
+        minimumScore,
 
         signal,
 
         timestamp:
           new Date()
             .toISOString(),
-
-        candleTime:
-          candle.datetime,
 
         latencyMs:
           Date.now() -
@@ -2124,7 +3625,7 @@ async function handler(
 
         price:
           round(
-            livePrice
+            price
           ),
 
 
@@ -2140,12 +3641,12 @@ async function handler(
 
         takeProfit1:
           round(
-            takeProfit1
+            target
           ),
 
         takeProfit2:
           round(
-            takeProfit2
+            target
           ),
 
         riskDistance:
@@ -2165,15 +3666,78 @@ async function handler(
         },
 
 
+        decisionPanel: {
+
+          bias:
+            state.bias,
+
+          strength:
+            state.strength,
+
+          session:
+            currentSession.name,
+
+          value:
+            valueState,
+
+          poc:
+            pocState,
+
+          vwap:
+            vwapState,
+
+          nakedPOC:
+
+            nearestNakedPOC
+              ? "ACTIVE"
+              : "NONE",
+
+          conflict,
+
+          guidance,
+
+          signal,
+
+          mode,
+
+          score:
+
+            signal ===
+            "BUY"
+
+              ? buyScore
+
+              : signal ===
+                "SELL"
+
+                ? sellScore
+
+                : Math.max(
+                  buyScore,
+                  sellScore
+                )
+
+        },
+
+
+        scores: {
+
+          buy:
+            round(
+              buyScore,
+              1
+            ),
+
+          sell:
+            round(
+              sellScore,
+              1
+            )
+
+        },
+
+
         trend: {
-
-          h4:
-
-            h4Bullish
-              ? "BULLISH"
-              : h4Bearish
-                ? "BEARISH"
-                : "NEUTRAL",
 
           h1:
 
@@ -2183,73 +3747,18 @@ async function handler(
                 ? "BEARISH"
                 : "NEUTRAL",
 
-          aligned:
+          h4:
 
-            bullishAlignment
+            h4Bullish
               ? "BULLISH"
-              : bearishAlignment
+              : h4Bearish
                 ? "BEARISH"
-                : "NO"
-
-        },
-
-
-        h4: {
-
-          close:
-            round(
-              h4Candle.close
-            ),
-
-          ema20:
-            round(
-              h4EMA20Now
-            ),
-
-          ema50:
-            round(
-              h4EMA50Now
-            )
-
-        },
-
-
-        h1: {
-
-          close:
-            round(
-              h1Candle.close
-            ),
-
-          ema50:
-            round(
-              h1EMA50Now
-            ),
-
-          ema200:
-            round(
-              h1EMA200Now
-            )
+                : "NEUTRAL"
 
         },
 
 
         m15: {
-
-          close:
-            round(
-              candle.close
-            ),
-
-          ema20:
-            round(
-              ema20Now
-            ),
-
-          ema50:
-            round(
-              ema50Now
-            ),
 
           rsi:
             round(
@@ -2271,45 +3780,193 @@ async function handler(
 
           candleStrength:
             round(
-              metrics.bodyPercent *
+              metrics.body *
               100,
               1
             ),
 
-          closeLocation:
+          lowerWick:
             round(
-              metrics.closeLocation *
+              metrics.lowerWick *
               100,
               1
             ),
 
-          lowerWickPercent:
+          upperWick:
             round(
-              metrics.lowerWickPercent *
+              metrics.upperWick *
               100,
               1
-            ),
-
-          upperWickPercent:
-            round(
-              metrics.upperWickPercent *
-              100,
-              1
-            ),
-
-          distanceFromEMA20ATR:
-            round(
-              distanceFromEMA20ATR,
-              2
-            ),
-
-          pullback:
-            zoneInteraction
+            )
 
         },
 
 
-        reasons
+        currentProfile:
+
+          developingProfile
+
+            ? {
+
+              session:
+                currentSession.name,
+
+              developing:
+                true,
+
+              poc:
+                round(
+                  developingProfile.poc
+                ),
+
+              vah:
+                round(
+                  developingProfile.vah
+                ),
+
+              val:
+                round(
+                  developingProfile.val
+                ),
+
+              vwap:
+                round(
+                  sessionVWAP
+                ),
+
+              high:
+                round(
+                  developingProfile.high
+                ),
+
+              low:
+                round(
+                  developingProfile.low
+                ),
+
+              volume:
+                round(
+                  developingProfile.totalVolume,
+                  4
+                )
+
+            }
+
+            : null,
+
+
+        previousProfile:
+
+          previousProfile
+
+            ? {
+
+              session:
+                previousSession.name,
+
+              poc:
+                round(
+                  previousProfile.poc
+                ),
+
+              vah:
+                round(
+                  previousProfile.vah
+                ),
+
+              val:
+                round(
+                  previousProfile.val
+                ),
+
+              high:
+                round(
+                  previousProfile.high
+                ),
+
+              low:
+                round(
+                  previousProfile.low
+                )
+
+            }
+
+            : null,
+
+
+        nakedPOCs:
+
+          nakedPOCs.map(
+            item => ({
+
+              session:
+                item.session,
+
+              poc:
+                round(
+                  item.poc
+                ),
+
+              distance:
+                round(
+                  item.distance
+                )
+
+            })
+          ),
+
+
+        reasons:
+
+          signal ===
+          "BUY"
+
+            ? buyReasons
+
+            : signal ===
+              "SELL"
+
+              ? sellReasons
+
+              : [
+
+                `Market bias: ${state.bias}`,
+
+                `Strength: ${state.strength}`,
+
+                `Current session: ${currentSession.name}`,
+
+                `Value: ${valueState}`,
+
+                `POC state: ${pocState}`,
+
+                `VWAP state: ${vwapState}`,
+
+                `Buy score: ${round(
+                  buyScore,
+                  1
+                )}`,
+
+                `Sell score: ${round(
+                  sellScore,
+                  1
+                )}`,
+
+                bullishRejection
+                  ? "Bullish rejection present"
+                  : bearishRejection
+                    ? "Bearish rejection present"
+                    : "Waiting for profile rejection",
+
+                notStretched
+                  ? "Price is not stretched from profile"
+                  : "Entry blocked: price stretched",
+
+                volatilityOK
+                  ? "ATR volatility acceptable"
+                  : "ATR volatility blocked"
+
+              ]
 
       });
 
@@ -2320,7 +3977,7 @@ async function handler(
   ) {
 
     console.error(
-      "BTC V2 ERROR:",
+      "BTC PROFILE ENGINE ERROR:",
       error
     );
 
@@ -2334,6 +3991,9 @@ async function handler(
 
         source:
           "Coinbase Exchange",
+
+        product:
+          PRODUCT,
 
         error:
           errorText(
