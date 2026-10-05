@@ -1,9 +1,6 @@
 {
-  "name": "mkayfx-btc-liquidity-sweep",
+  "name": "mkayfx-us30-liquidity-intelligence",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "start": "vercel dev"
-  }
+  "type": "module"
 }
