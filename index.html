@@ -12,7 +12,7 @@
 
 <meta
   name="theme-color"
-  content="#030405"
+  content="#05080d"
 >
 
 <meta
@@ -27,47 +27,70 @@
 
 <meta
   name="apple-mobile-web-app-title"
-  content="MKAYFX"
+  content="XAU LIQUIDITY"
 >
 
-<title>MKAYFX BTC Sweep Reversal</title>
+<title>
+MKAYFX XAU Liquidity Intelligence
+</title>
+
 
 <style>
 
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
 :root{
 
-  --bg:#030405;
+  --bg:#05080d;
 
-  --card:#090c10;
+  --panel:#0a1018;
 
-  --card2:#0d1117;
+  --panel2:#0d1520;
 
-  --border:rgba(255,255,255,.08);
+  --panel3:#070c12;
 
-  --text:#f7f7f7;
+  --line:rgba(255,255,255,.075);
 
-  --muted:#7d8795;
+  --line2:rgba(255,255,255,.13);
 
-  --green:#25e59a;
+  --text:#f5f7fa;
 
-  --red:#ff566d;
+  --muted:#7d8998;
 
-  --gold:#f4c95d;
+  --muted2:#a8b2bf;
 
-  --blue:#617bff;
+  --green:#35e3a3;
 
-  --purple:#855cff;
+  --red:#ff6279;
+
+  --gold:#f0c760;
+
+  --blue:#7e99ff;
+
+  --cyan:#66d7ed;
+
+  --purple:#b98aff;
+
+  --orange:#ffad60;
+
 }
+
+
+*{
+
+  box-sizing:border-box;
+
+  -webkit-tap-highlight-color:
+    transparent;
+
+}
+
 
 html{
 
-  background:var(--bg);
+  background:
+    var(--bg);
+
 }
+
 
 body{
 
@@ -75,41 +98,60 @@ body{
 
   min-height:100vh;
 
-  background:
-    radial-gradient(
-      circle at top,
-      #111824 0,
-      #050709 38%,
-      #030405 100%
-    );
+  color:
+    var(--text);
 
-  color:var(--text);
+  background:
+
+    radial-gradient(
+      circle at 50% -8%,
+      rgba(240,199,96,.08),
+      transparent 28%
+    ),
+
+    linear-gradient(
+      180deg,
+      #05080d,
+      #040609
+    );
 
   font-family:
     -apple-system,
     BlinkMacSystemFont,
+    "SF Pro Display",
     "Segoe UI",
+    Roboto,
+    Arial,
     sans-serif;
+
+  padding:
+    env(safe-area-inset-top)
+    0
+    env(safe-area-inset-bottom);
+
 }
+
+
+button{
+
+  font:inherit;
+
+}
+
 
 .app{
 
-  width:100%;
-
-  max-width:820px;
+  width:
+    min(
+      100%,
+      1180px
+    );
 
   margin:auto;
 
   padding:
-    calc(
-      env(safe-area-inset-top) +
-      22px
-    )
-    14px
-    calc(
-      env(safe-area-inset-bottom) +
-      70px
-    );
+    16px 12px 44px;
+
 }
 
 
@@ -117,443 +159,1439 @@ body{
    HEADER
 ========================================================= */
 
-.brand{
 
-  color:var(--muted);
+.header{
 
-  font-size:12px;
+  display:flex;
+
+  align-items:flex-start;
+
+  justify-content:space-between;
+
+  gap:12px;
+
+  margin-bottom:13px;
+
+}
+
+
+.eyebrow{
+
+  color:
+    var(--gold);
+
+  font-size:9px;
 
   font-weight:900;
 
-  letter-spacing:4px;
+  letter-spacing:.18em;
 
-  margin-bottom:9px;
+  text-transform:uppercase;
+
+  margin-bottom:5px;
+
 }
+
 
 h1{
 
   margin:0;
 
-  font-size:31px;
+  font-size:
+    clamp(
+      21px,
+      6vw,
+      34px
+    );
 
-  line-height:1.04;
+  line-height:1;
 
-  letter-spacing:-1px;
+  letter-spacing:-.04em;
+
 }
+
 
 .subtitle{
 
-  margin-top:9px;
+  margin-top:7px;
 
-  margin-bottom:22px;
+  max-width:700px;
 
-  color:var(--muted);
+  color:
+    var(--muted);
 
-  font-size:13px;
+  font-size:11px;
 
-  line-height:1.5;
+  line-height:1.45;
+
 }
 
 
-/* =========================================================
-   CARDS
-========================================================= */
+.refresh{
 
-.card{
+  width:47px;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(
-        15,
-        20,
-        28,
-        .98
-      ),
-      rgba(
-        7,
-        10,
-        14,
-        .98
-      )
-    );
+  height:47px;
+
+  flex:0 0 47px;
+
+  border-radius:14px;
 
   border:
     1px solid
-    var(--border);
+    var(--line2);
 
-  border-radius:19px;
+  background:
+    var(--panel2);
 
-  padding:17px;
+  color:
+    var(--text);
 
-  margin-bottom:14px;
+  font-size:20px;
 
-  box-shadow:
-    0 14px 38px
-    rgba(
-      0,
-      0,
-      0,
-      .27
-    );
+  font-weight:800;
+
 }
 
-.section-title{
 
-  margin-bottom:13px;
+.refresh:disabled{
 
-  font-size:18px;
+  opacity:.45;
 
-  font-weight:850;
 }
 
 
 /* =========================================================
-   CONTROLS
+   STATUS
 ========================================================= */
 
-.controls{
+
+.statusbar{
+
+  display:flex;
+
+  gap:7px;
+
+  overflow-x:auto;
+
+  scrollbar-width:none;
+
+  padding-bottom:3px;
+
+  margin-bottom:11px;
+
+}
+
+
+.statusbar::-webkit-scrollbar{
+
+  display:none;
+
+}
+
+
+.pill{
+
+  flex:0 0 auto;
+
+  white-space:nowrap;
+
+  border:
+    1px solid
+    var(--line);
+
+  background:
+    rgba(255,255,255,.025);
+
+  border-radius:999px;
+
+  color:
+    var(--muted2);
+
+  padding:
+    7px 9px;
+
+  font-size:9px;
+
+  font-weight:800;
+
+}
+
+
+.pill.live{
+
+  color:
+    var(--green);
+
+  border-color:
+    rgba(53,227,163,.24);
+
+}
+
+
+.pill.warn{
+
+  color:
+    var(--orange);
+
+  border-color:
+    rgba(255,173,96,.25);
+
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+
+.error{
+
+  display:none;
+
+  margin-bottom:11px;
+
+  border-radius:13px;
+
+  border:
+    1px solid
+    rgba(255,98,121,.25);
+
+  background:
+    rgba(255,98,121,.06);
+
+  color:#ffb5c0;
+
+  padding:12px;
+
+  font-size:11px;
+
+  line-height:1.5;
+
+  white-space:pre-wrap;
+
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
+
+.card{
+
+  min-width:0;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:17px;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      var(--panel),
+      var(--panel3)
+    );
+
+  padding:13px;
+
+}
+
+
+.hero{
+
+  border-color:
+    rgba(240,199,96,.18);
+
+  background:
+
+    radial-gradient(
+      circle at 95% 0%,
+      rgba(240,199,96,.075),
+      transparent 38%
+    ),
+
+    linear-gradient(
+      180deg,
+      #0b1119,
+      #070b10
+    );
+
+}
+
+
+/* =========================================================
+   TYPOGRAPHY
+========================================================= */
+
+
+.label{
+
+  color:
+    var(--muted);
+
+  font-size:9px;
+
+  letter-spacing:.09em;
+
+  font-weight:800;
+
+  text-transform:uppercase;
+
+}
+
+
+.value{
+
+  margin-top:5px;
+
+  font-size:19px;
+
+  font-weight:850;
+
+  letter-spacing:-.025em;
+
+}
+
+
+.value.sm{
+
+  font-size:15px;
+
+}
+
+
+.value.xl{
+
+  font-size:
+    clamp(
+      31px,
+      10vw,
+      51px
+    );
+
+  line-height:1;
+
+}
+
+
+.small{
+
+  font-size:10px;
+
+}
+
+
+.tiny{
+
+  font-size:9px;
+
+}
+
+
+.muted{
+
+  color:
+    var(--muted);
+
+}
+
+
+.green{
+
+  color:
+    var(--green);
+
+}
+
+
+.red{
+
+  color:
+    var(--red);
+
+}
+
+
+.gold{
+
+  color:
+    var(--gold);
+
+}
+
+
+.blue{
+
+  color:
+    var(--blue);
+
+}
+
+
+.orange{
+
+  color:
+    var(--orange);
+
+}
+
+
+.cyan{
+
+  color:
+    var(--cyan);
+
+}
+
+
+/* =========================================================
+   SECTION TITLES
+========================================================= */
+
+
+.section-title{
+
+  margin:
+    20px 2px 8px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:8px;
+
+}
+
+
+.section-title h2{
+
+  margin:0;
+
+  font-size:13px;
+
+  letter-spacing:-.01em;
+
+}
+
+
+.section-title span{
+
+  color:
+    var(--muted);
+
+  font-size:9px;
+
+  text-align:right;
+
+}
+
+
+/* =========================================================
+   GRIDS
+========================================================= */
+
+
+.grid{
+
+  display:grid;
+
+  gap:9px;
+
+}
+
+
+.g2{
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+}
+
+
+.g3{
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+}
+
+
+.g4{
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
+
+}
+
+
+.g5{
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0,1fr)
+    );
+
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+
+.hero-top{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:12px;
+
+  align-items:flex-start;
+
+}
+
+
+.price{
+
+  margin-top:4px;
+
+  font-size:
+    clamp(
+      34px,
+      11vw,
+      55px
+    );
+
+  line-height:.95;
+
+  font-weight:950;
+
+  letter-spacing:-.06em;
+
+}
+
+
+.score-badge{
+
+  border:
+    1px solid
+    rgba(240,199,96,.25);
+
+  background:
+    rgba(240,199,96,.07);
+
+  color:
+    var(--gold);
+
+  border-radius:12px;
+
+  min-width:79px;
+
+  padding:8px;
+
+  text-align:center;
+
+  font-size:9px;
+
+  font-weight:900;
+
+}
+
+
+.hero-divider{
+
+  height:1px;
+
+  background:
+    var(--line);
+
+  margin:
+    14px 0;
+
+}
+
+
+.sweep-title{
+
+  font-size:17px;
+
+  font-weight:900;
+
+  letter-spacing:-.02em;
+
+  margin-top:4px;
+
+}
+
+
+.meter{
+
+  position:relative;
+
+  height:7px;
+
+  background:
+    rgba(255,255,255,.055);
+
+  border-radius:999px;
+
+  overflow:hidden;
+
+  margin-top:9px;
+
+}
+
+
+.meter > div{
+
+  height:100%;
+
+  width:0;
+
+  border-radius:inherit;
+
+  background:
+
+    linear-gradient(
+      90deg,
+      var(--blue),
+      var(--gold)
+    );
+
+  transition:width .3s ease;
+
+}
+
+
+.zone-grid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
+
+  gap:7px;
+
+  margin-top:11px;
+
+}
+
+
+.zone-card{
+
+  padding:9px;
+
+  background:
+    rgba(255,255,255,.025);
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:11px;
+
+  min-width:0;
+
+}
+
+
+/* =========================================================
+   SESSION CARDS
+========================================================= */
+
+
+.session{
+
+  position:relative;
+
+  overflow:hidden;
+
+}
+
+
+.session::before{
+
+  content:"";
+
+  position:absolute;
+
+  top:0;
+
+  bottom:0;
+
+  left:0;
+
+  width:3px;
+
+  background:
+    rgba(255,255,255,.12);
+
+}
+
+
+.session.active::before{
+
+  background:
+    var(--green);
+
+}
+
+
+.session-head{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:10px;
+
+  align-items:flex-start;
+
+}
+
+
+.session-status{
+
+  font-size:9px;
+
+  font-weight:900;
+
+  border-radius:999px;
+
+  padding:5px 6px;
+
+  background:
+    rgba(255,255,255,.04);
+
+  color:
+    var(--muted2);
+
+}
+
+
+.session-status.open{
+
+  color:
+    var(--green);
+
+  background:
+    rgba(53,227,163,.08);
+
+}
+
+
+.countdown{
+
+  font-size:15px;
+
+  font-weight:900;
+
+  margin-top:5px;
+
+  font-variant-numeric:
+    tabular-nums;
+
+}
+
+
+.range-row{
 
   display:grid;
 
   grid-template-columns:
     1fr 1fr;
 
-  gap:11px;
+  gap:6px;
+
+  margin-top:10px;
+
 }
 
-.input-wrap{
 
-  min-width:0;
-}
-
-.label{
-
-  color:var(--muted);
-
-  font-size:11px;
-
-  text-transform:uppercase;
-
-  letter-spacing:1px;
-
-  margin-bottom:7px;
-}
-
-input,
-select,
-button{
-
-  appearance:none;
-
-  -webkit-appearance:none;
-
-  width:100%;
+.mini{
 
   border:
     1px solid
-    var(--border);
-
-  border-radius:13px;
-
-  padding:14px;
-
-  font-size:16px;
-
-  color:#fff;
-
-  outline:none;
-}
-
-input,
-select{
-
-  background:#06090d;
-}
-
-button{
-
-  grid-column:
-    1 / -1;
-
-  border:none;
-
-  margin-top:3px;
+    var(--line);
 
   background:
-    linear-gradient(
-      135deg,
-      #416dff,
-      #825cff
-    );
+    rgba(255,255,255,.02);
 
-  font-weight:900;
+  border-radius:10px;
 
-  letter-spacing:.2px;
+  padding:8px;
 
-  cursor:pointer;
-
-  box-shadow:
-    0 10px 24px
-    rgba(
-      91,
-      82,
-      255,
-      .22
-    );
-}
-
-button:disabled{
-
-  opacity:.5;
-}
-
-.status{
-
-  color:var(--muted);
-
-  margin-top:14px;
-
-  font-size:13px;
-
-  line-height:1.5;
 }
 
 
 /* =========================================================
-   STATS
+   TIMEFRAMES
 ========================================================= */
 
-.stats{
+
+.tf{
+
+  text-align:center;
+
+  min-height:91px;
+
+}
+
+
+.tf-name{
+
+  color:
+    var(--muted);
+
+  font-size:9px;
+
+  font-weight:800;
+
+}
+
+
+.tf-bias{
+
+  font-size:11px;
+
+  font-weight:950;
+
+  margin-top:6px;
+
+}
+
+
+/* =========================================================
+   LIQUIDITY LADDER
+========================================================= */
+
+
+.ladder{
+
+  display:grid;
+
+  gap:4px;
+
+}
+
+
+.ladder-row{
 
   display:grid;
 
   grid-template-columns:
-    repeat(
-      2,
-      minmax(
-        0,
-        1fr
-      )
-    );
+    minmax(70px,100px)
+    minmax(0,1fr)
+    75px;
 
-  gap:11px;
+  gap:7px;
 
-  margin-bottom:14px;
+  align-items:center;
+
+  min-height:32px;
+
 }
 
-.stat{
 
-  min-width:0;
-
-  background:
-    linear-gradient(
-      145deg,
-      #10151f,
-      #0c1119
-    );
-
-  border:
-    1px solid
-    rgba(
-      255,
-      255,
-      255,
-      .025
-    );
-
-  border-radius:16px;
-
-  padding:16px;
-}
-
-.stat-title{
-
-  font-size:11px;
-
-  color:var(--muted);
-
-  letter-spacing:1.2px;
-
-  text-transform:uppercase;
-}
-
-.stat-value{
-
-  margin-top:7px;
-
-  font-size:25px;
-
-  line-height:1;
-
-  font-weight:900;
-
-  white-space:nowrap;
+.ladder-name{
 
   overflow:hidden;
 
   text-overflow:ellipsis;
+
+  white-space:nowrap;
+
+  font-size:9px;
+
+  color:
+    var(--muted2);
+
 }
 
-.green{
 
-  color:var(--green);
+.ladder-line{
+
+  height:2px;
+
+  background:
+    rgba(255,255,255,.08);
+
+  position:relative;
+
 }
 
-.red{
 
-  color:var(--red);
+.ladder-line::before{
+
+  content:"";
+
+  position:absolute;
+
+  width:7px;
+
+  height:7px;
+
+  border-radius:50%;
+
+  top:50%;
+
+  left:0;
+
+  transform:
+    translateY(-50%);
+
+  background:
+    var(--blue);
+
 }
 
-.gold{
 
-  color:var(--gold);
+.ladder-row.current .ladder-line{
+
+  height:3px;
+
+  background:
+    var(--gold);
+
+}
+
+
+.ladder-row.current .ladder-line::before{
+
+  background:
+    var(--gold);
+
 }
 
 
 /* =========================================================
-   STRATEGY DESCRIPTION
+   TABLE
 ========================================================= */
 
-.description{
 
-  color:var(--muted);
+.table-wrap{
 
-  font-size:14px;
+  overflow-x:auto;
 
-  line-height:1.8;
-}
-
-.description b{
-
-  color:#fff;
-}
-
-
-/* =========================================================
-   TRADE
-========================================================= */
-
-.trade{
-
-  padding:
-    15px 0;
-
-  border-top:
+  border:
     1px solid
-    var(--border);
+    var(--line);
+
+  border-radius:14px;
+
+  background:
+    var(--panel3);
+
 }
 
-.trade:first-of-type{
 
-  border-top:none;
+table{
+
+  border-collapse:collapse;
+
+  width:100%;
+
+  min-width:780px;
+
 }
 
-.trade-head{
 
-  display:flex;
-
-  align-items:center;
-
-  justify-content:
-    space-between;
-
-  gap:10px;
-}
-
-.badge{
+th,
+td{
 
   padding:
-    6px 10px;
+    9px 8px;
+
+  border-bottom:
+    1px solid
+    var(--line);
+
+  text-align:left;
+
+  vertical-align:top;
+
+}
+
+
+th{
+
+  color:
+    var(--muted);
+
+  font-size:8px;
+
+  letter-spacing:.08em;
+
+  text-transform:uppercase;
+
+  background:#0a1017;
+
+}
+
+
+td{
+
+  font-size:10px;
+
+}
+
+
+tbody tr:last-child td{
+
+  border-bottom:none;
+
+}
+
+
+.score{
+
+  display:inline-flex;
+
+  min-width:47px;
+
+  justify-content:center;
+
+  padding:
+    5px 7px;
+
+  border-radius:8px;
+
+  background:
+    rgba(126,153,255,.08);
+
+  color:
+    var(--blue);
+
+  font-weight:900;
+
+}
+
+
+.score.high{
+
+  color:
+    var(--gold);
+
+  background:
+    rgba(240,199,96,.09);
+
+}
+
+
+.score.low{
+
+  color:
+    var(--muted2);
+
+  background:
+    rgba(255,255,255,.04);
+
+}
+
+
+/* =========================================================
+   FLOW
+========================================================= */
+
+
+.delta-bar{
+
+  height:8px;
+
+  background:
+    rgba(255,255,255,.05);
 
   border-radius:999px;
 
-  font-size:12px;
+  position:relative;
 
-  font-weight:900;
+  overflow:hidden;
+
+  margin-top:8px;
+
 }
 
-.long{
 
-  color:var(--green);
+.delta-zero{
+
+  position:absolute;
+
+  top:0;
+
+  bottom:0;
+
+  left:50%;
+
+  width:1px;
 
   background:
-    rgba(
-      37,
-      229,
-      154,
-      .11
-    );
+    rgba(255,255,255,.2);
+
 }
 
-.short{
 
-  color:var(--red);
+.delta-fill{
+
+  position:absolute;
+
+  top:0;
+
+  bottom:0;
+
+  border-radius:999px;
+
+}
+
+
+.delta-fill.pos{
+
+  left:50%;
 
   background:
-    rgba(
-      255,
-      86,
-      109,
-      .11
-    );
+    var(--green);
+
 }
 
-.r-value{
 
-  font-size:20px;
+.delta-fill.neg{
 
-  font-weight:900;
-}
+  right:50%;
 
-.trade-info{
+  background:
+    var(--red);
 
-  margin-top:10px;
-
-  color:var(--muted);
-
-  font-size:13px;
-
-  line-height:1.75;
-}
-
-.trade-info strong{
-
-  color:#cfd5df;
-
-  font-weight:650;
-}
-
-.empty{
-
-  padding:
-    8px 0;
-
-  color:var(--muted);
-
-  font-size:14px;
 }
 
 
 /* =========================================================
-   MOBILE / DESKTOP
+   TRAPS
 ========================================================= */
 
-@media(
-  min-width:700px
-){
 
-  .stats{
+.trap{
+
+  display:flex;
+
+  align-items:flex-start;
+
+  justify-content:space-between;
+
+  gap:12px;
+
+  padding:
+    10px 0;
+
+  border-bottom:
+    1px solid
+    var(--line);
+
+}
+
+
+.trap:last-child{
+
+  border-bottom:none;
+
+}
+
+
+.risk{
+
+  flex:0 0 auto;
+
+  padding:
+    5px 7px;
+
+  border-radius:8px;
+
+  border:
+    1px solid
+    var(--line);
+
+  font-size:8px;
+
+  font-weight:900;
+
+}
+
+
+.risk.elevated{
+
+  color:
+    var(--orange);
+
+}
+
+
+.risk.watch{
+
+  color:
+    var(--gold);
+
+}
+
+
+.risk.normal{
+
+  color:
+    var(--muted2);
+
+}
+
+
+/* =========================================================
+   LIST ROW
+========================================================= */
+
+
+.info-row{
+
+  display:grid;
+
+  grid-template-columns:
+    minmax(0,1fr)
+    auto;
+
+  gap:9px;
+
+  align-items:center;
+
+  padding:
+    9px 0;
+
+  border-bottom:
+    1px solid
+    var(--line);
+
+}
+
+
+.info-row:last-child{
+
+  border-bottom:none;
+
+}
+
+
+.info-row .name{
+
+  color:
+    var(--muted2);
+
+  font-size:10px;
+
+}
+
+
+.info-row .number{
+
+  text-align:right;
+
+  font-size:10px;
+
+  font-weight:800;
+
+}
+
+
+/* =========================================================
+   REASONS
+========================================================= */
+
+
+.reasons{
+
+  list-style:none;
+
+  padding:0;
+
+  margin:
+    8px 0 0;
+
+  display:grid;
+
+  gap:4px;
+
+}
+
+
+.reasons li{
+
+  position:relative;
+
+  padding-left:10px;
+
+  color:
+    var(--muted2);
+
+  font-size:9px;
+
+  line-height:1.4;
+
+}
+
+
+.reasons li::before{
+
+  content:"•";
+
+  color:
+    var(--gold);
+
+  position:absolute;
+
+  left:0;
+
+}
+
+
+/* =========================================================
+   NOTICE
+========================================================= */
+
+
+.notice{
+
+  margin-top:14px;
+
+  padding:11px;
+
+  border:
+    1px solid
+    rgba(255,173,96,.18);
+
+  background:
+    rgba(255,173,96,.045);
+
+  border-radius:13px;
+
+  color:
+    var(--muted2);
+
+  font-size:9px;
+
+  line-height:1.5;
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+
+@media(max-width:850px){
+
+  .session-grid{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .desktop-two{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .g5{
 
     grid-template-columns:
       repeat(
-        4,
-        minmax(
-          0,
-          1fr
-        )
+        3,
+        minmax(0,1fr)
       );
+
   }
+
+}
+
+
+@media(max-width:580px){
+
+  .zone-grid{
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .g5{
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      );
+
+  }
+
+
+  .g4{
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .g3{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .g2{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .compact-two{
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .app{
+
+    padding-left:10px;
+
+    padding-right:10px;
+
+  }
+
 }
 
 </style>
@@ -563,250 +1601,1076 @@ button:disabled{
 
 <body>
 
+
 <div class="app">
 
 
-  <div class="brand">
-    MKAYFX
-  </div>
+<!-- ======================================================
+     HEADER
+====================================================== -->
 
+
+<header class="header">
+
+
+<div>
+
+  <div class="eyebrow">
+    MKAYFX · ALLTICK EDITION
+  </div>
 
   <h1>
-    BTC SWEEP REVERSAL
+    XAU Liquidity Intelligence
   </h1>
 
-
   <div class="subtitle">
-    Coinbase BTC-USD • 15M • Liquidity Sweep Reversal V1
-  </div>
 
-
-  <!-- =====================================================
-       BACKTEST CONTROLS
-  ====================================================== -->
-
-  <div class="card">
-
-    <div class="section-title">
-      Backtest
-    </div>
-
-
-    <div class="controls">
-
-
-      <div class="input-wrap">
-
-        <div class="label">
-          Starting Balance
-        </div>
-
-        <input
-          id="balance"
-          type="number"
-          value="200"
-          min="1"
-        >
-
-      </div>
-
-
-      <div class="input-wrap">
-
-        <div class="label">
-          History
-        </div>
-
-        <select
-          id="days"
-        >
-
-          <option value="7">
-            7 Days
-          </option>
-
-          <option value="14">
-            14 Days
-          </option>
-
-          <option
-            value="30"
-            selected
-          >
-            30 Days
-          </option>
-
-          <option value="60">
-            60 Days
-          </option>
-
-          <option value="90">
-            90 Days
-          </option>
-
-        </select>
-
-      </div>
-
-
-      <button
-        id="runButton"
-        onclick="runBacktest()"
-      >
-        RUN BACKTEST
-      </button>
-
-    </div>
-
-
-    <div
-      id="status"
-      class="status"
-    >
-      Ready.
-    </div>
+    Live XAU/USD sessions, liquidity pools, historical sweeps,
+    projected stop-run depth, trap windows, volume-profile
+    context and footprint-style order-flow analysis.
 
   </div>
 
+</div>
 
-  <!-- =====================================================
-       STATISTICS
-  ====================================================== -->
+
+<button
+  id="refreshBtn"
+  class="refresh"
+  type="button"
+>
+  ↻
+</button>
+
+
+</header>
+
+
+<!-- ======================================================
+     STATUS
+====================================================== -->
+
+
+<div class="statusbar">
+
+
+<div
+  id="liveStatus"
+  class="pill"
+>
+  CONNECTING
+</div>
+
+
+<div
+  id="providerStatus"
+  class="pill"
+>
+  AllTick
+</div>
+
+
+<div
+  id="ageStatus"
+  class="pill"
+>
+  Data age —
+</div>
+
+
+<div
+  id="regimeStatus"
+  class="pill"
+>
+  Regime —
+</div>
+
+
+<div
+  id="flowStatus"
+  class="pill"
+>
+  Flow —
+</div>
+
+
+</div>
+
+
+<div
+  id="errorBox"
+  class="error"
+></div>
+
+
+<!-- ======================================================
+     HERO
+====================================================== -->
+
+
+<section class="card hero">
+
+
+<div class="hero-top">
+
+
+<div>
+
+  <div class="label">
+    XAU / USD
+  </div>
 
   <div
-    id="stats"
-    class="stats"
+    id="price"
+    class="price"
   >
+    —
+  </div>
 
-    <div class="stat">
+  <div
+    id="lastUpdate"
+    class="muted tiny"
+    style="margin-top:7px"
+  >
+    Waiting for AllTick…
+  </div>
 
-      <div class="stat-title">
-        Trades
-      </div>
-
-      <div class="stat-value">
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="stat-title">
-        Win Rate
-      </div>
-
-      <div class="stat-value">
-        —
-      </div>
-
-    </div>
+</div>
 
 
-    <div class="stat">
-
-      <div class="stat-title">
-        Profit Factor
-      </div>
-
-      <div class="stat-value">
-        —
-      </div>
-
-    </div>
+<div
+  id="topScore"
+  class="score-badge"
+>
+  SWEEP<br>—
+</div>
 
 
-    <div class="stat">
+</div>
 
-      <div class="stat-title">
-        Total R
-      </div>
 
-      <div class="stat-value">
-        —
-      </div>
+<div class="hero-divider"></div>
 
-    </div>
 
+<div>
+
+  <div class="label">
+    Highest-ranked liquidity draw
+  </div>
+
+  <div
+    id="bestPool"
+    class="sweep-title"
+  >
+    Waiting for analysis…
+  </div>
+
+  <div
+    id="bestMeta"
+    class="muted small"
+    style="margin-top:4px"
+  >
+    —
   </div>
 
 
-  <!-- =====================================================
-       STRATEGY
-  ====================================================== -->
-
-  <div class="card">
-
-    <div class="section-title">
-      Strategy
-    </div>
-
-
-    <div class="description">
-
-      <b>BTC/USD 15M Liquidity Sweep Reversal</b>
-      <br><br>
-
-      Confirmed swing highs and lows become liquidity targets.
-      <br>
-
-      Price must sweep beyond the level and close back inside.
-      <br>
-
-      Rejection wick and Coinbase volume expansion are required.
-      <br>
-
-      The following 15M candle must confirm the reversal.
-      <br>
-
-      Entry occurs at the next candle open.
-      <br>
-
-      Stop is placed beyond the sweep wick.
-      <br>
-
-      Target:
-      <b>1.5R</b>.
-      <br>
-
-      Breakeven activates halfway toward TP.
-      <br>
-
-      Account risk:
-      <b>2%</b>
-      per trade.
-      <br>
-
-      Fees and slippage are included.
-
-    </div>
-
+  <div class="meter">
+    <div id="bestMeter"></div>
   </div>
 
 
-  <!-- =====================================================
-       TRADES
-  ====================================================== -->
+  <div class="zone-grid">
 
-  <div class="card">
 
-    <div class="section-title">
-      Trades
+  <div class="zone-card">
+
+    <div class="label">
+      Liquidity level
     </div>
-
 
     <div
-      id="trades"
+      id="bestLevel"
+      class="value sm"
     >
-
-      <div class="empty">
-        Run the backtest to see trades.
-      </div>
-
+      —
     </div>
 
   </div>
+
+
+  <div class="zone-card">
+
+    <div class="label">
+      Likely sweep end
+    </div>
+
+    <div
+      id="bestEnd"
+      class="value sm gold"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="zone-card">
+
+    <div class="label">
+      Sweep / reversal zone
+    </div>
+
+    <div
+      id="bestZone"
+      class="value sm"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="zone-card">
+
+    <div class="label">
+      Expected overshoot
+    </div>
+
+    <div
+      id="bestOvershoot"
+      class="value sm"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  </div>
+
+
+  <ul
+    id="bestReasons"
+    class="reasons"
+  ></ul>
+
+
+</div>
+
+
+</section>
+
+
+<!-- ======================================================
+     SESSIONS
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Trading Sessions
+  </h2>
+
+  <span id="sastClock">
+    SAST —
+  </span>
+
+</div>
+
+
+<div
+  id="sessions"
+  class="grid g3 session-grid"
+></div>
+
+
+<!-- ======================================================
+     MARKET STATE
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Market State
+  </h2>
+
+  <span>
+    volatility · VWAP · regime
+  </span>
+
+</div>
+
+
+<div class="grid g5">
+
+
+<div class="card">
+
+  <div class="label">
+    M1 ATR
+  </div>
+
+  <div
+    id="atr1"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    M5 ATR
+  </div>
+
+  <div
+    id="atr5"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    M15 ATR
+  </div>
+
+  <div
+    id="atr15"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    VWAP
+  </div>
+
+  <div
+    id="vwap"
+    class="value sm"
+  >
+    —
+  </div>
+
+  <div
+    id="vwapMeta"
+    class="muted tiny"
+    style="margin-top:4px"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    Regime
+  </div>
+
+  <div
+    id="regime"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+</div>
+
+
+<!-- ======================================================
+     TIMEFRAME STRUCTURE
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Timeframe Structure
+  </h2>
+
+  <span>
+    EMA · RSI · BOS / CHOCH
+  </span>
+
+</div>
+
+
+<div
+  id="timeframes"
+  class="grid g5"
+></div>
+
+
+<!-- ======================================================
+     LIQUIDITY LADDER
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Liquidity Ladder
+  </h2>
+
+  <span>
+    strongest nearby magnets
+  </span>
+
+</div>
+
+
+<div class="card">
+
+  <div
+    id="ladder"
+    class="ladder"
+  ></div>
+
+</div>
+
+
+<!-- ======================================================
+     SWEEP PROJECTIONS
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Sweep Projections
+  </h2>
+
+  <span>
+    target · overshoot · reversal-watch zone
+  </span>
+
+</div>
+
+
+<div class="table-wrap">
+
+
+<table>
+
+
+<thead>
+
+<tr>
+
+<th>
+Liquidity
+</th>
+
+<th>
+Level
+</th>
+
+<th>
+Distance
+</th>
+
+<th>
+Score
+</th>
+
+<th>
+Raid type
+</th>
+
+<th>
+Likely end
+</th>
+
+<th>
+Projected zone
+</th>
+
+<th>
+Basis
+</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="poolRows"></tbody>
+
+
+</table>
+
+
+</div>
+
+
+<!-- ======================================================
+     TRAP WINDOWS
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Liquidity Trap Radar
+  </h2>
+
+  <span>
+    likely timing windows
+  </span>
+
+</div>
+
+
+<div class="grid g2 desktop-two">
+
+
+<div class="card">
+
+  <div id="trapRows"></div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    Trap logic
+  </div>
+
+  <div class="value sm">
+    Session timing + liquidity proximity
+  </div>
+
+  <div
+    class="muted small"
+    style="margin-top:8px;line-height:1.55"
+  >
+
+    Elevated trap risk means price is entering a period where
+    stop-runs historically become more likely, such as the
+    London or New York opening window while price is near
+    Asia High, Asia Low, PDH, PDL or equal highs/lows.
+
+  </div>
+
+</div>
+
+
+</div>
+
+
+<!-- ======================================================
+     ORDER FLOW
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Footprint-Style Order Flow
+  </h2>
+
+  <span id="flowMode">
+    —
+  </span>
+
+</div>
+
+
+<div class="grid g2 desktop-two">
+
+
+<div class="card">
+
+
+<div class="grid g4 compact-two">
+
+
+<div>
+
+  <div class="label">
+    5m Delta
+  </div>
+
+  <div
+    id="delta5"
+    class="value"
+  >
+    —
+  </div>
+
+  <div
+    id="bar5"
+    class="delta-bar"
+  >
+    <div class="delta-zero"></div>
+  </div>
+
+</div>
+
+
+<div>
+
+  <div class="label">
+    15m Delta
+  </div>
+
+  <div
+    id="delta15"
+    class="value"
+  >
+    —
+  </div>
+
+  <div
+    id="bar15"
+    class="delta-bar"
+  >
+    <div class="delta-zero"></div>
+  </div>
+
+</div>
+
+
+<div>
+
+  <div class="label">
+    30m Delta
+  </div>
+
+  <div
+    id="delta30"
+    class="value"
+  >
+    —
+  </div>
+
+  <div
+    id="bar30"
+    class="delta-bar"
+  >
+    <div class="delta-zero"></div>
+  </div>
+
+</div>
+
+
+<div>
+
+  <div class="label">
+    60m Delta
+  </div>
+
+  <div
+    id="delta60"
+    class="value"
+  >
+    —
+  </div>
+
+  <div
+    id="bar60"
+    class="delta-bar"
+  >
+    <div class="delta-zero"></div>
+  </div>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+<div class="card">
+
+
+<div class="grid g2 compact-two">
+
+
+<div class="mini">
+
+  <div class="label">
+    CVD proxy
+  </div>
+
+  <div
+    id="cvd"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div class="mini">
+
+  <div class="label">
+    Delta divergence
+  </div>
+
+  <div
+    id="divergence"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div
+  class="mini"
+  style="grid-column:1 / -1"
+>
+
+  <div class="label">
+    Absorption
+  </div>
+
+  <div
+    id="absorption"
+    class="value sm"
+  >
+    —
+  </div>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+<!-- ======================================================
+     ASIA SWEEP HISTORY
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Asia Sweep Behaviour
+  </h2>
+
+  <span>
+    what recent XAU/USD raids actually did
+  </span>
+
+</div>
+
+
+<div class="grid g2 desktop-two">
+
+
+<div class="card">
+
+  <div class="label">
+    Asia High
+  </div>
+
+  <div
+    id="asiaHighTitle"
+    class="value sm"
+  >
+    —
+  </div>
+
+  <div
+    id="asiaHighMeta"
+    class="muted small"
+    style="margin-top:7px;line-height:1.55"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    Asia Low
+  </div>
+
+  <div
+    id="asiaLowTitle"
+    class="value sm"
+  >
+    —
+  </div>
+
+  <div
+    id="asiaLowMeta"
+    class="muted small"
+    style="margin-top:7px;line-height:1.55"
+  >
+    —
+  </div>
+
+</div>
+
+
+</div>
+
+
+<!-- ======================================================
+     VOLUME PROFILE
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Volume Profile
+  </h2>
+
+  <span>
+    POC · HVN · LVN
+  </span>
+
+</div>
+
+
+<div class="card">
+
+  <div class="grid g3">
+
+
+  <div>
+
+    <div class="label">
+      Point of Control
+    </div>
+
+    <div
+      id="poc"
+      class="value sm gold"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div>
+
+    <div class="label">
+      High-volume nodes
+    </div>
+
+    <div
+      id="hvn"
+      class="value sm"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div>
+
+    <div class="label">
+      Low-volume nodes
+    </div>
+
+    <div
+      id="lvn"
+      class="value sm"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  </div>
+
+
+  <div
+    id="profileMode"
+    class="muted tiny"
+    style="margin-top:9px"
+  >
+    —
+  </div>
+
+</div>
+
+
+<!-- ======================================================
+     REFERENCE LEVELS
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Reference Liquidity
+  </h2>
+
+  <span>
+    previous day · previous week · FVGs
+  </span>
+
+</div>
+
+
+<div class="grid g2 desktop-two">
+
+
+<div class="card">
+
+  <div class="label">
+    Previous day / week
+  </div>
+
+  <div
+    id="referenceLevels"
+    style="margin-top:7px"
+  ></div>
+
+</div>
+
+
+<div class="card">
+
+  <div class="label">
+    Nearest M15 FVGs
+  </div>
+
+  <div
+    id="fvgRows"
+    style="margin-top:7px"
+  ></div>
+
+</div>
+
+
+</div>
+
+
+<!-- ======================================================
+     MACRO
+====================================================== -->
+
+
+<div class="section-title">
+
+  <h2>
+    Macro Context
+  </h2>
+
+  <span>
+    optional FRED layer
+  </span>
+
+</div>
+
+
+<div class="card">
+
+
+<div
+  style="
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start
+  "
+>
+
+
+<div>
+
+  <div class="label">
+    Gold macro pressure
+  </div>
+
+  <div
+    id="macroBias"
+    class="value sm"
+  >
+    —
+  </div>
+
+  <div
+    id="macroNote"
+    class="muted tiny"
+    style="margin-top:5px"
+  >
+    —
+  </div>
+
+</div>
+
+
+<div
+  id="macroScore"
+  class="score-badge"
+>
+  —
+</div>
+
+
+</div>
+
+
+<div
+  id="macroRows"
+  style="margin-top:9px"
+></div>
+
+
+</div>
+
+
+<!-- ======================================================
+     WARNING
+====================================================== -->
+
+
+<div class="notice">
+
+  <strong>
+    Important:
+  </strong>
+
+  liquidity scores and sweep zones are model estimates, not
+  guaranteed future prices. The footprint section is a proxy
+  built from AllTick OHLCV/activity data and is not true
+  exchange bid/ask-at-price order flow.
+
+</div>
 
 
 </div>
@@ -814,542 +2678,2256 @@ button:disabled{
 
 <script>
 
+(() => {
+
+
+const API =
+  "/api/xau";
+
+
+const SAST =
+  "Africa/Johannesburg";
+
+
+const AUTO_REFRESH =
+  60_000;
+
+
+let latestData =
+  null;
+
+
+let busy =
+  false;
+
+
+const $ =
+  id =>
+    document.getElementById(
+      id
+    );
+
+
 /* =========================================================
-   FORMATTERS
+   FORMAT
 ========================================================= */
 
-function money(
-  value
-){
 
-  return (
-    "R" +
-    Number(
-      value
-    ).toFixed(
-      2
-    )
-  );
-}
-
-
-function usd(
-  value
-){
-
-  return (
-    "$" +
-    Number(
-      value
-    ).toFixed(
-      2
-    )
-  );
-}
-
-
-function signed(
+function fmt(
   value,
-  suffix = ""
-){
+  decimals = 2
+) {
 
   const n =
     Number(
       value
     );
 
-  return (
-    (
-      n > 0
-        ? "+"
-        : ""
-    ) +
-    n +
-    suffix
+
+  if (
+    !Number.isFinite(
+      n
+    )
+  ) {
+
+    return "—";
+
+  }
+
+
+  return n.toLocaleString(
+
+    "en-ZA",
+
+    {
+
+      minimumFractionDigits:
+        decimals,
+
+      maximumFractionDigits:
+        decimals
+
+    }
+
   );
+
 }
 
 
-function statCard(
-  title,
+function percentage(
   value,
-  className = ""
-){
+  decimals = 1
+) {
 
-  return `
-    <div class="stat">
+  const n =
+    Number(
+      value
+    );
 
-      <div class="stat-title">
-        ${title}
-      </div>
 
-      <div class="stat-value ${className}">
-        ${value}
-      </div>
+  if (
+    !Number.isFinite(
+      n
+    )
+  ) {
 
-    </div>
-  `;
+    return "—";
+
+  }
+
+
+  return (
+
+    `${n >= 0 ? "+" : ""}` +
+
+    `${fmt(n,decimals)}%`
+
+  );
+
+}
+
+
+function safe(
+  value,
+  fallback = "—"
+) {
+
+  return (
+
+    value === null
+
+    ||
+
+    value === undefined
+
+    ||
+
+    value === ""
+
+  )
+
+    ?
+
+    fallback
+
+    :
+
+    value;
+
 }
 
 
 /* =========================================================
-   RUN
+   HTML ESCAPE
 ========================================================= */
 
-async function runBacktest(){
 
-  const button =
-    document.getElementById(
-      "runButton"
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value ??
+    ""
+  )
+
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+
+}
+
+
+/* =========================================================
+   CLASS HELPERS
+========================================================= */
+
+
+function trendClass(
+  text
+) {
+
+  const value =
+    String(
+      text ||
+      ""
+    )
+      .toUpperCase();
+
+
+  if (
+
+    value.includes(
+      "BULL"
+    )
+
+    ||
+
+    value.includes(
+      "BUY"
+    )
+
+    ||
+
+    value.includes(
+      "SUPPORTIVE"
+    )
+
+  ) {
+
+    return "green";
+
+  }
+
+
+  if (
+
+    value.includes(
+      "BEAR"
+    )
+
+    ||
+
+    value.includes(
+      "SELL"
+    )
+
+    ||
+
+    value.includes(
+      "HEADWIND"
+    )
+
+  ) {
+
+    return "red";
+
+  }
+
+
+  return "muted";
+
+}
+
+
+function scoreClass(
+  score
+) {
+
+  const n =
+    Number(
+      score
+    )
+    ||
+    0;
+
+
+  if (
+    n >= 75
+  ) {
+
+    return "high";
+
+  }
+
+
+  if (
+    n < 58
+  ) {
+
+    return "low";
+
+  }
+
+
+  return "";
+
+}
+
+
+/* =========================================================
+   TIME
+========================================================= */
+
+
+function formatSast(
+  iso
+) {
+
+  if (
+    !iso
+  ) {
+
+    return "—";
+
+  }
+
+
+  return new Intl.DateTimeFormat(
+
+    "en-ZA",
+
+    {
+
+      timeZone:
+        SAST,
+
+      day:
+        "2-digit",
+
+      month:
+        "short",
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+
+      second:
+        "2-digit",
+
+      hour12:
+        false
+
+    }
+
+  )
+    .format(
+      new Date(
+        iso
+      )
+    );
+
+}
+
+
+function countdown(
+  iso
+) {
+
+  if (
+    !iso
+  ) {
+
+    return "—";
+
+  }
+
+
+  let milliseconds =
+
+    new Date(
+      iso
+    )
+      .getTime()
+
+    -
+
+    Date.now();
+
+
+  if (
+    milliseconds <=
+    0
+  ) {
+
+    return "now";
+
+  }
+
+
+  const seconds =
+    Math.floor(
+      milliseconds /
+      1000
     );
 
 
-  const status =
-    document.getElementById(
-      "status"
+  const hours =
+    Math.floor(
+      seconds /
+      3600
     );
 
 
-  const balance =
-    document.getElementById(
-      "balance"
-    ).value;
+  const minutes =
+    Math.floor(
+
+      (
+        seconds %
+        3600
+      )
+
+      /
+
+      60
+
+    );
 
 
-  const days =
-    document.getElementById(
-      "days"
-    ).value;
+  const remaining =
+    seconds %
+    60;
 
 
-  button.disabled =
+  return (
+
+    `${String(hours).padStart(2,"0")}:` +
+
+    `${String(minutes).padStart(2,"0")}:` +
+
+    `${String(remaining).padStart(2,"0")}`
+
+  );
+
+}
+
+
+/* =========================================================
+   LOAD
+========================================================= */
+
+
+async function load() {
+
+  if (
+    busy
+  ) {
+
+    return;
+
+  }
+
+
+  busy =
     true;
 
 
-  button.textContent =
-    "RUNNING...";
+  $("refreshBtn").disabled =
+    true;
 
 
-  status.textContent =
-    "Downloading Coinbase BTC candles and testing liquidity sweeps...";
+  $("liveStatus").textContent =
+    "ANALYZING";
 
 
-  try{
+  $("liveStatus").className =
+    "pill warn";
+
+
+  try {
+
 
     const response =
       await fetch(
-        `/api/btc?days=${encodeURIComponent(
-          days
-        )}&balance=${encodeURIComponent(
-          balance
-        )}&t=${Date.now()}`
+
+        `${API}?t=${Date.now()}`,
+
+        {
+          cache:
+            "no-store"
+        }
+
       );
 
 
-    const data =
+    const json =
       await response.json();
 
 
-    if(
-      !response.ok ||
-      !data.ok
-    ){
+    if (
+
+      !response.ok
+
+      ||
+
+      !json.ok
+
+    ) {
 
       throw new Error(
-        data.error ||
-        "Backtest failed"
+
+        json.error
+
+        ||
+
+        `HTTP ${response.status}`
+
       );
+
     }
 
 
-    renderStats(
-      data
+    latestData =
+      json;
+
+
+    $("errorBox").style.display =
+      "none";
+
+
+    render(
+      json
     );
 
 
-    renderTrades(
-      data.trades ||
-      []
-    );
+    $("liveStatus").textContent =
+
+      json.cached
+
+        ?
+
+        "LIVE · CACHE"
+
+        :
+
+        "LIVE";
 
 
-    status.textContent =
-      `${data.candles} Coinbase candles analysed • ${data.requestedDays} days • ${data.timeframe}`;
+    $("liveStatus").className =
+      "pill live";
 
 
-  }catch(
+  } catch (
     error
-  ){
-
-    console.error(
-      error
-    );
+  ) {
 
 
-    status.textContent =
-      "ERROR: " +
-      error.message;
+    $("liveStatus").textContent =
+      "ERROR";
 
-  }finally{
 
-    button.disabled =
+    $("liveStatus").className =
+      "pill warn";
+
+
+    $("errorBox").style.display =
+      "block";
+
+
+    $("errorBox").textContent =
+
+      `Could not load XAU/USD intelligence.\n\n` +
+
+      `${error.message}\n\n` +
+
+      `Check ALLTICK_API_TOKEN in Vercel → Environment Variables and redeploy.`;
+
+
+  } finally {
+
+
+    busy =
       false;
 
 
-    button.textContent =
-      "RUN BACKTEST";
+    $("refreshBtn").disabled =
+      false;
+
   }
+
 }
 
 
 /* =========================================================
-   STATS
+   MAIN RENDER
 ========================================================= */
 
-function renderStats(
+
+function render(
   data
-){
-
-  const s =
-    data.statistics;
+) {
 
 
-  const returnClass =
-    s.returnPercent >= 0
-      ? "green"
-      : "red";
+  $("providerStatus").textContent =
+
+    `AllTick · ${safe(data.providerSymbol,"XAUUSD")}`;
 
 
-  const rClass =
-    s.totalR >= 0
-      ? "green"
-      : "red";
-
-
-  const pfClass =
-    s.profitFactor >= 1
-      ? "green"
-      : "red";
-
-
-  document.getElementById(
-    "stats"
-  ).innerHTML =
-
-    statCard(
-      "Trades",
-      s.trades
-    ) +
-
-    statCard(
-      "Win Rate",
-      s.winRate + "%"
-    ) +
-
-    statCard(
-      "Profit Factor",
-      s.profitFactor,
-      pfClass
-    ) +
-
-    statCard(
-      "Total R",
-      signed(
-        s.totalR,
-        "R"
-      ),
-      rClass
-    ) +
-
-    statCard(
-      "Wins",
-      s.wins,
-      "green"
-    ) +
-
-    statCard(
-      "Losses",
-      s.losses,
-      "red"
-    ) +
-
-    statCard(
-      "Average R",
-      signed(
-        s.averageR,
-        "R"
-      ),
-      s.averageR >= 0
-        ? "green"
-        : "red"
-    ) +
-
-    statCard(
-      "Avg Win",
-      signed(
-        s.averageWinR,
-        "R"
-      ),
-      "green"
-    ) +
-
-    statCard(
-      "Start",
-      money(
-        s.startingBalance
-      )
-    ) +
-
-    statCard(
-      "End",
-      money(
-        s.endingBalance
-      ),
-      returnClass
-    ) +
-
-    statCard(
-      "Return",
-      signed(
-        s.returnPercent,
-        "%"
-      ),
-      returnClass
-    ) +
-
-    statCard(
-      "Max DD",
-      s.maximumDrawdownPercent +
-      "%",
-      "gold"
+  $("price").textContent =
+    fmt(
+      data.price,
+      3
     );
+
+
+  $("lastUpdate").textContent =
+
+    `Latest AllTick bar ${formatSast(data.latestBarTime)} SAST`;
+
+
+  $("ageStatus").textContent =
+
+    `Data age ${safe(data.dataAgeSeconds,0)}s`;
+
+
+  $("regimeStatus").textContent =
+    safe(
+      data.market?.regime?.label,
+      "Regime —"
+    );
+
+
+  $("flowStatus").textContent =
+
+    `Flow ${safe(data.market?.regime?.orderFlow,"—")}`;
+
+
+  renderBestPool(
+    data.liquidityPools?.[0]
+  );
+
+
+  renderSessions(
+    data.sessions ||
+    []
+  );
+
+
+  renderMarket(
+    data.market ||
+    {}
+  );
+
+
+  renderTimeframes(
+    data.structure ||
+    {}
+  );
+
+
+  renderLadder(
+    data
+  );
+
+
+  renderPools(
+    data.liquidityPools ||
+    []
+  );
+
+
+  renderTraps(
+    data.trapWindows ||
+    []
+  );
+
+
+  renderFootprint(
+    data.footprint ||
+    {}
+  );
+
+
+  renderSweepHistory(
+    data.sweepHistory ||
+    {}
+  );
+
+
+  renderProfile(
+    data.volumeProfile ||
+    {}
+  );
+
+
+  renderReferences(
+
+    data.dayLevels ||
+    {},
+
+    data.fvgs ||
+    []
+
+  );
+
+
+  renderMacro(
+    data.macro ||
+    {}
+  );
+
 }
 
 
 /* =========================================================
-   TRADES
+   BEST POOL
 ========================================================= */
 
-function renderTrades(
-  trades
-){
 
-  const container =
-    document.getElementById(
-      "trades"
-    );
+function renderBestPool(
+  pool
+) {
 
-
-  if(
-    !trades.length
-  ){
-
-    container.innerHTML =
-      `
-        <div class="empty">
-          No qualifying liquidity sweep trades were found.
-        </div>
-      `;
+  if (
+    !pool
+  ) {
 
     return;
+
   }
 
 
-  container.innerHTML =
-    trades
-      .map(
-        trade => {
+  $("topScore").innerHTML =
 
-          const isLong =
-            trade.side ===
-            "LONG";
+    `${escapeHtml(pool.likelihood)}<br>` +
+
+    `${fmt(pool.likelihoodScore,0)}`;
 
 
-          const positive =
-            trade.r > 0;
+  $("bestPool").textContent =
+
+    `${
+      pool.side === "HIGH"
+        ?
+          "UPSIDE"
+        :
+          "DOWNSIDE"
+    } → ${pool.name}`;
 
 
-          const sideClass =
-            isLong
-              ? "long"
-              : "short";
+  $("bestMeta").textContent =
+
+    `${pool.raidStyle} · ` +
+
+    `${fmt(pool.distanceAtr,2)}× M15 ATR from price`;
 
 
-          const rClass =
-            positive
-              ? "green"
-              : "red";
+  $("bestLevel").textContent =
+    fmt(
+      pool.level,
+      3
+    );
 
 
-          const localTime =
-            new Date(
-              trade.entryTime
-            ).toLocaleString();
+  $("bestEnd").textContent =
+    fmt(
+      pool.projectedSweep?.likelyEnd,
+      3
+    );
 
 
-          const sweepTime =
-            new Date(
-              trade.sweepTime
-            ).toLocaleString();
+  $("bestZone").textContent =
+
+    `${fmt(pool.projectedSweep?.zoneLow,3)} – ` +
+
+    `${fmt(pool.projectedSweep?.zoneHigh,3)}`;
 
 
-          return `
-            <div class="trade">
+  $("bestOvershoot").textContent =
+
+    `${fmt(pool.projectedSweep?.overshoot,3)} · ` +
+
+    `${fmt(pool.projectedSweep?.overshootAtr,2)} ATR`;
 
 
-              <div class="trade-head">
+  $("bestMeter").style.width =
 
-                <span
-                  class="badge ${sideClass}"
-                >
-                  ${trade.side}
-                </span>
+    `${Math.min(
 
+      100,
 
-                <span
-                  class="r-value ${rClass}"
-                >
-                  ${
-                    trade.r > 0
-                      ? "+"
-                      : ""
-                  }${trade.r}R
-                </span>
+      Math.max(
 
-              </div>
+        0,
 
+        Number(
+          pool.likelihoodScore
+        )
+        ||
+        0
 
-              <div class="trade-info">
-
-                <strong>
-                  Liquidity:
-                </strong>
-
-                ${usd(
-                  trade.liquidityLevel
-                )}
-
-                <br>
-
-
-                <strong>
-                  Sweep Wick:
-                </strong>
-
-                ${usd(
-                  trade.sweepWick
-                )}
-
-                <br>
-
-
-                <strong>
-                  Entry:
-                </strong>
-
-                ${usd(
-                  trade.entry
-                )}
-
-                <br>
-
-
-                <strong>
-                  SL:
-                </strong>
-
-                ${usd(
-                  trade.stop
-                )}
-
-                &nbsp;•&nbsp;
-
-                <strong>
-                  TP:
-                </strong>
-
-                ${usd(
-                  trade.target
-                )}
-
-                <br>
-
-
-                <strong>
-                  Exit:
-                </strong>
-
-                ${usd(
-                  trade.exit
-                )}
-
-                &nbsp;•&nbsp;
-
-                ${trade.reason}
-
-                <br>
-
-
-                <strong>
-                  P/L:
-                </strong>
-
-                ${
-                  trade.pnl > 0
-                    ? "+"
-                    : ""
-                }${money(
-                  trade.pnl
-                )}
-
-                &nbsp;•&nbsp;
-
-                <strong>
-                  Balance:
-                </strong>
-
-                ${money(
-                  trade.balance
-                )}
-
-                <br>
-
-
-                <strong>
-                  Sweep:
-                </strong>
-
-                ${sweepTime}
-
-                <br>
-
-
-                <strong>
-                  Entry:
-                </strong>
-
-                ${localTime}
-
-              </div>
-
-            </div>
-          `;
-        }
       )
+
+    )}%`;
+
+
+  $("bestReasons").innerHTML =
+
+    (
+      pool.reasons ||
+      []
+    )
+
+      .slice(
+        0,
+        7
+      )
+
+      .map(
+
+        reason =>
+          `<li>${escapeHtml(reason)}</li>`
+
+      )
+
       .join("");
+
 }
 
 
 /* =========================================================
-   OPTIONAL INITIAL RUN
-
-   Comment this out if you do not want an automatic test
-   when the page opens.
+   SESSIONS
 ========================================================= */
 
-// runBacktest();
+
+function renderSessions(
+  sessions
+) {
+
+  $("sessions").innerHTML =
+
+    sessions.map(
+      session => {
+
+        const range =
+          session.range;
+
+
+        return `
+
+<div
+  class="card session ${session.active ? "active" : ""}"
+>
+
+<div class="session-head">
+
+<div>
+
+  <div class="label">
+    ${escapeHtml(session.name)}
+  </div>
+
+  <div
+    class="value sm ${session.active ? "green" : "muted"}"
+  >
+    ${session.active ? "OPEN" : "CLOSED"}
+  </div>
+
+  <div
+    class="muted tiny"
+    style="margin-top:4px"
+  >
+
+    ${escapeHtml(session.phase)}
+
+    ·
+
+    ${escapeHtml(session.localTime)}
+    local
+
+  </div>
+
+</div>
+
+
+<div style="text-align:right">
+
+  <span
+    class="session-status ${session.active ? "open" : ""}"
+  >
+    ${escapeHtml(session.nextEvent)}
+  </span>
+
+  <div
+    class="countdown session-countdown"
+    data-time="${escapeHtml(session.nextEventAt)}"
+  >
+    ${countdown(session.nextEventAt)}
+  </div>
+
+  <div class="muted tiny">
+    ${formatSast(session.nextEventAt)} SAST
+  </div>
+
+</div>
+
+</div>
+
+
+<div class="range-row">
+
+
+<div class="mini">
+
+  <div class="label">
+    High
+  </div>
+
+  <div class="value sm">
+    ${range ? fmt(range.high,3) : "—"}
+  </div>
+
+</div>
+
+
+<div class="mini">
+
+  <div class="label">
+    Low
+  </div>
+
+  <div class="value sm">
+    ${range ? fmt(range.low,3) : "—"}
+  </div>
+
+</div>
+
+
+</div>
+
+
+<div
+  class="muted tiny"
+  style="margin-top:8px"
+>
+
+  Session hours:
+
+  ${escapeHtml(session.openLocal)}
+
+  –
+
+  ${escapeHtml(session.closeLocal)}
+
+  ${escapeHtml(session.zone)}
+
+  ${
+    range
+      ?
+      `· Range ${fmt(range.range,3)}`
+      :
+      ""
+  }
+
+</div>
+
+
+</div>
+
+`;
+
+      }
+    )
+      .join("");
+
+}
+
+
+/* =========================================================
+   MARKET STATE
+========================================================= */
+
+
+function renderMarket(
+  market
+) {
+
+  $("atr1").textContent =
+    fmt(
+      market.atr1,
+      3
+    );
+
+
+  $("atr5").textContent =
+    fmt(
+      market.atr5,
+      3
+    );
+
+
+  $("atr15").textContent =
+    fmt(
+      market.atr15,
+      3
+    );
+
+
+  $("vwap").textContent =
+    fmt(
+      market.vwap,
+      3
+    );
+
+
+  $("vwapMeta").textContent =
+
+    `${safe(market.vwapMode)} · ` +
+
+    `price Δ ${fmt(market.vwapDistance,3)}`;
+
+
+  $("regime").textContent =
+    safe(
+      market.regime?.label
+    );
+
+
+  $("regime").className =
+
+    `value sm ${trendClass(
+
+      market.regime?.trend
+
+    )}`;
+
+}
+
+
+/* =========================================================
+   TIMEFRAMES
+========================================================= */
+
+
+function renderTimeframes(
+  structure
+) {
+
+  const order = [
+    "m1",
+    "m5",
+    "m15",
+    "h1",
+    "h4"
+  ];
+
+
+  const labels = {
+
+    m1:
+      "M1",
+
+    m5:
+      "M5",
+
+    m15:
+      "M15",
+
+    h1:
+      "H1",
+
+    h4:
+      "H4"
+
+  };
+
+
+  $("timeframes").innerHTML =
+
+    order.map(
+      key => {
+
+        const frame =
+          structure[key] ||
+          {};
+
+
+        return `
+
+<div class="card tf">
+
+  <div class="tf-name">
+    ${labels[key]}
+  </div>
+
+  <div
+    class="tf-bias ${trendClass(frame.bias)}"
+  >
+    ${escapeHtml(frame.bias || "—")}
+  </div>
+
+  <div
+    class="muted tiny"
+    style="margin-top:7px"
+  >
+    Score ${fmt(frame.score,0)}
+  </div>
+
+  <div class="muted tiny">
+    RSI ${fmt(frame.rsi14,1)}
+  </div>
+
+  <div class="muted tiny">
+
+    ${
+      frame.structure?.event &&
+      frame.structure.event !== "NONE"
+
+        ?
+          escapeHtml(frame.structure.event)
+
+        :
+          escapeHtml(frame.structure?.bias || "")
+    }
+
+  </div>
+
+</div>
+
+`;
+
+      }
+    )
+      .join("");
+
+}
+
+
+/* =========================================================
+   LIQUIDITY LADDER
+========================================================= */
+
+
+function renderLadder(
+  data
+) {
+
+  const rows =
+
+    (
+      data.liquidityPools ||
+      []
+    )
+
+      .slice(
+        0,
+        10
+      )
+
+      .map(
+        pool => ({
+
+          name:
+            pool.name,
+
+          price:
+            pool.level,
+
+          score:
+            pool.likelihoodScore,
+
+          current:
+            false
+
+        })
+      );
+
+
+  rows.push({
+
+    name:
+      "CURRENT PRICE",
+
+    price:
+      data.price,
+
+    score:
+      null,
+
+    current:
+      true
+
+  });
+
+
+  rows.sort(
+
+    (
+      a,
+      b
+    ) =>
+      b.price -
+      a.price
+
+  );
+
+
+  $("ladder").innerHTML =
+
+    rows.map(
+      row => `
+
+<div
+  class="ladder-row ${row.current ? "current" : ""}"
+>
+
+
+<div
+  class="ladder-name ${row.current ? "gold" : ""}"
+>
+  ${escapeHtml(row.name)}
+</div>
+
+
+<div class="ladder-line"></div>
+
+
+<div style="text-align:right">
+
+  <div
+    class="tiny ${row.current ? "gold" : ""}"
+    style="font-weight:900"
+  >
+    ${fmt(row.price,3)}
+  </div>
+
+  ${
+    row.current
+
+      ?
+
+      ""
+
+      :
+
+      `<div class="muted tiny">
+        ${fmt(row.score,0)}/100
+      </div>`
+  }
+
+</div>
+
+
+</div>
+
+`
+    )
+      .join("");
+
+}
+
+
+/* =========================================================
+   POOL TABLE
+========================================================= */
+
+
+function renderPools(
+  pools
+) {
+
+  $("poolRows").innerHTML =
+
+    pools.map(
+      pool => `
+
+<tr>
+
+
+<td>
+
+  <strong>
+    ${escapeHtml(pool.name)}
+  </strong>
+
+  <div class="muted tiny">
+    ${escapeHtml(pool.type)}
+  </div>
+
+  ${
+    pool.aliases?.length
+
+      ?
+
+      `<div class="muted tiny">
+        + ${pool.aliases.map(escapeHtml).join(", ")}
+      </div>`
+
+      :
+
+      ""
+  }
+
+</td>
+
+
+<td>
+
+  <strong>
+    ${fmt(pool.level,3)}
+  </strong>
+
+</td>
+
+
+<td>
+
+  ${fmt(pool.distance,3)}
+
+  <div class="muted tiny">
+    ${fmt(pool.distanceAtr,2)} ATR
+  </div>
+
+</td>
+
+
+<td>
+
+  <span
+    class="score ${scoreClass(pool.likelihoodScore)}"
+  >
+    ${fmt(pool.likelihoodScore,0)}
+  </span>
+
+  <div class="muted tiny">
+    ${escapeHtml(pool.likelihood)}
+  </div>
+
+</td>
+
+
+<td>
+
+  ${escapeHtml(pool.raidStyle)}
+
+</td>
+
+
+<td>
+
+  <strong class="gold">
+    ${fmt(pool.projectedSweep?.likelyEnd,3)}
+  </strong>
+
+  <div class="muted tiny">
+    +${fmt(pool.projectedSweep?.overshoot,3)}
+  </div>
+
+</td>
+
+
+<td>
+
+  ${fmt(pool.projectedSweep?.zoneLow,3)}
+
+  <br>
+
+  ${fmt(pool.projectedSweep?.zoneHigh,3)}
+
+</td>
+
+
+<td>
+
+  ${escapeHtml(
+    pool.projectedSweep?.historicalBasis ||
+    "—"
+  )}
+
+</td>
+
+
+</tr>
+
+`
+    )
+      .join("");
+
+}
+
+
+/* =========================================================
+   TRAPS
+========================================================= */
+
+
+function renderTraps(
+  traps
+) {
+
+  if (
+    !traps.length
+  ) {
+
+    $("trapRows").innerHTML =
+
+      `<div class="muted small">
+        No elevated trap window currently detected.
+      </div>`;
+
+
+    return;
+
+  }
+
+
+  $("trapRows").innerHTML =
+
+    traps
+
+      .slice(
+        0,
+        6
+      )
+
+      .map(
+        trap => `
+
+<div class="trap">
+
+
+<div style="min-width:0">
+
+  <div
+    style="
+      font-size:11px;
+      font-weight:850
+    "
+  >
+    ${escapeHtml(trap.session)}
+  </div>
+
+  <div
+    class="muted tiny"
+    style="margin-top:3px"
+  >
+    ${escapeHtml(trap.phase)}
+  </div>
+
+  <div
+    class="muted tiny"
+    style="margin-top:4px;line-height:1.4"
+  >
+
+    ${
+      (
+        trap.reasons ||
+        []
+      )
+
+        .map(
+          escapeHtml
+        )
+
+        .join(" · ")
+    }
+
+  </div>
+
+</div>
+
+
+<div style="text-align:right">
+
+  <div
+    class="risk ${String(trap.risk || "").toLowerCase()}"
+  >
+    ${escapeHtml(trap.risk)}
+  </div>
+
+  <div
+    class="muted tiny"
+    style="margin-top:5px"
+  >
+    ${fmt(trap.score,0)}/100
+  </div>
+
+</div>
+
+
+</div>
+
+`
+      )
+      .join("");
+
+}
+
+
+/* =========================================================
+   FLOW
+========================================================= */
+
+
+function renderFootprint(
+  flow
+) {
+
+  $("flowMode").textContent =
+    safe(
+      flow.mode
+    );
+
+
+  setDelta(
+
+    "delta5",
+
+    "bar5",
+
+    flow.last5?.deltaPct
+
+  );
+
+
+  setDelta(
+
+    "delta15",
+
+    "bar15",
+
+    flow.last15?.deltaPct
+
+  );
+
+
+  setDelta(
+
+    "delta30",
+
+    "bar30",
+
+    flow.last30?.deltaPct
+
+  );
+
+
+  setDelta(
+
+    "delta60",
+
+    "bar60",
+
+    flow.last60?.deltaPct
+
+  );
+
+
+  $("cvd").textContent =
+    fmt(
+      flow.cvd,
+      1
+    );
+
+
+  $("divergence").textContent =
+    safe(
+      flow.divergence
+    );
+
+
+  $("absorption").textContent =
+    safe(
+      flow.absorption
+    );
+
+
+  $("divergence").className =
+
+    `value sm ${
+
+      flow.divergence &&
+      flow.divergence !== "NONE"
+
+        ?
+
+        "orange"
+
+        :
+
+        "muted"
+
+    }`;
+
+
+  $("absorption").className =
+
+    `value sm ${
+
+      flow.absorption &&
+      flow.absorption !== "NONE"
+
+        ?
+
+        "orange"
+
+        :
+
+        "muted"
+
+    }`;
+
+}
+
+
+function setDelta(
+  textId,
+  barId,
+  value
+) {
+
+  const n =
+    Number(
+      value
+    )
+    ||
+    0;
+
+
+  const text =
+    $(
+      textId
+    );
+
+
+  text.textContent =
+    percentage(
+      n,
+      1
+    );
+
+
+  text.className =
+
+    `value ${
+
+      n > 3
+
+        ?
+
+        "green"
+
+        :
+
+        n < -3
+
+          ?
+
+          "red"
+
+          :
+
+          "muted"
+
+    }`;
+
+
+  const bar =
+    $(
+      barId
+    );
+
+
+  bar
+
+    .querySelectorAll(
+      ".delta-fill"
+    )
+
+    .forEach(
+      element =>
+        element.remove()
+    );
+
+
+  const fill =
+    document.createElement(
+      "div"
+    );
+
+
+  fill.className =
+
+    `delta-fill ${
+
+      n >= 0
+
+        ?
+
+        "pos"
+
+        :
+
+        "neg"
+
+    }`;
+
+
+  fill.style.width =
+
+    `${Math.min(
+
+      50,
+
+      Math.abs(
+        n
+      ) /
+      2
+
+    )}%`;
+
+
+  bar.appendChild(
+    fill
+  );
+
+}
+
+
+/* =========================================================
+   SWEEP HISTORY
+========================================================= */
+
+
+function renderSweepHistory(
+  history
+) {
+
+  const high =
+    history.asiaHigh ||
+    {};
+
+
+  const low =
+    history.asiaLow ||
+    {};
+
+
+  $("asiaHighTitle").textContent =
+
+    `${fmt(high.sweepRatePct,1)}% swept · ` +
+
+    `${fmt(high.reversalRatePct,1)}% re-entered`;
+
+
+  $("asiaHighMeta").textContent =
+
+    `${safe(high.sweeps,0)} observed sweeps across ` +
+
+    `${safe(history.lookbackDays,0)} eligible sessions. ` +
+
+    `Median overshoot ${fmt(high.medianOvershootAtr,2)}× ATR, ` +
+
+    `75th percentile ${fmt(high.p75OvershootAtr,2)}× ATR.`;
+
+
+  $("asiaLowTitle").textContent =
+
+    `${fmt(low.sweepRatePct,1)}% swept · ` +
+
+    `${fmt(low.reversalRatePct,1)}% re-entered`;
+
+
+  $("asiaLowMeta").textContent =
+
+    `${safe(low.sweeps,0)} observed sweeps across ` +
+
+    `${safe(history.lookbackDays,0)} eligible sessions. ` +
+
+    `Median overshoot ${fmt(low.medianOvershootAtr,2)}× ATR, ` +
+
+    `75th percentile ${fmt(low.p75OvershootAtr,2)}× ATR.`;
+
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+
+function renderProfile(
+  profile
+) {
+
+  $("poc").textContent =
+    fmt(
+      profile.poc,
+      3
+    );
+
+
+  $("hvn").textContent =
+
+    (
+      profile.hvn ||
+      []
+    )
+      .map(
+        x =>
+          fmt(
+            x,
+            2
+          )
+      )
+      .join(" · ")
+
+    ||
+
+    "—";
+
+
+  $("lvn").textContent =
+
+    (
+      profile.lvn ||
+      []
+    )
+      .map(
+        x =>
+          fmt(
+            x,
+            2
+          )
+      )
+      .join(" · ")
+
+    ||
+
+    "—";
+
+
+  $("profileMode").textContent =
+    safe(
+      profile.mode
+    );
+
+}
+
+
+/* =========================================================
+   REFERENCES
+========================================================= */
+
+
+function renderReferences(
+  levels,
+  fvgs
+) {
+
+  const day =
+    levels.previousDay;
+
+
+  const week =
+    levels.previousWeek;
+
+
+  $("referenceLevels").innerHTML = `
+
+
+<div class="info-row">
+
+  <div class="name">
+    Previous Day High
+  </div>
+
+  <div class="number">
+    ${day ? fmt(day.high,3) : "—"}
+  </div>
+
+</div>
+
+
+<div class="info-row">
+
+  <div class="name">
+    Previous Day Low
+  </div>
+
+  <div class="number">
+    ${day ? fmt(day.low,3) : "—"}
+  </div>
+
+</div>
+
+
+<div class="info-row">
+
+  <div class="name">
+    Previous Day Midpoint
+  </div>
+
+  <div class="number">
+    ${day ? fmt(day.midpoint,3) : "—"}
+  </div>
+
+</div>
+
+
+<div class="info-row">
+
+  <div class="name">
+    Previous Week High
+  </div>
+
+  <div class="number">
+    ${week ? fmt(week.high,3) : "—"}
+  </div>
+
+</div>
+
+
+<div class="info-row">
+
+  <div class="name">
+    Previous Week Low
+  </div>
+
+  <div class="number">
+    ${week ? fmt(week.low,3) : "—"}
+  </div>
+
+</div>
+
+
+`;
+
+
+  $("fvgRows").innerHTML =
+
+    fvgs.length
+
+      ?
+
+      fvgs
+
+        .slice(
+          0,
+          6
+        )
+
+        .map(
+          fvg => `
+
+<div class="info-row">
+
+  <div>
+
+    <div
+      class="name ${
+        fvg.type.includes("BULL")
+          ?
+          "green"
+          :
+          "red"
+      }"
+    >
+      ${escapeHtml(fvg.type)}
+    </div>
+
+    <div class="muted tiny">
+      Distance ${fmt(fvg.distance,3)}
+    </div>
+
+  </div>
+
+  <div class="number">
+
+    ${fmt(fvg.low,3)}
+
+    –
+
+    ${fmt(fvg.high,3)}
+
+  </div>
+
+</div>
+
+`
+        )
+        .join("")
+
+      :
+
+      `<div class="muted small">
+        No nearby FVG detected.
+      </div>`;
+
+}
+
+
+/* =========================================================
+   MACRO
+========================================================= */
+
+
+function renderMacro(
+  macro
+) {
+
+  $("macroBias").textContent =
+    safe(
+      macro.bias
+    );
+
+
+  $("macroBias").className =
+
+    `value sm ${trendClass(
+
+      macro.bias
+
+    )}`;
+
+
+  $("macroNote").textContent =
+    safe(
+      macro.note
+    );
+
+
+  $("macroScore").textContent =
+
+    macro.enabled
+
+      ?
+
+      `${Number(macro.score) >= 0 ? "+" : ""}` +
+
+      `${fmt(macro.score,0)}`
+
+      :
+
+      "OFF";
+
+
+  $("macroRows").innerHTML =
+
+    macro.enabled
+
+    &&
+
+    Array.isArray(
+      macro.series
+    )
+
+      ?
+
+      macro.series.map(
+        item => `
+
+<div class="info-row">
+
+  <div>
+
+    <div class="name">
+      ${escapeHtml(item.label)}
+    </div>
+
+    <div class="muted tiny">
+      ${escapeHtml(item.date || "")}
+    </div>
+
+  </div>
+
+  <div class="number">
+
+    ${fmt(item.value,3)}
+
+    <div
+      class="${
+        Number(item.goldPressure) > 0
+          ?
+          "green"
+          :
+          Number(item.goldPressure) < 0
+            ?
+            "red"
+            :
+            "muted"
+      }"
+      style="margin-top:3px"
+    >
+      ${Number(item.goldPressure) >= 0 ? "+" : ""}
+      ${fmt(item.goldPressure,1)}
+      gold
+    </div>
+
+  </div>
+
+</div>
+
+`
+      )
+        .join("")
+
+      :
+
+      `<div class="muted small">
+
+        FRED macro layer is disabled.
+        Add <strong>FRED_API_KEY</strong>
+        in Vercel if you want it.
+
+      </div>`;
+
+}
+
+
+/* =========================================================
+   CLOCK / COUNTDOWNS
+========================================================= */
+
+
+function tick() {
+
+  $("sastClock").textContent =
+
+    new Intl.DateTimeFormat(
+
+      "en-ZA",
+
+      {
+
+        timeZone:
+          SAST,
+
+        weekday:
+          "short",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        second:
+          "2-digit",
+
+        hour12:
+          false
+
+      }
+
+    )
+      .format(
+        new Date()
+      )
+
+    +
+
+    " SAST";
+
+
+  document
+
+    .querySelectorAll(
+      ".session-countdown[data-time]"
+    )
+
+    .forEach(
+      element => {
+
+        element.textContent =
+          countdown(
+            element.dataset.time
+          );
+
+      }
+    );
+
+
+  if (
+    latestData?.latestBarTime
+  ) {
+
+    const age =
+      Math.max(
+
+        0,
+
+        Math.floor(
+
+          (
+            Date.now()
+
+            -
+
+            new Date(
+              latestData.latestBarTime
+            )
+              .getTime()
+          )
+
+          /
+
+          1000
+
+        )
+
+      );
+
+
+    $("ageStatus").textContent =
+      `Data age ${age}s`;
+
+
+    $("ageStatus").className =
+
+      age >
+      180
+
+        ?
+
+        "pill warn"
+
+        :
+
+        "pill";
+
+  }
+
+}
+
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+
+$("refreshBtn")
+  .addEventListener(
+    "click",
+    load
+  );
+
+
+load();
+
+
+tick();
+
+
+setInterval(
+  tick,
+  1000
+);
+
+
+setInterval(
+  load,
+  AUTO_REFRESH
+);
+
+
+})();
 
 </script>
+
 
 </body>
 
