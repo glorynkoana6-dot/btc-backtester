@@ -31,7 +31,6 @@
    Fees + slippage included.
 ============================================================ */
 
-
 const PRODUCT = "BTC-USD";
 
 const COINBASE =
@@ -46,15 +45,12 @@ const GRANULARITY = 900;
 
 const CONFIG = {
 
-  /* Swing liquidity */
   pivotLen: 5,
 
   maxLevelAge: 120,
 
   minLevelSpacingATR: 0.20,
 
-
-  /* Sweep quality */
   useVolumeFilter: true,
 
   volumeSmaPeriod: 20,
@@ -65,20 +61,14 @@ const CONFIG = {
 
   minimumWickBodyRatio: 1.20,
 
-
-  /* Confirmation */
   requireConfirmation: true,
 
-
-  /* Session */
   useSession: true,
 
   sessionStartUTC: 10,
 
   sessionEndUTC: 18,
 
-
-  /* Risk */
   atrPeriod: 14,
 
   stopAtrBeyondWick: 1.0,
@@ -95,20 +85,13 @@ const CONFIG = {
 
   riskPercent: 2.0,
 
-
-  /* Execution assumptions */
   feePercentPerSide: 0.04,
 
   slippagePercentPerSide: 0.015,
 
-
-  /* Avoid rapid-fire duplicates */
   cooldownBars: 1,
 
-
-  /* Emergency time exit */
   maximumBarsInTrade: 40
-
 };
 
 
@@ -238,7 +221,7 @@ function atr(
       Math.max(
 
         candles[i].high -
-        candles[i].low,
+          candles[i].low,
 
         Math.abs(
           candles[i].high -
@@ -312,8 +295,6 @@ function atr(
 
 /* ============================================================
    SESSION FILTER
-
-   Coinbase timestamps are UTC.
 ============================================================ */
 
 function isInSession(
@@ -435,8 +416,6 @@ async function fetchChunk(
 
 /* ============================================================
    HISTORY
-
-   Chunked because Coinbase candle API is limited.
 ============================================================ */
 
 async function fetchHistory(
@@ -457,11 +436,6 @@ async function fetchHistory(
   const result =
     [];
 
-
-  /*
-    250 × 15 minutes
-    ≈ 62.5 hours
-  */
 
   const chunkMs =
     250 *
@@ -513,7 +487,9 @@ async function fetchHistory(
       chunkEnd.getTime();
 
 
-    await sleep(70);
+    await sleep(
+      80
+    );
   }
 
 
@@ -546,13 +522,6 @@ async function fetchHistory(
 
 /* ============================================================
    PIVOT DETECTION
-
-   IMPORTANT:
-
-   Pivot at P is only known at:
-   P + pivotLen
-
-   This prevents future leakage.
 ============================================================ */
 
 function isPivotHigh(
@@ -703,11 +672,6 @@ function detectHighSweep(
   level,
   volumeSma
 ) {
-
-  /*
-    Price takes liquidity above high
-    then closes back underneath.
-  */
 
   const wicked =
     candle.high >
@@ -893,6 +857,10 @@ function createTrade({
 
   wick,
 
+  level,
+
+  sweepTime,
+
   signalIndex,
 
   entryIndex,
@@ -993,10 +961,6 @@ function createTrade({
     CONFIG.maximumRiskATR;
 
 
-  /*
-    Reject extremely wide sweep.
-  */
-
   if (
     risk >
     maximumRisk
@@ -1005,10 +969,6 @@ function createTrade({
     return null;
   }
 
-
-  /*
-    Widen very tight stop.
-  */
 
   if (
     risk <
@@ -1052,6 +1012,13 @@ function createTrade({
   return {
 
     side,
+
+    level,
+
+    sweepWick:
+      wick,
+
+    sweepTime,
 
     signalIndex,
 
@@ -1127,10 +1094,6 @@ function closeTrade(
         ) /
         trade.initialRisk;
 
-
-  /*
-    Convert fees into R.
-  */
 
   const riskFraction =
     trade.initialRisk /
@@ -1283,8 +1246,6 @@ function runBacktest(
 
     /* ========================================================
        CONFIRM NEW PIVOT
-
-       Pivot detected pivotLen bars ago.
     ======================================================== */
 
     const pivotIndex =
@@ -1415,7 +1376,7 @@ function runBacktest(
 
 
     /* ========================================================
-       ACTIVE TRADE
+       ACTIVE TRADE MANAGEMENT
     ======================================================== */
 
     if (
@@ -1428,11 +1389,6 @@ function runBacktest(
       let closed =
         null;
 
-
-      /*
-        Conservative same-candle logic:
-        STOP checked first.
-      */
 
       if (
         active.side ===
@@ -1503,9 +1459,6 @@ function runBacktest(
 
       /* ======================================================
          BREAKEVEN
-
-         Checked after exits so we do not incorrectly assume
-         price hit BE trigger first inside an OHLC candle.
       ====================================================== */
 
       if (
@@ -1705,6 +1658,12 @@ function runBacktest(
               wick:
                 pendingLong.wick,
 
+              level:
+                pendingLong.level,
+
+              sweepTime:
+                pendingLong.sweepTime,
+
               signalIndex:
                 i,
 
@@ -1751,6 +1710,12 @@ function runBacktest(
 
               wick:
                 pendingShort.wick,
+
+              level:
+                pendingShort.level,
+
+              sweepTime:
+                pendingShort.sweepTime,
 
               signalIndex:
                 i,
@@ -1905,7 +1870,7 @@ function runBacktest(
 
 
     /* ========================================================
-       STORE SWEEP FOR NEXT BAR CONFIRMATION
+       STORE OR EXECUTE SWEEP
     ======================================================== */
 
     if (
@@ -1920,6 +1885,9 @@ function runBacktest(
 
           signalIndex:
             i,
+
+          sweepTime:
+            candle.time,
 
           wick:
             lowSweep.wick,
@@ -1946,6 +1914,9 @@ function runBacktest(
 
           signalIndex:
             i,
+
+          sweepTime:
+            candle.time,
 
           wick:
             highSweep.wick,
@@ -1981,6 +1952,12 @@ function runBacktest(
             wick:
               lowSweep.wick,
 
+            level:
+              lowSweep.level,
+
+            sweepTime:
+              candle.time,
+
             signalIndex:
               i,
 
@@ -2009,6 +1986,12 @@ function runBacktest(
             wick:
               highSweep.wick,
 
+            level:
+              highSweep.level,
+
+            sweepTime:
+              candle.time,
+
             signalIndex:
               i,
 
@@ -2022,6 +2005,58 @@ function runBacktest(
           });
       }
     }
+  }
+
+
+  if (
+    active
+  ) {
+
+    const last =
+      candles[
+        candles.length - 1
+      ];
+
+
+    const closed =
+      closeTrade(
+        active,
+        last.close,
+        last.time,
+        "END_OF_BACKTEST"
+      );
+
+
+    const riskMoney =
+      balance *
+      (
+        CONFIG.riskPercent /
+        100
+      );
+
+
+    closed.riskMoney =
+      riskMoney;
+
+    closed.pnl =
+      riskMoney *
+      closed.netR;
+
+    closed.balanceBefore =
+      balance;
+
+
+    balance +=
+      closed.pnl;
+
+
+    closed.balanceAfter =
+      balance;
+
+
+    trades.push(
+      closed
+    );
   }
 
 
@@ -2130,6 +2165,36 @@ function statistics(
       : 0;
 
 
+  const averageWin =
+    wins.length
+      ? wins.reduce(
+          (
+            sum,
+            trade
+          ) =>
+            sum +
+            trade.netR,
+          0
+        ) /
+        wins.length
+      : 0;
+
+
+  const averageLoss =
+    losses.length
+      ? losses.reduce(
+          (
+            sum,
+            trade
+          ) =>
+            sum +
+            trade.netR,
+          0
+        ) /
+        losses.length
+      : 0;
+
+
   return {
 
     strategy:
@@ -2179,6 +2244,18 @@ function statistics(
           3
         ),
 
+      averageWinR:
+        round(
+          averageWin,
+          3
+        ),
+
+      averageLossR:
+        round(
+          averageLoss,
+          3
+        ),
+
       startingBalance:
         round(
           startingBalance,
@@ -2222,17 +2299,32 @@ function statistics(
             side:
               trade.side,
 
+            sweepTime:
+              new Date(
+                trade.sweepTime
+              ).toISOString(),
+
             entryTime:
               new Date(
                 trade.entryTime
-              )
-                .toISOString(),
+              ).toISOString(),
 
             exitTime:
               new Date(
                 trade.exitTime
-              )
-                .toISOString(),
+              ).toISOString(),
+
+            liquidityLevel:
+              round(
+                trade.level,
+                2
+              ),
+
+            sweepWick:
+              round(
+                trade.sweepWick,
+                2
+              ),
 
             entry:
               round(
@@ -2369,7 +2461,8 @@ export default async function handler(
           new Date()
             .toISOString(),
 
-        days,
+        requestedDays:
+          days,
 
         candles:
           candles.length,
