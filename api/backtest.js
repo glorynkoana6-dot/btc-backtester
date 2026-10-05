@@ -1,203 +1,765 @@
-/* =========================================================
-   BTC/USD BACKTEST
+/* ============================================================
+   MKAYFX BTC BACKTESTER
    /api/backtest.js
 
-   SAME CORE RULES AS /api/btc.js
+   SOURCE
+   ------
+   Coinbase Exchange
 
-   H1 TREND
-   M15 ENTRY
+   PRODUCT
+   -------
+   BTC-USD
 
-   SL  = 1.2 ATR
-   TP  = 2.2R
+   STRATEGY
+   --------
+   H1 trend
+   +
+   M15 EMA pullback
 
-   TP1 is not used to close half the position in this
-   first simple backtest.
+   IMPORTANT
+   ---------
+   Historical entries use NEXT M15 candle open.
 
-   Instead:
-   - Full result is measured against TP2.
-   - Breakeven activates after +1R.
+   That prevents entering before the signal candle
+   has actually closed.
 
-========================================================= */
+   Same-bar TP + SL collision:
+   STOP is assumed first.
 
-const TD_KEY = process.env.TWELVE_DATA_API_KEY;
+   This is deliberately conservative.
+============================================================ */
 
-const SYMBOL = "BTC/USD";
+
+const PRODUCT =
+  "BTC-USD";
+
+
+const COINBASE =
+  "https://api.exchange.coinbase.com";
+
 
 const SETTINGS = {
 
-  atrPeriod: 14,
-  rsiPeriod: 14,
+  defaultDays:
+    30,
 
-  emaFast: 20,
-  emaPullback: 50,
+  maxDays:
+    90,
 
-  h1Fast: 50,
-  h1Slow: 200,
 
-  buyRsi: 52,
-  sellRsi: 48,
+  rsiPeriod:
+    14,
 
-  stopAtr: 1.2,
+  atrPeriod:
+    14,
 
-  targetR: 2.2,
-  breakevenR: 1.0,
 
-  minAtrPercent: 0.20,
-  maxAtrPercent: 3.50,
+  emaFast:
+    20,
 
-  minBodyPercent: 0.55,
+  emaPullback:
+    50,
 
-  pullbackLookback: 3,
+  h1Fast:
+    50,
 
-  cooldownBars: 4
+  h1Slow:
+    200,
+
+
+  buyRsi:
+    52,
+
+  sellRsi:
+    48,
+
+
+  stopAtr:
+    1.2,
+
+  targetR:
+    2.2,
+
+  breakevenR:
+    1.0,
+
+
+  minAtrPercent:
+    0.10,
+
+  maxAtrPercent:
+    3.5,
+
+
+  minBodyPercent:
+    0.50,
+
+
+  pullbackLookback:
+    3,
+
+
+  cooldownBars:
+    4,
+
+
+  maxHoldBars:
+    96,
+
+
+  chunkCandles:
+    280
+
 };
 
 
-// =========================================================
-// HELPERS
-// =========================================================
+/* ============================================================
+   HELPERS
+============================================================ */
 
-function num(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
+function num(
+  value,
+  fallback = null
+) {
+
+  const n =
+    Number(
+      value
+    );
+
+
+  return Number.isFinite(
+    n
+  )
+    ? n
+    : fallback;
+
 }
 
-function round(v, d = 2) {
-  if (!Number.isFinite(v)) return null;
-  return Number(v.toFixed(d));
+
+function round(
+  value,
+  digits = 2
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(
+      Number(
+        value
+      )
+    )
+  ) {
+
+    return null;
+
+  }
+
+
+  const power =
+    10 ** digits;
+
+
+  return (
+    Math.round(
+      Number(
+        value
+      ) *
+      power
+    ) /
+    power
+  );
+
 }
 
 
-// =========================================================
-// TWELVE DATA
-// =========================================================
+function clamp(
+  value,
+  min,
+  max
+) {
 
-async function getSeries(interval, outputsize) {
+  return Math.max(
+    min,
+    Math.min(
+      max,
+      value
+    )
+  );
+
+}
+
+
+function sleep(
+  ms
+) {
+
+  return new Promise(
+    resolve =>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
+
+}
+
+
+function errorText(
+  error
+) {
+
+  if (
+    error instanceof Error
+  ) {
+
+    return error.message;
+
+  }
+
+
+  if (
+    typeof error ===
+    "string"
+  ) {
+
+    return error;
+
+  }
+
+
+  try {
+
+    return JSON.stringify(
+      error
+    );
+
+  }
+
+  catch {
+
+    return "Unknown error";
+
+  }
+
+}
+
+
+/* ============================================================
+   HTTP
+============================================================ */
+
+async function getJSON(
+  url,
+  timeoutMs = 9000
+) {
+
+  const controller =
+    new AbortController();
+
+
+  const timer =
+    setTimeout(
+      () =>
+        controller.abort(),
+      timeoutMs
+    );
+
+
+  try {
+
+    const response =
+      await fetch(
+        url,
+        {
+
+          method:
+            "GET",
+
+          cache:
+            "no-store",
+
+          headers: {
+
+            Accept:
+              "application/json",
+
+            "User-Agent":
+              "MKAYFX-BTC-BACKTEST"
+
+          },
+
+          signal:
+            controller.signal
+
+        }
+      );
+
+
+    const text =
+      await response.text();
+
+
+    let data;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          text
+        );
+
+    }
+
+    catch {
+
+      throw new Error(
+        `Invalid Coinbase JSON (${response.status})`
+      );
+
+    }
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data?.message ||
+        `Coinbase HTTP ${response.status}`
+      );
+
+    }
+
+
+    return data;
+
+  }
+
+  finally {
+
+    clearTimeout(
+      timer
+    );
+
+  }
+
+}
+
+
+/* ============================================================
+   SINGLE COINBASE CHUNK
+============================================================ */
+
+async function fetchChunk(
+
+  granularity,
+
+  startSeconds,
+
+  endSeconds
+
+) {
 
   const url =
-    `https://api.twelvedata.com/time_series` +
-    `?symbol=${encodeURIComponent(SYMBOL)}` +
-    `&interval=${interval}` +
-    `&outputsize=${outputsize}` +
-    `&apikey=${TD_KEY}` +
-    `&format=JSON`;
 
-  const response = await fetch(url, {
-    cache: "no-store"
-  });
+    `${COINBASE}/products/${PRODUCT}/candles` +
 
-  if (!response.ok) {
-    throw new Error(
-      `Twelve Data HTTP ${response.status}`
+    `?granularity=${granularity}` +
+
+    `&start=${startSeconds}` +
+
+    `&end=${endSeconds}`;
+
+
+  const raw =
+    await getJSON(
+      url
     );
-  }
 
-  const data = await response.json();
 
-  if (data.status === "error") {
-    throw new Error(
-      data.message ||
-      "Twelve Data error"
-    );
-  }
-
-  if (!Array.isArray(data.values)) {
-    throw new Error(
-      "No historical candles returned"
-    );
-  }
-
-  return data.values
-    .map(v => ({
-      datetime: v.datetime,
-
-      time:
-        new Date(
-          v.datetime.replace(" ", "T") + "Z"
-        ).getTime(),
-
-      open: num(v.open),
-      high: num(v.high),
-      low: num(v.low),
-      close: num(v.close),
-
-      volume:
-        num(v.volume) || 0
-    }))
-    .filter(c =>
-      c.open !== null &&
-      c.high !== null &&
-      c.low !== null &&
-      c.close !== null
+  if (
+    !Array.isArray(
+      raw
     )
-    .reverse();
+  ) {
+
+    throw new Error(
+      "Coinbase candle response was not an array"
+    );
+
+  }
+
+
+  return raw
+    .map(
+      row => ({
+
+        timestamp:
+          Number(
+            row[0]
+          ) *
+          1000,
+
+        datetime:
+          new Date(
+            Number(
+              row[0]
+            ) *
+            1000
+          ).toISOString(),
+
+        low:
+          Number(
+            row[1]
+          ),
+
+        high:
+          Number(
+            row[2]
+          ),
+
+        open:
+          Number(
+            row[3]
+          ),
+
+        close:
+          Number(
+            row[4]
+          ),
+
+        volume:
+          Number(
+            row[5]
+          )
+
+      })
+    )
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.timestamp -
+        b.timestamp
+    );
+
 }
 
 
-// =========================================================
-// EMA
-// =========================================================
+/* ============================================================
+   FETCH LARGE HISTORY
 
-function ema(values, period) {
+   Coinbase candle endpoint has a limited number of
+   candles per request.
 
-  const result =
-    new Array(values.length).fill(null);
+   We split history into chunks.
+============================================================ */
 
-  if (values.length < period)
-    return result;
+async function fetchHistory(
 
-  let sum = 0;
+  granularity,
 
-  for (let i = 0; i < period; i++) {
-    sum += values[i];
+  startSeconds,
+
+  endSeconds
+
+) {
+
+  const chunkDuration =
+
+    granularity *
+    SETTINGS.chunkCandles;
+
+
+  const windows =
+    [];
+
+
+  let cursor =
+    startSeconds;
+
+
+  while (
+    cursor <
+    endSeconds
+  ) {
+
+    const next =
+      Math.min(
+
+        cursor +
+        chunkDuration,
+
+        endSeconds
+
+      );
+
+
+    windows.push({
+
+      start:
+        cursor,
+
+      end:
+        next
+
+    });
+
+
+    cursor =
+      next;
+
   }
 
-  let current =
-    sum / period;
 
-  result[period - 1] =
-    current;
+  const all =
+    [];
 
-  const multiplier =
-    2 / (period + 1);
+
+  /*
+     Small batches.
+
+     This is friendlier to Coinbase and Vercel
+     than firing every request simultaneously.
+  */
 
   for (
-    let i = period;
-    i < values.length;
+    let i = 0;
+    i <
+      windows.length;
+    i += 4
+  ) {
+
+    const batch =
+      windows.slice(
+        i,
+        i +
+        4
+      );
+
+
+    const result =
+      await Promise.all(
+
+        batch.map(
+          window =>
+
+            fetchChunk(
+
+              granularity,
+
+              window.start,
+
+              window.end
+
+            )
+        )
+
+      );
+
+
+    for (
+      const candles of
+      result
+    ) {
+
+      all.push(
+        ...candles
+      );
+
+    }
+
+
+    if (
+      i +
+      4 <
+      windows.length
+    ) {
+
+      await sleep(
+        100
+      );
+
+    }
+
+  }
+
+
+  /*
+     Remove duplicates at chunk boundaries.
+  */
+
+  const unique =
+    new Map();
+
+
+  for (
+    const candle of
+    all
+  ) {
+
+    unique.set(
+
+      candle.timestamp,
+
+      candle
+
+    );
+
+  }
+
+
+  return [
+    ...unique.values()
+  ].sort(
+    (
+      a,
+      b
+    ) =>
+      a.timestamp -
+      b.timestamp
+  );
+
+}
+
+
+/* ============================================================
+   EMA
+============================================================ */
+
+function ema(
+  values,
+  period
+) {
+
+  const output =
+    new Array(
+      values.length
+    ).fill(
+      null
+    );
+
+
+  if (
+    values.length <
+    period
+  ) {
+
+    return output;
+
+  }
+
+
+  let sum =
+    0;
+
+
+  for (
+    let i = 0;
+    i <
+      period;
+    i++
+  ) {
+
+    sum +=
+      values[i];
+
+  }
+
+
+  let current =
+    sum /
+    period;
+
+
+  output[
+    period -
+    1
+  ] =
+    current;
+
+
+  const multiplier =
+    2 /
+    (
+      period +
+      1
+    );
+
+
+  for (
+    let i =
+      period;
+    i <
+      values.length;
     i++
   ) {
 
     current =
-      (values[i] - current) *
-        multiplier +
+
+      (
+        values[i] -
+        current
+      ) *
+      multiplier +
+
       current;
 
-    result[i] =
+
+    output[i] =
       current;
+
   }
 
-  return result;
+
+  return output;
+
 }
 
 
-// =========================================================
-// RSI
-// =========================================================
+/* ============================================================
+   RSI
+============================================================ */
 
-function rsi(values, period = 14) {
+function rsi(
+  values,
+  period
+) {
 
-  const result =
-    new Array(values.length).fill(null);
+  const output =
+    new Array(
+      values.length
+    ).fill(
+      null
+    );
 
-  if (values.length <= period)
-    return result;
 
-  let gains = 0;
-  let losses = 0;
+  if (
+    values.length <=
+    period
+  ) {
+
+    return output;
+
+  }
+
+
+  let gains =
+    0;
+
+
+  let losses =
+    0;
+
 
   for (
     let i = 1;
-    i <= period;
+    i <=
+      period;
     i++
   ) {
 
@@ -205,30 +767,61 @@ function rsi(values, period = 14) {
       values[i] -
       values[i - 1];
 
-    if (change > 0)
-      gains += change;
 
-    else
+    if (
+      change >
+      0
+    ) {
+
+      gains +=
+        change;
+
+    }
+
+    else {
+
       losses +=
-        Math.abs(change);
+        Math.abs(
+          change
+        );
+
+    }
+
   }
 
-  let avgGain =
-    gains / period;
 
-  let avgLoss =
-    losses / period;
+  let averageGain =
+    gains /
+    period;
 
-  result[period] =
-    avgLoss === 0
+
+  let averageLoss =
+    losses /
+    period;
+
+
+  output[period] =
+
+    averageLoss ===
+    0
+
       ? 100
+
       : 100 -
         100 /
-        (1 + avgGain / avgLoss);
+        (
+          1 +
+          averageGain /
+          averageLoss
+        );
+
 
   for (
-    let i = period + 1;
-    i < values.length;
+    let i =
+      period +
+      1;
+    i <
+      values.length;
     i++
   ) {
 
@@ -236,66 +829,115 @@ function rsi(values, period = 14) {
       values[i] -
       values[i - 1];
 
+
     const gain =
-      Math.max(change, 0);
+      Math.max(
+        change,
+        0
+      );
+
 
     const loss =
-      Math.max(-change, 0);
+      Math.max(
+        -change,
+        0
+      );
 
-    avgGain =
-      ((avgGain *
-        (period - 1)) +
-        gain) /
+
+    averageGain =
+      (
+        averageGain *
+        (
+          period -
+          1
+        ) +
+        gain
+      ) /
       period;
 
-    avgLoss =
-      ((avgLoss *
-        (period - 1)) +
-        loss) /
+
+    averageLoss =
+      (
+        averageLoss *
+        (
+          period -
+          1
+        ) +
+        loss
+      ) /
       period;
 
-    result[i] =
-      avgLoss === 0
+
+    output[i] =
+
+      averageLoss ===
+      0
+
         ? 100
+
         : 100 -
           100 /
-          (1 +
-            avgGain /
-            avgLoss);
+          (
+            1 +
+            averageGain /
+            averageLoss
+          );
+
   }
 
-  return result;
+
+  return output;
+
 }
 
 
-// =========================================================
-// ATR
-// =========================================================
+/* ============================================================
+   ATR
+============================================================ */
 
-function atr(candles, period = 14) {
+function atr(
+  candles,
+  period
+) {
 
-  const result =
-    new Array(candles.length)
-      .fill(null);
+  const output =
+    new Array(
+      candles.length
+    ).fill(
+      null
+    );
 
-  const tr =
-    new Array(candles.length)
-      .fill(null);
 
-  if (candles.length <= period)
-    return result;
+  const trueRange =
+    new Array(
+      candles.length
+    ).fill(
+      null
+    );
+
+
+  if (
+    candles.length <=
+    period
+  ) {
+
+    return output;
+
+  }
+
 
   for (
     let i = 1;
-    i < candles.length;
+    i <
+      candles.length;
     i++
   ) {
 
-    tr[i] =
+    trueRange[i] =
       Math.max(
 
         candles[i].high -
-          candles[i].low,
+        candles[i].low,
 
         Math.abs(
           candles[i].high -
@@ -306,100 +948,155 @@ function atr(candles, period = 14) {
           candles[i].low -
           candles[i - 1].close
         )
+
       );
+
   }
 
-  let sum = 0;
+
+  let total =
+    0;
+
 
   for (
     let i = 1;
-    i <= period;
+    i <=
+      period;
     i++
   ) {
-    sum += tr[i];
+
+    total +=
+      trueRange[i];
+
   }
 
-  let currentAtr =
-    sum / period;
 
-  result[period] =
-    currentAtr;
+  let current =
+    total /
+    period;
+
+
+  output[period] =
+    current;
+
 
   for (
-    let i = period + 1;
-    i < candles.length;
+    let i =
+      period +
+      1;
+    i <
+      candles.length;
     i++
   ) {
 
-    currentAtr =
+    current =
       (
-        currentAtr *
-        (period - 1) +
-        tr[i]
+        current *
+        (
+          period -
+          1
+        ) +
+        trueRange[i]
       ) /
       period;
 
-    result[i] =
-      currentAtr;
+
+    output[i] =
+      current;
+
   }
 
-  return result;
+
+  return output;
+
 }
 
 
-// =========================================================
-// CANDLE STRENGTH
-// =========================================================
+/* ============================================================
+   CANDLE STRENGTH
+============================================================ */
 
-function candleStrength(candle) {
+function candleStrength(
+  candle
+) {
 
   const range =
     candle.high -
     candle.low;
 
-  if (range <= 0)
+
+  if (
+    range <=
+    0
+  ) {
+
     return 0;
 
+  }
+
+
   return (
+
     Math.abs(
       candle.close -
       candle.open
     ) /
     range
+
   );
+
 }
 
 
-// =========================================================
-// PULLBACK
-// =========================================================
+/* ============================================================
+   PULLBACK
+============================================================ */
 
 function hadPullback(
+
   candles,
+
   ema20,
+
   ema50,
+
   index,
+
   lookback
+
 ) {
 
   const start =
     Math.max(
+
       0,
+
       index -
       lookback +
       1
+
     );
 
+
   for (
-    let i = start;
-    i <= index;
+    let i =
+      start;
+    i <=
+      index;
     i++
   ) {
 
     if (
-      ema20[i] === null ||
-      ema50[i] === null
-    ) continue;
+      ema20[i] ===
+        null ||
+      ema50[i] ===
+        null
+    ) {
+
+      continue;
+
+    }
+
 
     const upper =
       Math.max(
@@ -407,991 +1104,1495 @@ function hadPullback(
         ema50[i]
       );
 
+
     const lower =
       Math.min(
         ema20[i],
         ema50[i]
       );
 
+
     if (
-      candles[i].low <= upper &&
-      candles[i].high >= lower
+
+      candles[i].low <=
+        upper &&
+
+      candles[i].high >=
+        lower
+
     ) {
+
       return true;
+
     }
+
   }
+
 
   return false;
+
 }
 
 
-// =========================================================
-// FIND LAST COMPLETED H1 BAR
-//
-// M15 candle at 10:45 cannot use the 10:00 H1 candle
-// because that H1 candle is still forming.
-//
-// So require:
-// H1 timestamp <= M15 timestamp - 1 hour
-// =========================================================
+/* ============================================================
+   FIND LAST COMPLETED H1 CANDLE
 
-function findH1Index(
+   M15 signal cannot use an H1 candle which had
+   not closed yet.
+============================================================ */
+
+function findCompletedH1Index(
+
   h1,
-  m15Time,
-  startIndex = 0
+
+  signalTimestamp,
+
+  startIndex
+
 ) {
 
-  const cutoff =
-    m15Time -
-    60 * 60 * 1000;
+  /*
+     H1 candle timestamp represents its opening time.
 
-  let found =
-    startIndex;
+     It becomes usable only 1 hour later.
+  */
+
+  const cutoff =
+
+    signalTimestamp -
+    60 *
+    60 *
+    1000;
+
+
+  let index =
+    Math.max(
+      0,
+      startIndex
+    );
+
 
   while (
-    found + 1 < h1.length &&
-    h1[found + 1].time <= cutoff
+
+    index +
+      1 <
+      h1.length &&
+
+    h1[
+      index +
+      1
+    ].timestamp <=
+      cutoff
+
   ) {
-    found++;
+
+    index++;
+
   }
+
 
   if (
-    h1[found] &&
-    h1[found].time <= cutoff
+
+    h1[index] &&
+
+    h1[index].timestamp <=
+    cutoff
+
   ) {
-    return found;
+
+    return index;
+
   }
 
+
   return -1;
+
 }
 
 
-// =========================================================
-// MAIN
-// =========================================================
+/* ============================================================
+   BACKTEST
+============================================================ */
+
+function runBacktest(
+  m15,
+  h1
+) {
+
+  const mClose =
+    m15.map(
+      candle =>
+        candle.close
+    );
+
+
+  const hClose =
+    h1.map(
+      candle =>
+        candle.close
+    );
+
+
+  const mEMA20 =
+    ema(
+      mClose,
+      SETTINGS.emaFast
+    );
+
+
+  const mEMA50 =
+    ema(
+      mClose,
+      SETTINGS.emaPullback
+    );
+
+
+  const mRSI =
+    rsi(
+      mClose,
+      SETTINGS.rsiPeriod
+    );
+
+
+  const mATR =
+    atr(
+      m15,
+      SETTINGS.atrPeriod
+    );
+
+
+  const hEMA50 =
+    ema(
+      hClose,
+      SETTINGS.h1Fast
+    );
+
+
+  const hEMA200 =
+    ema(
+      hClose,
+      SETTINGS.h1Slow
+    );
+
+
+  const trades =
+    [];
+
+
+  let activeTrade =
+    null;
+
+
+  let cooldownUntil =
+    -1;
+
+
+  let hIndex =
+    0;
+
+
+  for (
+    let i = 60;
+    i <
+      m15.length -
+      1;
+    i++
+  ) {
+
+    const candle =
+      m15[i];
+
+
+    /* ======================================================
+       MANAGE ACTIVE POSITION
+    ====================================================== */
+
+    if (
+      activeTrade
+    ) {
+
+      let currentStop =
+        activeTrade.stop;
+
+
+      /*
+         BREAKEVEN AFTER +1R
+      */
+
+      if (
+        !activeTrade.breakeven
+      ) {
+
+        if (
+
+          activeTrade.side ===
+            "BUY" &&
+
+          candle.high >=
+
+            activeTrade.entry +
+
+            activeTrade.risk *
+            SETTINGS.breakevenR
+
+        ) {
+
+          activeTrade.breakeven =
+            true;
+
+
+          activeTrade.stop =
+            activeTrade.entry;
+
+
+          currentStop =
+            activeTrade.stop;
+
+        }
+
+
+        if (
+
+          activeTrade.side ===
+            "SELL" &&
+
+          candle.low <=
+
+            activeTrade.entry -
+
+            activeTrade.risk *
+            SETTINGS.breakevenR
+
+        ) {
+
+          activeTrade.breakeven =
+            true;
+
+
+          activeTrade.stop =
+            activeTrade.entry;
+
+
+          currentStop =
+            activeTrade.stop;
+
+        }
+
+      }
+
+
+      let resultR =
+        null;
+
+
+      let exit =
+        null;
+
+
+      let exitReason =
+        null;
+
+
+      /* ====================================================
+         BUY EXIT
+      ==================================================== */
+
+      if (
+        activeTrade.side ===
+        "BUY"
+      ) {
+
+        const stopHit =
+
+          candle.low <=
+          currentStop;
+
+
+        const targetHit =
+
+          candle.high >=
+          activeTrade.target;
+
+
+        /*
+           Conservative same-candle assumption:
+           SL first.
+        */
+
+        if (
+          stopHit
+        ) {
+
+          exit =
+            currentStop;
+
+
+          resultR =
+
+            (
+              exit -
+              activeTrade.entry
+            ) /
+            activeTrade.risk;
+
+
+          exitReason =
+
+            activeTrade.breakeven
+              ? "BE"
+              : "SL";
+
+        }
+
+        else if (
+          targetHit
+        ) {
+
+          exit =
+            activeTrade.target;
+
+
+          resultR =
+            SETTINGS.targetR;
+
+
+          exitReason =
+            "TP";
+
+        }
+
+      }
+
+
+      /* ====================================================
+         SELL EXIT
+      ==================================================== */
+
+      else {
+
+        const stopHit =
+
+          candle.high >=
+          currentStop;
+
+
+        const targetHit =
+
+          candle.low <=
+          activeTrade.target;
+
+
+        if (
+          stopHit
+        ) {
+
+          exit =
+            currentStop;
+
+
+          resultR =
+
+            (
+              activeTrade.entry -
+              exit
+            ) /
+            activeTrade.risk;
+
+
+          exitReason =
+
+            activeTrade.breakeven
+              ? "BE"
+              : "SL";
+
+        }
+
+        else if (
+          targetHit
+        ) {
+
+          exit =
+            activeTrade.target;
+
+
+          resultR =
+            SETTINGS.targetR;
+
+
+          exitReason =
+            "TP";
+
+        }
+
+      }
+
+
+      /* ====================================================
+         MAX HOLD
+      ==================================================== */
+
+      const heldBars =
+
+        i -
+        activeTrade.entryIndex;
+
+
+      if (
+
+        exit ===
+          null &&
+
+        heldBars >=
+          SETTINGS.maxHoldBars
+
+      ) {
+
+        exit =
+          candle.close;
+
+
+        resultR =
+
+          activeTrade.side ===
+          "BUY"
+
+            ? (
+              exit -
+              activeTrade.entry
+            ) /
+              activeTrade.risk
+
+            : (
+              activeTrade.entry -
+              exit
+            ) /
+              activeTrade.risk;
+
+
+        exitReason =
+          "TIME";
+
+      }
+
+
+      if (
+        exit !==
+        null
+      ) {
+
+        trades.push({
+
+          side:
+            activeTrade.side,
+
+          entryTime:
+            activeTrade.entryTime,
+
+          exitTime:
+            candle.datetime,
+
+          entry:
+            round(
+              activeTrade.entry
+            ),
+
+          originalStop:
+            round(
+              activeTrade.originalStop
+            ),
+
+          target:
+            round(
+              activeTrade.target
+            ),
+
+          exit:
+            round(
+              exit
+            ),
+
+          resultR:
+            round(
+              resultR,
+              3
+            ),
+
+          exitReason
+
+        });
+
+
+        activeTrade =
+          null;
+
+
+        cooldownUntil =
+
+          i +
+          SETTINGS.cooldownBars;
+
+      }
+
+
+      continue;
+
+    }
+
+
+    if (
+      i <=
+      cooldownUntil
+    ) {
+
+      continue;
+
+    }
+
+
+    /* ======================================================
+       INDICATORS READY
+    ====================================================== */
+
+    if (
+
+      mEMA20[i] ===
+        null ||
+
+      mEMA50[i] ===
+        null ||
+
+      mRSI[i] ===
+        null ||
+
+      mATR[i] ===
+        null
+
+    ) {
+
+      continue;
+
+    }
+
+
+    /* ======================================================
+       H1 CONTEXT
+    ====================================================== */
+
+    hIndex =
+      findCompletedH1Index(
+
+        h1,
+
+        candle.timestamp,
+
+        hIndex
+
+      );
+
+
+    if (
+      hIndex <
+      199
+    ) {
+
+      continue;
+
+    }
+
+
+    if (
+
+      hEMA50[
+        hIndex
+      ] ===
+        null ||
+
+      hEMA200[
+        hIndex
+      ] ===
+        null
+
+    ) {
+
+      continue;
+
+    }
+
+
+    const h1Bullish =
+
+      h1[
+        hIndex
+      ].close >
+      hEMA200[
+        hIndex
+      ] &&
+
+      hEMA50[
+        hIndex
+      ] >
+      hEMA200[
+        hIndex
+      ];
+
+
+    const h1Bearish =
+
+      h1[
+        hIndex
+      ].close <
+      hEMA200[
+        hIndex
+      ] &&
+
+      hEMA50[
+        hIndex
+      ] <
+      hEMA200[
+        hIndex
+      ];
+
+
+    /* ======================================================
+       VOLATILITY
+    ====================================================== */
+
+    const atrPercent =
+
+      mATR[i] /
+      candle.close *
+      100;
+
+
+    if (
+
+      atrPercent <
+        SETTINGS.minAtrPercent ||
+
+      atrPercent >
+        SETTINGS.maxAtrPercent
+
+    ) {
+
+      continue;
+
+    }
+
+
+    /* ======================================================
+       CANDLE STRENGTH
+    ====================================================== */
+
+    const strength =
+      candleStrength(
+        candle
+      );
+
+
+    if (
+      strength <
+      SETTINGS.minBodyPercent
+    ) {
+
+      continue;
+
+    }
+
+
+    /* ======================================================
+       PULLBACK
+    ====================================================== */
+
+    const pullback =
+      hadPullback(
+
+        m15,
+
+        mEMA20,
+
+        mEMA50,
+
+        i,
+
+        SETTINGS.pullbackLookback
+
+      );
+
+
+    if (
+      !pullback
+    ) {
+
+      continue;
+
+    }
+
+
+    /* ======================================================
+       SIGNAL
+    ====================================================== */
+
+    const buy =
+
+      h1Bullish &&
+
+      candle.close >
+      candle.open &&
+
+      candle.close >
+      mEMA20[i] &&
+
+      candle.close >
+      mEMA50[i] &&
+
+      mRSI[i] >
+      SETTINGS.buyRsi;
+
+
+    const sell =
+
+      h1Bearish &&
+
+      candle.close <
+      candle.open &&
+
+      candle.close <
+      mEMA20[i] &&
+
+      candle.close <
+      mEMA50[i] &&
+
+      mRSI[i] <
+      SETTINGS.sellRsi;
+
+
+    if (
+      !buy &&
+      !sell
+    ) {
+
+      continue;
+
+    }
+
+
+    /* ======================================================
+       ENTRY AT NEXT M15 OPEN
+    ====================================================== */
+
+    const next =
+      m15[
+        i +
+        1
+      ];
+
+
+    const entry =
+      next.open;
+
+
+    const risk =
+
+      mATR[i] *
+      SETTINGS.stopAtr;
+
+
+    if (
+
+      !Number.isFinite(
+        risk
+      ) ||
+
+      risk <=
+      0
+
+    ) {
+
+      continue;
+
+    }
+
+
+    if (
+      buy
+    ) {
+
+      activeTrade = {
+
+        side:
+          "BUY",
+
+        entryIndex:
+          i +
+          1,
+
+        entryTime:
+          next.datetime,
+
+        entry,
+
+        risk,
+
+        stop:
+          entry -
+          risk,
+
+        originalStop:
+          entry -
+          risk,
+
+        target:
+          entry +
+          risk *
+          SETTINGS.targetR,
+
+        breakeven:
+          false
+
+      };
+
+    }
+
+
+    else {
+
+      activeTrade = {
+
+        side:
+          "SELL",
+
+        entryIndex:
+          i +
+          1,
+
+        entryTime:
+          next.datetime,
+
+        entry,
+
+        risk,
+
+        stop:
+          entry +
+          risk,
+
+        originalStop:
+          entry +
+          risk,
+
+        target:
+          entry -
+          risk *
+          SETTINGS.targetR,
+
+        breakeven:
+          false
+
+      };
+
+    }
+
+  }
+
+
+  return trades;
+
+}
+
+
+/* ============================================================
+   STATISTICS
+============================================================ */
+
+function statistics(
+  trades
+) {
+
+  const total =
+    trades.length;
+
+
+  const wins =
+    trades.filter(
+      trade =>
+        trade.resultR >
+        0
+    );
+
+
+  const losses =
+    trades.filter(
+      trade =>
+        trade.resultR <
+        0
+    );
+
+
+  const breakevens =
+    trades.filter(
+      trade =>
+        trade.resultR ===
+        0
+    );
+
+
+  const totalR =
+    trades.reduce(
+      (
+        sum,
+        trade
+      ) =>
+        sum +
+        trade.resultR,
+      0
+    );
+
+
+  const grossProfit =
+    wins.reduce(
+      (
+        sum,
+        trade
+      ) =>
+        sum +
+        trade.resultR,
+      0
+    );
+
+
+  const grossLoss =
+    Math.abs(
+
+      losses.reduce(
+        (
+          sum,
+          trade
+        ) =>
+          sum +
+          trade.resultR,
+        0
+      )
+
+    );
+
+
+  const winRate =
+
+    total >
+
+    0
+
+      ? wins.length /
+        total *
+        100
+
+      : 0;
+
+
+  const profitFactor =
+
+    grossLoss >
+    0
+
+      ? grossProfit /
+        grossLoss
+
+      : grossProfit >
+        0
+        ? 999
+        : 0;
+
+
+  const averageR =
+
+    total >
+    0
+
+      ? totalR /
+        total
+
+      : 0;
+
+
+  /* ========================================================
+     DRAWDOWN
+  ======================================================== */
+
+  let equity =
+    0;
+
+
+  let peak =
+    0;
+
+
+  let maxDrawdownR =
+    0;
+
+
+  let currentLossStreak =
+    0;
+
+
+  let maxLossStreak =
+    0;
+
+
+  for (
+    const trade of
+    trades
+  ) {
+
+    equity +=
+      trade.resultR;
+
+
+    peak =
+      Math.max(
+        peak,
+        equity
+      );
+
+
+    maxDrawdownR =
+      Math.max(
+
+        maxDrawdownR,
+
+        peak -
+        equity
+
+      );
+
+
+    if (
+      trade.resultR <
+      0
+    ) {
+
+      currentLossStreak++;
+
+
+      maxLossStreak =
+        Math.max(
+
+          maxLossStreak,
+
+          currentLossStreak
+
+        );
+
+    }
+
+    else {
+
+      currentLossStreak =
+        0;
+
+    }
+
+  }
+
+
+  const buys =
+    trades.filter(
+      trade =>
+        trade.side ===
+        "BUY"
+    );
+
+
+  const sells =
+    trades.filter(
+      trade =>
+        trade.side ===
+        "SELL"
+    );
+
+
+  return {
+
+    trades:
+      total,
+
+    wins:
+      wins.length,
+
+    losses:
+      losses.length,
+
+    breakevens:
+      breakevens.length,
+
+    winRate:
+      round(
+        winRate,
+        2
+      ),
+
+    netR:
+      round(
+        totalR,
+        2
+      ),
+
+    averageR:
+      round(
+        averageR,
+        3
+      ),
+
+    profitFactor:
+      round(
+        profitFactor,
+        2
+      ),
+
+    maxDrawdownR:
+      round(
+        maxDrawdownR,
+        2
+      ),
+
+    maxLossStreak,
+
+
+    buyTrades:
+      buys.length,
+
+    buyNetR:
+      round(
+
+        buys.reduce(
+          (
+            sum,
+            trade
+          ) =>
+            sum +
+            trade.resultR,
+          0
+        ),
+
+        2
+
+      ),
+
+
+    sellTrades:
+      sells.length,
+
+    sellNetR:
+      round(
+
+        sells.reduce(
+          (
+            sum,
+            trade
+          ) =>
+            sum +
+            trade.resultR,
+          0
+        ),
+
+        2
+
+      )
+
+  };
+
+}
+
+
+/* ============================================================
+   HANDLER
+============================================================ */
 
 module.exports =
-async function handler(req, res) {
+async function handler(
+  req,
+  res
+) {
+
+  const started =
+    Date.now();
+
 
   res.setHeader(
     "Cache-Control",
-    "no-store, max-age=0"
+    "no-store, no-cache, must-revalidate"
   );
+
 
   try {
 
-    if (!TD_KEY) {
-
-      return res
-        .status(500)
-        .json({
-          ok: false,
-          error:
-            "Missing TWELVE_DATA_API_KEY"
-        });
-    }
+    let days =
+      num(
+        req.query?.days,
+        SETTINGS.defaultDays
+      );
 
 
-    const [m15, h1] =
+    days =
+      Math.round(
+
+        clamp(
+
+          days,
+
+          7,
+
+          SETTINGS.maxDays
+
+        )
+
+      );
+
+
+    const nowSeconds =
+      Math.floor(
+        Date.now() /
+        1000
+      );
+
+
+    /*
+       Add 10 days of warm-up history.
+
+       H1 EMA200 needs a decent amount of historical data.
+    */
+
+    const warmupDays =
+      10;
+
+
+    const startSeconds =
+
+      nowSeconds -
+
+      (
+        days +
+        warmupDays
+      ) *
+      86400;
+
+
+    const [
+
+      m15,
+
+      h1
+
+    ] =
       await Promise.all([
 
-        getSeries(
-          "15min",
-          5000
+        fetchHistory(
+
+          900,
+
+          startSeconds,
+
+          nowSeconds
+
         ),
 
-        getSeries(
-          "1h",
-          1500
+        fetchHistory(
+
+          3600,
+
+          startSeconds,
+
+          nowSeconds
+
         )
 
       ]);
 
 
     if (
-      m15.length < 300 ||
-      h1.length < 220
+      m15.length <
+      500
     ) {
 
       throw new Error(
-        "Not enough data for backtest"
+        `Only ${m15.length} M15 candles downloaded`
       );
+
     }
 
 
-    // =====================================================
-    // INDICATORS
-    // =====================================================
+    if (
+      h1.length <
+      220
+    ) {
 
-    const mClose =
-      m15.map(c =>
-        c.close
+      throw new Error(
+        `Only ${h1.length} H1 candles downloaded`
       );
 
-    const hClose =
-      h1.map(c =>
-        c.close
-      );
+    }
 
 
-    const mEma20 =
-      ema(
-        mClose,
-        SETTINGS.emaFast
-      );
-
-    const mEma50 =
-      ema(
-        mClose,
-        SETTINGS.emaPullback
-      );
-
-    const mRsi =
-      rsi(
-        mClose,
-        SETTINGS.rsiPeriod
-      );
-
-    const mAtr =
-      atr(
+    const allTrades =
+      runBacktest(
         m15,
-        SETTINGS.atrPeriod
+        h1
       );
 
 
-    const hEma50 =
-      ema(
-        hClose,
-        SETTINGS.h1Fast
-      );
-
-    const hEma200 =
-      ema(
-        hClose,
-        SETTINGS.h1Slow
-      );
-
-
-    // =====================================================
-    // RESULTS
-    // =====================================================
-
-    const trades = [];
-
-    let active = null;
-
-    let cooldownUntil = -1;
-
-    let hIndex = 0;
-
-
-    // Start after enough M15 history exists
-    for (
-      let i = 60;
-      i < m15.length;
-      i++
-    ) {
-
-      const bar =
-        m15[i];
-
-
-      // ===================================================
-      // MANAGE OPEN TRADE
-      // ===================================================
-
-      if (active) {
-
-        const risk =
-          active.risk;
-
-        let stop =
-          active.stop;
-
-        const target =
-          active.target;
-
-
-        // ===============================================
-        // BREAKEVEN CHECK
-        // ===============================================
-
-        if (
-          !active.breakeven
-        ) {
-
-          if (
-            active.side === "BUY" &&
-            bar.high >=
-              active.entry +
-              risk *
-              SETTINGS.breakevenR
-          ) {
-
-            active.breakeven =
-              true;
-
-            active.stop =
-              active.entry;
-
-            stop =
-              active.stop;
-          }
-
-          else if (
-            active.side === "SELL" &&
-            bar.low <=
-              active.entry -
-              risk *
-              SETTINGS.breakevenR
-          ) {
-
-            active.breakeven =
-              true;
-
-            active.stop =
-              active.entry;
-
-            stop =
-              active.stop;
-          }
-        }
-
-
-        // ===============================================
-        // EXIT
-        // ===============================================
-
-        let exit = null;
-        let resultR = null;
-        let exitReason = null;
-
-
-        if (
-          active.side === "BUY"
-        ) {
-
-          /*
-            Conservative assumption:
-
-            If one candle touches both SL and TP,
-            count the stop first.
-          */
-
-          if (
-            bar.low <= stop
-          ) {
-
-            exit = stop;
-
-            resultR =
-              (exit -
-                active.entry) /
-              risk;
-
-            exitReason =
-              active.breakeven
-                ? "BE"
-                : "SL";
-          }
-
-          else if (
-            bar.high >= target
-          ) {
-
-            exit =
-              target;
-
-            resultR =
-              SETTINGS.targetR;
-
-            exitReason =
-              "TP";
-          }
-        }
-
-        else {
-
-          if (
-            bar.high >= stop
-          ) {
-
-            exit =
-              stop;
-
-            resultR =
-              (active.entry -
-                exit) /
-              risk;
-
-            exitReason =
-              active.breakeven
-                ? "BE"
-                : "SL";
-          }
-
-          else if (
-            bar.low <= target
-          ) {
-
-            exit =
-              target;
-
-            resultR =
-              SETTINGS.targetR;
-
-            exitReason =
-              "TP";
-          }
-        }
-
-
-        if (
-          exit !== null
-        ) {
-
-          trades.push({
-
-            side:
-              active.side,
-
-            entryTime:
-              active.entryTime,
-
-            exitTime:
-              bar.datetime,
-
-            entry:
-              round(
-                active.entry,
-                2
-              ),
-
-            exit:
-              round(
-                exit,
-                2
-              ),
-
-            stop:
-              round(
-                active.originalStop,
-                2
-              ),
-
-            target:
-              round(
-                active.target,
-                2
-              ),
-
-            resultR:
-              round(
-                resultR,
-                2
-              ),
-
-            exitReason
-          });
-
-
-          active = null;
-
-          cooldownUntil =
-            i +
-            SETTINGS.cooldownBars;
-        }
-
-
-        /*
-          Only one trade at a time.
-        */
-        continue;
-      }
-
-
-      // ===================================================
-      // COOLDOWN
-      // ===================================================
-
-      if (
-        i <= cooldownUntil
-      ) {
-        continue;
-      }
-
-
-      // ===================================================
-      // INDICATORS READY?
-      // ===================================================
-
-      if (
-        mEma20[i] === null ||
-        mEma50[i] === null ||
-        mRsi[i] === null ||
-        mAtr[i] === null
-      ) {
-        continue;
-      }
-
-
-      // ===================================================
-      // FIND COMPLETED H1 CANDLE
-      // ===================================================
-
-      hIndex =
-        findH1Index(
-          h1,
-          bar.time,
-          hIndex
-        );
-
-
-      if (
-        hIndex < 200
-      ) {
-        continue;
-      }
-
-
-      if (
-        hEma50[hIndex] === null ||
-        hEma200[hIndex] === null
-      ) {
-        continue;
-      }
-
-
-      // ===================================================
-      // H1 TREND
-      // ===================================================
-
-      const h1Bull =
-        h1[hIndex].close >
-          hEma200[hIndex] &&
-        hEma50[hIndex] >
-          hEma200[hIndex];
-
-
-      const h1Bear =
-        h1[hIndex].close <
-          hEma200[hIndex] &&
-        hEma50[hIndex] <
-          hEma200[hIndex];
-
-
-      // ===================================================
-      // VOLATILITY
-      // ===================================================
-
-      const atrPercent =
-        (
-          mAtr[i] /
-          bar.close
-        ) * 100;
-
-
-      const volatilityOk =
-        atrPercent >=
-          SETTINGS.minAtrPercent &&
-        atrPercent <=
-          SETTINGS.maxAtrPercent;
-
-
-      if (!volatilityOk)
-        continue;
-
-
-      // ===================================================
-      // STRONG CANDLE
-      // ===================================================
-
-      const strength =
-        candleStrength(bar);
-
-
-      if (
-        strength <
-        SETTINGS.minBodyPercent
-      ) {
-        continue;
-      }
-
-
-      // ===================================================
-      // PULLBACK
-      // ===================================================
-
-      const pullback =
-        hadPullback(
-          m15,
-          mEma20,
-          mEma50,
-          i,
-          SETTINGS.pullbackLookback
-        );
-
-
-      if (!pullback)
-        continue;
-
-
-      // ===================================================
-      // BUY CONDITIONS
-      // ===================================================
-
-      const buy =
-        h1Bull &&
-
-        bar.close >
-          bar.open &&
-
-        bar.close >
-          mEma20[i] &&
-
-        bar.close >
-          mEma50[i] &&
-
-        mRsi[i] >
-          SETTINGS.buyRsi;
-
-
-      // ===================================================
-      // SELL CONDITIONS
-      // ===================================================
-
-      const sell =
-        h1Bear &&
-
-        bar.close <
-          bar.open &&
-
-        bar.close <
-          mEma20[i] &&
-
-        bar.close <
-          mEma50[i] &&
-
-        mRsi[i] <
-          SETTINGS.sellRsi;
-
-
-      if (
-        !buy &&
-        !sell
-      ) {
-        continue;
-      }
-
-
-      // ===================================================
-      // ENTER AT NEXT BAR OPEN
-      //
-      // This avoids pretending we entered before
-      // the confirmation candle closed.
-      // ===================================================
-
-      if (
-        i + 1 >=
-        m15.length
-      ) {
-        break;
-      }
-
-
-      const nextBar =
-        m15[i + 1];
-
-      const entry =
-        nextBar.open;
-
-      const risk =
-        mAtr[i] *
-        SETTINGS.stopAtr;
-
-
-      if (
-        !Number.isFinite(risk) ||
-        risk <= 0
-      ) {
-        continue;
-      }
-
-
-      if (buy) {
-
-        active = {
-
-          side:
-            "BUY",
-
-          entryTime:
-            nextBar.datetime,
-
-          entry,
-
-          risk,
-
-          stop:
-            entry - risk,
-
-          originalStop:
-            entry - risk,
-
-          target:
-            entry +
-            risk *
-            SETTINGS.targetR,
-
-          breakeven:
-            false
-        };
-      }
-
-      else {
-
-        active = {
-
-          side:
-            "SELL",
-
-          entryTime:
-            nextBar.datetime,
-
-          entry,
-
-          risk,
-
-          stop:
-            entry + risk,
-
-          originalStop:
-            entry + risk,
-
-          target:
-            entry -
-            risk *
-            SETTINGS.targetR,
-
-          breakeven:
-            false
-        };
-      }
-    }
-
-
-    // =====================================================
-    // STATISTICS
-    // =====================================================
-
-    const total =
-      trades.length;
-
-    const winners =
-      trades.filter(
-        t =>
-          t.resultR > 0
-      );
-
-    const losers =
-      trades.filter(
-        t =>
-          t.resultR < 0
-      );
-
-    const breakevens =
-      trades.filter(
-        t =>
-          t.resultR === 0
+    /*
+       Only count trades occurring inside the
+       actual requested test period.
+
+       Warm-up trades are discarded.
+    */
+
+    const testStart =
+
+      (
+        nowSeconds -
+        days *
+        86400
+      ) *
+      1000;
+
+
+    const trades =
+      allTrades.filter(
+        trade =>
+
+          new Date(
+            trade.entryTime
+          ).getTime() >=
+          testStart
       );
 
 
-    const wins =
-      winners.length;
-
-    const losses =
-      losers.length;
-
-
-    const winRate =
-      total
-        ? wins /
-          total *
-          100
-        : 0;
-
-
-    const grossProfit =
-      winners.reduce(
-        (sum, t) =>
-          sum +
-          t.resultR,
-        0
+    const results =
+      statistics(
+        trades
       );
 
-
-    const grossLoss =
-      Math.abs(
-        losers.reduce(
-          (sum, t) =>
-            sum +
-            t.resultR,
-          0
-        )
-      );
-
-
-    const profitFactor =
-      grossLoss > 0
-        ? grossProfit /
-          grossLoss
-        : grossProfit > 0
-        ? 999
-        : 0;
-
-
-    const netR =
-      trades.reduce(
-        (sum, t) =>
-          sum +
-          t.resultR,
-        0
-      );
-
-
-    const averageR =
-      total
-        ? netR /
-          total
-        : 0;
-
-
-    // =====================================================
-    // MAX DRAWDOWN IN R
-    // =====================================================
-
-    let equity = 0;
-    let peak = 0;
-    let maxDrawdownR = 0;
-
-
-    for (
-      const trade of trades
-    ) {
-
-      equity +=
-        trade.resultR;
-
-      if (
-        equity > peak
-      ) {
-        peak = equity;
-      }
-
-      const drawdown =
-        peak - equity;
-
-      if (
-        drawdown >
-        maxDrawdownR
-      ) {
-        maxDrawdownR =
-          drawdown;
-      }
-    }
-
-
-    // =====================================================
-    // LONGEST LOSING STREAK
-    // =====================================================
-
-    let currentLossStreak = 0;
-    let maxLossStreak = 0;
-
-
-    for (
-      const trade of trades
-    ) {
-
-      if (
-        trade.resultR < 0
-      ) {
-
-        currentLossStreak++;
-
-        maxLossStreak =
-          Math.max(
-            maxLossStreak,
-            currentLossStreak
-          );
-      }
-
-      else {
-
-        currentLossStreak = 0;
-      }
-    }
-
-
-    // =====================================================
-    // BUY / SELL STATS
-    // =====================================================
-
-    const buyTrades =
-      trades.filter(
-        t =>
-          t.side === "BUY"
-      );
-
-    const sellTrades =
-      trades.filter(
-        t =>
-          t.side === "SELL"
-      );
-
-
-    const buyR =
-      buyTrades.reduce(
-        (s, t) =>
-          s +
-          t.resultR,
-        0
-      );
-
-
-    const sellR =
-      sellTrades.reduce(
-        (s, t) =>
-          s +
-          t.resultR,
-        0
-      );
-
-
-    // =====================================================
-    // RESPONSE
-    // =====================================================
 
     return res
       .status(200)
       .json({
 
-        ok: true,
+        ok:
+          true,
 
-        symbol:
-          SYMBOL,
+        source:
+          "Coinbase Exchange",
+
+        product:
+          PRODUCT,
 
         strategy:
           "H1 Trend + M15 Pullback",
 
-        period: {
+        days,
 
-          from:
-            m15[0]?.datetime,
+        settings: {
 
-          to:
-            m15[
-              m15.length - 1
-            ]?.datetime,
+          h1Trend:
+            "EMA50 vs EMA200",
+
+          m15EMA:
+            "20 / 50",
+
+          buyRSI:
+            SETTINGS.buyRsi,
+
+          sellRSI:
+            SETTINGS.sellRsi,
+
+          stopATR:
+            SETTINGS.stopAtr,
+
+          targetR:
+            SETTINGS.targetR,
+
+          breakevenAtR:
+            SETTINGS.breakevenR,
+
+          minimumCandleBody:
+            SETTINGS.minBodyPercent,
+
+          pullbackLookback:
+            SETTINGS.pullbackLookback
+
+        },
+
+
+        data: {
 
           m15Candles:
             m15.length,
 
           h1Candles:
-            h1.length
+            h1.length,
+
+          from:
+            new Date(
+              testStart
+            ).toISOString(),
+
+          to:
+            new Date()
+              .toISOString()
+
         },
 
-        settings:
-          SETTINGS,
 
-        results: {
+        results,
 
-          trades:
-            total,
-
-          wins,
-
-          losses,
-
-          breakevens:
-            breakevens.length,
-
-          winRate:
-            round(
-              winRate,
-              2
-            ),
-
-          netR:
-            round(
-              netR,
-              2
-            ),
-
-          averageR:
-            round(
-              averageR,
-              3
-            ),
-
-          profitFactor:
-            round(
-              profitFactor,
-              2
-            ),
-
-          maxDrawdownR:
-            round(
-              maxDrawdownR,
-              2
-            ),
-
-          maxLossStreak,
-
-          buyTrades:
-            buyTrades.length,
-
-          buyNetR:
-            round(
-              buyR,
-              2
-            ),
-
-          sellTrades:
-            sellTrades.length,
-
-          sellNetR:
-            round(
-              sellR,
-              2
-            )
-        },
 
         lastTrades:
           trades
-            .slice(-30)
-            .reverse()
+            .slice(
+              -50
+            )
+            .reverse(),
+
+
+        latencyMs:
+          Date.now() -
+          started
 
       });
 
   }
 
-  catch (error) {
+  catch (
+    error
+  ) {
 
     console.error(
+      "BACKTEST ERROR:",
       error
     );
+
 
     return res
       .status(500)
       .json({
 
-        ok: false,
+        ok:
+          false,
+
+        source:
+          "Coinbase Exchange",
 
         error:
-          error.message ||
-          "Backtest failed"
+          errorText(
+            error
+          ),
+
+        latencyMs:
+          Date.now() -
+          started
 
       });
+
   }
+
 };
