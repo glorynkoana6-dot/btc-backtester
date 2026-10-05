@@ -2334,5 +2334,5 @@ export default async function handler(
           error.message
 
       });
-  }
+   }
 }
