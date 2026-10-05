@@ -1,5 +1,5 @@
 /* ============================================================
-   MKAYFX BTC VOLUME PROFILE INTELLIGENCE V3
+   MKAYFX BTC VOLUME PROFILE INTELLIGENCE V3.1
    /api/btc.js
 
    SOURCE
@@ -10,159 +10,100 @@
    -------
    BTC-USD
 
-   PURPOSE
-   -------
-   Volume Profile + Market Intelligence
-
-   FEATURES
-   --------
-   - Session volume profile
-   - POC
-   - VAH
-   - VAL
-   - Developing POC / VAH / VAL
-   - Session VWAP
-   - Previous completed session profile
-   - Naked POC tracking
-   - H1 / H4 trend context
-   - Market state engine
-   - Profile pullback entries
-   - Profile rejection entries
-   - RAW / BALANCED / SELECTIVE modes
-
-   IMPORTANT
-   ---------
-   Coinbase historical OHLCV does not contain exact volume at
-   every price level.
-
-   This engine approximates profile volume by distributing each
-   M5 candle's volume across the price bins covered by that
-   candle.
+   V3.1 UPDATE
+   -----------
+   - Stronger profile rejection validation
+   - Rejection candle must interact with the actual level
+   - VAH / VAL rejection quality filter
+   - POC rejection quality filter
+   - Relative-volume confirmation
+   - Momentum confirmation
+   - Reclaims remain less restrictive than rejection trades
+   - Designed to improve PF without destroying trade frequency
 
    NO API KEY REQUIRED.
 ============================================================ */
 
-
-const PRODUCT =
-  "BTC-USD";
-
-
-const BASE_URL =
-  "https://api.exchange.coinbase.com";
-
+const PRODUCT = "BTC-USD";
+const BASE_URL = "https://api.exchange.coinbase.com";
 
 const SETTINGS = {
 
-  /* ========================================================
-     PROFILE
-  ======================================================== */
+  profileBins: 42,
+  valueAreaPercent: 0.70,
+  minimumProfileBars: 8,
 
-  profileBins:
-    42,
+  atrPeriod: 14,
+  rsiPeriod: 14,
 
-  valueAreaPercent:
-    0.70,
+  h1FastEMA: 50,
+  h1SlowEMA: 200,
 
-  minimumProfileBars:
-    8,
+  h4FastEMA: 20,
+  h4SlowEMA: 50,
 
+  pullbackLookback: 3,
 
-  /* ========================================================
-     INDICATORS
-  ======================================================== */
+  minimumBodyPercent: 0.42,
+  minimumRejectionWick: 0.12,
 
-  atrPeriod:
-    14,
+  maxDistanceATR: 1.10,
 
-  rsiPeriod:
-    14,
+  buyRsiMin: 48,
+  buyRsiMax: 72,
 
-  h1FastEMA:
-    50,
+  sellRsiMin: 28,
+  sellRsiMax: 52,
 
-  h1SlowEMA:
-    200,
+  minimumATRPercent: 0.08,
+  maximumATRPercent: 3.50,
 
-  h4FastEMA:
-    20,
+  stopATR: 1.00,
+  structureBufferATR: 0.12,
 
-  h4SlowEMA:
-    50,
-
+  targetR: 1.50,
 
   /* ========================================================
-     ENTRY
+     V3.1 REJECTION QUALITY
   ======================================================== */
 
-  pullbackLookback:
-    3,
+  rejectionVolumeLookback: 20,
 
-  minimumBodyPercent:
-    0.42,
+  /*
+     VAH / VAL rejection:
+     moderately stricter.
+  */
 
-  minimumRejectionWick:
-    0.12,
+  valueRejectionMinWick: 0.28,
+  valueRejectionMinVolume: 1.05,
 
-  maxDistanceATR:
-    1.10,
+  /*
+     POC rejection:
+     stricter because POC is an acceptance area.
+  */
 
+  pocRejectionMinWick: 0.32,
+  pocRejectionMinVolume: 1.10,
 
-  /* ========================================================
-     RSI
-  ======================================================== */
+  /*
+     How far around a profile level counts as interaction.
+  */
 
-  buyRsiMin:
-    48,
+  levelToleranceATR: 0.15,
 
-  buyRsiMax:
-    72,
+  /*
+     Minimum score specifically when the selected setup
+     is a rejection.
+  */
 
-  sellRsiMin:
-    28,
-
-  sellRsiMax:
-    52,
-
-
-  /* ========================================================
-     VOLATILITY
-  ======================================================== */
-
-  minimumATRPercent:
-    0.08,
-
-  maximumATRPercent:
-    3.50,
-
-
-  /* ========================================================
-     RISK
-  ======================================================== */
-
-  stopATR:
-    1.00,
-
-  structureBufferATR:
-    0.12,
-
-  targetR:
-    1.50,
-
-
-  /* ========================================================
-     MODES
-  ======================================================== */
+  balancedValueRejectionScore: 64,
+  balancedPOCRejectionScore: 68,
 
   modeScores: {
 
-    RAW:
-      48,
-
-    BALANCED:
-      60,
-
-    SELECTIVE:
-      72
+    RAW: 48,
+    BALANCED: 60,
+    SELECTIVE: 72
 
   }
 
@@ -173,68 +114,41 @@ const SETTINGS = {
    BASIC HELPERS
 ============================================================ */
 
-function number(
-  value,
-  fallback = null
-) {
+function number(value, fallback = null) {
 
-  const n =
-    Number(
-      value
-    );
+  const n = Number(value);
 
-
-  return Number.isFinite(
-    n
-  )
+  return Number.isFinite(n)
     ? n
     : fallback;
 
 }
 
 
-function round(
-  value,
-  digits = 2
-) {
+function round(value, digits = 2) {
 
   if (
     value === null ||
     value === undefined ||
-    !Number.isFinite(
-      Number(
-        value
-      )
-    )
+    !Number.isFinite(Number(value))
   ) {
 
     return null;
 
   }
 
-
-  const p =
-    10 ** digits;
-
+  const p = 10 ** digits;
 
   return (
     Math.round(
-      Number(
-        value
-      ) *
-      p
-    ) /
-    p
+      Number(value) * p
+    ) / p
   );
 
 }
 
 
-function clamp(
-  value,
-  minimum,
-  maximum
-) {
+function clamp(value, minimum, maximum) {
 
   return Math.max(
     minimum,
@@ -247,42 +161,35 @@ function clamp(
 }
 
 
-function average(
-  values
-) {
+function average(values) {
 
-  if (
-    !values.length
-  ) {
+  const valid =
+    values.filter(
+      value =>
+        Number.isFinite(
+          Number(value)
+        )
+    );
 
+  if (!valid.length) {
     return 0;
-
   }
 
-
   return (
-    values.reduce(
-      (
-        total,
-        value
-      ) =>
-        total +
-        value,
+    valid.reduce(
+      (total, value) =>
+        total + Number(value),
       0
     ) /
-    values.length
+    valid.length
   );
 
 }
 
 
-function errorText(
-  error
-) {
+function errorText(error) {
 
-  if (
-    error instanceof Error
-  ) {
+  if (error instanceof Error) {
 
     return (
       error.message ||
@@ -292,22 +199,13 @@ function errorText(
 
   }
 
-
-  if (
-    typeof error ===
-    "string"
-  ) {
-
+  if (typeof error === "string") {
     return error;
-
   }
-
 
   try {
 
-    return JSON.stringify(
-      error
-    );
+    return JSON.stringify(error);
 
   }
 
@@ -324,22 +222,16 @@ function errorText(
    HTTP
 ============================================================ */
 
-async function getJSON(
-  url,
-  timeoutMs = 8000
-) {
+async function getJSON(url, timeoutMs = 8000) {
 
   const controller =
     new AbortController();
 
-
   const timer =
     setTimeout(
-      () =>
-        controller.abort(),
+      () => controller.abort(),
       timeoutMs
     );
-
 
   try {
 
@@ -347,43 +239,28 @@ async function getJSON(
       await fetch(
         url,
         {
-
-          method:
-            "GET",
-
-          cache:
-            "no-store",
+          method: "GET",
+          cache: "no-store",
 
           headers: {
-
-            Accept:
-              "application/json",
-
+            Accept: "application/json",
             "User-Agent":
-              "MKAYFX-BTC-VOLUME-PROFILE-V3"
-
+              "MKAYFX-BTC-VOLUME-PROFILE-V3.1"
           },
 
-          signal:
-            controller.signal
-
+          signal: controller.signal
         }
       );
-
 
     const raw =
       await response.text();
 
-
     let data;
-
 
     try {
 
       data =
-        JSON.parse(
-          raw
-        );
+        JSON.parse(raw);
 
     }
 
@@ -395,10 +272,7 @@ async function getJSON(
 
     }
 
-
-    if (
-      !response.ok
-    ) {
+    if (!response.ok) {
 
       throw new Error(
         data?.message ||
@@ -407,14 +281,11 @@ async function getJSON(
 
     }
 
-
     return data;
 
   }
 
-  catch (
-    error
-  ) {
+  catch (error) {
 
     if (
       error?.name ===
@@ -427,20 +298,15 @@ async function getJSON(
 
     }
 
-
     throw new Error(
-      errorText(
-        error
-      )
+      errorText(error)
     );
 
   }
 
   finally {
 
-    clearTimeout(
-      timer
-    );
+    clearTimeout(timer);
 
   }
 
@@ -451,9 +317,7 @@ async function getJSON(
    COINBASE CANDLES
 ============================================================ */
 
-async function fetchCandles(
-  granularity
-) {
+async function fetchCandles(granularity) {
 
   const data =
     await getJSON(
@@ -463,12 +327,7 @@ async function fetchCandles(
 
     );
 
-
-  if (
-    !Array.isArray(
-      data
-    )
-  ) {
+  if (!Array.isArray(data)) {
 
     throw new Error(
       "Coinbase candle response was not an array"
@@ -476,95 +335,56 @@ async function fetchCandles(
 
   }
 
-
   const candles =
     data
       .map(
         row => ({
 
           timestamp:
-            Number(
-              row[0]
-            ) *
-            1000,
+            Number(row[0]) * 1000,
 
           datetime:
             new Date(
-              Number(
-                row[0]
-              ) *
-              1000
+              Number(row[0]) * 1000
             ).toISOString(),
 
           low:
-            Number(
-              row[1]
-            ),
+            Number(row[1]),
 
           high:
-            Number(
-              row[2]
-            ),
+            Number(row[2]),
 
           open:
-            Number(
-              row[3]
-            ),
+            Number(row[3]),
 
           close:
-            Number(
-              row[4]
-            ),
+            Number(row[4]),
 
           volume:
-            Number(
-              row[5]
-            )
+            Number(row[5])
 
         })
       )
       .filter(
         candle =>
 
-          candle.timestamp >
-            0 &&
-
-          candle.open >
-            0 &&
-
-          candle.high >
-            0 &&
-
-          candle.low >
-            0 &&
-
-          candle.close >
-            0
+          candle.timestamp > 0 &&
+          candle.open > 0 &&
+          candle.high > 0 &&
+          candle.low > 0 &&
+          candle.close > 0 &&
+          Number.isFinite(candle.volume)
 
       )
       .sort(
-        (
-          a,
-          b
-        ) =>
+        (a, b) =>
           a.timestamp -
           b.timestamp
       );
 
-
-  /*
-     Ignore the newest potentially still-forming candle.
-  */
-
-  if (
-    candles.length >
-    2
-  ) {
-
+  if (candles.length > 2) {
     candles.pop();
-
   }
-
 
   return candles;
 
@@ -588,18 +408,12 @@ async function fetchTicker() {
    EMA
 ============================================================ */
 
-function ema(
-  values,
-  period
-) {
+function ema(values, period) {
 
   const output =
     new Array(
       values.length
-    ).fill(
-      null
-    );
-
+    ).fill(null);
 
   if (
     values.length <
@@ -610,49 +424,34 @@ function ema(
 
   }
 
-
-  let total =
-    0;
-
+  let total = 0;
 
   for (
     let i = 0;
-    i <
-      period;
+    i < period;
     i++
   ) {
 
-    total +=
-      values[i];
+    total += values[i];
 
   }
 
-
   let current =
-    total /
-    period;
-
+    total / period;
 
   output[
-    period -
-    1
-  ] =
-    current;
-
+    period - 1
+  ] = current;
 
   const multiplier =
     2 /
     (
-      period +
-      1
+      period + 1
     );
 
-
   for (
-    let i =
-      period;
-    i <
-      values.length;
+    let i = period;
+    i < values.length;
     i++
   ) {
 
@@ -664,12 +463,10 @@ function ema(
       multiplier +
       current;
 
-
     output[i] =
       current;
 
   }
-
 
   return output;
 
@@ -680,18 +477,12 @@ function ema(
    RSI
 ============================================================ */
 
-function rsi(
-  values,
-  period
-) {
+function rsi(values, period) {
 
   const output =
     new Array(
       values.length
-    ).fill(
-      null
-    );
-
+    ).fill(null);
 
   if (
     values.length <=
@@ -702,19 +493,12 @@ function rsi(
 
   }
 
-
-  let gains =
-    0;
-
-
-  let losses =
-    0;
-
+  let gains = 0;
+  let losses = 0;
 
   for (
     let i = 1;
-    i <=
-      period;
+    i <= period;
     i++
   ) {
 
@@ -722,42 +506,31 @@ function rsi(
       values[i] -
       values[i - 1];
 
-
     if (
-      change >
-      0
+      change > 0
     ) {
 
-      gains +=
-        change;
+      gains += change;
 
     }
 
     else {
 
       losses +=
-        Math.abs(
-          change
-        );
+        Math.abs(change);
 
     }
 
   }
 
-
   let avgGain =
-    gains /
-    period;
-
+    gains / period;
 
   let avgLoss =
-    losses /
-    period;
-
+    losses / period;
 
   output[period] =
-    avgLoss ===
-    0
+    avgLoss === 0
       ? 100
       : 100 -
         100 /
@@ -767,13 +540,10 @@ function rsi(
           avgLoss
         );
 
-
   for (
     let i =
-      period +
-      1;
-    i <
-      values.length;
+      period + 1;
+    i < values.length;
     i++
   ) {
 
@@ -781,13 +551,11 @@ function rsi(
       values[i] -
       values[i - 1];
 
-
     const gain =
       Math.max(
         change,
         0
       );
-
 
     const loss =
       Math.max(
@@ -795,34 +563,28 @@ function rsi(
         0
       );
 
-
     avgGain =
       (
         avgGain *
         (
-          period -
-          1
+          period - 1
         ) +
         gain
       ) /
       period;
 
-
     avgLoss =
       (
         avgLoss *
         (
-          period -
-          1
+          period - 1
         ) +
         loss
       ) /
       period;
 
-
     output[i] =
-      avgLoss ===
-      0
+      avgLoss === 0
         ? 100
         : 100 -
           100 /
@@ -834,7 +596,6 @@ function rsi(
 
   }
 
-
   return output;
 
 }
@@ -844,18 +605,12 @@ function rsi(
    ATR
 ============================================================ */
 
-function atr(
-  candles,
-  period
-) {
+function atr(candles, period) {
 
   const output =
     new Array(
       candles.length
-    ).fill(
-      null
-    );
-
+    ).fill(null);
 
   if (
     candles.length <=
@@ -866,19 +621,14 @@ function atr(
 
   }
 
-
   const ranges =
     new Array(
       candles.length
-    ).fill(
-      null
-    );
-
+    ).fill(null);
 
   for (
     let i = 1;
-    i <
-      candles.length;
+    i < candles.length;
     i++
   ) {
 
@@ -902,15 +652,11 @@ function atr(
 
   }
 
-
-  let total =
-    0;
-
+  let total = 0;
 
   for (
     let i = 1;
-    i <=
-      period;
+    i <= period;
     i++
   ) {
 
@@ -919,22 +665,16 @@ function atr(
 
   }
 
-
   let current =
-    total /
-    period;
-
+    total / period;
 
   output[period] =
     current;
 
-
   for (
     let i =
-      period +
-      1;
-    i <
-      candles.length;
+      period + 1;
+    i < candles.length;
     i++
   ) {
 
@@ -942,19 +682,16 @@ function atr(
       (
         current *
         (
-          period -
-          1
+          period - 1
         ) +
         ranges[i]
       ) /
       period;
 
-
     output[i] =
       current;
 
   }
-
 
   return output;
 
@@ -965,9 +702,7 @@ function atr(
    H1 -> H4
 ============================================================ */
 
-function buildH4(
-  h1
-) {
+function buildH4(h1) {
 
   const interval =
     4 *
@@ -975,14 +710,11 @@ function buildH4(
     60 *
     1000;
 
-
   const map =
     new Map();
 
-
   for (
-    const candle of
-    h1
+    const candle of h1
   ) {
 
     const key =
@@ -992,23 +724,16 @@ function buildH4(
       ) *
       interval;
 
-
-    if (
-      !map.has(
-        key
-      )
-    ) {
+    if (!map.has(key)) {
 
       map.set(
         key,
         {
 
-          timestamp:
-            key,
+          timestamp: key,
 
           closeTime:
-            key +
-            interval,
+            key + interval,
 
           open:
             candle.open,
@@ -1033,10 +758,7 @@ function buildH4(
     else {
 
       const bar =
-        map.get(
-          key
-        );
-
+        map.get(key);
 
       bar.high =
         Math.max(
@@ -1044,17 +766,14 @@ function buildH4(
           candle.high
         );
 
-
       bar.low =
         Math.min(
           bar.low,
           candle.low
         );
 
-
       bar.close =
         candle.close;
-
 
       bar.volume +=
         candle.volume;
@@ -1063,23 +782,13 @@ function buildH4(
 
   }
 
-
   const result =
-    [
-      ...map.values()
-    ].sort(
-      (
-        a,
-        b
-      ) =>
-        a.timestamp -
-        b.timestamp
-    );
-
-
-  /*
-     Live engine only uses completed H4 bars.
-  */
+    [...map.values()]
+      .sort(
+        (a, b) =>
+          a.timestamp -
+          b.timestamp
+      );
 
   return result.filter(
     bar =>
@@ -1091,54 +800,31 @@ function buildH4(
 
 
 /* ============================================================
-   SESSION DEFINITIONS
-
-   UTC
-   ---
-   ASIA       00:00 - 08:00
-   LONDON     08:00 - 13:00
-   NEW YORK   13:00 - 21:00
-   LATE       21:00 - 24:00
-
-   BTC trades 24/7, but these blocks let us examine where
-   volume is building through the major global sessions.
+   SESSION
 ============================================================ */
 
-function sessionInfo(
-  timestamp
-) {
+function sessionInfo(timestamp) {
 
   const date =
-    new Date(
-      timestamp
-    );
-
+    new Date(timestamp);
 
   const midnight =
     Date.UTC(
 
       date.getUTCFullYear(),
-
       date.getUTCMonth(),
-
       date.getUTCDate()
 
     );
 
-
   const hour =
     date.getUTCHours();
 
-
-  if (
-    hour <
-    8
-  ) {
+  if (hour < 8) {
 
     return {
 
-      name:
-        "ASIA",
+      name: "ASIA",
 
       start:
         midnight,
@@ -1152,16 +838,11 @@ function sessionInfo(
 
   }
 
-
-  if (
-    hour <
-    13
-  ) {
+  if (hour < 13) {
 
     return {
 
-      name:
-        "LONDON",
+      name: "LONDON",
 
       start:
         midnight +
@@ -1177,16 +858,11 @@ function sessionInfo(
 
   }
 
-
-  if (
-    hour <
-    21
-  ) {
+  if (hour < 21) {
 
     return {
 
-      name:
-        "NEW YORK",
+      name: "NEW YORK",
 
       start:
         midnight +
@@ -1202,11 +878,9 @@ function sessionInfo(
 
   }
 
-
   return {
 
-    name:
-      "LATE",
+    name: "LATE",
 
     start:
       midnight +
@@ -1224,24 +898,17 @@ function sessionInfo(
 
 
 /* ============================================================
-   GROUP M5 CANDLES INTO SESSIONS
+   GROUP SESSIONS
 ============================================================ */
 
-function groupSessions(
-  candles
-) {
+function groupSessions(candles) {
 
-  const groups =
-    [];
+  const groups = [];
 
-
-  let current =
-    null;
-
+  let current = null;
 
   for (
-    const candle of
-    candles
+    const candle of candles
   ) {
 
     const session =
@@ -1249,15 +916,12 @@ function groupSessions(
         candle.timestamp
       );
 
-
     const key =
       `${session.start}:${session.name}`;
 
-
     if (
       !current ||
-      current.key !==
-      key
+      current.key !== key
     ) {
 
       current = {
@@ -1273,25 +937,19 @@ function groupSessions(
         end:
           session.end,
 
-        candles:
-          []
+        candles: []
 
       };
 
-
-      groups.push(
-        current
-      );
+      groups.push(current);
 
     }
-
 
     current.candles.push(
       candle
     );
 
   }
-
 
   return groups;
 
@@ -1300,12 +958,6 @@ function groupSessions(
 
 /* ============================================================
    VOLUME PROFILE
-
-   Each candle volume is spread across the price bins touched
-   by that candle.
-
-   This is an OHLCV approximation rather than true tick-level
-   volume-at-price.
 ============================================================ */
 
 function buildVolumeProfile(
@@ -1324,7 +976,6 @@ function buildVolumeProfile(
 
   }
 
-
   const low =
     Math.min(
       ...candles.map(
@@ -1332,7 +983,6 @@ function buildVolumeProfile(
           candle.low
       )
     );
-
 
   const high =
     Math.max(
@@ -1342,26 +992,21 @@ function buildVolumeProfile(
       )
     );
 
-
   const range =
     high -
     low;
 
-
   if (
-    range <=
-    0
+    range <= 0
   ) {
 
     return null;
 
   }
 
-
   const binSize =
     range /
     binsCount;
-
 
   const bins =
     Array.from(
@@ -1384,35 +1029,28 @@ function buildVolumeProfile(
         high:
           low +
           (
-            index +
-            1
+            index + 1
           ) *
           binSize,
 
         price:
           low +
           (
-            index +
-            0.5
+            index + 0.5
           ) *
           binSize,
 
-        volume:
-          0
+        volume: 0
 
       })
     );
 
-
   for (
-    const candle of
-    candles
+    const candle of candles
   ) {
 
     const first =
-
       clamp(
-
         Math.floor(
           (
             candle.low -
@@ -1420,19 +1058,12 @@ function buildVolumeProfile(
           ) /
           binSize
         ),
-
         0,
-
-        binsCount -
-        1
-
+        binsCount - 1
       );
 
-
     const last =
-
       clamp(
-
         Math.floor(
           (
             candle.high -
@@ -1440,14 +1071,9 @@ function buildVolumeProfile(
           ) /
           binSize
         ),
-
         0,
-
-        binsCount -
-        1
-
+        binsCount - 1
       );
-
 
     const touched =
       Math.max(
@@ -1457,12 +1083,6 @@ function buildVolumeProfile(
         1
       );
 
-
-    /*
-       Give a little extra importance to the candle's typical
-       price while still spreading the volume across its range.
-    */
-
     const typicalPrice =
       (
         candle.high +
@@ -1471,9 +1091,7 @@ function buildVolumeProfile(
       ) /
       3;
 
-
     let typicalIndex =
-
       Math.floor(
         (
           typicalPrice -
@@ -1482,36 +1100,28 @@ function buildVolumeProfile(
         binSize
       );
 
-
     typicalIndex =
       clamp(
         typicalIndex,
         0,
-        binsCount -
-        1
+        binsCount - 1
       );
-
 
     const spreadVolume =
       candle.volume *
       0.70;
 
-
     const concentratedVolume =
       candle.volume *
       0.30;
-
 
     const perBin =
       spreadVolume /
       touched;
 
-
     for (
-      let index =
-        first;
-      index <=
-        last;
+      let index = first;
+      index <= last;
       index++
     ) {
 
@@ -1520,7 +1130,6 @@ function buildVolumeProfile(
 
     }
 
-
     bins[
       typicalIndex
     ].volume +=
@@ -1528,37 +1137,27 @@ function buildVolumeProfile(
 
   }
 
-
   const totalVolume =
     bins.reduce(
-      (
-        total,
-        bin
-      ) =>
+      (total, bin) =>
         total +
         bin.volume,
       0
     );
 
-
   if (
-    totalVolume <=
-    0
+    totalVolume <= 0
   ) {
 
     return null;
 
   }
 
-
-  let pocIndex =
-    0;
-
+  let pocIndex = 0;
 
   for (
     let i = 1;
-    i <
-      bins.length;
+    i < bins.length;
     i++
   ) {
 
@@ -1567,34 +1166,24 @@ function buildVolumeProfile(
       bins[pocIndex].volume
     ) {
 
-      pocIndex =
-        i;
+      pocIndex = i;
 
     }
 
   }
 
-
-  /*
-     Build 70% value area outward from POC.
-  */
-
   const targetVolume =
     totalVolume *
     SETTINGS.valueAreaPercent;
 
-
   let includedVolume =
     bins[pocIndex].volume;
-
 
   let lowIndex =
     pocIndex;
 
-
   let highIndex =
     pocIndex;
-
 
   while (
 
@@ -1602,41 +1191,27 @@ function buildVolumeProfile(
     targetVolume &&
 
     (
-      lowIndex >
-        0 ||
+      lowIndex > 0 ||
       highIndex <
-        bins.length -
-        1
+        bins.length - 1
     )
 
   ) {
 
     const lowerVolume =
-
-      lowIndex >
-      0
-
+      lowIndex > 0
         ? bins[
-          lowIndex -
-          1
+          lowIndex - 1
         ].volume
-
         : -1;
-
 
     const upperVolume =
-
       highIndex <
-      bins.length -
-      1
-
+      bins.length - 1
         ? bins[
-          highIndex +
-          1
+          highIndex + 1
         ].volume
-
         : -1;
-
 
     if (
       upperVolume >=
@@ -1645,8 +1220,7 @@ function buildVolumeProfile(
 
       if (
         highIndex <
-        bins.length -
-        1
+        bins.length - 1
       ) {
 
         highIndex++;
@@ -1674,8 +1248,7 @@ function buildVolumeProfile(
     else {
 
       if (
-        lowIndex >
-        0
+        lowIndex > 0
       ) {
 
         lowIndex--;
@@ -1702,25 +1275,6 @@ function buildVolumeProfile(
 
   }
 
-
-  const poc =
-    bins[
-      pocIndex
-    ].price;
-
-
-  const val =
-    bins[
-      lowIndex
-    ].low;
-
-
-  const vah =
-    bins[
-      highIndex
-    ].high;
-
-
   return {
 
     low,
@@ -1731,11 +1285,20 @@ function buildVolumeProfile(
 
     totalVolume,
 
-    poc,
+    poc:
+      bins[
+        pocIndex
+      ].price,
 
-    vah,
+    val:
+      bins[
+        lowIndex
+      ].low,
 
-    val,
+    vah:
+      bins[
+        highIndex
+      ].high,
 
     bins
 
@@ -1748,21 +1311,13 @@ function buildVolumeProfile(
    VWAP
 ============================================================ */
 
-function calculateVWAP(
-  candles
-) {
+function calculateVWAP(candles) {
 
-  let totalVolume =
-    0;
-
-
-  let priceVolume =
-    0;
-
+  let totalVolume = 0;
+  let priceVolume = 0;
 
   for (
-    const candle of
-    candles
+    const candle of candles
   ) {
 
     const typical =
@@ -1773,27 +1328,22 @@ function calculateVWAP(
       ) /
       3;
 
-
     priceVolume +=
       typical *
       candle.volume;
-
 
     totalVolume +=
       candle.volume;
 
   }
 
-
   if (
-    totalVolume <=
-    0
+    totalVolume <= 0
   ) {
 
     return null;
 
   }
-
 
   return (
     priceVolume /
@@ -1805,9 +1355,6 @@ function calculateVWAP(
 
 /* ============================================================
    NAKED POC
-
-   A completed session POC remains "naked" while subsequent
-   candles have not traded through that price.
 ============================================================ */
 
 function findNakedPOCs(
@@ -1815,51 +1362,35 @@ function findNakedPOCs(
   currentPrice
 ) {
 
-  const naked =
-    [];
-
+  const naked = [];
 
   for (
     let i = 0;
     i <
-      sessions.length -
-      1;
+      sessions.length - 1;
     i++
   ) {
 
     const session =
       sessions[i];
 
-
     const profile =
       buildVolumeProfile(
         session.candles
       );
 
-
-    if (
-      !profile
-    ) {
-
+    if (!profile) {
       continue;
-
     }
-
 
     const poc =
       profile.poc;
 
-
-    let tested =
-      false;
-
+    let tested = false;
 
     for (
-      let j =
-        i +
-        1;
-      j <
-        sessions.length;
+      let j = i + 1;
+      j < sessions.length;
       j++
     ) {
 
@@ -1869,39 +1400,24 @@ function findNakedPOCs(
       ) {
 
         if (
-
-          candle.low <=
-            poc &&
-
-          candle.high >=
-            poc
-
+          candle.low <= poc &&
+          candle.high >= poc
         ) {
 
-          tested =
-            true;
-
+          tested = true;
           break;
 
         }
 
       }
 
-
-      if (
-        tested
-      ) {
-
+      if (tested) {
         break;
-
       }
 
     }
 
-
-    if (
-      !tested
-    ) {
+    if (!tested) {
 
       naked.push({
 
@@ -1925,20 +1441,13 @@ function findNakedPOCs(
 
   }
 
-
   return naked
     .sort(
-      (
-        a,
-        b
-      ) =>
+      (a, b) =>
         a.distance -
         b.distance
     )
-    .slice(
-      0,
-      8
-    );
+    .slice(0, 8);
 
 }
 
@@ -1947,38 +1456,26 @@ function findNakedPOCs(
    CANDLE QUALITY
 ============================================================ */
 
-function candleMetrics(
-  candle
-) {
+function candleMetrics(candle) {
 
   const range =
     candle.high -
     candle.low;
 
-
   if (
-    range <=
-    0
+    range <= 0
   ) {
 
     return {
 
-      body:
-        0,
-
-      lowerWick:
-        0,
-
-      upperWick:
-        0,
-
-      closeLocation:
-        0.5
+      body: 0,
+      lowerWick: 0,
+      upperWick: 0,
+      closeLocation: 0.5
 
     };
 
   }
-
 
   const bodyHigh =
     Math.max(
@@ -1986,45 +1483,36 @@ function candleMetrics(
       candle.close
     );
 
-
   const bodyLow =
     Math.min(
       candle.open,
       candle.close
     );
 
-
   return {
 
     body:
-
       Math.abs(
         candle.close -
         candle.open
       ) /
       range,
 
-
     lowerWick:
-
       (
         bodyLow -
         candle.low
       ) /
       range,
 
-
     upperWick:
-
       (
         candle.high -
         bodyHigh
       ) /
       range,
 
-
     closeLocation:
-
       (
         candle.close -
         candle.low
@@ -2052,22 +1540,15 @@ function touchedLevel(
       -lookback
     );
 
-
   for (
-    const candle of
-    recent
+    const candle of recent
   ) {
 
     if (
-
       candle.low <=
-        level +
-        tolerance &&
-
+        level + tolerance &&
       candle.high >=
-        level -
-        tolerance
-
+        level - tolerance
     ) {
 
       return true;
@@ -2076,8 +1557,310 @@ function touchedLevel(
 
   }
 
-
   return false;
+
+}
+
+
+/* ============================================================
+   V3.1 LEVEL INTERACTION
+
+   Unlike touchedLevel(), this checks the actual signal candle.
+============================================================ */
+
+function candleTouchesLevel(
+  candle,
+  level,
+  tolerance
+) {
+
+  if (
+    !candle ||
+    !Number.isFinite(level)
+  ) {
+
+    return false;
+
+  }
+
+  return (
+    candle.low <=
+      level + tolerance &&
+    candle.high >=
+      level - tolerance
+  );
+
+}
+
+
+/* ============================================================
+   RELATIVE VOLUME
+============================================================ */
+
+function relativeVolume(
+  candles,
+  lookback =
+    SETTINGS.rejectionVolumeLookback
+) {
+
+  if (
+    candles.length <
+    3
+  ) {
+
+    return 1;
+
+  }
+
+  const current =
+    candles.at(-1);
+
+  const history =
+    candles.slice(
+      Math.max(
+        0,
+        candles.length -
+        lookback -
+        1
+      ),
+      -1
+    );
+
+  const baseline =
+    average(
+      history.map(
+        candle =>
+          candle.volume
+      )
+    );
+
+  if (
+    baseline <= 0
+  ) {
+
+    return 1;
+
+  }
+
+  return (
+    current.volume /
+    baseline
+  );
+
+}
+
+
+/* ============================================================
+   MOMENTUM CONFIRMATION
+============================================================ */
+
+function momentumConfirmation(
+  candles,
+  bullish
+) {
+
+  if (
+    candles.length <
+    3
+  ) {
+
+    return false;
+
+  }
+
+  const current =
+    candles.at(-1);
+
+  const previous =
+    candles.at(-2);
+
+  const before =
+    candles.at(-3);
+
+  if (bullish) {
+
+    return (
+
+      current.close >
+      previous.close &&
+
+      current.close >
+      current.open &&
+
+      (
+        previous.close >=
+        before.close ||
+
+        current.close >
+        previous.high
+      )
+
+    );
+
+  }
+
+  return (
+
+    current.close <
+    previous.close &&
+
+    current.close <
+    current.open &&
+
+    (
+      previous.close <=
+      before.close ||
+
+      current.close <
+      previous.low
+    )
+
+  );
+
+}
+
+
+/* ============================================================
+   PROFILE REJECTION QUALITY
+============================================================ */
+
+function profileRejection({
+
+  candle,
+
+  level,
+
+  atrValue,
+
+  metrics,
+
+  relativeVolumeValue,
+
+  bullish,
+
+  type
+
+}) {
+
+  if (
+    !candle ||
+    !Number.isFinite(level) ||
+    !Number.isFinite(atrValue) ||
+    atrValue <= 0
+  ) {
+
+    return {
+
+      valid: false,
+      touched: false,
+      wickOK: false,
+      closeOK: false,
+      volumeOK: false
+
+    };
+
+  }
+
+  const tolerance =
+    atrValue *
+    SETTINGS.levelToleranceATR;
+
+  const touched =
+    candleTouchesLevel(
+      candle,
+      level,
+      tolerance
+    );
+
+  const minWick =
+    type === "POC"
+      ? SETTINGS.pocRejectionMinWick
+      : SETTINGS.valueRejectionMinWick;
+
+  const minVolume =
+    type === "POC"
+      ? SETTINGS.pocRejectionMinVolume
+      : SETTINGS.valueRejectionMinVolume;
+
+  const wick =
+    bullish
+      ? metrics.lowerWick
+      : metrics.upperWick;
+
+  const wickOK =
+    wick >=
+    minWick;
+
+  /*
+     For VAL bullish rejection:
+     close should recover above the level.
+
+     For VAH bearish rejection:
+     close should return below the level.
+
+     Same logic works for POC.
+  */
+
+  const closeOK =
+    bullish
+      ? candle.close >
+        level
+      : candle.close <
+        level;
+
+  const directionOK =
+    bullish
+      ? candle.close >
+        candle.open
+      : candle.close <
+        candle.open;
+
+  const closeLocationOK =
+    bullish
+      ? metrics.closeLocation >=
+        0.62
+      : metrics.closeLocation <=
+        0.38;
+
+  const volumeOK =
+    relativeVolumeValue >=
+    minVolume;
+
+  return {
+
+    valid:
+      touched &&
+      wickOK &&
+      closeOK &&
+      directionOK &&
+      closeLocationOK &&
+      volumeOK,
+
+    touched,
+
+    wickOK,
+
+    closeOK,
+
+    directionOK,
+
+    closeLocationOK,
+
+    volumeOK,
+
+    wick:
+      round(
+        wick,
+        3
+      ),
+
+    relativeVolume:
+      round(
+        relativeVolumeValue,
+        2
+      )
+
+  };
 
 }
 
@@ -2110,33 +1893,15 @@ function buildMarketState({
 
 }) {
 
-  let bullish =
-    0;
+  let bullish = 0;
+  let bearish = 0;
 
+  const bullishReasons = [];
+  const bearishReasons = [];
 
-  let bearish =
-    0;
+  if (h4Bullish) {
 
-
-  const bullishReasons =
-    [];
-
-
-  const bearishReasons =
-    [];
-
-
-  /* ========================================================
-     HTF
-  ======================================================== */
-
-  if (
-    h4Bullish
-  ) {
-
-    bullish +=
-      18;
-
+    bullish += 18;
 
     bullishReasons.push(
       "H4 bullish"
@@ -2144,14 +1909,9 @@ function buildMarketState({
 
   }
 
+  if (h4Bearish) {
 
-  if (
-    h4Bearish
-  ) {
-
-    bearish +=
-      18;
-
+    bearish += 18;
 
     bearishReasons.push(
       "H4 bearish"
@@ -2159,14 +1919,9 @@ function buildMarketState({
 
   }
 
+  if (h1Bullish) {
 
-  if (
-    h1Bullish
-  ) {
-
-    bullish +=
-      18;
-
+    bullish += 18;
 
     bullishReasons.push(
       "H1 bullish"
@@ -2174,14 +1929,9 @@ function buildMarketState({
 
   }
 
+  if (h1Bearish) {
 
-  if (
-    h1Bearish
-  ) {
-
-    bearish +=
-      18;
-
+    bearish += 18;
 
     bearishReasons.push(
       "H1 bearish"
@@ -2189,23 +1939,14 @@ function buildMarketState({
 
   }
 
-
-  /* ========================================================
-     DEVELOPING PROFILE
-  ======================================================== */
-
-  if (
-    developingProfile
-  ) {
+  if (developingProfile) {
 
     if (
       price >
       developingProfile.poc
     ) {
 
-      bullish +=
-        12;
-
+      bullish += 12;
 
       bullishReasons.push(
         "Price above developing POC"
@@ -2215,9 +1956,7 @@ function buildMarketState({
 
     else {
 
-      bearish +=
-        12;
-
+      bearish += 12;
 
       bearishReasons.push(
         "Price below developing POC"
@@ -2225,15 +1964,12 @@ function buildMarketState({
 
     }
 
-
     if (
       price >
       developingProfile.vah
     ) {
 
-      bullish +=
-        8;
-
+      bullish += 8;
 
       bullishReasons.push(
         "Price above developing value"
@@ -2241,15 +1977,12 @@ function buildMarketState({
 
     }
 
-
     if (
       price <
       developingProfile.val
     ) {
 
-      bearish +=
-        8;
-
+      bearish += 8;
 
       bearishReasons.push(
         "Price below developing value"
@@ -2259,38 +1992,24 @@ function buildMarketState({
 
   }
 
-
-  /* ========================================================
-     PREVIOUS SESSION PROFILE
-  ======================================================== */
-
-  if (
-    previousProfile
-  ) {
+  if (previousProfile) {
 
     if (
       price >
       previousProfile.poc
     ) {
 
-      bullish +=
-        8;
+      bullish += 8;
 
     }
 
     else {
 
-      bearish +=
-        8;
+      bearish += 8;
 
     }
 
   }
-
-
-  /* ========================================================
-     VWAP
-  ======================================================== */
 
   if (
     Number.isFinite(
@@ -2303,9 +2022,7 @@ function buildMarketState({
       sessionVWAP
     ) {
 
-      bullish +=
-        12;
-
+      bullish += 12;
 
       bullishReasons.push(
         "Price above session VWAP"
@@ -2315,9 +2032,7 @@ function buildMarketState({
 
     else {
 
-      bearish +=
-        12;
-
+      bearish += 12;
 
       bearishReasons.push(
         "Price below session VWAP"
@@ -2327,26 +2042,17 @@ function buildMarketState({
 
   }
 
-
-  /* ========================================================
-     NAKED POC MAGNET
-  ======================================================== */
-
   if (
     nearestNakedPOC &&
-    atrValue >
-    0
+    atrValue > 0
   ) {
 
     const distanceATR =
-
       nearestNakedPOC.distance /
       atrValue;
 
-
     if (
-      distanceATR <=
-      2
+      distanceATR <= 2
     ) {
 
       if (
@@ -2354,9 +2060,7 @@ function buildMarketState({
         price
       ) {
 
-        bullish +=
-          5;
-
+        bullish += 5;
 
         bullishReasons.push(
           "Untested POC above may act as magnet"
@@ -2366,9 +2070,7 @@ function buildMarketState({
 
       else {
 
-        bearish +=
-          5;
-
+        bearish += 5;
 
         bearishReasons.push(
           "Untested POC below may act as magnet"
@@ -2380,10 +2082,8 @@ function buildMarketState({
 
   }
 
-
   let bias =
     "NEUTRAL";
-
 
   const gap =
     Math.abs(
@@ -2391,15 +2091,10 @@ function buildMarketState({
       bearish
     );
 
-
   if (
-
     bullish >
       bearish &&
-
-    gap >=
-      12
-
+    gap >= 12
   ) {
 
     bias =
@@ -2407,15 +2102,10 @@ function buildMarketState({
 
   }
 
-
   if (
-
     bearish >
       bullish &&
-
-    gap >=
-      12
-
+    gap >= 12
   ) {
 
     bias =
@@ -2423,10 +2113,8 @@ function buildMarketState({
 
   }
 
-
   let strength =
     "WEAK";
-
 
   const best =
     Math.max(
@@ -2434,10 +2122,8 @@ function buildMarketState({
       bearish
     );
 
-
   if (
-    best >=
-    55
+    best >= 55
   ) {
 
     strength =
@@ -2446,15 +2132,13 @@ function buildMarketState({
   }
 
   else if (
-    best >=
-    38
+    best >= 38
   ) {
 
     strength =
       "MODERATE";
 
   }
-
 
   return {
 
@@ -2484,20 +2168,15 @@ function buildMarketState({
 ============================================================ */
 
 module.exports =
-async function handler(
-  req,
-  res
-) {
+async function handler(req, res) {
 
   const started =
     Date.now();
-
 
   res.setHeader(
     "Cache-Control",
     "no-store, no-cache, must-revalidate"
   );
-
 
   try {
 
@@ -2508,7 +2187,6 @@ async function handler(
       )
       .toUpperCase();
 
-
     const mode =
       SETTINGS.modeScores[
         requestedMode
@@ -2516,40 +2194,26 @@ async function handler(
         ? requestedMode
         : "BALANCED";
 
-
     const minimumScore =
       SETTINGS.modeScores[
         mode
       ];
 
-
     const [
-
       m5,
-
       h1,
-
       ticker
-
     ] =
       await Promise.all([
 
-        fetchCandles(
-          300
-        ),
-
-        fetchCandles(
-          3600
-        ),
-
+        fetchCandles(300),
+        fetchCandles(3600),
         fetchTicker()
 
       ]);
 
-
     if (
-      m5.length <
-      80
+      m5.length < 80
     ) {
 
       throw new Error(
@@ -2558,10 +2222,8 @@ async function handler(
 
     }
 
-
     if (
-      h1.length <
-      210
+      h1.length < 210
     ) {
 
       throw new Error(
@@ -2570,16 +2232,11 @@ async function handler(
 
     }
 
-
     const h4 =
-      buildH4(
-        h1
-      );
-
+      buildH4(h1);
 
     if (
-      h4.length <
-      50
+      h4.length < 50
     ) {
 
       throw new Error(
@@ -2588,14 +2245,11 @@ async function handler(
 
     }
 
-
     const price =
       number(
         ticker?.price,
-        m5.at(-1)
-          .close
+        m5.at(-1).close
       );
-
 
     /* ======================================================
        M5 INDICATORS
@@ -2607,13 +2261,11 @@ async function handler(
           candle.close
       );
 
-
     const m5RSI =
       rsi(
         m5Close,
         SETTINGS.rsiPeriod
       );
-
 
     const m5ATR =
       atr(
@@ -2621,23 +2273,25 @@ async function handler(
         SETTINGS.atrPeriod
       );
 
-
     const mi =
-      m5.length -
-      1;
-
+      m5.length - 1;
 
     const rsiNow =
-      m5RSI[
-        mi
-      ];
-
+      m5RSI[mi];
 
     const atrNow =
-      m5ATR[
-        mi
-      ];
+      m5ATR[mi];
 
+    if (
+      !Number.isFinite(rsiNow) ||
+      !Number.isFinite(atrNow)
+    ) {
+
+      throw new Error(
+        "M5 indicators unavailable"
+      );
+
+    }
 
     /* ======================================================
        H1
@@ -2649,13 +2303,11 @@ async function handler(
           candle.close
       );
 
-
     const h1EMA50 =
       ema(
         h1Close,
         SETTINGS.h1FastEMA
       );
-
 
     const h1EMA200 =
       ema(
@@ -2663,45 +2315,20 @@ async function handler(
         SETTINGS.h1SlowEMA
       );
 
-
     const hi =
-      h1.length -
-      1;
-
+      h1.length - 1;
 
     const h1Bullish =
-
-      h1[
-        hi
-      ].close >
-      h1EMA200[
-        hi
-      ] &&
-
-      h1EMA50[
-        hi
-      ] >
-      h1EMA200[
-        hi
-      ];
-
+      h1[hi].close >
+      h1EMA200[hi] &&
+      h1EMA50[hi] >
+      h1EMA200[hi];
 
     const h1Bearish =
-
-      h1[
-        hi
-      ].close <
-      h1EMA200[
-        hi
-      ] &&
-
-      h1EMA50[
-        hi
-      ] <
-      h1EMA200[
-        hi
-      ];
-
+      h1[hi].close <
+      h1EMA200[hi] &&
+      h1EMA50[hi] <
+      h1EMA200[hi];
 
     /* ======================================================
        H4
@@ -2713,13 +2340,11 @@ async function handler(
           candle.close
       );
 
-
     const h4EMA20 =
       ema(
         h4Close,
         SETTINGS.h4FastEMA
       );
-
 
     const h4EMA50 =
       ema(
@@ -2727,59 +2352,30 @@ async function handler(
         SETTINGS.h4SlowEMA
       );
 
-
     const h4i =
-      h4.length -
-      1;
-
+      h4.length - 1;
 
     const h4Bullish =
-
-      h4EMA20[
-        h4i
-      ] >
-      h4EMA50[
-        h4i
-      ] &&
-
-      h4[
-        h4i
-      ].close >
-      h4EMA20[
-        h4i
-      ];
-
+      h4EMA20[h4i] >
+      h4EMA50[h4i] &&
+      h4[h4i].close >
+      h4EMA20[h4i];
 
     const h4Bearish =
-
-      h4EMA20[
-        h4i
-      ] <
-      h4EMA50[
-        h4i
-      ] &&
-
-      h4[
-        h4i
-      ].close <
-      h4EMA20[
-        h4i
-      ];
-
+      h4EMA20[h4i] <
+      h4EMA50[h4i] &&
+      h4[h4i].close <
+      h4EMA20[h4i];
 
     /* ======================================================
        SESSIONS
     ====================================================== */
 
     const sessions =
-      groupSessions(
-        m5
-      );
-
+      groupSessions(m5);
 
     if (
-      sessions.length <
-      2
+      sessions.length < 2
     ) {
 
       throw new Error(
@@ -2788,32 +2384,34 @@ async function handler(
 
     }
 
-
     const currentSession =
       sessions.at(-1);
 
-
     const previousSession =
       sessions.at(-2);
-
 
     const developingProfile =
       buildVolumeProfile(
         currentSession.candles
       );
 
-
     const previousProfile =
       buildVolumeProfile(
         previousSession.candles
       );
 
+    if (!developingProfile) {
+
+      throw new Error(
+        "Developing profile unavailable"
+      );
+
+    }
 
     const sessionVWAP =
       calculateVWAP(
         currentSession.candles
       );
-
 
     const nakedPOCs =
       findNakedPOCs(
@@ -2821,14 +2419,12 @@ async function handler(
         price
       );
 
-
     const nearestNakedPOC =
       nakedPOCs[0] ||
       null;
 
-
     /* ======================================================
-       STATE
+       MARKET STATE
     ====================================================== */
 
     const state =
@@ -2857,107 +2453,84 @@ async function handler(
 
       });
 
-
     /* ======================================================
-       ENTRY CONDITIONS
+       CURRENT CANDLE
     ====================================================== */
 
     const candle =
       m5.at(-1);
-
 
     const metrics =
       candleMetrics(
         candle
       );
 
-
     const tolerance =
-
       atrNow *
-      0.15;
+      SETTINGS.levelToleranceATR;
 
+    const relVolume =
+      relativeVolume(m5);
+
+    const bullishMomentum =
+      momentumConfirmation(
+        m5,
+        true
+      );
+
+    const bearishMomentum =
+      momentumConfirmation(
+        m5,
+        false
+      );
+
+    /* ======================================================
+       HISTORICAL TOUCHES
+
+       Used for pullback / reclaim setups.
+    ====================================================== */
 
     const touchedPOC =
-
-      developingProfile
-
-        ? touchedLevel(
-
-          m5,
-
-          developingProfile.poc,
-
-          SETTINGS.pullbackLookback,
-
-          tolerance
-
-        )
-
-        : false;
-
+      touchedLevel(
+        m5,
+        developingProfile.poc,
+        SETTINGS.pullbackLookback,
+        tolerance
+      );
 
     const touchedVWAP =
-
       Number.isFinite(
         sessionVWAP
       )
-
         ? touchedLevel(
-
           m5,
-
           sessionVWAP,
-
           SETTINGS.pullbackLookback,
-
           tolerance
-
         )
-
         : false;
-
 
     const touchedVAL =
-
-      developingProfile
-
-        ? touchedLevel(
-
-          m5,
-
-          developingProfile.val,
-
-          SETTINGS.pullbackLookback,
-
-          tolerance
-
-        )
-
-        : false;
-
+      touchedLevel(
+        m5,
+        developingProfile.val,
+        SETTINGS.pullbackLookback,
+        tolerance
+      );
 
     const touchedVAH =
+      touchedLevel(
+        m5,
+        developingProfile.vah,
+        SETTINGS.pullbackLookback,
+        tolerance
+      );
 
-      developingProfile
-
-        ? touchedLevel(
-
-          m5,
-
-          developingProfile.vah,
-
-          SETTINGS.pullbackLookback,
-
-          tolerance
-
-        )
-
-        : false;
-
+    /* ======================================================
+       BASIC REJECTION
+    ====================================================== */
 
     const bullishRejection =
-
       candle.close >
       candle.open &&
 
@@ -2970,9 +2543,7 @@ async function handler(
       metrics.closeLocation >=
       0.65;
 
-
     const bearishRejection =
-
       candle.close <
       candle.open &&
 
@@ -2985,81 +2556,165 @@ async function handler(
       metrics.closeLocation <=
       0.35;
 
+    /* ======================================================
+       V3.1 PROFILE REJECTION VALIDATION
+    ====================================================== */
+
+    const valBullishRejection =
+      profileRejection({
+
+        candle,
+
+        level:
+          developingProfile.val,
+
+        atrValue:
+          atrNow,
+
+        metrics,
+
+        relativeVolumeValue:
+          relVolume,
+
+        bullish:
+          true,
+
+        type:
+          "VALUE"
+
+      });
+
+    const vahBearishRejection =
+      profileRejection({
+
+        candle,
+
+        level:
+          developingProfile.vah,
+
+        atrValue:
+          atrNow,
+
+        metrics,
+
+        relativeVolumeValue:
+          relVolume,
+
+        bullish:
+          false,
+
+        type:
+          "VALUE"
+
+      });
+
+    const pocBullishRejection =
+      profileRejection({
+
+        candle,
+
+        level:
+          developingProfile.poc,
+
+        atrValue:
+          atrNow,
+
+        metrics,
+
+        relativeVolumeValue:
+          relVolume,
+
+        bullish:
+          true,
+
+        type:
+          "POC"
+
+      });
+
+    const pocBearishRejection =
+      profileRejection({
+
+        candle,
+
+        level:
+          developingProfile.poc,
+
+        atrValue:
+          atrNow,
+
+        metrics,
+
+        relativeVolumeValue:
+          relVolume,
+
+        bullish:
+          false,
+
+        type:
+          "POC"
+
+      });
+
+    /* ======================================================
+       VOLATILITY / RSI
+    ====================================================== */
 
     const atrPercent =
-
       atrNow /
       candle.close *
       100;
 
-
     const volatilityOK =
-
       atrPercent >=
       SETTINGS.minimumATRPercent &&
-
       atrPercent <=
       SETTINGS.maximumATRPercent;
 
-
     const buyRSIOK =
-
       rsiNow >=
       SETTINGS.buyRsiMin &&
-
       rsiNow <=
       SETTINGS.buyRsiMax;
 
-
     const sellRSIOK =
-
       rsiNow >=
       SETTINGS.sellRsiMin &&
-
       rsiNow <=
       SETTINGS.sellRsiMax;
 
-
     /* ======================================================
-       SIGNAL SCORES
+       SCORES
     ====================================================== */
 
     let buyScore =
       state.bullishScore;
 
-
     let sellScore =
       state.bearishScore;
-
 
     const buyReasons =
       [
         ...state.bullishReasons
       ];
 
-
     const sellReasons =
       [
         ...state.bearishReasons
       ];
 
-
     /* ======================================================
-       PROFILE PULLBACK
+       POC RECLAIM / REJECTION
     ====================================================== */
 
-    if (
-      touchedPOC
-    ) {
+    if (touchedPOC) {
 
       if (
         price >
         developingProfile.poc
       ) {
 
-        buyScore +=
-          12;
-
+        buyScore += 10;
 
         buyReasons.push(
           "Developing POC reclaimed"
@@ -3067,15 +2722,12 @@ async function handler(
 
       }
 
-
       if (
         price <
         developingProfile.poc
       ) {
 
-        sellScore +=
-          12;
-
+        sellScore += 10;
 
         sellReasons.push(
           "Developing POC rejected"
@@ -3085,19 +2737,49 @@ async function handler(
 
     }
 
+    /*
+       Extra points only for genuinely validated
+       POC rejection.
+    */
 
     if (
-      touchedVWAP
+      pocBullishRejection.valid &&
+      bullishMomentum
     ) {
+
+      buyScore += 7;
+
+      buyReasons.push(
+        "Confirmed bullish POC rejection"
+      );
+
+    }
+
+    if (
+      pocBearishRejection.valid &&
+      bearishMomentum
+    ) {
+
+      sellScore += 7;
+
+      sellReasons.push(
+        "Confirmed bearish POC rejection"
+      );
+
+    }
+
+    /* ======================================================
+       VWAP
+    ====================================================== */
+
+    if (touchedVWAP) {
 
       if (
         price >
         sessionVWAP
       ) {
 
-        buyScore +=
-          10;
-
+        buyScore += 10;
 
         buyReasons.push(
           "Session VWAP reclaimed"
@@ -3105,15 +2787,12 @@ async function handler(
 
       }
 
-
       if (
         price <
         sessionVWAP
       ) {
 
-        sellScore +=
-          10;
-
+        sellScore += 10;
 
         sellReasons.push(
           "Session VWAP rejected"
@@ -3123,6 +2802,15 @@ async function handler(
 
     }
 
+    /* ======================================================
+       VALUE AREA
+
+       V3.1:
+       basic historical touch no longer receives the full
+       rejection bonus.
+
+       The actual signal candle must confirm the rejection.
+    ====================================================== */
 
     if (
       touchedVAL &&
@@ -3130,16 +2818,25 @@ async function handler(
       developingProfile.val
     ) {
 
-      buyScore +=
-        10;
-
+      buyScore += 5;
 
       buyReasons.push(
-        "Value-area low rejected"
+        "Price interacting with VAL"
       );
 
     }
 
+    if (
+      valBullishRejection.valid
+    ) {
+
+      buyScore += 10;
+
+      buyReasons.push(
+        "Confirmed VAL rejection"
+      );
+
+    }
 
     if (
       touchedVAH &&
@@ -3147,24 +2844,35 @@ async function handler(
       developingProfile.vah
     ) {
 
-      sellScore +=
-        10;
-
+      sellScore += 5;
 
       sellReasons.push(
-        "Value-area high rejected"
+        "Price interacting with VAH"
       );
 
     }
 
+    if (
+      vahBearishRejection.valid
+    ) {
+
+      sellScore += 10;
+
+      sellReasons.push(
+        "Confirmed VAH rejection"
+      );
+
+    }
+
+    /* ======================================================
+       GENERIC CANDLE REJECTION
+    ====================================================== */
 
     if (
       bullishRejection
     ) {
 
-      buyScore +=
-        10;
-
+      buyScore += 8;
 
       buyReasons.push(
         "Bullish M5 rejection"
@@ -3172,14 +2880,11 @@ async function handler(
 
     }
 
-
     if (
       bearishRejection
     ) {
 
-      sellScore +=
-        10;
-
+      sellScore += 8;
 
       sellReasons.push(
         "Bearish M5 rejection"
@@ -3187,26 +2892,89 @@ async function handler(
 
     }
 
+    /* ======================================================
+       MOMENTUM
+    ====================================================== */
+
+    if (
+      bullishMomentum
+    ) {
+
+      buyScore += 4;
+
+      buyReasons.push(
+        "Bullish momentum confirmation"
+      );
+
+    }
+
+    if (
+      bearishMomentum
+    ) {
+
+      sellScore += 4;
+
+      sellReasons.push(
+        "Bearish momentum confirmation"
+      );
+
+    }
+
+    /* ======================================================
+       VOLUME
+    ====================================================== */
+
+    if (
+      relVolume >= 1.10
+    ) {
+
+      if (
+        candle.close >
+        candle.open
+      ) {
+
+        buyScore += 4;
+
+        buyReasons.push(
+          "Bullish volume expansion"
+        );
+
+      }
+
+      if (
+        candle.close <
+        candle.open
+      ) {
+
+        sellScore += 4;
+
+        sellReasons.push(
+          "Bearish volume expansion"
+        );
+
+      }
+
+    }
+
+    /* ======================================================
+       RSI
+    ====================================================== */
 
     if (
       buyRSIOK
     ) {
 
-      buyScore +=
-        5;
+      buyScore += 5;
 
     }
-
 
     if (
       sellRSIOK
     ) {
 
-      sellScore +=
-        5;
+      sellScore += 5;
 
     }
-
 
     buyScore =
       clamp(
@@ -3215,7 +2983,6 @@ async function handler(
         100
       );
 
-
     sellScore =
       clamp(
         sellScore,
@@ -3223,39 +2990,185 @@ async function handler(
         100
       );
 
-
     /* ======================================================
-       PROFILE DISTANCE CONTROL
+       DISTANCE CONTROL
     ====================================================== */
 
-    let referenceLevel =
-      developingProfile
-        ?.poc ??
+    const referenceLevel =
+      developingProfile.poc ??
       sessionVWAP;
 
-
     const distanceATR =
-
       Number.isFinite(
         referenceLevel
       ) &&
-      atrNow >
-      0
+      atrNow > 0
 
         ? Math.abs(
           price -
           referenceLevel
         ) /
-          atrNow
+        atrNow
 
         : 999;
 
-
     const notStretched =
-
       distanceATR <=
       SETTINGS.maxDistanceATR;
 
+    /* ======================================================
+       SETUP CLASSIFICATION
+    ====================================================== */
+
+    let buySetup =
+      "NONE";
+
+    let sellSetup =
+      "NONE";
+
+    if (
+      valBullishRejection.valid
+    ) {
+
+      buySetup =
+        "VAL REJECTION";
+
+    }
+
+    else if (
+      pocBullishRejection.valid &&
+      bullishMomentum
+    ) {
+
+      buySetup =
+        "POC REJECTION";
+
+    }
+
+    else if (
+      touchedPOC &&
+      price >
+      developingProfile.poc
+    ) {
+
+      buySetup =
+        "POC RECLAIM";
+
+    }
+
+    else if (
+      touchedVWAP &&
+      price >
+      sessionVWAP
+    ) {
+
+      buySetup =
+        "VWAP RECLAIM";
+
+    }
+
+    if (
+      vahBearishRejection.valid
+    ) {
+
+      sellSetup =
+        "VAH REJECTION";
+
+    }
+
+    else if (
+      pocBearishRejection.valid &&
+      bearishMomentum
+    ) {
+
+      sellSetup =
+        "POC REJECTION";
+
+    }
+
+    else if (
+      touchedPOC &&
+      price <
+      developingProfile.poc
+    ) {
+
+      sellSetup =
+        "POC RECLAIM";
+
+    }
+
+    else if (
+      touchedVWAP &&
+      price <
+      sessionVWAP
+    ) {
+
+      sellSetup =
+        "VWAP RECLAIM";
+
+    }
+
+    /* ======================================================
+       DYNAMIC SETUP THRESHOLD
+    ====================================================== */
+
+    function requiredScore(
+      setup
+    ) {
+
+      let threshold =
+        minimumScore;
+
+      if (
+        mode ===
+        "BALANCED"
+      ) {
+
+        if (
+          setup ===
+          "VAH REJECTION" ||
+          setup ===
+          "VAL REJECTION"
+        ) {
+
+          threshold =
+            Math.max(
+              threshold,
+              SETTINGS
+                .balancedValueRejectionScore
+            );
+
+        }
+
+        if (
+          setup ===
+          "POC REJECTION"
+        ) {
+
+          threshold =
+            Math.max(
+              threshold,
+              SETTINGS
+                .balancedPOCRejectionScore
+            );
+
+        }
+
+      }
+
+      return threshold;
+
+    }
+
+    const buyMinimumScore =
+      requiredScore(
+        buySetup
+      );
+
+    const sellMinimumScore =
+      requiredScore(
+        sellSetup
+      );
 
     /* ======================================================
        SIGNAL
@@ -3264,26 +3177,77 @@ async function handler(
     let signal =
       "WAIT";
 
+    let setup =
+      "NONE";
+
+    const buyHasLocation =
+      buySetup !==
+      "NONE";
+
+    const sellHasLocation =
+      sellSetup !==
+      "NONE";
+
+    /*
+       Rejection-specific setups already have stronger
+       validation.
+
+       POC/VWAP reclaim setups retain the original generic
+       rejection requirement so trade frequency is preserved.
+    */
+
+    const buyTriggerOK =
+      buySetup ===
+      "VAL REJECTION"
+
+        ? (
+          valBullishRejection.valid &&
+          bullishMomentum
+        )
+
+        : buySetup ===
+          "POC REJECTION"
+
+          ? (
+            pocBullishRejection.valid &&
+            bullishMomentum
+          )
+
+          : bullishRejection;
+
+    const sellTriggerOK =
+      sellSetup ===
+      "VAH REJECTION"
+
+        ? (
+          vahBearishRejection.valid &&
+          bearishMomentum
+        )
+
+        : sellSetup ===
+          "POC REJECTION"
+
+          ? (
+            pocBearishRejection.valid &&
+            bearishMomentum
+          )
+
+          : bearishRejection;
 
     if (
 
+      buyHasLocation &&
+
       buyScore >=
-        minimumScore &&
+        buyMinimumScore &&
 
       buyScore >
-        sellScore +
-        8 &&
+        sellScore + 8 &&
 
       state.bias !==
         "BEARISH" &&
 
-      bullishRejection &&
-
-      (
-        touchedPOC ||
-        touchedVWAP ||
-        touchedVAL
-      ) &&
+      buyTriggerOK &&
 
       buyRSIOK &&
 
@@ -3296,28 +3260,25 @@ async function handler(
       signal =
         "BUY";
 
-    }
+      setup =
+        buySetup;
 
+    }
 
     if (
 
+      sellHasLocation &&
+
       sellScore >=
-        minimumScore &&
+        sellMinimumScore &&
 
       sellScore >
-        buyScore +
-        8 &&
+        buyScore + 8 &&
 
       state.bias !==
         "BULLISH" &&
 
-      bearishRejection &&
-
-      (
-        touchedPOC ||
-        touchedVWAP ||
-        touchedVAH
-      ) &&
+      sellTriggerOK &&
 
       sellRSIOK &&
 
@@ -3330,28 +3291,19 @@ async function handler(
       signal =
         "SELL";
 
-    }
+      setup =
+        sellSetup;
 
+    }
 
     /* ======================================================
        TRADE LEVELS
     ====================================================== */
 
-    let entry =
-      null;
-
-
-    let stopLoss =
-      null;
-
-
-    let target =
-      null;
-
-
-    let riskDistance =
-      null;
-
+    let entry = null;
+    let stopLoss = null;
+    let target = null;
+    let riskDistance = null;
 
     if (
       signal !==
@@ -3361,12 +3313,8 @@ async function handler(
       entry =
         candle.close;
 
-
       const recent =
-        m5.slice(
-          -5
-        );
-
+        m5.slice(-5);
 
       if (
         signal ===
@@ -3381,22 +3329,15 @@ async function handler(
             )
           );
 
-
         const atrStop =
-
           entry -
-
           atrNow *
           SETTINGS.stopATR;
 
-
         const structuralStop =
-
           recentLow -
-
           atrNow *
           SETTINGS.structureBufferATR;
-
 
         stopLoss =
           Math.min(
@@ -3404,21 +3345,16 @@ async function handler(
             structuralStop
           );
 
-
         riskDistance =
           entry -
           stopLoss;
 
-
         target =
-
           entry +
-
           riskDistance *
           SETTINGS.targetR;
 
       }
-
 
       else {
 
@@ -3430,22 +3366,15 @@ async function handler(
             )
           );
 
-
         const atrStop =
-
           entry +
-
           atrNow *
           SETTINGS.stopATR;
 
-
         const structuralStop =
-
           recentHigh +
-
           atrNow *
           SETTINGS.structureBufferATR;
-
 
         stopLoss =
           Math.max(
@@ -3453,23 +3382,18 @@ async function handler(
             structuralStop
           );
 
-
         riskDistance =
           stopLoss -
           entry;
 
-
         target =
-
           entry -
-
           riskDistance *
           SETTINGS.targetR;
 
       }
 
     }
-
 
     /* ======================================================
        VALUE STATE
@@ -3478,102 +3402,71 @@ async function handler(
     let valueState =
       "UNKNOWN";
 
-
     if (
-      developingProfile
+      price >
+      developingProfile.vah
     ) {
 
-      if (
-        price >
-        developingProfile.vah
-      ) {
-
-        valueState =
-          "ABOVE VALUE";
-
-      }
-
-      else if (
-        price <
-        developingProfile.val
-      ) {
-
-        valueState =
-          "BELOW VALUE";
-
-      }
-
-      else {
-
-        valueState =
-          "INSIDE VALUE";
-
-      }
+      valueState =
+        "ABOVE VALUE";
 
     }
 
+    else if (
+      price <
+      developingProfile.val
+    ) {
+
+      valueState =
+        "BELOW VALUE";
+
+    }
+
+    else {
+
+      valueState =
+        "INSIDE VALUE";
+
+    }
 
     const pocState =
-
-      developingProfile
-
-        ? price >
-          developingProfile.poc
-
-          ? "PRICE ABOVE POC"
-
-          : "PRICE BELOW POC"
-
-        : "UNKNOWN";
-
+      price >
+      developingProfile.poc
+        ? "PRICE ABOVE POC"
+        : "PRICE BELOW POC";
 
     const vwapState =
-
       Number.isFinite(
         sessionVWAP
       )
-
         ? price >
           sessionVWAP
-
           ? "ABOVE VWAP"
-
           : "BELOW VWAP"
-
         : "UNKNOWN";
-
 
     /* ======================================================
        CONFLICT
     ====================================================== */
 
-    const conflict =
-
+    const scoreDifference =
       Math.abs(
         buyScore -
         sellScore
-      ) <
-      12
+      );
 
+    const conflict =
+      scoreDifference < 12
         ? "HIGH"
-
-        : Math.abs(
-          buyScore -
-          sellScore
-        ) <
-          25
-
+        : scoreDifference < 25
           ? "MEDIUM"
-
           : "LOW";
 
-
     const guidance =
-
       signal !==
       "WAIT"
 
-        ? `${signal} SETUP`
+        ? `${signal} ${setup}`
 
         : conflict ===
           "HIGH"
@@ -3585,8 +3478,7 @@ async function handler(
 
             ? "WAIT"
 
-            : `WAIT FOR ${state.bias} PROFILE REJECTION`;
-
+            : `WAIT FOR ${state.bias} PROFILE SETUP`;
 
     /* ======================================================
        RESPONSE
@@ -3596,11 +3488,13 @@ async function handler(
       .status(200)
       .json({
 
-        ok:
-          true,
+        ok: true,
 
         engine:
-          "MKAYFX BTC VOLUME PROFILE V3",
+          "MKAYFX BTC VOLUME PROFILE V3.1",
+
+        version:
+          "3.1",
 
         source:
           "Coinbase Exchange",
@@ -3614,6 +3508,8 @@ async function handler(
 
         signal,
 
+        setup,
+
         timestamp:
           new Date()
             .toISOString(),
@@ -3622,38 +3518,23 @@ async function handler(
           Date.now() -
           started,
 
-
         price:
-          round(
-            price
-          ),
-
+          round(price),
 
         entry:
-          round(
-            entry
-          ),
+          round(entry),
 
         stopLoss:
-          round(
-            stopLoss
-          ),
+          round(stopLoss),
 
         takeProfit1:
-          round(
-            target
-          ),
+          round(target),
 
         takeProfit2:
-          round(
-            target
-          ),
+          round(target),
 
         riskDistance:
-          round(
-            riskDistance
-          ),
-
+          round(riskDistance),
 
         rr: {
 
@@ -3664,7 +3545,6 @@ async function handler(
             SETTINGS.targetR
 
         },
-
 
         decisionPanel: {
 
@@ -3687,7 +3567,6 @@ async function handler(
             vwapState,
 
           nakedPOC:
-
             nearestNakedPOC
               ? "ACTIVE"
               : "NONE",
@@ -3698,27 +3577,35 @@ async function handler(
 
           signal,
 
+          setup,
+
           mode,
 
           score:
-
             signal ===
             "BUY"
-
               ? buyScore
-
               : signal ===
                 "SELL"
-
                 ? sellScore
-
                 : Math.max(
                   buyScore,
                   sellScore
+                ),
+
+          requiredScore:
+            signal ===
+            "BUY"
+              ? buyMinimumScore
+              : signal ===
+                "SELL"
+                ? sellMinimumScore
+                : Math.min(
+                  buyMinimumScore,
+                  sellMinimumScore
                 )
 
         },
-
 
         scores: {
 
@@ -3732,15 +3619,19 @@ async function handler(
             round(
               sellScore,
               1
-            )
+            ),
+
+          buyRequired:
+            buyMinimumScore,
+
+          sellRequired:
+            sellMinimumScore
 
         },
-
 
         trend: {
 
           h1:
-
             h1Bullish
               ? "BULLISH"
               : h1Bearish
@@ -3748,7 +3639,6 @@ async function handler(
                 : "NEUTRAL",
 
           h4:
-
             h4Bullish
               ? "BULLISH"
               : h4Bearish
@@ -3757,8 +3647,7 @@ async function handler(
 
         },
 
-
-        m15: {
+        m5: {
 
           rsi:
             round(
@@ -3797,66 +3686,83 @@ async function handler(
               metrics.upperWick *
               100,
               1
+            ),
+
+          relativeVolume:
+            round(
+              relVolume,
+              2
+            ),
+
+          bullishMomentum,
+
+          bearishMomentum
+
+        },
+
+        rejectionQuality: {
+
+          val:
+            valBullishRejection,
+
+          vah:
+            vahBearishRejection,
+
+          pocBuy:
+            pocBullishRejection,
+
+          pocSell:
+            pocBearishRejection
+
+        },
+
+        currentProfile: {
+
+          session:
+            currentSession.name,
+
+          developing:
+            true,
+
+          poc:
+            round(
+              developingProfile.poc
+            ),
+
+          vah:
+            round(
+              developingProfile.vah
+            ),
+
+          val:
+            round(
+              developingProfile.val
+            ),
+
+          vwap:
+            round(
+              sessionVWAP
+            ),
+
+          high:
+            round(
+              developingProfile.high
+            ),
+
+          low:
+            round(
+              developingProfile.low
+            ),
+
+          volume:
+            round(
+              developingProfile.totalVolume,
+              4
             )
 
         },
 
-
-        currentProfile:
-
-          developingProfile
-
-            ? {
-
-              session:
-                currentSession.name,
-
-              developing:
-                true,
-
-              poc:
-                round(
-                  developingProfile.poc
-                ),
-
-              vah:
-                round(
-                  developingProfile.vah
-                ),
-
-              val:
-                round(
-                  developingProfile.val
-                ),
-
-              vwap:
-                round(
-                  sessionVWAP
-                ),
-
-              high:
-                round(
-                  developingProfile.high
-                ),
-
-              low:
-                round(
-                  developingProfile.low
-                ),
-
-              volume:
-                round(
-                  developingProfile.totalVolume,
-                  4
-                )
-
-            }
-
-            : null,
-
-
         previousProfile:
-
           previousProfile
 
             ? {
@@ -3893,9 +3799,7 @@ async function handler(
 
             : null,
 
-
         nakedPOCs:
-
           nakedPOCs.map(
             item => ({
 
@@ -3915,9 +3819,7 @@ async function handler(
             })
           ),
 
-
         reasons:
-
           signal ===
           "BUY"
 
@@ -3942,6 +3844,10 @@ async function handler(
 
                 `VWAP state: ${vwapState}`,
 
+                `Buy setup: ${buySetup}`,
+
+                `Sell setup: ${sellSetup}`,
+
                 `Buy score: ${round(
                   buyScore,
                   1
@@ -3952,11 +3858,16 @@ async function handler(
                   1
                 )}`,
 
-                bullishRejection
-                  ? "Bullish rejection present"
-                  : bearishRejection
-                    ? "Bearish rejection present"
-                    : "Waiting for profile rejection",
+                `Relative volume: ${round(
+                  relVolume,
+                  2
+                )}x`,
+
+                bullishMomentum
+                  ? "Bullish momentum present"
+                  : bearishMomentum
+                    ? "Bearish momentum present"
+                    : "Momentum neutral",
 
                 notStretched
                   ? "Price is not stretched from profile"
@@ -3966,28 +3877,52 @@ async function handler(
                   ? "ATR volatility acceptable"
                   : "ATR volatility blocked"
 
-              ]
+              ],
+
+        settings: {
+
+          targetR:
+            SETTINGS.targetR,
+
+          profileBins:
+            SETTINGS.profileBins,
+
+          valueAreaPercent:
+            SETTINGS.valueAreaPercent,
+
+          valueRejectionMinWick:
+            SETTINGS.valueRejectionMinWick,
+
+          pocRejectionMinWick:
+            SETTINGS.pocRejectionMinWick,
+
+          valueRejectionMinVolume:
+            SETTINGS.valueRejectionMinVolume,
+
+          pocRejectionMinVolume:
+            SETTINGS.pocRejectionMinVolume
+
+        }
 
       });
 
   }
 
-  catch (
-    error
-  ) {
+  catch (error) {
 
     console.error(
       "BTC PROFILE ENGINE ERROR:",
       error
     );
 
-
     return res
       .status(500)
       .json({
 
-        ok:
-          false,
+        ok: false,
+
+        engine:
+          "MKAYFX BTC VOLUME PROFILE V3.1",
 
         source:
           "Coinbase Exchange",
@@ -3996,9 +3931,7 @@ async function handler(
           PRODUCT,
 
         error:
-          errorText(
-            error
-          ),
+          errorText(error),
 
         latencyMs:
           Date.now() -
