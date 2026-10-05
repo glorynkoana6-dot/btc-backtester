@@ -1,5 +1,5 @@
 /* ============================================================
-   MKAYFX BTC PRECISION PULLBACK BACKTEST V2
+   MKAYFX BTC VOLUME PROFILE BACKTESTER V3
    /api/backtest.js
 
    SOURCE
@@ -12,26 +12,32 @@
 
    STRATEGY
    --------
-   H4 + H1 aligned trend
-   M15 EMA20/EMA50 rejection entry
+   Session Volume Profile
+   +
+   POC / VAH / VAL
+   +
+   VWAP
+   +
+   H1 / H4 market context
+   +
+   M5 rejection trigger
 
    ENTRY
    -----
-   Signal is confirmed at M15 close.
-   Trade enters NEXT M15 candle OPEN.
+   Signal determined on completed M5 candle.
+   Entry = NEXT M5 open.
 
-   RISK
-   ----
-   Structural / ATR stop
-   Target = 1.5R
-   No automatic breakeven
+   TP
+   --
+   1.5R
 
-   SAME-CANDLE TP + SL
-   -------------------
-   Count STOP first.
-   Conservative assumption.
+   SAME-BAR COLLISION
+   ------------------
+   SL first.
 
-   NO API KEY.
+   IMPORTANT
+   ---------
+   Historical volume profile is an OHLCV approximation.
 ============================================================ */
 
 
@@ -39,7 +45,7 @@ const PRODUCT =
   "BTC-USD";
 
 
-const COINBASE =
+const BASE_URL =
   "https://api.exchange.coinbase.com";
 
 
@@ -49,15 +55,23 @@ const SETTINGS = {
     30,
 
   maxDays:
-    90,
-
+    60,
 
   warmupDays:
     12,
 
-
   chunkCandles:
     280,
+
+
+  profileBins:
+    36,
+
+  valueAreaPercent:
+    0.70,
+
+  minimumProfileBars:
+    8,
 
 
   atrPeriod:
@@ -67,81 +81,81 @@ const SETTINGS = {
     14,
 
 
-  m15EmaFast:
-    20,
-
-  m15EmaSlow:
+  h1FastEMA:
     50,
 
-
-  h1EmaFast:
-    50,
-
-  h1EmaSlow:
+  h1SlowEMA:
     200,
 
-
-  h4EmaFast:
+  h4FastEMA:
     20,
 
-  h4EmaSlow:
+  h4SlowEMA:
     50,
-
-
-  buyRsiMin:
-    52,
-
-  buyRsiMax:
-    68,
-
-  sellRsiMin:
-    32,
-
-  sellRsiMax:
-    48,
 
 
   pullbackLookback:
     3,
 
-  minBodyPercent:
-    0.55,
+  minimumBodyPercent:
+    0.42,
 
-  buyCloseLocation:
-    0.75,
-
-  sellCloseLocation:
-    0.25,
-
-  minRejectionWickPercent:
+  minimumRejectionWick:
     0.12,
 
-  maxDistanceFromEma20Atr:
-    0.80,
-
-
-  minAtrPercent:
-    0.10,
-
-  maxAtrPercent:
-    2.50,
-
-
-  stopAtr:
+  maxDistanceATR:
     1.10,
 
-  structureBufferAtr:
-    0.10,
+
+  buyRsiMin:
+    48,
+
+  buyRsiMax:
+    72,
+
+  sellRsiMin:
+    28,
+
+  sellRsiMax:
+    52,
+
+
+  minimumATRPercent:
+    0.08,
+
+  maximumATRPercent:
+    3.50,
+
+
+  stopATR:
+    1.00,
+
+  structureBufferATR:
+    0.12,
 
   targetR:
     1.50,
 
 
   cooldownBars:
-    2,
+    3,
 
   maxHoldBars:
-    48
+    72,
+
+
+  modeScores: {
+
+    RAW:
+      48,
+
+    BALANCED:
+      60,
+
+    SELECTIVE:
+      72
+
+  }
 
 };
 
@@ -150,7 +164,7 @@ const SETTINGS = {
    HELPERS
 ============================================================ */
 
-function num(
+function number(
   value,
   fallback = null
 ) {
@@ -190,9 +204,8 @@ function round(
   }
 
 
-  const power =
-    10 **
-    digits;
+  const p =
+    10 ** digits;
 
 
   return (
@@ -200,9 +213,9 @@ function round(
       Number(
         value
       ) *
-      power
+      p
     ) /
-    power
+    p
   );
 
 }
@@ -290,7 +303,7 @@ function errorText(
 
 async function getJSON(
   url,
-  timeoutMs = 9000
+  timeoutMs = 10000
 ) {
 
   const controller =
@@ -324,7 +337,7 @@ async function getJSON(
               "application/json",
 
             "User-Agent":
-              "MKAYFX-BTC-BACKTEST-V2"
+              "MKAYFX-BTC-PROFILE-BACKTEST-V3"
 
           },
 
@@ -335,7 +348,7 @@ async function getJSON(
       );
 
 
-    const text =
+    const raw =
       await response.text();
 
 
@@ -346,7 +359,7 @@ async function getJSON(
 
       data =
         JSON.parse(
-          text
+          raw
         );
 
     }
@@ -354,7 +367,7 @@ async function getJSON(
     catch {
 
       throw new Error(
-        `Invalid Coinbase JSON (${response.status})`
+        `Coinbase returned invalid JSON (${response.status})`
       );
 
     }
@@ -373,30 +386,6 @@ async function getJSON(
 
 
     return data;
-
-  }
-
-  catch (
-    error
-  ) {
-
-    if (
-      error?.name ===
-      "AbortError"
-    ) {
-
-      throw new Error(
-        "Coinbase request timed out"
-      );
-
-    }
-
-
-    throw new Error(
-      errorText(
-        error
-      )
-    );
 
   }
 
@@ -428,7 +417,7 @@ async function fetchChunk(
   const raw =
     await getJSON(
 
-      `${COINBASE}/products/${PRODUCT}/candles` +
+      `${BASE_URL}/products/${PRODUCT}/candles` +
 
       `?granularity=${granularity}` +
 
@@ -446,7 +435,7 @@ async function fetchChunk(
   ) {
 
     throw new Error(
-      "Coinbase candles response was not an array"
+      "Coinbase candle response was not an array"
     );
 
   }
@@ -467,7 +456,7 @@ async function fetchChunk(
             Number(
               row[0]
             ) *
-              1000
+            1000
           ).toISOString(),
 
         low:
@@ -503,30 +492,18 @@ async function fetchChunk(
         candle.timestamp >
           0 &&
 
-        Number.isFinite(
-          candle.open
-        ) &&
+        candle.open >
+          0 &&
 
-        Number.isFinite(
-          candle.high
-        ) &&
+        candle.high >
+          0 &&
 
-        Number.isFinite(
-          candle.low
-        ) &&
+        candle.low >
+          0 &&
 
-        Number.isFinite(
-          candle.close
-        )
+        candle.close >
+          0
 
-    )
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.timestamp -
-        b.timestamp
     );
 
 }
@@ -598,21 +575,21 @@ async function fetchHistory(
 
 
   for (
-    let i = 0;
-    i <
+    let index = 0;
+    index <
       windows.length;
-    i += 4
+    index += 4
   ) {
 
     const batch =
       windows.slice(
-        i,
-        i +
+        index,
+        index +
         4
       );
 
 
-    const results =
+    const responses =
       await Promise.all(
 
         batch.map(
@@ -634,25 +611,25 @@ async function fetchHistory(
 
 
     for (
-      const result of
-      results
+      const candles of
+      responses
     ) {
 
       all.push(
-        ...result
+        ...candles
       );
 
     }
 
 
     if (
-      i +
+      index +
       4 <
       windows.length
     ) {
 
       await sleep(
-        100
+        120
       );
 
     }
@@ -679,128 +656,6 @@ async function fetchHistory(
 
   return [
     ...unique.values()
-  ].sort(
-    (
-      a,
-      b
-    ) =>
-      a.timestamp -
-      b.timestamp
-  );
-
-}
-
-
-/* ============================================================
-   H1 -> H4
-============================================================ */
-
-function resampleH4(
-  h1
-) {
-
-  const interval =
-    4 *
-    60 *
-    60 *
-    1000;
-
-
-  const map =
-    new Map();
-
-
-  for (
-    const candle of
-    h1
-  ) {
-
-    const key =
-      Math.floor(
-        candle.timestamp /
-        interval
-      ) *
-      interval;
-
-
-    if (
-      !map.has(
-        key
-      )
-    ) {
-
-      map.set(
-        key,
-        {
-
-          timestamp:
-            key,
-
-          closeTime:
-            key +
-            interval,
-
-          datetime:
-            new Date(
-              key
-            ).toISOString(),
-
-          open:
-            candle.open,
-
-          high:
-            candle.high,
-
-          low:
-            candle.low,
-
-          close:
-            candle.close,
-
-          volume:
-            candle.volume
-
-        }
-      );
-
-    }
-
-    else {
-
-      const bucket =
-        map.get(
-          key
-        );
-
-
-      bucket.high =
-        Math.max(
-          bucket.high,
-          candle.high
-        );
-
-
-      bucket.low =
-        Math.min(
-          bucket.low,
-          candle.low
-        );
-
-
-      bucket.close =
-        candle.close;
-
-
-      bucket.volume +=
-        candle.volume;
-
-    }
-
-  }
-
-
-  return [
-    ...map.values()
   ].sort(
     (
       a,
@@ -886,13 +741,11 @@ function ema(
   ) {
 
     current =
-
       (
         values[i] -
         current
       ) *
       multiplier +
-
       current;
 
 
@@ -976,29 +829,26 @@ function rsi(
   }
 
 
-  let averageGain =
+  let avgGain =
     gains /
     period;
 
 
-  let averageLoss =
+  let avgLoss =
     losses /
     period;
 
 
   output[period] =
-
-    averageLoss ===
+    avgLoss ===
     0
-
       ? 100
-
       : 100 -
         100 /
         (
           1 +
-          averageGain /
-          averageLoss
+          avgGain /
+          avgLoss
         );
 
 
@@ -1030,9 +880,9 @@ function rsi(
       );
 
 
-    averageGain =
+    avgGain =
       (
-        averageGain *
+        avgGain *
         (
           period -
           1
@@ -1042,9 +892,9 @@ function rsi(
       period;
 
 
-    averageLoss =
+    avgLoss =
       (
-        averageLoss *
+        avgLoss *
         (
           period -
           1
@@ -1055,18 +905,15 @@ function rsi(
 
 
     output[i] =
-
-      averageLoss ===
+      avgLoss ===
       0
-
         ? 100
-
         : 100 -
           100 /
           (
             1 +
-            averageGain /
-            averageLoss
+            avgGain /
+            avgLoss
           );
 
   }
@@ -1199,6 +1046,717 @@ function atr(
 
 
 /* ============================================================
+   M5 -> H1
+============================================================ */
+
+function resample(
+  candles,
+  minutes
+) {
+
+  const interval =
+    minutes *
+    60000;
+
+
+  const map =
+    new Map();
+
+
+  for (
+    const candle of
+    candles
+  ) {
+
+    const key =
+      Math.floor(
+        candle.timestamp /
+        interval
+      ) *
+      interval;
+
+
+    if (
+      !map.has(
+        key
+      )
+    ) {
+
+      map.set(
+        key,
+        {
+
+          timestamp:
+            key,
+
+          closeTime:
+            key +
+            interval,
+
+          datetime:
+            new Date(
+              key
+            ).toISOString(),
+
+          open:
+            candle.open,
+
+          high:
+            candle.high,
+
+          low:
+            candle.low,
+
+          close:
+            candle.close,
+
+          volume:
+            candle.volume
+
+        }
+      );
+
+    }
+
+    else {
+
+      const bar =
+        map.get(
+          key
+        );
+
+
+      bar.high =
+        Math.max(
+          bar.high,
+          candle.high
+        );
+
+
+      bar.low =
+        Math.min(
+          bar.low,
+          candle.low
+        );
+
+
+      bar.close =
+        candle.close;
+
+
+      bar.volume +=
+        candle.volume;
+
+    }
+
+  }
+
+
+  return [
+    ...map.values()
+  ].sort(
+    (
+      a,
+      b
+    ) =>
+      a.timestamp -
+      b.timestamp
+  );
+
+}
+
+
+/* ============================================================
+   SESSION INFO
+============================================================ */
+
+function sessionInfo(
+  timestamp
+) {
+
+  const date =
+    new Date(
+      timestamp
+    );
+
+
+  const midnight =
+    Date.UTC(
+
+      date.getUTCFullYear(),
+
+      date.getUTCMonth(),
+
+      date.getUTCDate()
+
+    );
+
+
+  const hour =
+    date.getUTCHours();
+
+
+  if (
+    hour <
+    8
+  ) {
+
+    return {
+
+      name:
+        "ASIA",
+
+      start:
+        midnight,
+
+      end:
+        midnight +
+        8 *
+        3600000
+
+    };
+
+  }
+
+
+  if (
+    hour <
+    13
+  ) {
+
+    return {
+
+      name:
+        "LONDON",
+
+      start:
+        midnight +
+        8 *
+        3600000,
+
+      end:
+        midnight +
+        13 *
+        3600000
+
+    };
+
+  }
+
+
+  if (
+    hour <
+    21
+  ) {
+
+    return {
+
+      name:
+        "NEW YORK",
+
+      start:
+        midnight +
+        13 *
+        3600000,
+
+      end:
+        midnight +
+        21 *
+        3600000
+
+    };
+
+  }
+
+
+  return {
+
+    name:
+      "LATE",
+
+    start:
+      midnight +
+      21 *
+      3600000,
+
+    end:
+      midnight +
+      24 *
+      3600000
+
+  };
+
+}
+
+
+/* ============================================================
+   BUILD PROFILE
+============================================================ */
+
+function buildVolumeProfile(
+  candles
+) {
+
+  if (
+    candles.length <
+    SETTINGS.minimumProfileBars
+  ) {
+
+    return null;
+
+  }
+
+
+  const low =
+    Math.min(
+      ...candles.map(
+        candle =>
+          candle.low
+      )
+    );
+
+
+  const high =
+    Math.max(
+      ...candles.map(
+        candle =>
+          candle.high
+      )
+    );
+
+
+  const range =
+    high -
+    low;
+
+
+  if (
+    range <=
+    0
+  ) {
+
+    return null;
+
+  }
+
+
+  const binSize =
+
+    range /
+    SETTINGS.profileBins;
+
+
+  const bins =
+    Array.from(
+      {
+        length:
+          SETTINGS.profileBins
+      },
+      (
+        _,
+        index
+      ) => ({
+
+        price:
+
+          low +
+
+          (
+            index +
+            0.5
+          ) *
+          binSize,
+
+        low:
+
+          low +
+          index *
+          binSize,
+
+        high:
+
+          low +
+
+          (
+            index +
+            1
+          ) *
+          binSize,
+
+        volume:
+          0
+
+      })
+    );
+
+
+  for (
+    const candle of
+    candles
+  ) {
+
+    let first =
+
+      Math.floor(
+        (
+          candle.low -
+          low
+        ) /
+        binSize
+      );
+
+
+    let last =
+
+      Math.floor(
+        (
+          candle.high -
+          low
+        ) /
+        binSize
+      );
+
+
+    first =
+      clamp(
+        first,
+        0,
+        bins.length -
+        1
+      );
+
+
+    last =
+      clamp(
+        last,
+        0,
+        bins.length -
+        1
+      );
+
+
+    const count =
+      Math.max(
+        1,
+        last -
+        first +
+        1
+      );
+
+
+    const typical =
+      (
+        candle.high +
+        candle.low +
+        candle.close
+      ) /
+      3;
+
+
+    let typicalIndex =
+
+      Math.floor(
+        (
+          typical -
+          low
+        ) /
+        binSize
+      );
+
+
+    typicalIndex =
+      clamp(
+        typicalIndex,
+        0,
+        bins.length -
+        1
+      );
+
+
+    const distributed =
+      candle.volume *
+      0.70;
+
+
+    const focused =
+      candle.volume *
+      0.30;
+
+
+    for (
+      let index =
+        first;
+      index <=
+        last;
+      index++
+    ) {
+
+      bins[
+        index
+      ].volume +=
+
+        distributed /
+        count;
+
+    }
+
+
+    bins[
+      typicalIndex
+    ].volume +=
+      focused;
+
+  }
+
+
+  const totalVolume =
+    bins.reduce(
+      (
+        total,
+        bin
+      ) =>
+        total +
+        bin.volume,
+      0
+    );
+
+
+  let pocIndex =
+    0;
+
+
+  for (
+    let index = 1;
+    index <
+      bins.length;
+    index++
+  ) {
+
+    if (
+      bins[
+        index
+      ].volume >
+      bins[
+        pocIndex
+      ].volume
+    ) {
+
+      pocIndex =
+        index;
+
+    }
+
+  }
+
+
+  const target =
+
+    totalVolume *
+    SETTINGS.valueAreaPercent;
+
+
+  let cumulative =
+    bins[
+      pocIndex
+    ].volume;
+
+
+  let lower =
+    pocIndex;
+
+
+  let upper =
+    pocIndex;
+
+
+  while (
+
+    cumulative <
+    target &&
+
+    (
+      lower >
+        0 ||
+      upper <
+        bins.length -
+        1
+    )
+
+  ) {
+
+    const lowerVolume =
+
+      lower >
+      0
+
+        ? bins[
+          lower -
+          1
+        ].volume
+
+        : -1;
+
+
+    const upperVolume =
+
+      upper <
+      bins.length -
+      1
+
+        ? bins[
+          upper +
+          1
+        ].volume
+
+        : -1;
+
+
+    if (
+      upperVolume >=
+      lowerVolume
+    ) {
+
+      if (
+        upper <
+        bins.length -
+        1
+      ) {
+
+        upper++;
+
+        cumulative +=
+          bins[
+            upper
+          ].volume;
+
+      }
+
+      else {
+
+        lower--;
+
+        cumulative +=
+          bins[
+            lower
+          ].volume;
+
+      }
+
+    }
+
+    else {
+
+      if (
+        lower >
+        0
+      ) {
+
+        lower--;
+
+        cumulative +=
+          bins[
+            lower
+          ].volume;
+
+      }
+
+      else {
+
+        upper++;
+
+        cumulative +=
+          bins[
+            upper
+          ].volume;
+
+      }
+
+    }
+
+  }
+
+
+  return {
+
+    poc:
+      bins[
+        pocIndex
+      ].price,
+
+    vah:
+      bins[
+        upper
+      ].high,
+
+    val:
+      bins[
+        lower
+      ].low,
+
+    high,
+
+    low,
+
+    totalVolume
+
+  };
+
+}
+
+
+/* ============================================================
+   VWAP
+============================================================ */
+
+function vwap(
+  candles
+) {
+
+  let volume =
+    0;
+
+
+  let weighted =
+    0;
+
+
+  for (
+    const candle of
+    candles
+  ) {
+
+    const typical =
+      (
+        candle.high +
+        candle.low +
+        candle.close
+      ) /
+      3;
+
+
+    weighted +=
+      typical *
+      candle.volume;
+
+
+    volume +=
+      candle.volume;
+
+  }
+
+
+  return volume >
+    0
+
+    ? weighted /
+      volume
+
+    : null;
+
+}
+
+
+/* ============================================================
    CANDLE METRICS
 ============================================================ */
 
@@ -1218,31 +1776,31 @@ function candleMetrics(
 
     return {
 
-      bodyPercent:
+      body:
+        0,
+
+      lowerWick:
+        0,
+
+      upperWick:
         0,
 
       closeLocation:
-        0.5,
-
-      upperWickPercent:
-        0,
-
-      lowerWickPercent:
-        0
+        0.5
 
     };
 
   }
 
 
-  const upperBody =
+  const bodyHigh =
     Math.max(
       candle.open,
       candle.close
     );
 
 
-  const lowerBody =
+  const bodyLow =
     Math.min(
       candle.open,
       candle.close
@@ -1251,11 +1809,29 @@ function candleMetrics(
 
   return {
 
-    bodyPercent:
+    body:
 
       Math.abs(
         candle.close -
         candle.open
+      ) /
+      range,
+
+
+    lowerWick:
+
+      (
+        bodyLow -
+        candle.low
+      ) /
+      range,
+
+
+    upperWick:
+
+      (
+        candle.high -
+        bodyHigh
       ) /
       range,
 
@@ -1266,24 +1842,6 @@ function candleMetrics(
         candle.close -
         candle.low
       ) /
-      range,
-
-
-    upperWickPercent:
-
-      (
-        candle.high -
-        upperBody
-      ) /
-      range,
-
-
-    lowerWickPercent:
-
-      (
-        lowerBody -
-        candle.low
-      ) /
       range
 
   };
@@ -1292,214 +1850,116 @@ function candleMetrics(
 
 
 /* ============================================================
-   PULLBACK
+   LEVEL TOUCH
 ============================================================ */
 
-function recentZoneInteraction(
+function levelTouched(
 
   candles,
 
-  ema20,
+  level,
 
-  ema50,
+  lookback,
 
-  index,
-
-  lookback
+  tolerance
 
 ) {
 
-  const start =
-    Math.max(
-
-      0,
-
-      index -
-      lookback +
-      1
-
+  const recent =
+    candles.slice(
+      -lookback
     );
 
 
-  for (
-    let i =
-      start;
-    i <=
-      index;
-    i++
-  ) {
+  return recent.some(
+    candle =>
 
-    if (
-      ema20[i] ===
-        null ||
-      ema50[i] ===
-        null
-    ) {
+      candle.low <=
+        level +
+        tolerance &&
 
-      continue;
-
-    }
-
-
-    const high =
-      Math.max(
-        ema20[i],
-        ema50[i]
-      );
-
-
-    const low =
-      Math.min(
-        ema20[i],
-        ema50[i]
-      );
-
-
-    if (
-
-      candles[i].low <=
-        high &&
-
-      candles[i].high >=
-        low
-
-    ) {
-
-      return true;
-
-    }
-
-  }
-
-
-  return false;
+      candle.high >=
+        level -
+        tolerance
+  );
 
 }
 
 
 /* ============================================================
-   COMPLETED H1 INDEX
+   PROFILE AT HISTORICAL TIME
 ============================================================ */
 
-function completedH1Index(
-
-  h1,
-
-  signalTimestamp,
-
-  startingIndex
-
+function profileContext(
+  history,
+  timestamp
 ) {
 
-  const cutoff =
-
-    signalTimestamp -
-
-    60 *
-    60 *
-    1000;
-
-
-  let index =
-    Math.max(
-      0,
-      startingIndex
+  const currentInfo =
+    sessionInfo(
+      timestamp
     );
 
 
-  while (
+  const currentBars =
+    history.filter(
+      candle =>
 
-    index +
-      1 <
-      h1.length &&
+        candle.timestamp >=
+          currentInfo.start &&
 
-    h1[
-      index +
-      1
-    ].timestamp <=
-      cutoff
-
-  ) {
-
-    index++;
-
-  }
-
-
-  if (
-
-    h1[index] &&
-
-    h1[index].timestamp <=
-    cutoff
-
-  ) {
-
-    return index;
-
-  }
-
-
-  return -1;
-
-}
-
-
-/* ============================================================
-   COMPLETED H4 INDEX
-============================================================ */
-
-function completedH4Index(
-
-  h4,
-
-  signalTimestamp,
-
-  startingIndex
-
-) {
-
-  let index =
-    Math.max(
-      0,
-      startingIndex
+        candle.timestamp <=
+          timestamp
     );
 
 
-  while (
+  const previousTimestamp =
 
-    index +
-      1 <
-      h4.length &&
-
-    h4[
-      index +
-      1
-    ].closeTime <=
-      signalTimestamp
-
-  ) {
-
-    index++;
-
-  }
+    currentInfo.start -
+    1;
 
 
-  if (
-
-    h4[index] &&
-
-    h4[index].closeTime <=
-    signalTimestamp
-
-  ) {
-
-    return index;
-
-  }
+  const previousInfo =
+    sessionInfo(
+      previousTimestamp
+    );
 
 
-  return -1;
+  const previousBars =
+    history.filter(
+      candle =>
+
+        candle.timestamp >=
+          previousInfo.start &&
+
+        candle.timestamp <
+          previousInfo.end
+    );
+
+
+  return {
+
+    session:
+      currentInfo,
+
+    developing:
+      buildVolumeProfile(
+        currentBars
+      ),
+
+    previous:
+      buildVolumeProfile(
+        previousBars
+      ),
+
+    currentBars,
+
+    sessionVWAP:
+      vwap(
+        currentBars
+      )
+
+  };
 
 }
 
@@ -1509,20 +1969,48 @@ function completedH4Index(
 ============================================================ */
 
 function runBacktest(
-  m15,
-  h1
+  m5,
+  mode
 ) {
 
-  const h4 =
-    resampleH4(
-      h1
+  const minimumScore =
+    SETTINGS.modeScores[
+      mode
+    ];
+
+
+  const h1 =
+    resample(
+      m5,
+      60
     );
 
 
-  const m15Close =
-    m15.map(
+  const h4 =
+    resample(
+      m5,
+      240
+    );
+
+
+  const m5Close =
+    m5.map(
       candle =>
         candle.close
+    );
+
+
+  const m5ATR =
+    atr(
+      m5,
+      SETTINGS.atrPeriod
+    );
+
+
+  const m5RSI =
+    rsi(
+      m5Close,
+      SETTINGS.rsiPeriod
     );
 
 
@@ -1540,59 +2028,31 @@ function runBacktest(
     );
 
 
-  const mEMA20 =
-    ema(
-      m15Close,
-      SETTINGS.m15EmaFast
-    );
-
-
-  const mEMA50 =
-    ema(
-      m15Close,
-      SETTINGS.m15EmaSlow
-    );
-
-
-  const mRSI =
-    rsi(
-      m15Close,
-      SETTINGS.rsiPeriod
-    );
-
-
-  const mATR =
-    atr(
-      m15,
-      SETTINGS.atrPeriod
-    );
-
-
   const h1EMA50 =
     ema(
       h1Close,
-      SETTINGS.h1EmaFast
+      SETTINGS.h1FastEMA
     );
 
 
   const h1EMA200 =
     ema(
       h1Close,
-      SETTINGS.h1EmaSlow
+      SETTINGS.h1SlowEMA
     );
 
 
   const h4EMA20 =
     ema(
       h4Close,
-      SETTINGS.h4EmaFast
+      SETTINGS.h4FastEMA
     );
 
 
   const h4EMA50 =
     ema(
       h4Close,
-      SETTINGS.h4EmaSlow
+      SETTINGS.h4SlowEMA
     );
 
 
@@ -1600,7 +2060,7 @@ function runBacktest(
     [];
 
 
-  let activeTrade =
+  let active =
     null;
 
 
@@ -1616,24 +2076,71 @@ function runBacktest(
     0;
 
 
+  function completedIndex(
+    bars,
+    timestamp,
+    current
+  ) {
+
+    let index =
+      current;
+
+
+    while (
+
+      index +
+        1 <
+        bars.length &&
+
+      bars[
+        index +
+        1
+      ].closeTime <=
+        timestamp
+
+    ) {
+
+      index++;
+
+    }
+
+
+    if (
+
+      bars[index] &&
+      bars[index].closeTime <=
+        timestamp
+
+    ) {
+
+      return index;
+
+    }
+
+
+    return -1;
+
+  }
+
+
   for (
-    let i = 60;
+    let i = 250;
     i <
-      m15.length -
+      m5.length -
       1;
     i++
   ) {
 
     const candle =
-      m15[i];
+      m5[i];
 
 
     /* ======================================================
-       MANAGE TRADE
+       MANAGE POSITION
     ====================================================== */
 
     if (
-      activeTrade
+      active
     ) {
 
       let exit =
@@ -1648,43 +2155,21 @@ function runBacktest(
         null;
 
 
-      /* ====================================================
-         BUY
-      ==================================================== */
-
       if (
-        activeTrade.side ===
+        active.side ===
         "BUY"
       ) {
 
-        const stopHit =
-
-          candle.low <=
-          activeTrade.stop;
-
-
-        const targetHit =
-
-          candle.high >=
-          activeTrade.target;
-
-
-        /*
-           If both occur:
-           conservative = stop.
-        */
-
         if (
-          stopHit
+          candle.low <=
+          active.stop
         ) {
 
           exit =
-            activeTrade.stop;
-
+            active.stop;
 
           resultR =
             -1;
-
 
           exitReason =
             "SL";
@@ -1692,16 +2177,15 @@ function runBacktest(
         }
 
         else if (
-          targetHit
+          candle.high >=
+          active.target
         ) {
 
           exit =
-            activeTrade.target;
-
+            active.target;
 
           resultR =
             SETTINGS.targetR;
-
 
           exitReason =
             "TP";
@@ -1709,37 +2193,19 @@ function runBacktest(
         }
 
       }
-
-
-      /* ====================================================
-         SELL
-      ==================================================== */
 
       else {
 
-        const stopHit =
-
-          candle.high >=
-          activeTrade.stop;
-
-
-        const targetHit =
-
-          candle.low <=
-          activeTrade.target;
-
-
         if (
-          stopHit
+          candle.high >=
+          active.stop
         ) {
 
           exit =
-            activeTrade.stop;
-
+            active.stop;
 
           resultR =
             -1;
-
 
           exitReason =
             "SL";
@@ -1747,16 +2213,15 @@ function runBacktest(
         }
 
         else if (
-          targetHit
+          candle.low <=
+          active.target
         ) {
 
           exit =
-            activeTrade.target;
-
+            active.target;
 
           resultR =
             SETTINGS.targetR;
-
 
           exitReason =
             "TP";
@@ -1764,16 +2229,6 @@ function runBacktest(
         }
 
       }
-
-
-      /* ====================================================
-         TIME EXIT
-      ==================================================== */
-
-      const heldBars =
-
-        i -
-        activeTrade.entryIndex;
 
 
       if (
@@ -1781,7 +2236,8 @@ function runBacktest(
         exit ===
           null &&
 
-        heldBars >=
+        i -
+        active.entryIndex >=
           SETTINGS.maxHoldBars
 
       ) {
@@ -1792,20 +2248,20 @@ function runBacktest(
 
         resultR =
 
-          activeTrade.side ===
+          active.side ===
           "BUY"
 
             ? (
               exit -
-              activeTrade.entry
+              active.entry
             ) /
-              activeTrade.risk
+              active.risk
 
             : (
-              activeTrade.entry -
+              active.entry -
               exit
             ) /
-              activeTrade.risk;
+              active.risk;
 
 
         exitReason =
@@ -1813,10 +2269,6 @@ function runBacktest(
 
       }
 
-
-      /* ====================================================
-         RECORD
-      ==================================================== */
 
       if (
         exit !==
@@ -1826,27 +2278,30 @@ function runBacktest(
         trades.push({
 
           side:
-            activeTrade.side,
+            active.side,
+
+          setup:
+            active.setup,
 
           entryTime:
-            activeTrade.entryTime,
+            active.entryTime,
 
           exitTime:
             candle.datetime,
 
           entry:
             round(
-              activeTrade.entry
+              active.entry
             ),
 
           stop:
             round(
-              activeTrade.stop
+              active.stop
             ),
 
           target:
             round(
-              activeTrade.target
+              active.target
             ),
 
           exit:
@@ -1854,27 +2309,21 @@ function runBacktest(
               exit
             ),
 
+          score:
+            active.score,
+
           resultR:
             round(
               resultR,
               3
             ),
 
-          exitReason,
-
-          h4Trend:
-            activeTrade.h4Trend,
-
-          h1Trend:
-            activeTrade.h1Trend,
-
-          rsi:
-            activeTrade.rsi
+          exitReason
 
         });
 
 
-        activeTrade =
+        active =
           null;
 
 
@@ -1891,10 +2340,6 @@ function runBacktest(
     }
 
 
-    /* ======================================================
-       COOLDOWN
-    ====================================================== */
-
     if (
       i <=
       cooldownUntil
@@ -1905,22 +2350,12 @@ function runBacktest(
     }
 
 
-    /* ======================================================
-       M15 READY
-    ====================================================== */
-
     if (
 
-      mEMA20[i] ===
+      m5ATR[i] ===
         null ||
 
-      mEMA50[i] ===
-        null ||
-
-      mRSI[i] ===
-        null ||
-
-      mATR[i] ===
+      m5RSI[i] ===
         null
 
     ) {
@@ -1931,48 +2366,30 @@ function runBacktest(
 
 
     /* ======================================================
-       COMPLETED H1
+       COMPLETED HTF BARS
     ====================================================== */
 
     h1Index =
-      completedH1Index(
-
+      completedIndex(
         h1,
-
-        candle.timestamp,
-
+        candle.timestamp +
+          300000,
         h1Index
+      );
 
+
+    h4Index =
+      completedIndex(
+        h4,
+        candle.timestamp +
+          300000,
+        h4Index
       );
 
 
     if (
       h1Index <
-      199
-    ) {
-
-      continue;
-
-    }
-
-
-    /* ======================================================
-       COMPLETED H4
-    ====================================================== */
-
-    h4Index =
-      completedH4Index(
-
-        h4,
-
-        candle.timestamp,
-
-        h4Index
-
-      );
-
-
-    if (
+      199 ||
       h4Index <
       49
     ) {
@@ -1982,38 +2399,43 @@ function runBacktest(
     }
 
 
-    if (
+    /* ======================================================
+       HTF TREND
+    ====================================================== */
+
+    const h1Bullish =
+
+      h1[
+        h1Index
+      ].close >
+      h1EMA200[
+        h1Index
+      ] &&
 
       h1EMA50[
         h1Index
-      ] ===
-        null ||
-
+      ] >
       h1EMA200[
         h1Index
-      ] ===
-        null ||
-
-      h4EMA20[
-        h4Index
-      ] ===
-        null ||
-
-      h4EMA50[
-        h4Index
-      ] ===
-        null
-
-    ) {
-
-      continue;
-
-    }
+      ];
 
 
-    /* ======================================================
-       TREND
-    ====================================================== */
+    const h1Bearish =
+
+      h1[
+        h1Index
+      ].close <
+      h1EMA200[
+        h1Index
+      ] &&
+
+      h1EMA50[
+        h1Index
+      ] <
+      h1EMA200[
+        h1Index
+      ];
+
 
     const h4Bullish =
 
@@ -2049,110 +2471,32 @@ function runBacktest(
       ];
 
 
-    const h1Bullish =
-
-      h1EMA50[
-        h1Index
-      ] >
-      h1EMA200[
-        h1Index
-      ] &&
-
-      h1[
-        h1Index
-      ].close >
-      h1EMA200[
-        h1Index
-      ];
-
-
-    const h1Bearish =
-
-      h1EMA50[
-        h1Index
-      ] <
-      h1EMA200[
-        h1Index
-      ] &&
-
-      h1[
-        h1Index
-      ].close <
-      h1EMA200[
-        h1Index
-      ];
-
-
-    const bullishAlignment =
-
-      h4Bullish &&
-      h1Bullish;
-
-
-    const bearishAlignment =
-
-      h4Bearish &&
-      h1Bearish;
-
-
-    if (
-      !bullishAlignment &&
-      !bearishAlignment
-    ) {
-
-      continue;
-
-    }
-
-
     /* ======================================================
-       VOLATILITY
+       PROFILE CONTEXT
+
+       Important:
+       history ends at CURRENT candle.
+
+       Nothing after current candle is included.
     ====================================================== */
 
-    const atrPercent =
-
-      mATR[i] /
-      candle.close *
-      100;
-
-
-    if (
-
-      atrPercent <
-        SETTINGS.minAtrPercent ||
-
-      atrPercent >
-        SETTINGS.maxAtrPercent
-
-    ) {
-
-      continue;
-
-    }
+    const history =
+      m5.slice(
+        0,
+        i +
+        1
+      );
 
 
-    /* ======================================================
-       EMA INTERACTION
-    ====================================================== */
-
-    const pullback =
-      recentZoneInteraction(
-
-        m15,
-
-        mEMA20,
-
-        mEMA50,
-
-        i,
-
-        SETTINGS.pullbackLookback
-
+    const profile =
+      profileContext(
+        history,
+        candle.timestamp
       );
 
 
     if (
-      !pullback
+      !profile.developing
     ) {
 
       continue;
@@ -2160,8 +2504,154 @@ function runBacktest(
     }
 
 
+    const dp =
+      profile.developing;
+
+
+    const previous =
+      profile.previous;
+
+
+    const sessionVWAP =
+      profile.sessionVWAP;
+
+
     /* ======================================================
-       CANDLE QUALITY
+       STATE SCORES
+    ====================================================== */
+
+    let buyScore =
+      0;
+
+
+    let sellScore =
+      0;
+
+
+    if (
+      h4Bullish
+    ) {
+
+      buyScore +=
+        18;
+
+    }
+
+
+    if (
+      h4Bearish
+    ) {
+
+      sellScore +=
+        18;
+
+    }
+
+
+    if (
+      h1Bullish
+    ) {
+
+      buyScore +=
+        18;
+
+    }
+
+
+    if (
+      h1Bearish
+    ) {
+
+      sellScore +=
+        18;
+
+    }
+
+
+    if (
+      candle.close >
+      dp.poc
+    ) {
+
+      buyScore +=
+        12;
+
+    }
+
+    else {
+
+      sellScore +=
+        12;
+
+    }
+
+
+    if (
+      candle.close >
+      sessionVWAP
+    ) {
+
+      buyScore +=
+        12;
+
+    }
+
+    else {
+
+      sellScore +=
+        12;
+
+    }
+
+
+    if (
+      candle.close >
+      dp.vah
+    ) {
+
+      buyScore +=
+        8;
+
+    }
+
+
+    if (
+      candle.close <
+      dp.val
+    ) {
+
+      sellScore +=
+        8;
+
+    }
+
+
+    if (
+      previous
+    ) {
+
+      if (
+        candle.close >
+        previous.poc
+      ) {
+
+        buyScore +=
+          8;
+
+      }
+
+      else {
+
+        sellScore +=
+          8;
+
+      }
+
+    }
+
+
+    /* ======================================================
+       M5 TRIGGER
     ====================================================== */
 
     const metrics =
@@ -2170,100 +2660,310 @@ function runBacktest(
       );
 
 
+    const atrValue =
+      m5ATR[i];
+
+
+    const tolerance =
+      atrValue *
+      0.15;
+
+
+    const recent =
+      m5.slice(
+        Math.max(
+          0,
+          i -
+          SETTINGS.pullbackLookback +
+          1
+        ),
+        i +
+        1
+      );
+
+
+    const touchedPOC =
+      levelTouched(
+
+        recent,
+
+        dp.poc,
+
+        SETTINGS.pullbackLookback,
+
+        tolerance
+
+      );
+
+
+    const touchedVWAP =
+      levelTouched(
+
+        recent,
+
+        sessionVWAP,
+
+        SETTINGS.pullbackLookback,
+
+        tolerance
+
+      );
+
+
+    const touchedVAL =
+      levelTouched(
+
+        recent,
+
+        dp.val,
+
+        SETTINGS.pullbackLookback,
+
+        tolerance
+
+      );
+
+
+    const touchedVAH =
+      levelTouched(
+
+        recent,
+
+        dp.vah,
+
+        SETTINGS.pullbackLookback,
+
+        tolerance
+
+      );
+
+
+    const bullishRejection =
+
+      candle.close >
+      candle.open &&
+
+      metrics.body >=
+      SETTINGS.minimumBodyPercent &&
+
+      metrics.lowerWick >=
+      SETTINGS.minimumRejectionWick &&
+
+      metrics.closeLocation >=
+      0.65;
+
+
+    const bearishRejection =
+
+      candle.close <
+      candle.open &&
+
+      metrics.body >=
+      SETTINGS.minimumBodyPercent &&
+
+      metrics.upperWick >=
+      SETTINGS.minimumRejectionWick &&
+
+      metrics.closeLocation <=
+      0.35;
+
+
     if (
-      metrics.bodyPercent <
-      SETTINGS.minBodyPercent
+      touchedPOC &&
+      candle.close >
+      dp.poc
     ) {
 
-      continue;
+      buyScore +=
+        12;
 
     }
 
 
-    const bullishCandle =
-
-      candle.close >
-      candle.open;
-
-
-    const bearishCandle =
-
+    if (
+      touchedPOC &&
       candle.close <
-      candle.open;
+      dp.poc
+    ) {
+
+      sellScore +=
+        12;
+
+    }
 
 
-    const buyRejection =
-
-      bullishCandle &&
-
-      metrics.lowerWickPercent >=
-      SETTINGS.minRejectionWickPercent &&
-
-      metrics.closeLocation >=
-      SETTINGS.buyCloseLocation &&
-
+    if (
+      touchedVWAP &&
       candle.close >
-      mEMA20[i] &&
+      sessionVWAP
+    ) {
 
+      buyScore +=
+        10;
+
+    }
+
+
+    if (
+      touchedVWAP &&
+      candle.close <
+      sessionVWAP
+    ) {
+
+      sellScore +=
+        10;
+
+    }
+
+
+    if (
+      touchedVAL &&
       candle.close >
-      mEMA50[i];
+      dp.val
+    ) {
+
+      buyScore +=
+        10;
+
+    }
 
 
-    const sellRejection =
-
-      bearishCandle &&
-
-      metrics.upperWickPercent >=
-      SETTINGS.minRejectionWickPercent &&
-
-      metrics.closeLocation <=
-      SETTINGS.sellCloseLocation &&
-
+    if (
+      touchedVAH &&
       candle.close <
-      mEMA20[i] &&
+      dp.vah
+    ) {
 
-      candle.close <
-      mEMA50[i];
+      sellScore +=
+        10;
+
+    }
 
 
-    /* ======================================================
-       RSI
-    ====================================================== */
+    if (
+      bullishRejection
+    ) {
 
-    const buyRsiOk =
+      buyScore +=
+        10;
 
-      mRSI[i] >=
+    }
+
+
+    if (
+      bearishRejection
+    ) {
+
+      sellScore +=
+        10;
+
+    }
+
+
+    const buyRSIOK =
+
+      m5RSI[i] >=
       SETTINGS.buyRsiMin &&
 
-      mRSI[i] <=
+      m5RSI[i] <=
       SETTINGS.buyRsiMax;
 
 
-    const sellRsiOk =
+    const sellRSIOK =
 
-      mRSI[i] >=
+      m5RSI[i] >=
       SETTINGS.sellRsiMin &&
 
-      mRSI[i] <=
+      m5RSI[i] <=
       SETTINGS.sellRsiMax;
 
 
-    /* ======================================================
-       STRETCH
-    ====================================================== */
+    if (
+      buyRSIOK
+    ) {
 
-    const distanceATR =
+      buyScore +=
+        5;
 
-      Math.abs(
-        candle.close -
-        mEMA20[i]
-      ) /
-      mATR[i];
+    }
 
 
     if (
-      distanceATR >
-      SETTINGS.maxDistanceFromEma20Atr
+      sellRSIOK
+    ) {
+
+      sellScore +=
+        5;
+
+    }
+
+
+    buyScore =
+      clamp(
+        buyScore,
+        0,
+        100
+      );
+
+
+    sellScore =
+      clamp(
+        sellScore,
+        0,
+        100
+      );
+
+
+    /* ======================================================
+       FILTERS
+    ====================================================== */
+
+    const atrPercent =
+
+      atrValue /
+      candle.close *
+      100;
+
+
+    const volatilityOK =
+
+      atrPercent >=
+      SETTINGS.minimumATRPercent &&
+
+      atrPercent <=
+      SETTINGS.maximumATRPercent;
+
+
+    if (
+      !volatilityOK
+    ) {
+
+      continue;
+
+    }
+
+
+    const profileDistance =
+
+      Math.min(
+
+        Math.abs(
+          candle.close -
+          dp.poc
+        ),
+
+        Math.abs(
+          candle.close -
+          sessionVWAP
+        )
+
+      ) /
+      atrValue;
+
+
+    if (
+      profileDistance >
+      SETTINGS.maxDistanceATR
     ) {
 
       continue;
@@ -2272,25 +2972,47 @@ function runBacktest(
 
 
     /* ======================================================
-       ENTRY SIGNAL
+       SIGNAL
     ====================================================== */
 
     const buy =
 
-      bullishAlignment &&
+      buyScore >=
+        minimumScore &&
 
-      buyRejection &&
+      buyScore >
+        sellScore +
+        8 &&
 
-      buyRsiOk;
+      bullishRejection &&
+
+      buyRSIOK &&
+
+      (
+        touchedPOC ||
+        touchedVWAP ||
+        touchedVAL
+      );
 
 
     const sell =
 
-      bearishAlignment &&
+      sellScore >=
+        minimumScore &&
 
-      sellRejection &&
+      sellScore >
+        buyScore +
+        8 &&
 
-      sellRsiOk;
+      bearishRejection &&
+
+      sellRSIOK &&
+
+      (
+        touchedPOC ||
+        touchedVWAP ||
+        touchedVAH
+      );
 
 
     if (
@@ -2304,11 +3026,11 @@ function runBacktest(
 
 
     /* ======================================================
-       ENTER NEXT BAR
+       NEXT-CANDLE ENTRY
     ====================================================== */
 
     const next =
-      m15[
+      m5[
         i +
         1
       ];
@@ -2318,12 +3040,12 @@ function runBacktest(
       next.open;
 
 
-    const recent =
-      m15.slice(
+    const recentStructure =
+      m5.slice(
         Math.max(
           0,
           i -
-          3
+          4
         ),
         i +
         1
@@ -2333,45 +3055,48 @@ function runBacktest(
     let stop;
 
 
+    let target;
+
+
     let risk;
 
 
-    let target;
+    let setup;
 
 
     if (
       buy
     ) {
 
-      const atrStop =
-
-        entry -
-        mATR[i] *
-        SETTINGS.stopAtr;
-
-
-      const swingLow =
-
+      const structuralLow =
         Math.min(
-          ...recent.map(
+          ...recentStructure.map(
             bar =>
               bar.low
           )
         );
 
 
-      const structuralStop =
+      const atrStop =
 
-        swingLow -
+        entry -
 
-        mATR[i] *
-        SETTINGS.structureBufferAtr;
+        atrValue *
+        SETTINGS.stopATR;
+
+
+      const structureStop =
+
+        structuralLow -
+
+        atrValue *
+        SETTINGS.structureBufferATR;
 
 
       stop =
         Math.min(
           atrStop,
-          structuralStop
+          structureStop
         );
 
 
@@ -2380,16 +3105,6 @@ function runBacktest(
         stop;
 
 
-      if (
-        risk <=
-        0
-      ) {
-
-        continue;
-
-      }
-
-
       target =
 
         entry +
@@ -2398,10 +3113,24 @@ function runBacktest(
         SETTINGS.targetR;
 
 
-      activeTrade = {
+      setup =
+
+        touchedVAL
+          ? "VAL REJECTION"
+          : touchedPOC
+            ? "POC RECLAIM"
+            : "VWAP RECLAIM";
+
+
+      active = {
 
         side:
           "BUY",
+
+        setup,
+
+        score:
+          buyScore,
 
         entryIndex:
           i +
@@ -2416,19 +3145,7 @@ function runBacktest(
 
         target,
 
-        risk,
-
-        h4Trend:
-          "BULLISH",
-
-        h1Trend:
-          "BULLISH",
-
-        rsi:
-          round(
-            mRSI[i],
-            1
-          )
+        risk
 
       };
 
@@ -2437,51 +3154,41 @@ function runBacktest(
 
     else {
 
-      const atrStop =
-
-        entry +
-        mATR[i] *
-        SETTINGS.stopAtr;
-
-
-      const swingHigh =
-
+      const structuralHigh =
         Math.max(
-          ...recent.map(
+          ...recentStructure.map(
             bar =>
               bar.high
           )
         );
 
 
-      const structuralStop =
+      const atrStop =
 
-        swingHigh +
+        entry +
 
-        mATR[i] *
-        SETTINGS.structureBufferAtr;
+        atrValue *
+        SETTINGS.stopATR;
+
+
+      const structureStop =
+
+        structuralHigh +
+
+        atrValue *
+        SETTINGS.structureBufferATR;
 
 
       stop =
         Math.max(
           atrStop,
-          structuralStop
+          structureStop
         );
 
 
       risk =
         stop -
         entry;
-
-
-      if (
-        risk <=
-        0
-      ) {
-
-        continue;
-
-      }
 
 
       target =
@@ -2492,10 +3199,24 @@ function runBacktest(
         SETTINGS.targetR;
 
 
-      activeTrade = {
+      setup =
+
+        touchedVAH
+          ? "VAH REJECTION"
+          : touchedPOC
+            ? "POC REJECTION"
+            : "VWAP REJECTION";
+
+
+      active = {
 
         side:
           "SELL",
+
+        setup,
+
+        score:
+          sellScore,
 
         entryIndex:
           i +
@@ -2510,19 +3231,7 @@ function runBacktest(
 
         target,
 
-        risk,
-
-        h4Trend:
-          "BEARISH",
-
-        h1Trend:
-          "BEARISH",
-
-        rsi:
-          round(
-            mRSI[i],
-            1
-          )
+        risk
 
       };
 
@@ -2544,11 +3253,7 @@ function statistics(
   trades
 ) {
 
-  const total =
-    trades.length;
-
-
-  const winners =
+  const wins =
     trades.filter(
       trade =>
         trade.resultR >
@@ -2556,7 +3261,7 @@ function statistics(
     );
 
 
-  const losers =
+  const losses =
     trades.filter(
       trade =>
         trade.resultR <
@@ -2572,6 +3277,10 @@ function statistics(
     );
 
 
+  const total =
+    trades.length;
+
+
   const netR =
     trades.reduce(
       (
@@ -2585,7 +3294,7 @@ function statistics(
 
 
   const grossProfit =
-    winners.reduce(
+    wins.reduce(
       (
         total,
         trade
@@ -2599,7 +3308,7 @@ function statistics(
   const grossLoss =
     Math.abs(
 
-      losers.reduce(
+      losses.reduce(
         (
           total,
           trade
@@ -2614,10 +3323,9 @@ function statistics(
 
   const winRate =
 
-    total >
-    0
+    total
 
-      ? winners.length /
+      ? wins.length /
         total *
         100
 
@@ -2638,20 +3346,15 @@ function statistics(
         : 0;
 
 
-  const averageR =
+  const expectancy =
 
-    total >
-    0
+    total
 
       ? netR /
         total
 
       : 0;
 
-
-  /* ========================================================
-     DRAWDOWN
-  ======================================================== */
 
   let equity =
     0;
@@ -2661,15 +3364,15 @@ function statistics(
     0;
 
 
-  let maxDrawdownR =
+  let maxDrawdown =
     0;
 
 
-  let currentLossStreak =
+  let currentLosses =
     0;
 
 
-  let maxLossStreak =
+  let maximumLosses =
     0;
 
 
@@ -2689,10 +3392,10 @@ function statistics(
       );
 
 
-    maxDrawdownR =
+    maxDrawdown =
       Math.max(
 
-        maxDrawdownR,
+        maxDrawdown,
 
         peak -
         equity
@@ -2705,23 +3408,20 @@ function statistics(
       0
     ) {
 
-      currentLossStreak++;
+      currentLosses++;
 
 
-      maxLossStreak =
+      maximumLosses =
         Math.max(
-
-          maxLossStreak,
-
-          currentLossStreak
-
+          maximumLosses,
+          currentLosses
         );
 
     }
 
     else {
 
-      currentLossStreak =
+      currentLosses =
         0;
 
     }
@@ -2729,7 +3429,7 @@ function statistics(
   }
 
 
-  const buys =
+  const buyTrades =
     trades.filter(
       trade =>
         trade.side ===
@@ -2737,7 +3437,7 @@ function statistics(
     );
 
 
-  const sells =
+  const sellTrades =
     trades.filter(
       trade =>
         trade.side ===
@@ -2751,10 +3451,10 @@ function statistics(
       total,
 
     wins:
-      winners.length,
+      wins.length,
 
     losses:
-      losers.length,
+      losses.length,
 
     breakevens:
       breakevens.length,
@@ -2762,6 +3462,12 @@ function statistics(
     winRate:
       round(
         winRate,
+        2
+      ),
+
+    profitFactor:
+      round(
+        profitFactor,
         2
       ),
 
@@ -2773,33 +3479,32 @@ function statistics(
 
     averageR:
       round(
-        averageR,
+        expectancy,
         3
       ),
 
-    profitFactor:
+    expectancyR:
       round(
-        profitFactor,
-        2
+        expectancy,
+        3
       ),
 
     maxDrawdownR:
       round(
-        maxDrawdownR,
+        maxDrawdown,
         2
       ),
 
-    maxLossStreak,
-
+    maxLossStreak:
+      maximumLosses,
 
     buyTrades:
-      buys.length,
-
+      buyTrades.length,
 
     buyNetR:
       round(
 
-        buys.reduce(
+        buyTrades.reduce(
           (
             total,
             trade
@@ -2813,15 +3518,13 @@ function statistics(
 
       ),
 
-
     sellTrades:
-      sells.length,
-
+      sellTrades.length,
 
     sellNetR:
       round(
 
-        sells.reduce(
+        sellTrades.reduce(
           (
             total,
             trade
@@ -2863,7 +3566,7 @@ async function handler(
   try {
 
     let days =
-      num(
+      number(
         req.query?.days,
         SETTINGS.defaultDays
       );
@@ -2885,6 +3588,25 @@ async function handler(
       );
 
 
+    const requestedMode =
+      String(
+        req.query?.mode ||
+        "BALANCED"
+      )
+      .toUpperCase();
+
+
+    const mode =
+
+      SETTINGS.modeScores[
+        requestedMode
+      ]
+
+        ? requestedMode
+
+        : "BALANCED";
+
+
     const nowSeconds =
       Math.floor(
         Date.now() /
@@ -2903,57 +3625,25 @@ async function handler(
       86400;
 
 
-    const [
+    const candles =
+      await fetchHistory(
 
-      m15,
+        300,
 
-      h1
+        startSeconds,
 
-    ] =
-      await Promise.all([
+        nowSeconds
 
-        fetchHistory(
-
-          900,
-
-          startSeconds,
-
-          nowSeconds
-
-        ),
-
-        fetchHistory(
-
-          3600,
-
-          startSeconds,
-
-          nowSeconds
-
-        )
-
-      ]);
-
-
-    if (
-      m15.length <
-      500
-    ) {
-
-      throw new Error(
-        `Only ${m15.length} M15 candles downloaded`
       );
 
-    }
-
 
     if (
-      h1.length <
-      300
+      candles.length <
+      2500
     ) {
 
       throw new Error(
-        `Only ${h1.length} H1 candles downloaded`
+        `Only ${candles.length} M5 candles downloaded`
       );
 
     }
@@ -2961,8 +3651,8 @@ async function handler(
 
     const allTrades =
       runBacktest(
-        m15,
-        h1
+        candles,
+        mode
       );
 
 
@@ -3011,6 +3701,9 @@ async function handler(
         ok:
           true,
 
+        engine:
+          "MKAYFX BTC VOLUME PROFILE BACKTEST V3",
+
         source:
           "Coinbase Exchange",
 
@@ -3018,9 +3711,11 @@ async function handler(
           PRODUCT,
 
         strategy:
-          "H4 + H1 Trend / M15 EMA Rejection",
+          "Session Volume Profile + POC/VAH/VAL + VWAP",
 
         days,
+
+        mode,
 
 
         period: {
@@ -3029,11 +3724,8 @@ async function handler(
 
           to,
 
-          m15Candles:
-            m15.length,
-
-          h1Candles:
-            h1.length
+          m5Candles:
+            candles.length
 
         },
 
@@ -3044,55 +3736,44 @@ async function handler(
 
           to,
 
-          m15Candles:
-            m15.length,
-
-          h1Candles:
-            h1.length
+          m5Candles:
+            candles.length
 
         },
 
 
         settings: {
 
-          h4Trend:
-            "EMA20 / EMA50",
+          volumeProfile:
+            "M5 OHLCV approximation",
 
-          h1Trend:
-            "EMA50 / EMA200",
+          valueArea:
+            "70%",
 
-          m15Pullback:
-            "EMA20 / EMA50",
+          profileBins:
+            SETTINGS.profileBins,
 
-          buyRsi:
-            "52 - 68",
+          modes:
+            SETTINGS.modeScores,
 
-          sellRsi:
-            "32 - 48",
+          mode,
 
-          minimumBody:
-            "55%",
-
-          buyCloseLocation:
-            "Top 25%",
-
-          sellCloseLocation:
-            "Bottom 25%",
-
-          maxEMA20DistanceATR:
-            SETTINGS.maxDistanceFromEma20Atr,
-
-          stopATR:
-            SETTINGS.stopAtr,
+          minimumScore:
+            SETTINGS.modeScores[
+              mode
+            ],
 
           targetR:
             SETTINGS.targetR,
 
-          cooldownBars:
-            SETTINGS.cooldownBars,
+          stopATR:
+            SETTINGS.stopATR,
 
           maxHoldBars:
-            SETTINGS.maxHoldBars
+            SETTINGS.maxHoldBars,
+
+          cooldownBars:
+            SETTINGS.cooldownBars
 
         },
 
@@ -3122,7 +3803,7 @@ async function handler(
   ) {
 
     console.error(
-      "BTC BACKTEST V2 ERROR:",
+      "BTC PROFILE BACKTEST ERROR:",
       error
     );
 
