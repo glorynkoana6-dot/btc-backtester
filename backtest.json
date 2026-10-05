@@ -1,0 +1,9 @@
+{
+  "name": "mkayfx-btc-liquidity",
+  "version": "4.0.0",
+  "private": true,
+  "description": "MKAYFX BTC liquidity intelligence and Coinbase backtester",
+  "engines": {
+    "node": ">=20"
+  }
+}
