@@ -1,10 +1,9 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
 
-<meta charset="utf-8">
+<meta charset="UTF-8">
 
 <meta
   name="viewport"
@@ -13,7 +12,7 @@
 
 <meta
   name="theme-color"
-  content="#05080d"
+  content="#030609"
 >
 
 <meta
@@ -26,1210 +25,870 @@
   content="black-translucent"
 >
 
-<title>
-MKAYFX US30 Liquidity Intelligence
-</title>
+<meta
+  name="apple-mobile-web-app-title"
+  content="MKAYFX GOLD"
+>
 
+<title>MKAYFX XAU Liquidity Intelligence</title>
 
 <style>
 
-:root{
-
-  --bg:#05080d;
-  --panel:#0a1018;
-  --panel2:#0d1520;
-
-  --line:
-    rgba(255,255,255,.08);
-
-  --text:#f5f7fa;
-  --muted:#7e8a99;
-
-  --green:#35e3a3;
-  --red:#ff6279;
-  --gold:#f0c760;
-  --blue:#7e99ff;
-  --orange:#ffad60;
-
-}
-
+/* ============================================================
+   RESET
+============================================================ */
 
 *{
-
   box-sizing:border-box;
-
-  -webkit-tap-highlight-color:
-    transparent;
-
+  -webkit-tap-highlight-color:transparent;
 }
 
+html{
+  background:#020407;
+}
 
-html,
 body{
-
   margin:0;
-
+  min-height:100vh;
   background:
-    var(--bg);
+    radial-gradient(
+      circle at 50% -15%,
+      rgba(228,187,75,.08),
+      transparent 30%
+    ),
+    #020407;
 
-  color:
-    var(--text);
+  color:#f3f5f8;
 
   font-family:
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    "SF Pro Display",
+    "SF Pro Text",
+    Inter,
+    Arial,
     sans-serif;
 
+  overflow-x:hidden;
 }
 
 
-body{
+/* ============================================================
+   VARIABLES
+============================================================ */
 
-  min-height:100vh;
+:root{
 
-  background:
+  --bg:#020407;
+  --card:#08101a;
+  --card2:#0a131f;
 
-    radial-gradient(
-      circle at 50% -10%,
-      rgba(240,199,96,.08),
-      transparent 30%
-    ),
+  --border:rgba(255,255,255,.085);
 
-    var(--bg);
+  --text:#f4f6fa;
+  --muted:#7f899a;
 
+  --gold:#efc85d;
+  --gold2:#b8943e;
+
+  --green:#3de2a0;
+  --red:#ff6679;
+  --blue:#718cff;
+  --orange:#ffad5b;
+
+  --shadow:
+    0 18px 55px
+    rgba(0,0,0,.22);
 }
 
+
+/* ============================================================
+   APP
+============================================================ */
 
 .app{
-
-  width:
-    min(
-      1180px,
-      100%
-    );
-
+  width:100%;
+  max-width:900px;
   margin:auto;
 
   padding:
-    16px 12px 44px;
-
+    max(18px,env(safe-area-inset-top))
+    18px
+    calc(80px + env(safe-area-inset-bottom));
 }
 
+
+/* ============================================================
+   HEADER
+============================================================ */
 
 .header{
-
   display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:12px;
-
-  align-items:
-    flex-start;
-
-  margin-bottom:
-    12px;
-
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:15px;
+  margin-top:8px;
 }
-
 
 .eyebrow{
-
-  font-size:9px;
-
+  color:var(--gold);
+  font-size:12px;
   font-weight:900;
-
-  letter-spacing:.18em;
-
-  color:
-    var(--gold);
-
-  text-transform:
-    uppercase;
-
+  letter-spacing:4px;
+  margin-bottom:10px;
 }
 
-
-.header h1{
-
-  margin:
-    4px 0 0;
-
-  font-size:
-    clamp(
-      22px,
-      6vw,
-      34px
-    );
-
-  letter-spacing:
-    -.04em;
-
+.title{
+  margin:0;
+  font-size:34px;
+  line-height:1.04;
+  font-weight:900;
+  letter-spacing:-1.5px;
 }
-
 
 .subtitle{
-
-  margin-top:7px;
-
-  color:
-    var(--muted);
-
-  font-size:11px;
-
-  line-height:1.45;
-
+  color:var(--muted);
+  margin-top:12px;
+  font-size:14px;
+  line-height:1.55;
+  max-width:620px;
 }
 
-
 .refresh{
+  min-width:58px;
+  width:58px;
+  height:58px;
 
-  width:46px;
+  border-radius:20px;
 
-  height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:#09111d;
 
   border:
     1px solid
-    var(--line);
+    rgba(255,255,255,.09);
 
-  border-radius:
-    14px;
+  color:#fff;
 
-  background:
-    var(--panel2);
+  font-size:26px;
 
-  color:
-    var(--text);
+  cursor:pointer;
+}
 
-  font-size:20px;
-
+.refresh:active{
+  transform:scale(.96);
 }
 
 
-.statusbar{
+/* ============================================================
+   PILLS
+============================================================ */
+
+.pills{
+  margin-top:22px;
 
   display:flex;
 
-  gap:7px;
+  gap:8px;
 
-  overflow:auto;
+  overflow-x:auto;
 
-  margin-bottom:
-    10px;
+  padding-bottom:4px;
 
+  scrollbar-width:none;
 }
 
+.pills::-webkit-scrollbar{
+  display:none;
+}
 
 .pill{
+  flex:0 0 auto;
 
-  white-space:
-    nowrap;
+  padding:
+    11px 15px;
+
+  border-radius:999px;
 
   border:
     1px solid
-    var(--line);
-
-  border-radius:
-    999px;
-
-  padding:
-    7px 9px;
+    rgba(255,255,255,.09);
 
   background:
     rgba(255,255,255,.025);
 
-  font-size:9px;
+  color:var(--muted);
 
-  color:
-    var(--muted);
+  font-size:12px;
 
   font-weight:800;
 
+  letter-spacing:.5px;
+}
+
+.pill.good{
+  color:var(--green);
+}
+
+.pill.bad{
+  color:#ff9aab;
+}
+
+.pill.gold{
+  color:var(--gold);
 }
 
 
-.pill.live{
-
-  color:
-    var(--green);
-
-}
-
-
-.pill.warn{
-
-  color:
-    var(--orange);
-
-}
-
+/* ============================================================
+   ERROR
+============================================================ */
 
 .error{
-
   display:none;
+
+  margin-top:18px;
+
+  padding:18px;
+
+  border-radius:18px;
+
+  background:
+    rgba(255,61,88,.07);
 
   border:
     1px solid
-    rgba(255,98,121,.25);
+    rgba(255,92,113,.35);
 
-  background:
-    rgba(255,98,121,.06);
+  color:#ffb7c1;
 
-  color:#ffb5c0;
+  line-height:1.6;
 
-  border-radius:13px;
-
-  padding:12px;
-
-  margin-bottom:10px;
-
-  font-size:11px;
-
-  white-space:pre-wrap;
-
+  font-size:14px;
 }
 
 
-.card{
+/* ============================================================
+   MAIN HERO
+============================================================ */
+
+.hero{
+  margin-top:18px;
+
+  padding:22px;
 
   background:
-
     linear-gradient(
-      180deg,
-      var(--panel2),
-      var(--panel)
+      145deg,
+      #09111d,
+      #07101a
     );
 
   border:
     1px solid
-    var(--line);
+    rgba(239,200,93,.20);
+
+  border-radius:25px;
+
+  box-shadow:var(--shadow);
+}
+
+.heroTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:15px;
+}
+
+.symbol{
+  color:var(--muted);
+
+  font-size:12px;
+
+  font-weight:900;
+
+  letter-spacing:2px;
+}
+
+.price{
+  font-size:43px;
+
+  line-height:1;
+
+  margin-top:14px;
+
+  font-weight:900;
+
+  letter-spacing:-2px;
+}
+
+.priceLabel{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:8px;
+}
+
+
+/* ============================================================
+   RAID BADGE
+============================================================ */
+
+.raid{
+  min-width:90px;
+
+  padding:16px 12px;
+
+  border-radius:19px;
+
+  border:
+    1px solid
+    rgba(239,200,93,.34);
+
+  background:
+    rgba(239,200,93,.065);
+
+  text-align:center;
+}
+
+.raidLabel{
+  color:var(--gold);
+
+  font-size:11px;
+
+  font-weight:900;
+
+  letter-spacing:2px;
+}
+
+.raidValue{
+  color:#fff;
+
+  font-size:25px;
+
+  font-weight:900;
+
+  margin-top:5px;
+}
+
+
+/* ============================================================
+   DIVIDER
+============================================================ */
+
+.line{
+  height:1px;
+
+  margin:
+    21px 0;
+
+  background:
+    rgba(255,255,255,.08);
+}
+
+
+/* ============================================================
+   LIQUIDITY DRAW
+============================================================ */
+
+.sectionLabel{
+  color:var(--muted);
+
+  font-size:11px;
+
+  letter-spacing:2.1px;
+
+  font-weight:900;
+}
+
+.drawTitle{
+  font-size:25px;
+
+  margin-top:11px;
+
+  font-weight:900;
+
+  line-height:1.15;
+}
+
+.drawMeta{
+  color:var(--muted);
+
+  font-size:13px;
+
+  margin-top:8px;
+}
+
+
+/* ============================================================
+   PROGRESS
+============================================================ */
+
+.progress{
+  width:100%;
+
+  height:8px;
+
+  background:#121a25;
+
+  border-radius:99px;
+
+  margin-top:18px;
+
+  overflow:hidden;
+}
+
+.progressFill{
+  height:100%;
+
+  width:0%;
+
+  background:
+    linear-gradient(
+      90deg,
+      #ad893a,
+      #f2d06e
+    );
+
+  border-radius:99px;
+
+  transition:
+    width .5s ease;
+}
+
+
+/* ============================================================
+   GRID
+============================================================ */
+
+.grid{
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,1fr);
+
+  gap:11px;
+
+  margin-top:18px;
+}
+
+.box{
+  padding:16px;
+
+  border-radius:18px;
+
+  background:#0b131e;
+
+  border:
+    1px solid
+    rgba(255,255,255,.075);
+
+  min-height:91px;
+}
+
+.boxLabel{
+  color:var(--muted);
+
+  font-size:10px;
+
+  font-weight:900;
+
+  letter-spacing:1.5px;
+}
+
+.boxValue{
+  margin-top:12px;
+
+  font-size:20px;
+
+  font-weight:900;
+}
+
+.boxValue.gold{
+  color:var(--gold);
+}
+
+.boxValue.green{
+  color:var(--green);
+}
+
+.boxValue.red{
+  color:var(--red);
+}
+
+
+/* ============================================================
+   SECTION
+============================================================ */
+
+.section{
+  margin-top:29px;
+}
+
+.sectionHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:13px;
+}
+
+.sectionTitle{
+  font-size:20px;
+  font-weight:900;
+}
+
+.sectionSmall{
+  color:var(--muted);
+  font-size:11px;
+}
+
+
+/* ============================================================
+   CARD
+============================================================ */
+
+.card{
+  border-radius:22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #08101a,
+      #060d16
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.075);
+
+  padding:17px;
+}
+
+
+/* ============================================================
+   METRICS
+============================================================ */
+
+.metrics{
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,1fr);
+
+  gap:10px;
+}
+
+.metric{
+  min-height:95px;
+
+  border-radius:17px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
+
+  background:#09111c;
+
+  padding:14px;
+}
+
+.metricLabel{
+  color:var(--muted);
+
+  font-size:10px;
+
+  font-weight:900;
+
+  letter-spacing:1.3px;
+}
+
+.metricValue{
+  margin-top:11px;
+
+  font-size:18px;
+
+  font-weight:900;
+
+  line-height:1.15;
+}
+
+.metricSub{
+  color:var(--muted);
+  font-size:10px;
+  margin-top:6px;
+}
+
+
+/* ============================================================
+   TIMEFRAME BIAS
+============================================================ */
+
+.biasGrid{
+  display:grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:9px;
+}
+
+.bias{
+  padding:14px 8px;
+
+  text-align:center;
+
+  border-radius:16px;
+
+  background:#09111c;
+
+  border:
+    1px solid
+    rgba(255,255,255,.07);
+}
+
+.biasTf{
+  color:var(--muted);
+
+  font-size:10px;
+
+  font-weight:900;
+}
+
+.biasValue{
+  margin-top:7px;
+
+  font-size:12px;
+
+  font-weight:900;
+}
+
+
+/* ============================================================
+   SESSION CARDS
+============================================================ */
+
+.sessions{
+  display:grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:9px;
+}
+
+.session{
+  background:#09111c;
+
+  border:
+    1px solid
+    rgba(255,255,255,.065);
 
   border-radius:16px;
 
   padding:13px;
-
 }
 
-
-.hero{
-
-  border-color:
-    rgba(240,199,96,.18);
-
-}
-
-
-.grid{
-
-  display:grid;
-
-  gap:9px;
-
-}
-
-
-.g2{
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
-    );
-
-}
-
-
-.g3{
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-
-}
-
-
-.g5{
-
-  grid-template-columns:
-    repeat(
-      5,
-      minmax(0,1fr)
-    );
-
-}
-
-
-.label{
-
-  color:
-    var(--muted);
-
-  font-size:9px;
-
-  font-weight:800;
-
-  letter-spacing:.08em;
-
-  text-transform:
-    uppercase;
-
-}
-
-
-.value{
-
-  font-size:18px;
-
-  font-weight:850;
-
-  margin-top:5px;
-
-}
-
-
-.sm{
-
-  font-size:14px;
-
-}
-
-
-.price{
-
-  font-size:
-    clamp(
-      35px,
-      11vw,
-      56px
-    );
-
-  font-weight:950;
-
-  letter-spacing:-.06em;
-
-  line-height:.95;
-
-  margin-top:4px;
-
-}
-
-
-.muted{
-
-  color:
-    var(--muted);
-
-}
-
-
-.tiny{
-
-  font-size:9px;
-
-}
-
-
-.small{
+.sessionName{
+  color:var(--gold);
 
   font-size:10px;
 
-}
-
-
-.green{
-
-  color:
-    var(--green);
-
-}
-
-
-.red{
-
-  color:
-    var(--red);
-
-}
-
-
-.gold{
-
-  color:
-    var(--gold);
-
-}
-
-
-.orange{
-
-  color:
-    var(--orange);
-
-}
-
-
-.hero-top{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:12px;
-
-}
-
-
-.scoreBadge{
-
-  border:
-    1px solid
-    rgba(240,199,96,.25);
-
-  background:
-    rgba(240,199,96,.07);
-
-  color:
-    var(--gold);
-
-  border-radius:12px;
-
-  padding:8px;
-
-  text-align:center;
-
-  min-width:80px;
-
-  font-size:9px;
-
   font-weight:900;
 
+  letter-spacing:1px;
 }
 
-
-.divider{
-
-  height:1px;
-
-  background:
-    var(--line);
-
-  margin:
-    14px 0;
-
-}
-
-
-.sweepTitle{
-
-  font-size:18px;
-
-  font-weight:900;
-
-  margin-top:5px;
-
-}
-
-
-.meter{
-
-  height:7px;
-
-  background:
-    rgba(255,255,255,.055);
-
-  border-radius:999px;
-
-  overflow:hidden;
-
-  margin-top:9px;
-
-}
-
-
-.meter > div{
-
-  height:100%;
-
-  background:
-
-    linear-gradient(
-      90deg,
-      var(--blue),
-      var(--gold)
-    );
-
-  width:0;
-
-}
-
-
-.zoneGrid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
-  gap:7px;
-
-  margin-top:11px;
-
-}
-
-
-.zoneCard{
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:11px;
-
-  padding:9px;
-
-  background:
-    rgba(255,255,255,.025);
-
-}
-
-
-.section{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:8px;
-
-  align-items:center;
-
-  margin:
-    19px 2px 8px;
-
-}
-
-
-.section h2{
-
-  margin:0;
-
-  font-size:13px;
-
-}
-
-
-.section span{
-
-  font-size:9px;
-
-  color:
-    var(--muted);
-
-  text-align:right;
-
-}
-
-
-.session{
-
-  position:relative;
-
-  overflow:hidden;
-
-}
-
-
-.session::before{
-
-  content:"";
-
-  position:absolute;
-
-  left:0;
-
-  top:0;
-
-  bottom:0;
-
-  width:3px;
-
-  background:
-    rgba(255,255,255,.12);
-
-}
-
-
-.session.active::before{
-
-  background:
-    var(--green);
-
-}
-
-
-.sessionTop{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:10px;
-
-}
-
-
-.count{
-
-  font-size:15px;
-
-  font-weight:900;
-
-  margin-top:5px;
-
-  font-variant-numeric:
-    tabular-nums;
-
-}
-
-
-.miniGrid{
-
-  display:grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap:6px;
-
+.sessionRange{
   margin-top:10px;
-
-}
-
-
-.mini{
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:10px;
-
-  padding:8px;
-
-  background:
-    rgba(255,255,255,.02);
-
-}
-
-
-.tf{
-
-  text-align:center;
-
-}
-
-
-.tfb{
-
-  font-weight:900;
 
   font-size:11px;
 
-  margin-top:6px;
-
+  line-height:1.65;
 }
 
 
-.ladder{
-
-  display:grid;
-
-  gap:4px;
-
-}
-
-
-.ladderRow{
-
-  display:grid;
-
-  grid-template-columns:
-    minmax(85px,120px)
-    minmax(0,1fr)
-    78px;
-
-  gap:7px;
-
-  align-items:center;
-
-  min-height:32px;
-
-}
-
-
-.ladderName{
-
-  font-size:9px;
-
-  color:#aab3bf;
-
-  overflow:hidden;
-
-  text-overflow:ellipsis;
-
-  white-space:nowrap;
-
-}
-
-
-.line{
-
-  height:2px;
-
-  background:
-    rgba(255,255,255,.08);
-
-  position:relative;
-
-}
-
-
-.line::before{
-
-  content:"";
-
-  position:absolute;
-
-  width:7px;
-
-  height:7px;
-
-  border-radius:50%;
-
-  left:0;
-
-  top:50%;
-
-  transform:
-    translateY(-50%);
-
-  background:
-    var(--blue);
-
-}
-
-
-.current .line{
-
-  height:3px;
-
-  background:
-    var(--gold);
-
-}
-
-
-.current .line::before{
-
-  background:
-    var(--gold);
-
-}
-
-
-.tableWrap{
-
-  overflow:auto;
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:14px;
-
-}
-
-
-.table{
-
-  border-collapse:
-    collapse;
-
-  min-width:800px;
-
-  width:100%;
-
-}
-
-
-.table th,
-.table td{
-
-  padding:
-    9px 8px;
-
-  border-bottom:
-    1px solid
-    var(--line);
-
-  text-align:left;
-
-  vertical-align:top;
-
-}
-
-
-.table th{
-
-  font-size:8px;
-
-  color:
-    var(--muted);
-
-  text-transform:
-    uppercase;
-
-  letter-spacing:.08em;
-
-  background:#0a1017;
-
-}
-
-
-.table td{
-
-  font-size:10px;
-
-}
-
-
-.score{
-
-  display:inline-flex;
-
-  min-width:46px;
-
-  justify-content:center;
-
-  border-radius:8px;
-
-  padding:
-    5px 7px;
-
-  background:
-    rgba(126,153,255,.08);
-
-  color:
-    var(--blue);
-
-  font-weight:900;
-
-}
-
-
-.score.high{
-
-  color:
-    var(--gold);
-
-  background:
-    rgba(240,199,96,.09);
-
-}
-
-
-.trap{
-
+/* ============================================================
+   LIQUIDITY LIST
+============================================================ */
+
+.poolList{
   display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:10px;
-
-  padding:
-    10px 0;
-
-  border-bottom:
-    1px solid
-    var(--line);
-
+  flex-direction:column;
+  gap:9px;
 }
 
+.pool{
+  padding:14px;
 
-.trap:last-child{
+  border-radius:16px;
 
-  border-bottom:0;
-
-}
-
-
-.risk{
+  background:#09111c;
 
   border:
     1px solid
-    var(--line);
+    rgba(255,255,255,.065);
+}
 
-  padding:
-    5px 7px;
+.poolTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
 
-  border-radius:8px;
-
-  font-size:8px;
-
+.poolName{
+  font-size:13px;
   font-weight:900;
-
 }
 
-
-.risk.elevated{
-
-  color:
-    var(--orange);
-
+.poolScore{
+  color:var(--gold);
+  font-size:13px;
+  font-weight:900;
 }
 
-
-.risk.watch{
-
-  color:
-    var(--gold);
-
-}
-
-
-.deltaBar{
-
-  height:8px;
-
-  background:
-    rgba(255,255,255,.05);
-
-  border-radius:999px;
-
-  overflow:hidden;
-
-  position:relative;
+.poolBottom{
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:7px;
 
   margin-top:8px;
 
+  color:var(--muted);
+
+  font-size:10px;
 }
 
 
-.zero{
+/* ============================================================
+   FOOTPRINT
+============================================================ */
 
-  position:absolute;
+.flow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
 
-  left:50%;
+.flowBig{
+  font-size:20px;
+  font-weight:900;
+}
 
-  top:0;
-
-  bottom:0;
-
-  width:1px;
-
-  background:
-    rgba(255,255,255,.2);
-
+.flowSub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:6px;
 }
 
 
-.fill{
+/* ============================================================
+   TRAP WINDOWS
+============================================================ */
 
-  position:absolute;
+.trap{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
 
-  top:0;
+  gap:15px;
 
-  bottom:0;
-
-}
-
-
-.fill.pos{
-
-  left:50%;
-
-  background:
-    var(--green);
-
-}
-
-
-.fill.neg{
-
-  right:50%;
-
-  background:
-    var(--red);
-
-}
-
-
-.info{
-
-  display:grid;
-
-  grid-template-columns:
-    minmax(0,1fr)
-    auto;
-
-  gap:8px;
-
-  padding:
-    9px 0;
+  padding:13px 0;
 
   border-bottom:
     1px solid
-    var(--line);
+    rgba(255,255,255,.06);
+}
+
+.trap:last-child{
+  border-bottom:0;
+}
+
+.trapName{
+  font-size:12px;
+  font-weight:900;
+}
+
+.trapTime{
+  color:var(--muted);
+  font-size:10px;
+  margin-top:5px;
+}
+
+.trapRisk{
+  font-size:10px;
+
+  font-weight:900;
+
+  color:var(--gold);
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.footer{
+  color:#505b6a;
 
   font-size:10px;
 
+  text-align:center;
+
+  line-height:1.7;
+
+  margin-top:35px;
+
+  padding-bottom:20px;
 }
 
 
-.info:last-child{
+/* ============================================================
+   LOADING
+============================================================ */
 
-  border-bottom:0;
-
+.loading{
+  animation:
+    pulse 1.3s
+    infinite ease-in-out;
 }
 
+@keyframes pulse{
 
-.reasons{
-
-  list-style:none;
-
-  padding:0;
-
-  margin:
-    8px 0 0;
-
-  display:grid;
-
-  gap:4px;
-
-}
-
-
-.reasons li{
-
-  font-size:9px;
-
-  color:#aab3bf;
-
-  position:relative;
-
-  padding-left:10px;
-
-}
-
-
-.reasons li::before{
-
-  content:"•";
-
-  position:absolute;
-
-  left:0;
-
-  color:
-    var(--gold);
-
-}
-
-
-.notice{
-
-  margin-top:14px;
-
-  border:
-    1px solid
-    rgba(255,173,96,.18);
-
-  background:
-    rgba(255,173,96,.045);
-
-  padding:11px;
-
-  border-radius:13px;
-
-  color:#aab3bf;
-
-  font-size:9px;
-
-  line-height:1.5;
-
-}
-
-
-@media(max-width:850px){
-
-  .sessions,
-  .desktop2{
-
-    grid-template-columns:
-      1fr;
-
+  0%,100%{
+    opacity:.45;
   }
 
-
-  .g5{
-
-    grid-template-columns:
-      repeat(
-        3,
-        minmax(0,1fr)
-      );
-
+  50%{
+    opacity:1;
   }
-
 }
 
 
-@media(max-width:580px){
+/* ============================================================
+   DESKTOP
+============================================================ */
 
-  .zoneGrid{
+@media(
+  min-width:700px
+){
 
+  .grid{
     grid-template-columns:
-      1fr 1fr;
-
+      repeat(4,1fr);
   }
 
-
-  .g5{
-
+  .metrics{
     grid-template-columns:
-      repeat(
-        2,
-        minmax(0,1fr)
-      );
-
+      repeat(4,1fr);
   }
 
-
-  .g3,
-  .g2{
-
-    grid-template-columns:
-      1fr;
-
-  }
-
-
-  .flowGrid{
-
-    grid-template-columns:
-      1fr 1fr;
-
+  .title{
+    font-size:43px;
   }
 
 }
@@ -1241,721 +900,787 @@ body{
 
 <body>
 
-
 <div class="app">
 
 
-<header class="header">
+<!-- ============================================================
+     HEADER
+============================================================ -->
 
-<div>
+<div class="header">
 
-<div class="eyebrow">
-MKAYFX · ALLTICK US30
+  <div>
+
+    <div class="eyebrow">
+      MKAYFX · MASSIVE XAU
+    </div>
+
+    <h1 class="title">
+      XAU/USD Liquidity Intelligence
+    </h1>
+
+    <div class="subtitle">
+      Asia · London · New York · PDH/PDL ·
+      liquidity sweeps · raid projection ·
+      structure · footprint proxy
+    </div>
+
+  </div>
+
+
+  <button
+    class="refresh"
+    id="refreshBtn"
+    onclick="loadData(true)"
+  >
+    ↻
+  </button>
+
 </div>
 
-<h1>
-US30 Liquidity Intelligence
-</h1>
 
-<div class="subtitle">
-Premarket • NY cash open • opening range • PDH/PDL • sweep depth • trap radar • footprint proxy
-</div>
+<!-- ============================================================
+     STATUS
+============================================================ -->
 
-</div>
+<div class="pills">
 
+  <div
+    class="pill"
+    id="statusPill"
+  >
+    LOADING
+  </div>
 
-<button
-  id="refresh"
-  class="refresh"
->
-↻
-</button>
+  <div class="pill">
+    MASSIVE · XAUUSD
+  </div>
 
-</header>
+  <div
+    class="pill"
+    id="agePill"
+  >
+    DATA AGE —
+  </div>
 
+  <div
+    class="pill"
+    id="regimePill"
+  >
+    REGIME —
+  </div>
 
-<div class="statusbar">
-
-<div id="live" class="pill">
-CONNECTING
-</div>
-
-<div class="pill">
-AllTick · US30
-</div>
-
-<div id="age" class="pill">
-Data age —
-</div>
-
-<div id="regimeStatus" class="pill">
-Regime —
-</div>
-
-<div id="flowStatus" class="pill">
-Flow —
-</div>
+  <div
+    class="pill"
+    id="flowPill"
+  >
+    FLOW —
+  </div>
 
 </div>
 
 
 <div
-  id="error"
   class="error"
+  id="errorBox"
 ></div>
 
 
-<section class="card hero">
+<!-- ============================================================
+     HERO
+============================================================ -->
+
+<div class="hero">
+
+  <div class="heroTop">
+
+    <div>
+
+      <div class="symbol">
+        XAUUSD
+      </div>
+
+      <div
+        class="price loading"
+        id="price"
+      >
+        —
+      </div>
+
+      <div
+        class="priceLabel"
+        id="priceLabel"
+      >
+        Waiting for Massive...
+      </div>
+
+    </div>
 
 
-<div class="hero-top">
+    <div class="raid">
 
-<div>
+      <div class="raidLabel">
+        RAID
+      </div>
 
-<div class="label">
-US30
-</div>
+      <div
+        class="raidValue"
+        id="raidScore"
+      >
+        —
+      </div>
 
-<div
-  id="price"
-  class="price"
->
-—
-</div>
+    </div>
 
-<div
-  id="updated"
-  class="muted tiny"
-  style="margin-top:7px"
->
-Waiting for AllTick…
-</div>
-
-</div>
+  </div>
 
 
-<div
-  id="topScore"
-  class="scoreBadge"
->
-RAID<br>—
-</div>
-
-</div>
+  <div class="line"></div>
 
 
-<div class="divider"></div>
+  <div class="sectionLabel">
+    HIGHEST-RANKED LIQUIDITY DRAW
+  </div>
 
 
-<div class="label">
-Highest-ranked liquidity draw
-</div>
+  <div
+    class="drawTitle"
+    id="drawTitle"
+  >
+    Waiting for analysis...
+  </div>
 
 
-<div
-  id="bestName"
-  class="sweepTitle"
->
-Waiting for analysis…
-</div>
+  <div
+    class="drawMeta"
+    id="drawMeta"
+  >
+    —
+  </div>
 
 
-<div
-  id="bestMeta"
-  class="muted small"
-  style="margin-top:4px"
->
-—
-</div>
+  <div class="progress">
+
+    <div
+      class="progressFill"
+      id="raidProgress"
+    ></div>
+
+  </div>
 
 
-<div class="meter">
-<div id="bestMeter"></div>
-</div>
+  <div class="grid">
 
 
-<div class="zoneGrid">
+    <div class="box">
+
+      <div class="boxLabel">
+        LIQUIDITY LEVEL
+      </div>
+
+      <div
+        class="boxValue"
+        id="liquidityLevel"
+      >
+        —
+      </div>
+
+    </div>
 
 
-<div class="zoneCard">
+    <div class="box">
 
-<div class="label">
-Liquidity level
-</div>
+      <div class="boxLabel">
+        LIKELY RAID END
+      </div>
 
-<div
-  id="bestLevel"
-  class="value sm"
->
-—
-</div>
+      <div
+        class="boxValue gold"
+        id="raidEnd"
+      >
+        —
+      </div>
 
-</div>
-
-
-<div class="zoneCard">
-
-<div class="label">
-Likely raid end
-</div>
-
-<div
-  id="bestEnd"
-  class="value sm gold"
->
-—
-</div>
-
-</div>
+    </div>
 
 
-<div class="zoneCard">
+    <div class="box">
 
-<div class="label">
-Reversal-watch zone
-</div>
+      <div class="boxLabel">
+        REVERSAL-WATCH ZONE
+      </div>
 
-<div
-  id="bestZone"
-  class="value sm"
->
-—
-</div>
+      <div
+        class="boxValue"
+        id="reversalZone"
+      >
+        —
+      </div>
 
-</div>
-
-
-<div class="zoneCard">
-
-<div class="label">
-Overshoot
-</div>
-
-<div
-  id="bestOver"
-  class="value sm"
->
-—
-</div>
-
-</div>
+    </div>
 
 
-</div>
+    <div class="box">
+
+      <div class="boxLabel">
+        OVERSHOOT
+      </div>
+
+      <div
+        class="boxValue"
+        id="overshoot"
+      >
+        —
+      </div>
+
+    </div>
 
 
-<ul
-  id="bestReasons"
-  class="reasons"
-></ul>
-
-
-</section>
-
-
-<div class="section">
-
-<h2>
-US Session Windows
-</h2>
-
-<span id="clock">
-SAST —
-</span>
+  </div>
 
 </div>
 
 
-<div
-  id="sessions"
-  class="grid g3 sessions"
-></div>
-
+<!-- ============================================================
+     MARKET STATE
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Market State
-</h2>
+  <div class="sectionHead">
 
-<span>
-volatility · regime
-</span>
+    <div class="sectionTitle">
+      Market State
+    </div>
+
+    <div class="sectionSmall">
+      volatility · momentum
+    </div>
+
+  </div>
+
+
+  <div class="metrics">
+
+
+    <div class="metric">
+
+      <div class="metricLabel">
+        REGIME
+      </div>
+
+      <div
+        class="metricValue"
+        id="marketRegime"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metricLabel">
+        ATR M5
+      </div>
+
+      <div
+        class="metricValue"
+        id="atrM5"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metricLabel">
+        RSI M5
+      </div>
+
+      <div
+        class="metricValue"
+        id="rsiM5"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metricLabel">
+        VWAP
+      </div>
+
+      <div
+        class="metricValue"
+        id="vwap"
+      >
+        —
+      </div>
+
+      <div
+        class="metricSub"
+        id="vwapState"
+      >
+        —
+      </div>
+
+    </div>
+
+
+  </div>
 
 </div>
 
 
-<div class="grid g5">
-
-
-<div class="card">
-<div class="label">M1 ATR</div>
-<div id="atr1" class="value sm">—</div>
-</div>
-
-
-<div class="card">
-<div class="label">M5 ATR</div>
-<div id="atr5" class="value sm">—</div>
-</div>
-
-
-<div class="card">
-<div class="label">M15 ATR</div>
-<div id="atr15" class="value sm">—</div>
-</div>
-
-
-<div class="card">
-<div class="label">H1 ATR</div>
-<div id="atrH1" class="value sm">—</div>
-</div>
-
-
-<div class="card">
-<div class="label">Regime</div>
-<div id="regime" class="value sm">—</div>
-</div>
-
-
-</div>
-
+<!-- ============================================================
+     STRUCTURE
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Timeframe Structure
-</h2>
+  <div class="sectionHead">
 
-<span>
-M1 · M5 · M15 · H1 · H4
-</span>
+    <div class="sectionTitle">
+      Multi-Timeframe Structure
+    </div>
+
+    <div
+      class="sectionSmall"
+      id="overallBias"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="biasGrid">
+
+
+      <div class="bias">
+
+        <div class="biasTf">
+          M5
+        </div>
+
+        <div
+          class="biasValue"
+          id="biasM5"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="bias">
+
+        <div class="biasTf">
+          M15
+        </div>
+
+        <div
+          class="biasValue"
+          id="biasM15"
+        >
+          —
+        </div>
+
+      </div>
+
+
+      <div class="bias">
+
+        <div class="biasTf">
+          H1
+        </div>
+
+        <div
+          class="biasValue"
+          id="biasH1"
+        >
+          —
+        </div>
+
+      </div>
+
+
+    </div>
+
+  </div>
 
 </div>
 
 
-<div
-  id="frames"
-  class="grid g5"
-></div>
-
+<!-- ============================================================
+     SESSION LEVELS
+============================================================ -->
 
 <div class="section">
 
-<h2>
-US30 Reference Liquidity
-</h2>
+  <div class="sectionHead">
 
-<span>
-premarket · cash · OR · PDH/PDL
-</span>
+    <div class="sectionTitle">
+      Session Liquidity
+    </div>
+
+    <div class="sectionSmall">
+      SAST
+    </div>
+
+  </div>
+
+
+  <div class="sessions">
+
+
+    <div class="session">
+
+      <div class="sessionName">
+        ASIA
+      </div>
+
+      <div class="sessionRange">
+
+        H:
+        <span id="asiaHigh">
+          —
+        </span>
+
+        <br>
+
+        L:
+        <span id="asiaLow">
+          —
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div class="session">
+
+      <div class="sessionName">
+        LONDON
+      </div>
+
+      <div class="sessionRange">
+
+        H:
+        <span id="londonHigh">
+          —
+        </span>
+
+        <br>
+
+        L:
+        <span id="londonLow">
+          —
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div class="session">
+
+      <div class="sessionName">
+        NEW YORK
+      </div>
+
+      <div class="sessionRange">
+
+        H:
+        <span id="nyHigh">
+          —
+        </span>
+
+        <br>
+
+        L:
+        <span id="nyLow">
+          —
+        </span>
+
+      </div>
+
+    </div>
+
+
+  </div>
 
 </div>
 
 
-<div class="grid g2 desktop2">
-
-
-<div class="card">
-<div id="refs"></div>
-</div>
-
-
-<div class="card">
-
-<div class="label">
-Historical NY sweep behaviour
-</div>
-
-<div
-  id="history"
-  style="margin-top:7px"
-></div>
-
-</div>
-
-
-</div>
-
+<!-- ============================================================
+     PREVIOUS DAY
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Liquidity Ladder
-</h2>
+  <div class="sectionHead">
 
-<span>
-ranked magnets around price
-</span>
+    <div class="sectionTitle">
+      Previous Day
+    </div>
+
+    <div class="sectionSmall">
+      external liquidity
+    </div>
+
+  </div>
+
+
+  <div class="grid">
+
+
+    <div class="box">
+
+      <div class="boxLabel">
+        PDH
+      </div>
+
+      <div
+        class="boxValue"
+        id="pdh"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="box">
+
+      <div class="boxLabel">
+        PDL
+      </div>
+
+      <div
+        class="boxValue"
+        id="pdl"
+      >
+        —
+      </div>
+
+    </div>
+
+
+  </div>
 
 </div>
 
 
-<div class="card">
-
-<div
-  id="ladder"
-  class="ladder"
-></div>
-
-</div>
-
+<!-- ============================================================
+     ORDER FLOW
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Sweep Projections
-</h2>
+  <div class="sectionHead">
 
-<span>
-estimated target + overshoot
-</span>
+    <div class="sectionTitle">
+      Footprint Proxy
+    </div>
+
+    <div class="sectionSmall">
+      quote-derived
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div class="flow">
+
+      <div>
+
+        <div
+          class="flowBig"
+          id="flowBias"
+        >
+          —
+        </div>
+
+        <div class="flowSub">
+          Estimated directional pressure
+        </div>
+
+      </div>
+
+
+      <div>
+
+        <div
+          class="flowBig"
+          id="delta"
+        >
+          —
+        </div>
+
+        <div class="flowSub">
+          Delta proxy
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
 
 </div>
 
 
-<div class="tableWrap">
-
-
-<table class="table">
-
-
-<thead>
-
-<tr>
-
-<th>Pool</th>
-
-<th>Level</th>
-
-<th>Distance</th>
-
-<th>Score</th>
-
-<th>Raid</th>
-
-<th>Likely end</th>
-
-<th>Zone</th>
-
-<th>Basis</th>
-
-</tr>
-
-</thead>
-
-
-<tbody id="poolRows"></tbody>
-
-
-</table>
-
-
-</div>
-
+<!-- ============================================================
+     LIQUIDITY RADAR
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Trap Radar
-</h2>
+  <div class="sectionHead">
 
-<span>
-cash open · power hour · proximity
-</span>
+    <div class="sectionTitle">
+      Liquidity Radar
+    </div>
 
-</div>
+    <div class="sectionSmall">
+      ranked targets
+    </div>
 
-
-<div class="grid g2 desktop2">
-
-
-<div class="card">
-
-<div id="traps"></div>
-
-</div>
+  </div>
 
 
-<div class="card">
+  <div
+    class="poolList"
+    id="poolList"
+  >
 
-<div class="label">
-US30-specific timing
-</div>
+    <div class="pool">
 
-<div class="value sm">
-09:30 ET gets priority
-</div>
+      <div class="poolName">
+        Waiting for liquidity map...
+      </div>
 
-<div
-  class="muted small"
-  style="margin-top:8px;line-height:1.55"
->
+    </div>
 
-The engine raises risk around the US cash open,
-opening-range breaks, nearby premarket liquidity and
-the final hour of the cash session.
-
-A high score is a warning to watch for a raid,
-not a command to automatically fade it.
-
-</div>
+  </div>
 
 </div>
 
 
-</div>
-
+<!-- ============================================================
+     TRAP WINDOWS
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Footprint-Style Order Flow
-</h2>
+  <div class="sectionHead">
 
-<span id="flowMode">
-—
-</span>
+    <div class="sectionTitle">
+      Liquidity Trap Windows
+    </div>
 
-</div>
+    <div class="sectionSmall">
+      SAST
+    </div>
 
-
-<div class="grid g2 desktop2">
-
-
-<div class="card">
+  </div>
 
 
-<div class="grid g2 flowGrid">
-
-
-<div>
-
-<div class="label">
-5m Delta
-</div>
-
-<div id="d5" class="value">
-—
-</div>
-
-<div
-  id="b5"
-  class="deltaBar"
->
-<div class="zero"></div>
-</div>
+  <div
+    class="card"
+    id="trapList"
+  >
+    Loading...
+  </div>
 
 </div>
 
 
-<div>
-
-<div class="label">
-15m Delta
-</div>
-
-<div id="d15" class="value">
-—
-</div>
-
-<div
-  id="b15"
-  class="deltaBar"
->
-<div class="zero"></div>
-</div>
-
-</div>
-
-
-<div>
-
-<div class="label">
-30m Delta
-</div>
-
-<div id="d30" class="value">
-—
-</div>
-
-<div
-  id="b30"
-  class="deltaBar"
->
-<div class="zero"></div>
-</div>
-
-</div>
-
-
-<div>
-
-<div class="label">
-60m Delta
-</div>
-
-<div id="d60" class="value">
-—
-</div>
-
-<div
-  id="b60"
-  class="deltaBar"
->
-<div class="zero"></div>
-</div>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-<div class="card">
-
-
-<div class="info">
-
-<span class="muted">
-CVD proxy
-</span>
-
-<b id="cvd">
-—
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-Delta divergence
-</span>
-
-<b id="divergence">
-—
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-Absorption
-</span>
-
-<b id="absorption">
-—
-</b>
-
-</div>
-
-
-</div>
-
-
-</div>
-
+<!-- ============================================================
+     SOURCE
+============================================================ -->
 
 <div class="section">
 
-<h2>
-Volume Profile
-</h2>
+  <div class="sectionHead">
 
-<span>
-POC · HVN · LVN
-</span>
+    <div class="sectionTitle">
+      Data Source
+    </div>
 
-</div>
+    <div class="sectionSmall">
+      diagnostic
+    </div>
 
-
-<div class="card">
-
-
-<div class="grid g3">
+  </div>
 
 
-<div>
+  <div class="card">
 
-<div class="label">
-POC
-</div>
+    <div class="flow">
 
-<div
-  id="poc"
-  class="value sm gold"
->
-—
-</div>
+      <div>
 
-</div>
+        <div
+          class="flowBig"
+          id="provider"
+        >
+          Massive / Polygon
+        </div>
 
+        <div
+          class="flowSub"
+          id="ticker"
+        >
+          C:XAUUSD
+        </div>
 
-<div>
-
-<div class="label">
-HVN
-</div>
-
-<div
-  id="hvn"
-  class="value sm"
->
-—
-</div>
-
-</div>
+      </div>
 
 
-<div>
+      <div>
 
-<div class="label">
-LVN
-</div>
+        <div
+          class="flowBig"
+          id="candleCount"
+        >
+          —
+        </div>
 
-<div
-  id="lvn"
-  class="value sm"
->
-—
-</div>
+        <div class="flowSub">
+          candles loaded
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
 
 </div>
 
 
-</div>
+<div class="footer">
 
+  MKAYFX XAU Liquidity Intelligence
 
-<div
-  id="profileMode"
-  class="muted tiny"
-  style="margin-top:8px"
->
-—
-</div>
+  <br>
 
-
-</div>
-
-
-<div class="notice">
-
-<strong>
-Important:
-</strong>
-
-this is a liquidity-intelligence model, not a guaranteed
-trading strategy. “Footprint” is an OHLCV/activity proxy;
-it is not true centralized bid/ask-at-price order flow.
-If US30 accepts beyond a projected sweep zone, continuation
-can replace the expected reversal.
+  Liquidity projections are analytical estimates,
+  not guaranteed reversal points or financial advice.
 
 </div>
 
@@ -1965,503 +1690,610 @@ can replace the expected reversal.
 
 <script>
 
-(() => {
+/* ============================================================
+   CONFIG
+============================================================ */
 
+const API_URL =
+  "/api/xau";
 
-const API =
-  "/api/us30";
+const AUTO_REFRESH_MS =
+  30_000;
 
-
-const TZ =
-  "Africa/Johannesburg";
-
-
-let DATA =
+let latestData =
   null;
 
 
-let busy =
-  false;
+/* ============================================================
+   HELPERS
+============================================================ */
 
+function el(id){
 
-const $ =
-  id =>
-    document.getElementById(
-      id
-    );
-
-
-const fmt = (
-  value,
-  decimals = 2
-) =>
-
-  Number.isFinite(
-    +value
-  )
-
-    ?
-
-    Number(
-      value
-    )
-      .toLocaleString(
-
-        "en-ZA",
-
-        {
-
-          minimumFractionDigits:
-            decimals,
-
-          maximumFractionDigits:
-            decimals
-
-        }
-
-      )
-
-    :
-
-    "—";
-
-
-const esc =
-  value =>
-
-    String(
-      value ??
-      ""
-    )
-      .replace(
-
-        /[&<>"']/g,
-
-        character => ({
-
-          "&":
-            "&amp;",
-
-          "<":
-            "&lt;",
-
-          ">":
-            "&gt;",
-
-          '"':
-            "&quot;",
-
-          "'":
-            "&#39;"
-
-        })[
-          character
-        ]
-
-      );
-
-
-function trendClass(
-  value
-) {
-
-  const text =
-    String(
-      value ||
-      ""
-    );
-
-
-  if (
-
-    text.includes(
-      "BULL"
-    )
-
-    ||
-
-    text.includes(
-      "BUY"
-    )
-
-  ) {
-
-    return "green";
-
-  }
-
-
-  if (
-
-    text.includes(
-      "BEAR"
-    )
-
-    ||
-
-    text.includes(
-      "SELL"
-    )
-
-  ) {
-
-    return "red";
-
-  }
-
-
-  return "muted";
-
+  return document
+    .getElementById(id);
 }
 
 
-function countdown(
-  iso
-) {
+function text(
+  id,
+  value
+){
+
+  const node =
+    el(id);
+
+  if(node){
+
+    node.textContent =
+      value ?? "—";
+  }
+}
+
+
+function number(
+  value,
+  decimals = 2
+){
+
+  const n =
+    Number(value);
+
+  if(
+    !Number.isFinite(n)
+  ){
+
+    return "—";
+  }
+
+
+  return n
+    .toLocaleString(
+      undefined,
+      {
+        minimumFractionDigits:
+          decimals,
+
+        maximumFractionDigits:
+          decimals
+      }
+    );
+}
+
+
+function setBiasColor(
+  id,
+  value
+){
+
+  const node =
+    el(id);
+
+  if(!node){
+    return;
+  }
+
+
+  node.textContent =
+    value || "—";
+
+
+  node.style.color =
+    value === "BULLISH"
+      ? "var(--green)"
+
+      : value === "BEARISH"
+        ? "var(--red)"
+
+        : "var(--muted)";
+}
+
+
+function ageFrom(
+  timestamp
+){
+
+  if(!timestamp){
+    return "—";
+  }
+
+
+  const ms =
+    Date.now() -
+    new Date(timestamp)
+      .getTime();
+
+
+  if(
+    !Number.isFinite(ms)
+  ){
+
+    return "—";
+  }
+
 
   const seconds =
     Math.max(
-
       0,
-
       Math.floor(
-
-        (
-          new Date(
-            iso
-          )
-
-          -
-
-          Date.now()
-        )
-
-        /
-
-        1000
-
+        ms / 1000
       )
-
     );
 
 
-  const hours =
-    Math.floor(
-      seconds /
-      3600
-    );
+  if(
+    seconds < 60
+  ){
+
+    return `${seconds}s`;
+  }
 
 
   const minutes =
     Math.floor(
-
-      (
-        seconds %
-        3600
-      )
-
-      /
-
-      60
-
+      seconds / 60
     );
 
 
-  const remaining =
-    seconds %
-    60;
+  if(
+    minutes < 60
+  ){
+
+    return `${minutes}m`;
+  }
 
 
-  return (
+  return `${Math.floor(
+    minutes / 60
+  )}h`;
+}
 
-    `${String(hours).padStart(2,"0")}:`
 
-    +
+/* ============================================================
+   ERROR STATE
+============================================================ */
 
-    `${String(minutes).padStart(2,"0")}:`
+function showError(
+  message,
+  data = null
+){
 
-    +
+  const box =
+    el("errorBox");
 
-    `${String(remaining).padStart(2,"0")}`
 
+  box.style.display =
+    "block";
+
+
+  let extra =
+    "";
+
+
+  if(
+    data?.troubleshooting
+  ){
+
+    const t =
+      data.troubleshooting;
+
+
+    extra =
+      `
+
+      <br><br>
+
+      <strong>Environment:</strong>
+      ${t.environmentVariable || "MASSIVE_API_KEY"}
+
+      <br>
+
+      <strong>Ticker:</strong>
+      ${t.ticker || "C:XAUUSD"}
+
+      <br><br>
+
+      ${t.note || ""}
+      `;
+  }
+
+
+  box.innerHTML =
+    `
+    <strong>
+      Could not load XAU/USD intelligence.
+    </strong>
+
+    <br><br>
+
+    ${message}
+
+    ${extra}
+    `;
+
+
+  text(
+    "statusPill",
+    "ERROR"
   );
 
+
+  el(
+    "statusPill"
+  ).className =
+    "pill bad";
 }
 
 
-function sast(
-  iso
-) {
+function hideError(){
 
-  return new Intl.DateTimeFormat(
-
-    "en-ZA",
-
-    {
-
-      timeZone:
-        TZ,
-
-      day:
-        "2-digit",
-
-      month:
-        "short",
-
-      hour:
-        "2-digit",
-
-      minute:
-        "2-digit",
-
-      second:
-        "2-digit",
-
-      hour12:
-        false
-
-    }
-
-  )
-    .format(
-      new Date(
-        iso
-      )
-    );
-
+  el(
+    "errorBox"
+  ).style.display =
+    "none";
 }
 
 
-/* =========================================================
-   LOAD
-========================================================= */
-
-
-async function load() {
-
-  if (
-    busy
-  ) {
-
-    return;
-
-  }
-
-
-  busy =
-    true;
-
-
-  $("refresh").disabled =
-    true;
-
-
-  $("live").textContent =
-    "ANALYZING";
-
-
-  try {
-
-
-    const response =
-      await fetch(
-
-        `${API}?t=${Date.now()}`,
-
-        {
-          cache:
-            "no-store"
-        }
-
-      );
-
-
-    const json =
-      await response.json();
-
-
-    if (
-
-      !response.ok
-
-      ||
-
-      !json.ok
-
-    ) {
-
-      throw new Error(
-
-        json.error
-
-        ||
-
-        `HTTP ${response.status}`
-
-      );
-
-    }
-
-
-    DATA =
-      json;
-
-
-    $("error").style.display =
-      "none";
-
-
-    render(
-      json
-    );
-
-
-    $("live").textContent =
-
-      json.cached
-
-        ?
-
-        "LIVE · CACHE"
-
-        :
-
-        "LIVE";
-
-
-    $("live").className =
-      "pill live";
-
-
-  } catch (
-    error
-  ) {
-
-
-    $("live").textContent =
-      "ERROR";
-
-
-    $("live").className =
-      "pill warn";
-
-
-    $("error").style.display =
-      "block";
-
-
-    $("error").textContent =
-
-      `Could not load US30 intelligence.\n\n` +
-
-      `${error.message}\n\n` +
-
-      `Check ALLTICK_API_TOKEN and redeploy.`;
-
-
-  } finally {
-
-
-    busy =
-      false;
-
-
-    $("refresh").disabled =
-      false;
-
-  }
-
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
+/* ============================================================
+   MAIN RENDER
+============================================================ */
 
 function render(
   data
-) {
+){
 
-  $("price").textContent =
-    fmt(
+  latestData =
+    data;
+
+
+  hideError();
+
+
+  text(
+    "statusPill",
+    "LIVE"
+  );
+
+
+  el(
+    "statusPill"
+  ).className =
+    "pill good";
+
+
+  text(
+    "agePill",
+    `DATA AGE ${ageFrom(
+      data.latestBarTime
+    )}`
+  );
+
+
+  text(
+    "regimePill",
+    data.market?.regime ||
+    "—"
+  );
+
+
+  text(
+    "flowPill",
+    data.footprint?.bias ||
+    "—"
+  );
+
+
+  text(
+    "price",
+    number(
       data.price,
       2
+    )
+  );
+
+
+  el(
+    "price"
+  ).classList.remove(
+    "loading"
+  );
+
+
+  text(
+    "priceLabel",
+    data.latestBarTime
+      ? `Latest M1 bar · ${new Date(
+          data.latestBarTime
+        ).toLocaleTimeString()}`
+      : "XAU/USD"
+  );
+
+
+  const target =
+    data.highestRankedLiquidity;
+
+
+  if(target){
+
+    text(
+      "raidScore",
+      `${number(
+        target.raidScore,
+        0
+      )}/95`
     );
 
 
-  $("updated").textContent =
-
-    `Latest AllTick bar ` +
-
-    `${sast(data.latestBarTime)} SAST`;
-
-
-  $("age").textContent =
-
-    `Data age ${data.dataAgeSeconds}s`;
+    text(
+      "drawTitle",
+      target.label
+    );
 
 
-  $("regimeStatus").textContent =
+    text(
+      "drawMeta",
 
-    data.market
-      ?.regime
-      ?.label
-
-    ||
-
-    "—";
-
-
-  $("flowStatus").textContent =
-
-    data.market
-      ?.regime
-      ?.orderFlow
-
-    ||
-
-    "—";
+      `${target.side} · ` +
+      `${target.stage} · ` +
+      `${number(
+        target.distance,
+        2
+      )} away`
+    );
 
 
-  renderBest(
-    data.liquidityPools?.[0]
+    text(
+      "liquidityLevel",
+      number(
+        target.price,
+        2
+      )
+    );
+
+
+    text(
+      "raidEnd",
+      number(
+        target.likelyRaidEnd,
+        2
+      )
+    );
+
+
+    if(
+      target.reversalWatchZone
+    ){
+
+      text(
+        "reversalZone",
+
+        `${number(
+          target.reversalWatchZone.low,
+          2
+        )} – ${number(
+          target.reversalWatchZone.high,
+          2
+        )}`
+      );
+
+    }else{
+
+      text(
+        "reversalZone",
+        "—"
+      );
+    }
+
+
+    text(
+      "overshoot",
+      number(
+        target.overshoot,
+        2
+      )
+    );
+
+
+    el(
+      "raidProgress"
+    ).style.width =
+      `${Math.min(
+        100,
+        Number(
+          target.raidScore ||
+          0
+        )
+      )}%`;
+
+  }else{
+
+    text(
+      "raidScore",
+      "—"
+    );
+
+
+    text(
+      "drawTitle",
+      "No ranked target"
+    );
+  }
+
+
+  /* ==========================================================
+     MARKET
+  ========================================================== */
+
+  text(
+    "marketRegime",
+    data.market?.regime ||
+    "—"
   );
 
 
-  renderSessions(
-    data.sessions ||
-    []
+  text(
+    "atrM5",
+    number(
+      data.market?.atrM5,
+      2
+    )
   );
 
 
-  renderMarket(
-    data.market ||
-    {}
+  text(
+    "rsiM5",
+    number(
+      data.market?.rsiM5,
+      1
+    )
   );
 
 
-  renderFrames(
-    data.structure ||
-    {}
+  text(
+    "vwap",
+    number(
+      data.market?.vwap,
+      2
+    )
   );
 
 
-  renderReferences(
-
-    data.referenceLevels ||
-    {},
-
-    data.historicalSweeps ||
-    {}
-
+  text(
+    "vwapState",
+    data.market?.priceVsVWAP
+      ? `Price ${data.market.priceVsVWAP.toLowerCase()} VWAP`
+      : "—"
   );
 
 
-  renderLadder(
-    data
+  /* ==========================================================
+     STRUCTURE
+  ========================================================== */
+
+  text(
+    "overallBias",
+    data.structure?.bias ||
+    "—"
   );
 
+
+  setBiasColor(
+    "biasM5",
+    data.structure?.m5
+  );
+
+
+  setBiasColor(
+    "biasM15",
+    data.structure?.m15
+  );
+
+
+  setBiasColor(
+    "biasH1",
+    data.structure?.h1
+  );
+
+
+  /* ==========================================================
+     SESSION LEVELS
+  ========================================================== */
+
+  text(
+    "asiaHigh",
+    number(
+      data.sessions?.asia?.high,
+      2
+    )
+  );
+
+
+  text(
+    "asiaLow",
+    number(
+      data.sessions?.asia?.low,
+      2
+    )
+  );
+
+
+  text(
+    "londonHigh",
+    number(
+      data.sessions?.london?.high,
+      2
+    )
+  );
+
+
+  text(
+    "londonLow",
+    number(
+      data.sessions?.london?.low,
+      2
+    )
+  );
+
+
+  text(
+    "nyHigh",
+    number(
+      data.sessions?.newYork?.high,
+      2
+    )
+  );
+
+
+  text(
+    "nyLow",
+    number(
+      data.sessions?.newYork?.low,
+      2
+    )
+  );
+
+
+  text(
+    "pdh",
+    number(
+      data.previousDay?.high,
+      2
+    )
+  );
+
+
+  text(
+    "pdl",
+    number(
+      data.previousDay?.low,
+      2
+    )
+  );
+
+
+  /* ==========================================================
+     FOOTPRINT
+  ========================================================== */
+
+  text(
+    "flowBias",
+    data.footprint?.bias ||
+    "—"
+  );
+
+
+  text(
+    "delta",
+    number(
+      data.footprint?.delta,
+      2
+    )
+  );
+
+
+  /* ==========================================================
+     LIQUIDITY POOLS
+  ========================================================== */
 
   renderPools(
     data.liquidityPools ||
@@ -2469,1301 +2301,349 @@ function render(
   );
 
 
+  /* ==========================================================
+     TRAPS
+  ========================================================== */
+
   renderTraps(
     data.trapWindows ||
     []
   );
 
 
-  renderFlow(
-    data.footprint ||
-    {}
+  /* ==========================================================
+     SOURCE
+  ========================================================== */
+
+  text(
+    "provider",
+    data.source?.api ||
+    data.provider ||
+    "Massive / Polygon"
   );
 
 
-  renderProfile(
-    data.volumeProfile ||
-    {}
-  );
-
-}
-
-
-/* =========================================================
-   PRIMARY LIQUIDITY
-========================================================= */
-
-
-function renderBest(
-  pool
-) {
-
-  if (
-    !pool
-  ) {
-
-    return;
-
-  }
-
-
-  $("topScore").innerHTML =
-
-    `${esc(pool.likelihood)}<br>` +
-
-    `${fmt(pool.likelihoodScore,0)}`;
-
-
-  $("bestName").textContent =
-
-    `${
-      pool.side ===
-      "HIGH"
-
-        ?
-
-        "UPSIDE"
-
-        :
-
-        "DOWNSIDE"
-    } → ${pool.name}`;
-
-
-  $("bestMeta").textContent =
-
-    `${pool.raidStyle} · ` +
-
-    `${fmt(pool.distanceAtr,2)}× M15 ATR away`;
-
-
-  $("bestLevel").textContent =
-    fmt(
-      pool.level,
-      2
-    );
-
-
-  $("bestEnd").textContent =
-    fmt(
-      pool.projectedSweep
-        ?.likelyEnd,
-      2
-    );
-
-
-  $("bestZone").textContent =
-
-    `${fmt(pool.projectedSweep?.zoneLow,2)} – ` +
-
-    `${fmt(pool.projectedSweep?.zoneHigh,2)}`;
-
-
-  $("bestOver").textContent =
-
-    `${fmt(pool.projectedSweep?.overshoot,2)} pts · ` +
-
-    `${fmt(pool.projectedSweep?.overshootAtr,2)} ATR`;
-
-
-  $("bestMeter").style.width =
-
-    `${Math.min(
-
-      100,
-
-      Math.max(
-
-        0,
-
-        +pool.likelihoodScore ||
-        0
-
-      )
-
-    )}%`;
-
-
-  $("bestReasons").innerHTML =
-
-    (
-      pool.reasons ||
-      []
-    )
-
-      .map(
-        reason =>
-          `<li>${esc(reason)}</li>`
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
-   SESSION CARDS
-========================================================= */
-
-
-function renderSessions(
-  sessions
-) {
-
-  $("sessions").innerHTML =
-
-    sessions.map(
-      session => `
-
-<div
-  class="card session ${session.active ? "active" : ""}"
->
-
-<div class="sessionTop">
-
-<div>
-
-<div class="label">
-${esc(session.name)}
-</div>
-
-<div
-  class="value sm ${session.active ? "green" : "muted"}"
->
-${session.active ? "OPEN" : "CLOSED"}
-</div>
-
-<div
-  class="muted tiny"
-  style="margin-top:4px"
->
-${esc(session.phase)}
-·
-${esc(session.localTime)}
-</div>
-
-</div>
-
-
-<div style="text-align:right">
-
-<div class="label">
-${esc(session.nextEvent)}
-</div>
-
-<div
-  class="count sc"
-  data-time="${esc(session.nextEventAt)}"
->
-${countdown(session.nextEventAt)}
-</div>
-
-<div class="muted tiny">
-${sast(session.nextEventAt)} SAST
-</div>
-
-</div>
-
-
-</div>
-
-
-<div class="miniGrid">
-
-<div class="mini">
-
-<div class="label">
-High
-</div>
-
-<div class="value sm">
-${fmt(session.range?.high,2)}
-</div>
-
-</div>
-
-
-<div class="mini">
-
-<div class="label">
-Low
-</div>
-
-<div class="value sm">
-${fmt(session.range?.low,2)}
-</div>
-
-</div>
-
-</div>
-
-
-<div
-  class="muted tiny"
-  style="margin-top:7px"
->
-
-${esc(session.openLocal)}
-–
-${esc(session.closeLocal)}
-
-${esc(session.zone)}
-
-· range
-
-${fmt(session.range?.range,2)}
-
-</div>
-
-
-</div>
-
-`
-    )
-      .join("");
-
-}
-
-
-/* =========================================================
-   MARKET
-========================================================= */
-
-
-function renderMarket(
-  market
-) {
-
-  $("atr1").textContent =
-    fmt(
-      market.atr1,
-      2
-    );
-
-
-  $("atr5").textContent =
-    fmt(
-      market.atr5,
-      2
-    );
-
-
-  $("atr15").textContent =
-    fmt(
-      market.atr15,
-      2
-    );
-
-
-  $("atrH1").textContent =
-    fmt(
-      market.atrH1,
-      2
-    );
-
-
-  $("regime").textContent =
-    market.regime
-      ?.label
-
-    ||
-
-    "—";
-
-
-  $("regime").className =
-
-    `value sm ${trendClass(
-
-      market.regime
-        ?.trend
-
-    )}`;
-
-}
-
-
-/* =========================================================
-   TIMEFRAMES
-========================================================= */
-
-
-function renderFrames(
-  frames
-) {
-
-  const order = [
-
-    "m1",
-
-    "m5",
-
-    "m15",
-
-    "h1",
-
-    "h4"
-
-  ];
-
-
-  $("frames").innerHTML =
-
-    order.map(
-      key => {
-
-        const frame =
-          frames[key] ||
-          {};
-
-
-        return `
-
-<div class="card tf">
-
-<div class="label">
-${key.toUpperCase()}
-</div>
-
-<div
-  class="tfb ${trendClass(frame.bias)}"
->
-${esc(frame.bias || "—")}
-</div>
-
-<div
-  class="muted tiny"
-  style="margin-top:6px"
->
-Score ${fmt(frame.score,0)}
-</div>
-
-<div class="muted tiny">
-RSI ${fmt(frame.rsi14,1)}
-</div>
-
-<div class="muted tiny">
-
-${esc(
-
-  frame.structure
-    ?.event
-
-  ||
-
-  frame.structure
-    ?.bias
-
-  ||
-
-  ""
-
-)}
-
-</div>
-
-</div>
-
-`;
-
-      }
-    )
-      .join("");
-
-}
-
-
-/* =========================================================
-   REFERENCES
-========================================================= */
-
-
-function renderReferences(
-  refs,
-  history
-) {
-
-  $("refs").innerHTML =
-
-    [
-
-      [
-        "Premarket High",
-        refs.premarket?.high
-      ],
-
-      [
-        "Premarket Low",
-        refs.premarket?.low
-      ],
-
-      [
-        "Opening Range High",
-        refs.openingRange30?.high
-      ],
-
-      [
-        "Opening Range Low",
-        refs.openingRange30?.low
-      ],
-
-      [
-        "Previous Cash High",
-        refs.previousCash?.high
-      ],
-
-      [
-        "Previous Cash Low",
-        refs.previousCash?.low
-      ],
-
-      [
-        "Previous Day High",
-        refs.previousDay?.high
-      ],
-
-      [
-        "Previous Day Low",
-        refs.previousDay?.low
-      ]
-
-    ]
-
-      .map(
-        row => `
-
-<div class="info">
-
-<span class="muted">
-${row[0]}
-</span>
-
-<b>
-${fmt(row[1],2)}
-</b>
-
-</div>
-
-`
-      )
-
-      .join("");
-
-
-  const high =
-    history.premarketHigh ||
-    {};
-
-
-  const low =
-    history.premarketLow ||
-    {};
-
-
-  $("history").innerHTML = `
-
-<div class="info">
-
-<span class="muted">
-Sample sessions
-</span>
-
-<b>
-${history.lookbackDays || 0}
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-Premarket high sweep
-</span>
-
-<b>
-${fmt(high.sweepRatePct,1)}%
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-High reversal after sweep
-</span>
-
-<b>
-${fmt(high.reversalRatePct,1)}%
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-High overshoot P50 / P75
-</span>
-
-<b>
-${fmt(high.medianOvershootAtr,2)}
-/
-${fmt(high.p75OvershootAtr,2)}
-ATR
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-Premarket low sweep
-</span>
-
-<b>
-${fmt(low.sweepRatePct,1)}%
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-Low reversal after sweep
-</span>
-
-<b>
-${fmt(low.reversalRatePct,1)}%
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-Low overshoot P50 / P75
-</span>
-
-<b>
-${fmt(low.medianOvershootAtr,2)}
-/
-${fmt(low.p75OvershootAtr,2)}
-ATR
-</b>
-
-</div>
-
-`;
-
-}
-
-
-/* =========================================================
-   LADDER
-========================================================= */
-
-
-function renderLadder(
-  data
-) {
-
-  const rows =
-    (
-      data.liquidityPools ||
-      []
-    )
-
-      .slice(
-        0,
-        10
-      )
-
-      .map(
-        pool => ({
-
-          name:
-            pool.name,
-
-          price:
-            pool.level,
-
-          score:
-            pool.likelihoodScore,
-
-          current:
-            false
-
-        })
-      );
-
-
-  rows.push({
-
-    name:
-      "CURRENT PRICE",
-
-    price:
-      data.price,
-
-    current:
-      true
-
-  });
-
-
-  rows.sort(
-    (
-      a,
-      b
-    ) =>
-      b.price -
-      a.price
+  text(
+    "ticker",
+    data.source?.ticker ||
+    data.providerSymbol ||
+    "C:XAUUSD"
   );
 
 
-  $("ladder").innerHTML =
-
-    rows.map(
-      row => `
-
-<div
-  class="ladderRow ${row.current ? "current" : ""}"
->
-
-<div
-  class="ladderName ${row.current ? "gold" : ""}"
->
-${esc(row.name)}
-</div>
-
-<div class="line"></div>
-
-<div style="text-align:right">
-
-<b
-  class="tiny ${row.current ? "gold" : ""}"
->
-${fmt(row.price,2)}
-</b>
-
-${
-  row.current
-
-    ?
-
-    ""
-
-    :
-
-    `<div class="muted tiny">
-      ${fmt(row.score,0)}/100
-    </div>`
-}
-
-</div>
-
-</div>
-
-`
-    )
-      .join("");
-
+  text(
+    "candleCount",
+    data.source?.candles ??
+    "—"
+  );
 }
 
 
-/* =========================================================
-   POOLS
-========================================================= */
-
+/* ============================================================
+   LIQUIDITY POOLS
+============================================================ */
 
 function renderPools(
   pools
-) {
+){
 
-  $("poolRows").innerHTML =
-
-    pools.map(
-      pool => `
-
-<tr>
-
-<td>
-
-<b>
-${esc(pool.name)}
-</b>
-
-<div class="muted tiny">
-${esc(pool.type)}
-</div>
-
-${
-  pool.aliases?.length
-
-    ?
-
-    `<div class="muted tiny">
-      + ${pool.aliases.map(esc).join(", ")}
-    </div>`
-
-    :
-
-    ""
-}
-
-</td>
+  const list =
+    el("poolList");
 
 
-<td>
-${fmt(pool.level,2)}
-</td>
+  if(
+    !pools.length
+  ){
+
+    list.innerHTML =
+      `
+      <div class="pool">
+
+        <div class="poolName">
+          No liquidity pools detected.
+        </div>
+
+      </div>
+      `;
+
+    return;
+  }
 
 
-<td>
+  list.innerHTML =
+    pools
+      .slice(
+        0,
+        8
+      )
+      .map(
+        pool => {
 
-${fmt(pool.distance,2)}
-
-<div class="muted tiny">
-${fmt(pool.distanceAtr,2)} ATR
-</div>
-
-</td>
-
-
-<td>
-
-<span
-  class="score ${pool.likelihoodScore >= 75 ? "high" : ""}"
->
-${fmt(pool.likelihoodScore,0)}
-</span>
-
-<div class="muted tiny">
-${esc(pool.likelihood)}
-</div>
-
-</td>
+          const side =
+            pool.side ===
+            "BUY_SIDE"
+              ? "BSL"
+              : "SSL";
 
 
-<td>
-${esc(pool.raidStyle)}
-</td>
+          return `
+          <div class="pool">
+
+            <div class="poolTop">
+
+              <div class="poolName">
+
+                ${pool.label}
+
+                <span
+                  style="
+                    color:var(--muted);
+                    font-size:9px;
+                    margin-left:5px;
+                  "
+                >
+                  ${side}
+                </span>
+
+              </div>
 
 
-<td class="gold">
+              <div class="poolScore">
 
-<b>
-${fmt(pool.projectedSweep?.likelyEnd,2)}
-</b>
+                ${number(
+                  pool.raidScore,
+                  0
+                )}/95
 
-</td>
+              </div>
 
-
-<td>
-
-${fmt(pool.projectedSweep?.zoneLow,2)}
-
-<br>
-
-${fmt(pool.projectedSweep?.zoneHigh,2)}
-
-</td>
+            </div>
 
 
-<td>
+            <div class="poolBottom">
 
-${esc(
+              <span>
+                Level ${number(
+                  pool.price,
+                  2
+                )}
+              </span>
 
-  pool.projectedSweep
-    ?.historicalBasis
+              <span>
+                ${pool.stage || "—"}
+              </span>
 
-  ||
+              <span>
+                ${number(
+                  pool.distanceATR,
+                  2
+                )} ATR
+              </span>
 
-  "—"
+            </div>
 
-)}
-
-</td>
-
-
-</tr>
-
-`
-    )
+          </div>
+          `;
+        }
+      )
       .join("");
-
 }
 
 
-/* =========================================================
+/* ============================================================
    TRAPS
-========================================================= */
-
+============================================================ */
 
 function renderTraps(
-  traps
-) {
+  windows
+){
 
-  $("traps").innerHTML =
+  const node =
+    el("trapList");
 
-    traps.length
 
-      ?
+  if(
+    !windows.length
+  ){
 
-      traps.map(
+    node.innerHTML =
+      "No trap windows.";
+
+    return;
+  }
+
+
+  node.innerHTML =
+    windows
+      .map(
         trap => `
 
-<div class="trap">
+        <div class="trap">
 
-<div>
+          <div>
 
-<b class="small">
-${esc(trap.session)}
-</b>
+            <div class="trapName">
+              ${trap.name}
+            </div>
 
-<div
-  class="muted tiny"
-  style="margin-top:3px"
->
-${esc(trap.phase)}
-</div>
+            <div class="trapTime">
+              ${trap.startSAST}
+              –
+              ${trap.endSAST}
+            </div>
 
-<div
-  class="muted tiny"
-  style="margin-top:4px"
->
-${(trap.reasons || []).map(esc).join(" · ")}
-</div>
+          </div>
 
-</div>
+          <div class="trapRisk">
+            ${trap.risk}
+          </div>
 
-
-<div style="text-align:right">
-
-<div
-  class="risk ${String(trap.risk || "").toLowerCase()}"
->
-${esc(trap.risk)}
-</div>
-
-<div
-  class="muted tiny"
-  style="margin-top:4px"
->
-${fmt(trap.score,0)}/100
-</div>
-
-</div>
-
-</div>
-
-`
+        </div>
+        `
       )
-        .join("")
-
-      :
-
-      `<div class="muted small">
-        No elevated trap window right now.
-      </div>`;
-
+      .join("");
 }
 
 
-/* =========================================================
-   DELTA
-========================================================= */
+/* ============================================================
+   FETCH
+============================================================ */
 
+async function loadData(
+  manual = false
+){
 
-function setDelta(
-  textId,
-  barId,
-  value
-) {
+  const button =
+    el("refreshBtn");
 
-  const number =
-    +value ||
-    0;
 
+  if(manual){
 
-  const element =
-    $(
-      textId
-    );
+    button.style.opacity =
+      ".45";
 
+    button.disabled =
+      true;
+  }
 
-  element.textContent =
 
-    `${number >= 0 ? "+" : ""}` +
+  try{
 
-    `${fmt(number,1)}%`;
-
-
-  element.className =
-
-    `value ${
-
-      number >
-      3
-
-        ?
-
-        "green"
-
-        :
-
-        number <
-        -3
-
-          ?
-
-          "red"
-
-          :
-
-          "muted"
-
-    }`;
-
-
-  const bar =
-    $(
-      barId
-    );
-
-
-  bar
-    .querySelectorAll(
-      ".fill"
-    )
-    .forEach(
-      item =>
-        item.remove()
-    );
-
-
-  const fill =
-    document.createElement(
-      "div"
-    );
-
-
-  fill.className =
-
-    `fill ${
-
-      number >=
-      0
-
-        ?
-
-        "pos"
-
-        :
-
-        "neg"
-
-    }`;
-
-
-  fill.style.width =
-
-    `${Math.min(
-
-      50,
-
-      Math.abs(
-        number
-      ) /
-      2
-
-    )}%`;
-
-
-  bar.appendChild(
-    fill
-  );
-
-}
-
-
-function renderFlow(
-  flow
-) {
-
-  $("flowMode").textContent =
-    flow.mode ||
-    "—";
-
-
-  setDelta(
-    "d5",
-    "b5",
-    flow.last5?.deltaPct
-  );
-
-
-  setDelta(
-    "d15",
-    "b15",
-    flow.last15?.deltaPct
-  );
-
-
-  setDelta(
-    "d30",
-    "b30",
-    flow.last30?.deltaPct
-  );
-
-
-  setDelta(
-    "d60",
-    "b60",
-    flow.last60?.deltaPct
-  );
-
-
-  $("cvd").textContent =
-    fmt(
-      flow.cvd,
-      1
-    );
-
-
-  $("divergence").textContent =
-    flow.divergence ||
-    "—";
-
-
-  $("absorption").textContent =
-    flow.absorption ||
-    "—";
-
-}
-
-
-/* =========================================================
-   PROFILE
-========================================================= */
-
-
-function renderProfile(
-  profile
-) {
-
-  $("poc").textContent =
-    fmt(
-      profile.poc,
-      2
-    );
-
-
-  $("hvn").textContent =
-
-    (
-      profile.hvn ||
-      []
-    )
-
-      .map(
-        value =>
-          fmt(
-            value,
-            0
-          )
-      )
-
-      .join(" · ")
-
-    ||
-
-    "—";
-
-
-  $("lvn").textContent =
-
-    (
-      profile.lvn ||
-      []
-    )
-
-      .map(
-        value =>
-          fmt(
-            value,
-            0
-          )
-      )
-
-      .join(" · ")
-
-    ||
-
-    "—";
-
-
-  $("profileMode").textContent =
-    profile.mode ||
-    "—";
-
-}
-
-
-/* =========================================================
-   CLOCK
-========================================================= */
-
-
-function tick() {
-
-  $("clock").textContent =
-
-    new Intl.DateTimeFormat(
-
-      "en-ZA",
-
-      {
-
-        timeZone:
-          TZ,
-
-        weekday:
-          "short",
-
-        hour:
-          "2-digit",
-
-        minute:
-          "2-digit",
-
-        second:
-          "2-digit",
-
-        hour12:
-          false
-
-      }
-
-    )
-      .format(
-        new Date()
-      )
-
-    +
-
-    " SAST";
-
-
-  document
-
-    .querySelectorAll(
-      ".sc[data-time]"
-    )
-
-    .forEach(
-      item => {
-
-        item.textContent =
-          countdown(
-            item.dataset.time
-          );
-
-      }
-    );
-
-
-  if (
-    DATA?.latestBarTime
-  ) {
-
-    const age =
-      Math.max(
-
-        0,
-
-        Math.floor(
-
-          (
-            Date.now()
-
-            -
-
-            new Date(
-              DATA.latestBarTime
-            )
-          )
-
-          /
-
-          1000
-
-        )
-
+    const response =
+      await fetch(
+        `${API_URL}?t=${Date.now()}`,
+        {
+          cache:
+            "no-store"
+        }
       );
 
 
-    $("age").textContent =
-      `Data age ${age}s`;
+    let data;
 
 
-    $("age").className =
+    try{
 
-      age >
-      180
+      data =
+        await response.json();
 
-        ?
+    }catch{
 
-        "pill warn"
+      throw new Error(
+        `Server returned HTTP ${response.status} with invalid JSON.`
+      );
+    }
 
-        :
 
-        "pill";
+    if(
+      !response.ok ||
+      !data.ok
+    ){
 
+      showError(
+        data.error ||
+        `HTTP ${response.status}`,
+        data
+      );
+
+      return;
+    }
+
+
+    render(
+      data
+    );
+
+
+  }catch(error){
+
+    showError(
+      error.message ||
+      "Network request failed."
+    );
+
+
+  }finally{
+
+    if(manual){
+
+      button.style.opacity =
+        "1";
+
+      button.disabled =
+        false;
+    }
   }
-
 }
 
 
-/* =========================================================
-   START
-========================================================= */
-
-
-$("refresh")
-  .addEventListener(
-    "click",
-    load
-  );
-
-
-load();
-
-
-tick();
-
+/* ============================================================
+   DATA AGE CLOCK
+============================================================ */
 
 setInterval(
-  tick,
+  () => {
+
+    if(
+      latestData?.latestBarTime
+    ){
+
+      text(
+        "agePill",
+        `DATA AGE ${ageFrom(
+          latestData.latestBarTime
+        )}`
+      );
+    }
+
+  },
   1000
 );
 
 
+/* ============================================================
+   AUTO REFRESH
+============================================================ */
+
 setInterval(
-  load,
-  60_000
+  () => {
+
+    loadData(
+      false
+    );
+
+  },
+  AUTO_REFRESH_MS
 );
 
 
-})();
+/* ============================================================
+   INITIAL LOAD
+============================================================ */
+
+loadData();
 
 </script>
-
 
 </body>
 
