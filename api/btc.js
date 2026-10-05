@@ -1,9 +1,9 @@
 /* ============================================================
-   MKAYFX BTC TREND + PULLBACK ENGINE
+   MKAYFX BTC PRECISION PULLBACK V2
    /api/btc.js
 
-   DATA SOURCE
-   -----------
+   SOURCE
+   ------
    Coinbase Exchange Public API
 
    PRODUCT
@@ -14,36 +14,34 @@
 
    STRATEGY
    --------
-   H1 = main trend
-   M15 = pullback + entry
+   H4 = macro trend
+   H1 = intraday trend
+   M15 = rejection + entry
 
    BUY
    ---
-   H1 close > EMA200
-   H1 EMA50 > EMA200
+   H4 EMA20 > EMA50
+   H4 close > EMA20
 
-   M15 recently touches EMA20 / EMA50 zone
-   M15 closes bullish above EMA20 + EMA50
-   RSI > 52
-   Strong candle
-   ATR filter passes
+   H1 EMA50 > EMA200
+   H1 close > EMA200
+
+   M15 recently interacts with EMA20/EMA50 zone
+   M15 rejects upward
+   M15 closes above EMA20 + EMA50
+   Close is in top 25% of candle
+   RSI between 52 and 68
+   Candle body >= 55%
+   Price not stretched > 0.80 ATR from EMA20
 
    SELL
    ----
-   H1 close < EMA200
-   H1 EMA50 < EMA200
-
-   M15 recently touches EMA20 / EMA50 zone
-   M15 closes bearish below EMA20 + EMA50
-   RSI < 48
-   Strong candle
-   ATR filter passes
+   Opposite rules
 
    RISK
    ----
-   SL  = 1.2 ATR
-   TP1 = 1.5R
-   TP2 = 2.2R
+   SL = structural / ATR stop
+   TP = 1.5R
 ============================================================ */
 
 
@@ -57,57 +55,98 @@ const COINBASE =
 
 const SETTINGS = {
 
-  rsiPeriod:
-    14,
+  /* ========================================================
+     INDICATORS
+  ======================================================== */
 
   atrPeriod:
     14,
 
+  rsiPeriod:
+    14,
 
-  emaFast:
+  m15EmaFast:
     20,
 
-  emaPullback:
+  m15EmaSlow:
     50,
 
-
-  h1Fast:
+  h1EmaFast:
     50,
 
-  h1Slow:
+  h1EmaSlow:
     200,
 
+  h4EmaFast:
+    20,
 
-  buyRsi:
+  h4EmaSlow:
+    50,
+
+
+  /* ========================================================
+     RSI
+  ======================================================== */
+
+  buyRsiMin:
     52,
 
-  sellRsi:
+  buyRsiMax:
+    68,
+
+  sellRsiMin:
+    32,
+
+  sellRsiMax:
     48,
 
 
-  stopAtr:
-    1.2,
+  /* ========================================================
+     ENTRY QUALITY
+  ======================================================== */
 
-  tp1R:
-    1.5,
+  pullbackLookback:
+    3,
 
-  tp2R:
-    2.2,
+  minBodyPercent:
+    0.55,
 
+  buyCloseLocation:
+    0.75,
+
+  sellCloseLocation:
+    0.25,
+
+  minRejectionWickPercent:
+    0.12,
+
+  maxDistanceFromEma20Atr:
+    0.80,
+
+
+  /* ========================================================
+     VOLATILITY
+  ======================================================== */
 
   minAtrPercent:
     0.10,
 
   maxAtrPercent:
-    3.5,
+    2.50,
 
 
-  minBodyPercent:
-    0.50,
+  /* ========================================================
+     RISK
+  ======================================================== */
 
+  stopAtr:
+    1.10,
 
-  pullbackLookback:
-    3
+  structureBufferAtr:
+    0.10,
+
+  targetR:
+    1.50
 
 };
 
@@ -157,7 +196,8 @@ function round(
 
 
   const power =
-    10 ** digits;
+    10 **
+    digits;
 
 
   return (
@@ -183,7 +223,8 @@ function errorText(
 
     return (
       error.message ||
-      error.name
+      error.name ||
+      "Unknown error"
     );
 
   }
@@ -256,7 +297,7 @@ async function getJSON(
               "application/json",
 
             "User-Agent":
-              "MKAYFX-BTC"
+              "MKAYFX-BTC-PRECISION-V2"
 
           },
 
@@ -345,30 +386,18 @@ async function getJSON(
 
 /* ============================================================
    COINBASE CANDLES
-
-   Coinbase row:
-   [
-     time,
-     low,
-     high,
-     open,
-     close,
-     volume
-   ]
 ============================================================ */
 
 async function fetchCandles(
   granularity
 ) {
 
-  const url =
-    `${COINBASE}/products/${PRODUCT}/candles` +
-    `?granularity=${granularity}`;
-
-
   const raw =
     await getJSON(
-      url
+
+      `${COINBASE}/products/${PRODUCT}/candles` +
+      `?granularity=${granularity}`
+
     );
 
 
@@ -379,7 +408,7 @@ async function fetchCandles(
   ) {
 
     throw new Error(
-      "Coinbase candle response was not an array"
+      "Coinbase candles response was not an array"
     );
 
   }
@@ -434,6 +463,9 @@ async function fetchCandles(
       .filter(
         candle =>
 
+          candle.timestamp >
+            0 &&
+
           Number.isFinite(
             candle.open
           ) &&
@@ -462,10 +494,7 @@ async function fetchCandles(
 
 
   /*
-     Remove the newest potentially-forming candle.
-
-     Live strategy decisions should be based on
-     completed candles.
+     Remove potentially still-forming bar.
   */
 
   if (
@@ -497,6 +526,160 @@ async function fetchTicker() {
 
 
 /* ============================================================
+   H1 -> H4 RESAMPLE
+============================================================ */
+
+function resampleH4(
+  h1
+) {
+
+  const interval =
+    4 *
+    60 *
+    60 *
+    1000;
+
+
+  const map =
+    new Map();
+
+
+  for (
+    const candle of
+    h1
+  ) {
+
+    const key =
+      Math.floor(
+        candle.timestamp /
+        interval
+      ) *
+      interval;
+
+
+    if (
+      !map.has(
+        key
+      )
+    ) {
+
+      map.set(
+        key,
+        {
+
+          timestamp:
+            key,
+
+          datetime:
+            new Date(
+              key
+            ).toISOString(),
+
+          open:
+            candle.open,
+
+          high:
+            candle.high,
+
+          low:
+            candle.low,
+
+          close:
+            candle.close,
+
+          volume:
+            candle.volume
+
+        }
+      );
+
+    }
+
+    else {
+
+      const bucket =
+        map.get(
+          key
+        );
+
+
+      bucket.high =
+        Math.max(
+          bucket.high,
+          candle.high
+        );
+
+
+      bucket.low =
+        Math.min(
+          bucket.low,
+          candle.low
+        );
+
+
+      bucket.close =
+        candle.close;
+
+
+      bucket.volume +=
+        candle.volume;
+
+    }
+
+  }
+
+
+  const result =
+    [
+      ...map.values()
+    ].sort(
+      (
+        a,
+        b
+      ) =>
+        a.timestamp -
+        b.timestamp
+    );
+
+
+  /*
+     H1 data already contains completed H1 bars.
+     But the final H4 bucket may not contain all four H1 bars.
+
+     Remove it unless 4 hours have elapsed.
+  */
+
+  if (
+    result.length
+  ) {
+
+    const latest =
+      result.at(-1);
+
+
+    const expectedEnd =
+      latest.timestamp +
+      interval;
+
+
+    if (
+      expectedEnd >
+      Date.now()
+    ) {
+
+      result.pop();
+
+    }
+
+  }
+
+
+  return result;
+
+}
+
+
+/* ============================================================
    EMA
 ============================================================ */
 
@@ -523,7 +706,7 @@ function ema(
   }
 
 
-  let sum =
+  let total =
     0;
 
 
@@ -534,14 +717,14 @@ function ema(
     i++
   ) {
 
-    sum +=
+    total +=
       values[i];
 
   }
 
 
   let current =
-    sum /
+    total /
     period;
 
 
@@ -596,7 +779,7 @@ function ema(
 
 function rsi(
   values,
-  period = 14
+  period
 ) {
 
   const output =
@@ -766,7 +949,7 @@ function rsi(
 
 function atr(
   candles,
-  period = 14
+  period
 ) {
 
   const output =
@@ -823,7 +1006,7 @@ function atr(
   }
 
 
-  let sum =
+  let total =
     0;
 
 
@@ -834,14 +1017,14 @@ function atr(
     i++
   ) {
 
-    sum +=
+    total +=
       ranges[i];
 
   }
 
 
   let current =
-    sum /
+    total /
     period;
 
 
@@ -882,10 +1065,10 @@ function atr(
 
 
 /* ============================================================
-   CANDLE STRENGTH
+   CANDLE METRICS
 ============================================================ */
 
-function candleStrength(
+function candleMetrics(
   candle
 ) {
 
@@ -899,30 +1082,83 @@ function candleStrength(
     0
   ) {
 
-    return 0;
+    return {
+
+      bodyPercent:
+        0,
+
+      closeLocation:
+        0.5,
+
+      upperWickPercent:
+        0,
+
+      lowerWickPercent:
+        0
+
+    };
 
   }
 
 
-  return (
-
+  const body =
     Math.abs(
       candle.close -
       candle.open
-    ) /
+    );
 
-    range
 
-  );
+  const upperBody =
+    Math.max(
+      candle.open,
+      candle.close
+    );
+
+
+  const lowerBody =
+    Math.min(
+      candle.open,
+      candle.close
+    );
+
+
+  return {
+
+    bodyPercent:
+      body /
+      range,
+
+    closeLocation:
+      (
+        candle.close -
+        candle.low
+      ) /
+      range,
+
+    upperWickPercent:
+      (
+        candle.high -
+        upperBody
+      ) /
+      range,
+
+    lowerWickPercent:
+      (
+        lowerBody -
+        candle.low
+      ) /
+      range
+
+  };
 
 }
 
 
 /* ============================================================
-   PULLBACK CHECK
+   EMA ZONE INTERACTION
 ============================================================ */
 
-function hadPullback(
+function recentZoneInteraction(
 
   candles,
 
@@ -968,31 +1204,27 @@ function hadPullback(
     }
 
 
-    const upper =
+    const zoneHigh =
       Math.max(
         ema20[i],
         ema50[i]
       );
 
 
-    const lower =
+    const zoneLow =
       Math.min(
         ema20[i],
         ema50[i]
       );
 
 
-    /*
-       Candle overlaps the EMA20/EMA50 zone.
-    */
-
     if (
 
       candles[i].low <=
-        upper &&
+        zoneHigh &&
 
       candles[i].high >=
-        lower
+        zoneLow
 
     ) {
 
@@ -1004,6 +1236,52 @@ function hadPullback(
 
 
   return false;
+
+}
+
+
+/* ============================================================
+   STRUCTURAL STOP
+============================================================ */
+
+function recentSwingLow(
+  candles,
+  lookback = 4
+) {
+
+  const recent =
+    candles.slice(
+      -lookback
+    );
+
+
+  return Math.min(
+    ...recent.map(
+      candle =>
+        candle.low
+    )
+  );
+
+}
+
+
+function recentSwingHigh(
+  candles,
+  lookback = 4
+) {
+
+  const recent =
+    candles.slice(
+      -lookback
+    );
+
+
+  return Math.max(
+    ...recent.map(
+      candle =>
+        candle.high
+    )
+  );
 
 }
 
@@ -1030,13 +1308,6 @@ async function handler(
 
   try {
 
-    /*
-       Coinbase granularity:
-
-       M15 = 900
-       H1  = 3600
-    */
-
     const [
 
       m15,
@@ -1061,6 +1332,12 @@ async function handler(
       ]);
 
 
+    const h4 =
+      resampleH4(
+        h1
+      );
+
+
     if (
       m15.length <
       100
@@ -1075,7 +1352,7 @@ async function handler(
 
     if (
       h1.length <
-      200
+      210
     ) {
 
       throw new Error(
@@ -1085,11 +1362,23 @@ async function handler(
     }
 
 
+    if (
+      h4.length <
+      50
+    ) {
+
+      throw new Error(
+        `Only ${h4.length} completed H4 candles available`
+      );
+
+    }
+
+
     /* ======================================================
-       M15
+       M15 INDICATORS
     ====================================================== */
 
-    const m15Close =
+    const m15Closes =
       m15.map(
         candle =>
           candle.close
@@ -1098,21 +1387,21 @@ async function handler(
 
     const m15EMA20 =
       ema(
-        m15Close,
-        SETTINGS.emaFast
+        m15Closes,
+        SETTINGS.m15EmaFast
       );
 
 
     const m15EMA50 =
       ema(
-        m15Close,
-        SETTINGS.emaPullback
+        m15Closes,
+        SETTINGS.m15EmaSlow
       );
 
 
     const m15RSI =
       rsi(
-        m15Close,
+        m15Closes,
         SETTINGS.rsiPeriod
       );
 
@@ -1128,7 +1417,7 @@ async function handler(
        H1
     ====================================================== */
 
-    const h1Close =
+    const h1Closes =
       h1.map(
         candle =>
           candle.close
@@ -1137,20 +1426,45 @@ async function handler(
 
     const h1EMA50 =
       ema(
-        h1Close,
-        SETTINGS.h1Fast
+        h1Closes,
+        SETTINGS.h1EmaFast
       );
 
 
     const h1EMA200 =
       ema(
-        h1Close,
-        SETTINGS.h1Slow
+        h1Closes,
+        SETTINGS.h1EmaSlow
       );
 
 
     /* ======================================================
-       CURRENT COMPLETED CANDLES
+       H4
+    ====================================================== */
+
+    const h4Closes =
+      h4.map(
+        candle =>
+          candle.close
+      );
+
+
+    const h4EMA20 =
+      ema(
+        h4Closes,
+        SETTINGS.h4EmaFast
+      );
+
+
+    const h4EMA50 =
+      ema(
+        h4Closes,
+        SETTINGS.h4EmaSlow
+      );
+
+
+    /* ======================================================
+       CURRENT
     ====================================================== */
 
     const mi =
@@ -1163,6 +1477,11 @@ async function handler(
       1;
 
 
+    const h4i =
+      h4.length -
+      1;
+
+
     const candle =
       m15[mi];
 
@@ -1171,19 +1490,15 @@ async function handler(
       h1[hi];
 
 
+    const h4Candle =
+      h4[h4i];
+
+
     const livePrice =
       num(
         ticker?.price,
         candle.close
       );
-
-
-    const atrNow =
-      m15ATR[mi];
-
-
-    const rsiNow =
-      m15RSI[mi];
 
 
     const ema20Now =
@@ -1194,6 +1509,14 @@ async function handler(
       m15EMA50[mi];
 
 
+    const rsiNow =
+      m15RSI[mi];
+
+
+    const atrNow =
+      m15ATR[mi];
+
+
     const h1EMA50Now =
       h1EMA50[hi];
 
@@ -1202,53 +1525,232 @@ async function handler(
       h1EMA200[hi];
 
 
+    const h4EMA20Now =
+      h4EMA20[h4i];
+
+
+    const h4EMA50Now =
+      h4EMA50[h4i];
+
+
     if (
 
-      atrNow === null ||
+      ema20Now ===
+        null ||
 
-      rsiNow === null ||
+      ema50Now ===
+        null ||
 
-      ema20Now === null ||
+      rsiNow ===
+        null ||
 
-      ema50Now === null ||
+      atrNow ===
+        null ||
 
-      h1EMA50Now === null ||
+      h1EMA50Now ===
+        null ||
 
-      h1EMA200Now === null
+      h1EMA200Now ===
+        null ||
+
+      h4EMA20Now ===
+        null ||
+
+      h4EMA50Now ===
+        null
 
     ) {
 
       throw new Error(
-        "Indicator calculation incomplete"
+        "Indicators are not ready"
       );
 
     }
 
 
     /* ======================================================
-       H1 TREND
+       TREND
     ====================================================== */
+
+    const h4Bullish =
+
+      h4EMA20Now >
+      h4EMA50Now &&
+
+      h4Candle.close >
+      h4EMA20Now;
+
+
+    const h4Bearish =
+
+      h4EMA20Now <
+      h4EMA50Now &&
+
+      h4Candle.close <
+      h4EMA20Now;
+
 
     const h1Bullish =
 
-      h1Candle.close >
+      h1EMA50Now >
       h1EMA200Now &&
 
-      h1EMA50Now >
+      h1Candle.close >
       h1EMA200Now;
 
 
     const h1Bearish =
 
-      h1Candle.close <
+      h1EMA50Now <
       h1EMA200Now &&
 
-      h1EMA50Now <
+      h1Candle.close <
       h1EMA200Now;
 
 
+    const bullishAlignment =
+
+      h4Bullish &&
+      h1Bullish;
+
+
+    const bearishAlignment =
+
+      h4Bearish &&
+      h1Bearish;
+
+
     /* ======================================================
-       ATR FILTER
+       M15 QUALITY
+    ====================================================== */
+
+    const metrics =
+      candleMetrics(
+        candle
+      );
+
+
+    const zoneInteraction =
+      recentZoneInteraction(
+
+        m15,
+
+        m15EMA20,
+
+        m15EMA50,
+
+        mi,
+
+        SETTINGS.pullbackLookback
+
+      );
+
+
+    const bullishCandle =
+
+      candle.close >
+      candle.open;
+
+
+    const bearishCandle =
+
+      candle.close <
+      candle.open;
+
+
+    const buyRejection =
+
+      bullishCandle &&
+
+      metrics.lowerWickPercent >=
+      SETTINGS.minRejectionWickPercent &&
+
+      metrics.closeLocation >=
+      SETTINGS.buyCloseLocation &&
+
+      candle.close >
+      ema20Now &&
+
+      candle.close >
+      ema50Now;
+
+
+    const sellRejection =
+
+      bearishCandle &&
+
+      metrics.upperWickPercent >=
+      SETTINGS.minRejectionWickPercent &&
+
+      metrics.closeLocation <=
+      SETTINGS.sellCloseLocation &&
+
+      candle.close <
+      ema20Now &&
+
+      candle.close <
+      ema50Now;
+
+
+    const bodyStrong =
+
+      metrics.bodyPercent >=
+      SETTINGS.minBodyPercent;
+
+
+    /* ======================================================
+       RSI WINDOW
+    ====================================================== */
+
+    const buyRsiOk =
+
+      rsiNow >=
+      SETTINGS.buyRsiMin &&
+
+      rsiNow <=
+      SETTINGS.buyRsiMax;
+
+
+    const sellRsiOk =
+
+      rsiNow >=
+      SETTINGS.sellRsiMin &&
+
+      rsiNow <=
+      SETTINGS.sellRsiMax;
+
+
+    /* ======================================================
+       STRETCH
+    ====================================================== */
+
+    const distanceFromEMA20 =
+
+      Math.abs(
+        candle.close -
+        ema20Now
+      );
+
+
+    const distanceFromEMA20ATR =
+
+      atrNow >
+      0
+
+        ? distanceFromEMA20 /
+          atrNow
+
+        : 999;
+
+
+    const notStretched =
+
+      distanceFromEMA20ATR <=
+      SETTINGS.maxDistanceFromEma20Atr;
+
+
+    /* ======================================================
+       VOLATILITY
     ====================================================== */
 
     const atrPercent =
@@ -1268,80 +1770,6 @@ async function handler(
 
 
     /* ======================================================
-       M15 CANDLE
-    ====================================================== */
-
-    const strength =
-      candleStrength(
-        candle
-      );
-
-
-    const strongEnough =
-
-      strength >=
-      SETTINGS.minBodyPercent;
-
-
-    const bullishCandle =
-
-      candle.close >
-      candle.open;
-
-
-    const bearishCandle =
-
-      candle.close <
-      candle.open;
-
-
-    /* ======================================================
-       PULLBACK
-    ====================================================== */
-
-    const pullback =
-      hadPullback(
-
-        m15,
-
-        m15EMA20,
-
-        m15EMA50,
-
-        mi,
-
-        SETTINGS.pullbackLookback
-
-      );
-
-
-    /* ======================================================
-       CONFIRMATION
-    ====================================================== */
-
-    const buyConfirmation =
-
-      bullishCandle &&
-
-      candle.close >
-      ema20Now &&
-
-      candle.close >
-      ema50Now;
-
-
-    const sellConfirmation =
-
-      bearishCandle &&
-
-      candle.close <
-      ema20Now &&
-
-      candle.close <
-      ema50Now;
-
-
-    /* ======================================================
        SIGNAL
     ====================================================== */
 
@@ -1355,16 +1783,17 @@ async function handler(
 
     if (
 
-      h1Bullish &&
+      bullishAlignment &&
 
-      pullback &&
+      zoneInteraction &&
 
-      buyConfirmation &&
+      buyRejection &&
 
-      rsiNow >
-      SETTINGS.buyRsi &&
+      bodyStrong &&
 
-      strongEnough &&
+      buyRsiOk &&
+
+      notStretched &&
 
       volatilityOk
 
@@ -1376,22 +1805,24 @@ async function handler(
 
       reasons.push(
 
-        "H1 price above EMA200",
+        "H4 and H1 trends are bullish",
 
-        "H1 EMA50 above EMA200",
+        "M15 pulled into EMA20/EMA50 zone",
 
-        "M15 pullback touched EMA zone",
+        "M15 produced bullish rejection",
 
-        "M15 bullish close above EMA20 and EMA50",
+        "Candle closed in top 25% of its range",
 
         `RSI ${round(
           rsiNow,
           1
-        )} > ${SETTINGS.buyRsi}`,
+        )} is inside BUY momentum window`,
 
-        "Strong M15 confirmation candle",
+        "Confirmation candle body is strong",
 
-        "BTC volatility filter passed"
+        "Entry is not stretched from EMA20",
+
+        "ATR volatility filter passed"
 
       );
 
@@ -1400,16 +1831,17 @@ async function handler(
 
     else if (
 
-      h1Bearish &&
+      bearishAlignment &&
 
-      pullback &&
+      zoneInteraction &&
 
-      sellConfirmation &&
+      sellRejection &&
 
-      rsiNow <
-      SETTINGS.sellRsi &&
+      bodyStrong &&
 
-      strongEnough &&
+      sellRsiOk &&
+
+      notStretched &&
 
       volatilityOk
 
@@ -1421,22 +1853,24 @@ async function handler(
 
       reasons.push(
 
-        "H1 price below EMA200",
+        "H4 and H1 trends are bearish",
 
-        "H1 EMA50 below EMA200",
+        "M15 pulled into EMA20/EMA50 zone",
 
-        "M15 pullback touched EMA zone",
+        "M15 produced bearish rejection",
 
-        "M15 bearish close below EMA20 and EMA50",
+        "Candle closed in bottom 25% of its range",
 
         `RSI ${round(
           rsiNow,
           1
-        )} < ${SETTINGS.sellRsi}`,
+        )} is inside SELL momentum window`,
 
-        "Strong M15 confirmation candle",
+        "Confirmation candle body is strong",
 
-        "BTC volatility filter passed"
+        "Entry is not stretched from EMA20",
+
+        "ATR volatility filter passed"
 
       );
 
@@ -1447,20 +1881,31 @@ async function handler(
 
       reasons.push(
 
-        h1Bullish
-          ? "H1 trend is bullish"
-          : h1Bearish
-            ? "H1 trend is bearish"
-            : "H1 trend is mixed"
+        bullishAlignment
+          ? "H4 + H1 bullish alignment"
+          : bearishAlignment
+            ? "H4 + H1 bearish alignment"
+            : "H4 and H1 are not aligned"
 
       );
 
 
       reasons.push(
 
-        pullback
-          ? "Recent M15 EMA pullback detected"
-          : "Waiting for M15 pullback"
+        zoneInteraction
+          ? "Recent M15 EMA pullback exists"
+          : "Waiting for M15 EMA pullback"
+
+      );
+
+
+      reasons.push(
+
+        buyRejection
+          ? "Bullish M15 rejection confirmed"
+          : sellRejection
+            ? "Bearish M15 rejection confirmed"
+            : "Waiting for strong M15 rejection"
 
       );
 
@@ -1477,11 +1922,21 @@ async function handler(
 
       reasons.push(
 
-        `M15 candle strength ${round(
-          strength *
+        `Candle body ${round(
+          metrics.bodyPercent *
           100,
           1
         )}%`
+
+      );
+
+
+      reasons.push(
+
+        `EMA20 distance ${round(
+          distanceFromEMA20ATR,
+          2
+        )} ATR`
 
       );
 
@@ -1526,21 +1981,14 @@ async function handler(
       "WAIT"
     ) {
 
-      /*
-         Use completed M15 close as strategy entry
-         reference.
-
-         In real execution the fill can differ slightly.
-      */
-
       entry =
         candle.close;
 
 
-      riskDistance =
-
-        atrNow *
-        SETTINGS.stopAtr;
+      const recentBars =
+        m15.slice(
+          -4
+        );
 
 
       if (
@@ -1548,47 +1996,92 @@ async function handler(
         "BUY"
       ) {
 
-        stopLoss =
+        const atrStop =
 
           entry -
-          riskDistance;
+          atrNow *
+          SETTINGS.stopAtr;
+
+
+        const swingStop =
+
+          recentSwingLow(
+            recentBars,
+            4
+          ) -
+
+          atrNow *
+          SETTINGS.structureBufferAtr;
+
+
+        stopLoss =
+          Math.min(
+            atrStop,
+            swingStop
+          );
+
+
+        riskDistance =
+
+          entry -
+          stopLoss;
 
 
         takeProfit1 =
 
           entry +
           riskDistance *
-          SETTINGS.tp1R;
+          SETTINGS.targetR;
 
 
         takeProfit2 =
-
-          entry +
-          riskDistance *
-          SETTINGS.tp2R;
+          takeProfit1;
 
       }
 
+
       else {
 
-        stopLoss =
+        const atrStop =
 
           entry +
-          riskDistance;
+          atrNow *
+          SETTINGS.stopAtr;
+
+
+        const swingStop =
+
+          recentSwingHigh(
+            recentBars,
+            4
+          ) +
+
+          atrNow *
+          SETTINGS.structureBufferAtr;
+
+
+        stopLoss =
+          Math.max(
+            atrStop,
+            swingStop
+          );
+
+
+        riskDistance =
+
+          stopLoss -
+          entry;
 
 
         takeProfit1 =
 
           entry -
           riskDistance *
-          SETTINGS.tp1R;
+          SETTINGS.targetR;
 
 
         takeProfit2 =
-
-          entry -
-          riskDistance *
-          SETTINGS.tp2R;
+          takeProfit1;
 
       }
 
@@ -1613,7 +2106,7 @@ async function handler(
           PRODUCT,
 
         strategy:
-          "H1 Trend + M15 Pullback",
+          "H4 + H1 Trend / M15 EMA Rejection",
 
         signal,
 
@@ -1631,54 +2124,56 @@ async function handler(
 
         price:
           round(
-            livePrice,
-            2
+            livePrice
           ),
 
 
         entry:
           round(
-            entry,
-            2
+            entry
           ),
 
         stopLoss:
           round(
-            stopLoss,
-            2
+            stopLoss
           ),
 
         takeProfit1:
           round(
-            takeProfit1,
-            2
+            takeProfit1
           ),
 
         takeProfit2:
           round(
-            takeProfit2,
-            2
+            takeProfit2
           ),
 
         riskDistance:
           round(
-            riskDistance,
-            2
+            riskDistance
           ),
 
 
         rr: {
 
           tp1:
-            SETTINGS.tp1R,
+            SETTINGS.targetR,
 
           tp2:
-            SETTINGS.tp2R
+            SETTINGS.targetR
 
         },
 
 
         trend: {
+
+          h4:
+
+            h4Bullish
+              ? "BULLISH"
+              : h4Bearish
+                ? "BEARISH"
+                : "NEUTRAL",
 
           h1:
 
@@ -1687,6 +2182,39 @@ async function handler(
               : h1Bearish
                 ? "BEARISH"
                 : "NEUTRAL",
+
+          aligned:
+
+            bullishAlignment
+              ? "BULLISH"
+              : bearishAlignment
+                ? "BEARISH"
+                : "NO"
+
+        },
+
+
+        h4: {
+
+          close:
+            round(
+              h4Candle.close
+            ),
+
+          ema20:
+            round(
+              h4EMA20Now
+            ),
+
+          ema50:
+            round(
+              h4EMA50Now
+            )
+
+        },
+
+
+        h1: {
 
           close:
             round(
@@ -1743,12 +2271,40 @@ async function handler(
 
           candleStrength:
             round(
-              strength *
+              metrics.bodyPercent *
               100,
               1
             ),
 
-          pullback
+          closeLocation:
+            round(
+              metrics.closeLocation *
+              100,
+              1
+            ),
+
+          lowerWickPercent:
+            round(
+              metrics.lowerWickPercent *
+              100,
+              1
+            ),
+
+          upperWickPercent:
+            round(
+              metrics.upperWickPercent *
+              100,
+              1
+            ),
+
+          distanceFromEMA20ATR:
+            round(
+              distanceFromEMA20ATR,
+              2
+            ),
+
+          pullback:
+            zoneInteraction
 
         },
 
@@ -1764,7 +2320,7 @@ async function handler(
   ) {
 
     console.error(
-      "BTC ENGINE ERROR:",
+      "BTC V2 ERROR:",
       error
     );
 
