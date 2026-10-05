@@ -1,19 +1,20 @@
 /* =========================================================
    MKAYFX US30 LIQUIDITY INTELLIGENCE
-   ALLTICK EDITION V1.1
+   ALLTICK FREE-PLAN OPTIMIZED V1.2
    /api/us30.js
 
-   FIXES IN THIS VERSION
-   ---------------------
-   - Uses AllTick index gateway:
-     quote-stock-b-api/kline
-
-   - Does NOT use new URL() for the AllTick request
-   - Uses encodeURIComponent()
-   - Uses TOKEN.trim()
-   - Reads raw response before JSON parsing
-   - Better HTTP / AllTick error messages
-   - Supports nested kline_data responses
+   CHANGES
+   -------
+   ✓ Only TWO AllTick requests per full analysis
+   ✓ M1 fetched directly
+   ✓ M15 fetched directly
+   ✓ M5 derived from M1
+   ✓ H1 derived from M15
+   ✓ H4 derived from M15
+   ✓ 10.5-second request spacing
+   ✓ 429 automatic retry
+   ✓ 90-second server cache
+   ✓ US30-specific liquidity model
 ========================================================= */
 
 
@@ -29,22 +30,45 @@ const TOKEN =
   ).trim();
 
 
-const GAP =
-  Math.max(
-    0,
-    Number(
-      process.env.ALLTICK_REQUEST_GAP_MS ||
-      1100
-    )
-  );
-
-
 const SYMBOL =
   "US30";
 
 
 const BASE =
   "https://quote.alltick.co/quote-stock-b-api/kline";
+
+
+/*
+   Free AllTick /kline:
+   1 request every 10 seconds.
+
+   Keep this above 10 seconds.
+*/
+
+const REQUEST_GAP_MS =
+  Math.max(
+
+    10_500,
+
+    Number(
+      process.env.ALLTICK_REQUEST_GAP_MS ||
+      10_500
+    )
+
+  );
+
+
+const RETRY_429_MS =
+  11_000;
+
+
+const CACHE_MS =
+  90_000;
+
+
+/* =========================================================
+   ALLTICK KLINE TYPES
+========================================================= */
 
 
 const K = {
@@ -57,9 +81,7 @@ const K = {
 
   H1: 5,
 
-  H4: 7,
-
-  D1: 8
+  H4: 7
 
 };
 
@@ -78,12 +100,12 @@ let CACHE = {
 };
 
 
-const CACHE_MS =
-  55_000;
+let IN_FLIGHT =
+  null;
 
 
 /* =========================================================
-   MAIN API
+   MAIN
 ========================================================= */
 
 
@@ -189,503 +211,42 @@ export default async function handler(
     }
 
 
-    /* =====================================================
-       ALLTICK DATA
-    ===================================================== */
-
-
-    const m1 =
-      await fetchK(
-        K.M1,
-        500
-      );
-
-
-    await sleep(
-      GAP
-    );
-
-
-    const m5 =
-      await fetchK(
-        K.M5,
-        500
-      );
-
-
-    await sleep(
-      GAP
-    );
-
-
-    const m15 =
-      await fetchK(
-        K.M15,
-        500
-      );
-
-
-    await sleep(
-      GAP
-    );
-
-
-    const h1 =
-      await fetchK(
-        K.H1,
-        500
-      );
-
-
-    /* =====================================================
-       DATA VALIDATION
-    ===================================================== */
-
+    /*
+       Prevent two requests hitting this same warm
+       Vercel instance at the same time.
+    */
 
     if (
-
-      m1.length <
-      80
-
-      ||
-
-      m5.length <
-      80
-
-      ||
-
-      m15.length <
-      80
-
-      ||
-
-      h1.length <
-      40
-
+      IN_FLIGHT
     ) {
 
-      throw new Error(
+      const data =
+        await IN_FLIGHT;
 
-        `Not enough AllTick data: ` +
 
-        `M1=${m1.length}, ` +
+      return res
+        .status(200)
+        .json({
 
-        `M5=${m5.length}, ` +
+          ...data,
 
-        `M15=${m15.length}, ` +
+          cached:
+            true,
 
-        `H1=${h1.length}`
+          sharedRequest:
+            true
 
-      );
+        });
 
     }
 
 
-    const now =
-      new Date();
+    IN_FLIGHT =
+      buildAnalysis();
 
 
-    const latest =
-      m1.at(-1);
-
-
-    const price =
-      latest.close;
-
-
-    /* =====================================================
-       ATR
-    ===================================================== */
-
-
-    const atr1 =
-      last(
-        atrSeries(
-          m1,
-          14
-        )
-      );
-
-
-    const atr5 =
-      last(
-        atrSeries(
-          m5,
-          14
-        )
-      );
-
-
-    const atr15 =
-      last(
-        atrSeries(
-          m15,
-          14
-        )
-      );
-
-
-    const atrH1 =
-      last(
-        atrSeries(
-          h1,
-          14
-        )
-      );
-
-
-    /* =====================================================
-       MULTI-TIMEFRAME STRUCTURE
-    ===================================================== */
-
-
-    const frames = {
-
-      m1:
-        frame(
-          m1
-        ),
-
-      m5:
-        frame(
-          m5
-        ),
-
-      m15:
-        frame(
-          m15
-        ),
-
-      h1:
-        frame(
-          h1
-        ),
-
-      h4:
-        frame(
-          resample(
-            h1,
-            240
-          )
-        )
-
-    };
-
-
-    /* =====================================================
-       US SESSION INTELLIGENCE
-    ===================================================== */
-
-
-    const sessions =
-      buildSessions(
-        m1,
-        m5,
-        now
-      );
-
-
-    /* =====================================================
-       REFERENCE LIQUIDITY
-    ===================================================== */
-
-
-    const refs =
-      referenceLevels(
-
-        h1,
-
-        m15,
-
-        price,
-
-        atr15
-
-      );
-
-
-    /* =====================================================
-       FOOTPRINT / DELTA PROXY
-    ===================================================== */
-
-
-    const flow =
-      footprintProxy(
-
-        m1,
-
-        atr1 ||
-        atr5 / 4
-
-      );
-
-
-    /* =====================================================
-       VOLUME PROFILE
-    ===================================================== */
-
-
-    const profile =
-      volumeProfile(
-
-        m1.slice(
-          -420
-        ),
-
-        36
-
-      );
-
-
-    /* =====================================================
-       HISTORICAL NY SWEEP MODEL
-    ===================================================== */
-
-
-    const history =
-      historicalNySweeps(
-        m15
-      );
-
-
-    /* =====================================================
-       LIQUIDITY RANKING
-    ===================================================== */
-
-
-    const pools =
-      rankPools({
-
-        price,
-
-        atr5,
-
-        atr15,
-
-        atrH1,
-
-        frames,
-
-        sessions,
-
-        refs,
-
-        flow,
-
-        profile,
-
-        history,
-
-        m1
-
-      });
-
-
-    /* =====================================================
-       TRAP WINDOWS
-    ===================================================== */
-
-
-    const traps =
-      trapWindows({
-
-        sessions,
-
-        pools,
-
-        flow,
-
-        price,
-
-        atr15,
-
-        now
-
-      });
-
-
-    /* =====================================================
-       MARKET REGIME
-    ===================================================== */
-
-
-    const regime =
-      marketRegime(
-
-        frames,
-
-        m5,
-
-        atr5,
-
-        flow
-
-      );
-
-
-    /* =====================================================
-       RESPONSE
-    ===================================================== */
-
-
-    const output = {
-
-      ok: true,
-
-
-      symbol:
-        "US30",
-
-
-      providerSymbol:
-        SYMBOL,
-
-
-      generatedAt:
-        now.toISOString(),
-
-
-      latestBarTime:
-        latest.time
-          .toISOString(),
-
-
-      dataAgeSeconds:
-        Math.max(
-
-          0,
-
-          Math.floor(
-
-            (
-              Date.now()
-
-              -
-
-              latest.time
-                .getTime()
-            )
-
-            /
-
-            1000
-
-          )
-
-        ),
-
-
-      price:
-        round(
-          price,
-          2
-        ),
-
-
-      source: {
-
-        provider:
-          "AllTick",
-
-        endpoint:
-          "quote-stock-b-api/kline",
-
-        symbol:
-          SYMBOL,
-
-        m1Bars:
-          m1.length,
-
-        m5Bars:
-          m5.length,
-
-        m15Bars:
-          m15.length,
-
-        h1Bars:
-          h1.length,
-
-        trueBidAskFootprint:
-          false
-
-      },
-
-
-      sessions,
-
-
-      market: {
-
-        atr1:
-          round(
-            atr1,
-            2
-          ),
-
-        atr5:
-          round(
-            atr5,
-            2
-          ),
-
-        atr15:
-          round(
-            atr15,
-            2
-          ),
-
-        atrH1:
-          round(
-            atrH1,
-            2
-          ),
-
-        regime
-
-      },
-
-
-      structure:
-        frames,
-
-
-      referenceLevels:
-        refs,
-
-
-      footprint:
-        flow,
-
-
-      volumeProfile:
-        profile,
-
-
-      historicalSweeps:
-        history,
-
-
-      liquidityPools:
-        pools,
-
-
-      trapWindows:
-        traps,
-
-
-      warnings: [
-
-        "Sweep scores are heuristic rankings, not guaranteed probabilities.",
-
-        "Projected reversal zones are estimates.",
-
-        "Acceptance beyond a projected zone can mean continuation instead of reversal.",
-
-        "AllTick US30 volume is treated as a footprint-style proxy, not true centralized bid/ask aggressor volume."
-
-      ]
-
-    };
+    const output =
+      await IN_FLIGHT;
 
 
     CACHE = {
@@ -699,6 +260,10 @@ export default async function handler(
     };
 
 
+    IN_FLIGHT =
+      null;
+
+
     return res
       .status(200)
       .json(
@@ -709,6 +274,10 @@ export default async function handler(
   } catch (
     error
   ) {
+
+    IN_FLIGHT =
+      null;
+
 
     console.error(
       "US30 API ERROR:",
@@ -740,7 +309,619 @@ export default async function handler(
 
 
 /* =========================================================
-   ALLTICK KLINE
+   BUILD ANALYSIS
+========================================================= */
+
+
+async function buildAnalysis() {
+
+
+  /* =====================================================
+     REQUEST #1 — M1
+
+     500 × 1m ≈ 8.3 hours
+     Used for:
+     - live price
+     - footprint
+     - microstructure
+     - M5 construction
+  ===================================================== */
+
+
+  const m1 =
+    await fetchKWithRetry(
+
+      K.M1,
+
+      500
+
+    );
+
+
+  /*
+     Free plan spacing.
+  */
+
+  await sleep(
+    REQUEST_GAP_MS
+  );
+
+
+  /* =====================================================
+     REQUEST #2 — M15
+
+     500 × 15m ≈ 5.2 days
+     Used for:
+     - historical NY sessions
+     - liquidity
+     - H1 construction
+     - H4 construction
+  ===================================================== */
+
+
+  const m15 =
+    await fetchKWithRetry(
+
+      K.M15,
+
+      500
+
+    );
+
+
+  /* =====================================================
+     DERIVE OTHER TIMEFRAMES
+
+     NO extra AllTick calls.
+  ===================================================== */
+
+
+  const m5 =
+    resample(
+
+      m1,
+
+      5
+
+    );
+
+
+  const h1 =
+    resample(
+
+      m15,
+
+      60
+
+    );
+
+
+  const h4 =
+    resample(
+
+      m15,
+
+      240
+
+    );
+
+
+  /* =====================================================
+     VALIDATION
+  ===================================================== */
+
+
+  if (
+    m1.length <
+    100
+  ) {
+
+    throw new Error(
+
+      `Not enough M1 data: ${m1.length} bars`
+
+    );
+
+  }
+
+
+  if (
+    m15.length <
+    100
+  ) {
+
+    throw new Error(
+
+      `Not enough M15 data: ${m15.length} bars`
+
+    );
+
+  }
+
+
+  const now =
+    new Date();
+
+
+  const latest =
+    m1.at(-1);
+
+
+  const price =
+    latest.close;
+
+
+  /* =====================================================
+     ATR
+  ===================================================== */
+
+
+  const atr1 =
+    last(
+      atrSeries(
+        m1,
+        14
+      )
+    );
+
+
+  const atr5 =
+    last(
+      atrSeries(
+        m5,
+        14
+      )
+    );
+
+
+  const atr15 =
+    last(
+      atrSeries(
+        m15,
+        14
+      )
+    );
+
+
+  const atrH1 =
+    last(
+      atrSeries(
+        h1,
+        14
+      )
+    );
+
+
+  /* =====================================================
+     STRUCTURE
+  ===================================================== */
+
+
+  const frames = {
+
+    m1:
+      frame(
+        m1
+      ),
+
+    m5:
+      frame(
+        m5
+      ),
+
+    m15:
+      frame(
+        m15
+      ),
+
+    h1:
+      frame(
+        h1
+      ),
+
+    h4:
+      frame(
+        h4
+      )
+
+  };
+
+
+  /* =====================================================
+     SESSIONS
+  ===================================================== */
+
+
+  const sessions =
+    buildSessions(
+
+      m1,
+
+      m15,
+
+      now
+
+    );
+
+
+  /* =====================================================
+     REFERENCE LEVELS
+  ===================================================== */
+
+
+  const refs =
+    referenceLevels(
+
+      h1,
+
+      m15,
+
+      price,
+
+      atr15
+
+    );
+
+
+  /* =====================================================
+     FOOTPRINT
+  ===================================================== */
+
+
+  const flow =
+    footprintProxy(
+
+      m1,
+
+      atr1 ||
+      atr5 / 4
+
+    );
+
+
+  /* =====================================================
+     VOLUME PROFILE
+  ===================================================== */
+
+
+  const profile =
+    volumeProfile(
+
+      m1.slice(
+        -420
+      ),
+
+      36
+
+    );
+
+
+  /* =====================================================
+     NY SWEEP HISTORY
+  ===================================================== */
+
+
+  const history =
+    historicalNySweeps(
+      m15
+    );
+
+
+  /* =====================================================
+     LIQUIDITY RANKING
+  ===================================================== */
+
+
+  const pools =
+    rankPools({
+
+      price,
+
+      atr5,
+
+      atr15,
+
+      atrH1,
+
+      frames,
+
+      sessions,
+
+      refs,
+
+      flow,
+
+      profile,
+
+      history
+
+    });
+
+
+  /* =====================================================
+     TRAPS
+  ===================================================== */
+
+
+  const traps =
+    trapWindows({
+
+      sessions,
+
+      pools,
+
+      flow,
+
+      price,
+
+      atr15
+
+    });
+
+
+  /* =====================================================
+     REGIME
+  ===================================================== */
+
+
+  const regime =
+    marketRegime(
+
+      frames,
+
+      m5,
+
+      atr5,
+
+      flow
+
+    );
+
+
+  /* =====================================================
+     OUTPUT
+  ===================================================== */
+
+
+  return {
+
+    ok: true,
+
+
+    symbol:
+      "US30",
+
+
+    providerSymbol:
+      SYMBOL,
+
+
+    generatedAt:
+      now.toISOString(),
+
+
+    latestBarTime:
+      latest.time
+        .toISOString(),
+
+
+    dataAgeSeconds:
+      Math.max(
+
+        0,
+
+        Math.floor(
+
+          (
+            Date.now()
+
+            -
+
+            latest.time
+              .getTime()
+          )
+
+          /
+
+          1000
+
+        )
+
+      ),
+
+
+    price:
+      round(
+        price,
+        2
+      ),
+
+
+    source: {
+
+      provider:
+        "AllTick",
+
+      endpoint:
+        "quote-stock-b-api/kline",
+
+      requestMode:
+        "FREE_PLAN_OPTIMIZED",
+
+      externalRequests:
+        2,
+
+      m1Bars:
+        m1.length,
+
+      derivedM5Bars:
+        m5.length,
+
+      m15Bars:
+        m15.length,
+
+      derivedH1Bars:
+        h1.length,
+
+      derivedH4Bars:
+        h4.length,
+
+      trueBidAskFootprint:
+        false
+
+    },
+
+
+    sessions,
+
+
+    market: {
+
+      atr1:
+        round(
+          atr1,
+          2
+        ),
+
+      atr5:
+        round(
+          atr5,
+          2
+        ),
+
+      atr15:
+        round(
+          atr15,
+          2
+        ),
+
+      atrH1:
+        round(
+          atrH1,
+          2
+        ),
+
+      regime
+
+    },
+
+
+    structure:
+      frames,
+
+
+    referenceLevels:
+      refs,
+
+
+    footprint:
+      flow,
+
+
+    volumeProfile:
+      profile,
+
+
+    historicalSweeps:
+      history,
+
+
+    liquidityPools:
+      pools,
+
+
+    trapWindows:
+      traps,
+
+
+    warnings: [
+
+      "AllTick Free-plan optimized: only two historical K-line requests are made per full analysis.",
+
+      "Sweep scores are heuristic rankings, not guaranteed probabilities.",
+
+      "Projected reversal-watch zones are estimates.",
+
+      "Acceptance beyond a projected zone can indicate continuation.",
+
+      "US30 footprint and delta are OHLCV/activity proxies, not centralized bid/ask aggressor flow."
+
+    ]
+
+  };
+
+}
+
+
+/* =========================================================
+   ALLTICK REQUEST WITH 429 RETRY
+========================================================= */
+
+
+async function fetchKWithRetry(
+  type,
+  count
+) {
+
+  try {
+
+    return await fetchK(
+
+      type,
+
+      count
+
+    );
+
+
+  } catch (
+    error
+  ) {
+
+    const message =
+      String(
+        error?.message ||
+        ""
+      );
+
+
+    if (
+      !message.includes(
+        "429"
+      )
+    ) {
+
+      throw error;
+
+    }
+
+
+    /*
+       Wait for the Free plan window
+       and try once more.
+    */
+
+
+    await sleep(
+      RETRY_429_MS
+    );
+
+
+    return await fetchK(
+
+      type,
+
+      count
+
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ALLTICK REQUEST
 ========================================================= */
 
 
@@ -752,9 +933,17 @@ async function fetchK(
   const query = {
 
     trace:
-      `mkayfx-${Date.now()}-${Math.random()
+
+      `mkayfx-` +
+
+      `${Date.now()}-` +
+
+      Math.random()
         .toString(36)
-        .slice(2,9)}`,
+        .slice(
+          2,
+          9
+        ),
 
     data: {
 
@@ -781,13 +970,6 @@ async function fetchK(
   };
 
 
-  /* =====================================================
-     IMPORTANT FIX
-
-     We build the URL manually instead of using new URL().
-  ===================================================== */
-
-
   const requestUrl =
 
     `${BASE}` +
@@ -797,7 +979,9 @@ async function fetchK(
     )}` +
 
     `&query=${encodeURIComponent(
-      JSON.stringify(query)
+      JSON.stringify(
+        query
+      )
     )}`;
 
 
@@ -837,7 +1021,11 @@ async function fetchK(
 
     throw new Error(
 
-      `AllTick network request failed: ${error.message}`
+      `AllTick network error: ${
+
+        error.message
+
+      }`
 
     );
 
@@ -846,6 +1034,32 @@ async function fetchK(
 
   const raw =
     await response.text();
+
+
+  /* =====================================================
+     RATE LIMIT
+  ===================================================== */
+
+
+  if (
+    response.status ===
+    429
+  ) {
+
+    throw new Error(
+
+      `AllTick HTTP 429: ${
+
+        raw.slice(
+          0,
+          200
+        )
+
+      }`
+
+    );
+
+  }
 
 
   /* =====================================================
@@ -859,21 +1073,18 @@ async function fetchK(
 
     throw new Error(
 
-      `AllTick HTTP ${response.status}: ` +
+      `AllTick HTTP ${response.status}: ${
 
-      raw.slice(
-        0,
-        250
-      )
+        raw.slice(
+          0,
+          250
+        )
+
+      }`
 
     );
 
   }
-
-
-  /* =====================================================
-     JSON PARSE
-  ===================================================== */
 
 
   let json;
@@ -891,21 +1102,18 @@ async function fetchK(
 
     throw new Error(
 
-      `AllTick returned non-JSON data: ` +
+      `AllTick returned invalid JSON: ${
 
-      raw.slice(
-        0,
-        250
-      )
+        raw.slice(
+          0,
+          250
+        )
+
+      }`
 
     );
 
   }
-
-
-  /* =====================================================
-     ALLTICK ERROR
-  ===================================================== */
 
 
   if (
@@ -935,16 +1143,15 @@ async function fetchK(
   }
 
 
-  /* =====================================================
-     KLINE LIST
-  ===================================================== */
-
-
   let list =
-    json?.data?.kline_list;
+    json
+      ?.data
+      ?.kline_list;
 
 
-  /* Some AllTick responses can contain nested kline_data. */
+  /*
+     Handle nested response layout.
+  */
 
 
   if (
@@ -960,7 +1167,8 @@ async function fetchK(
     &&
 
     Array.isArray(
-      list[0]?.kline_data
+      list[0]
+        ?.kline_data
     )
 
   ) {
@@ -985,12 +1193,14 @@ async function fetchK(
 
     throw new Error(
 
-      `AllTick response missing kline_list. Response: ` +
+      `AllTick response missing kline_list: ${
 
-      raw.slice(
-        0,
-        250
-      )
+        raw.slice(
+          0,
+          250
+        )
+
+      }`
 
     );
 
@@ -1049,8 +1259,10 @@ async function fetchK(
 
             time:
               new Date(
+
                 timestamp *
                 1000
+
               ),
 
             open,
@@ -1062,22 +1274,32 @@ async function fetchK(
             close,
 
             volume:
+
               Number.isFinite(
                 volume
               )
+
                 ?
-                  volume
+
+                volume
+
                 :
-                  0,
+
+                0,
 
             turnover:
+
               Number.isFinite(
                 turnover
               )
+
                 ?
-                  turnover
+
+                turnover
+
                 :
-                  0
+
+                0
 
           };
 
@@ -1088,7 +1310,8 @@ async function fetchK(
         candle =>
 
           Number.isFinite(
-            candle.time.getTime()
+            candle.time
+              .getTime()
           )
 
           &&
@@ -1133,7 +1356,7 @@ async function fetchK(
 
     throw new Error(
 
-      `AllTick returned zero valid candles for ${SYMBOL}, kline_type=${type}`
+      `AllTick returned zero valid ${SYMBOL} candles for kline type ${type}`
 
     );
 
@@ -1146,7 +1369,7 @@ async function fetchK(
 
 
 /* =========================================================
-   DELAY
+   WAIT
 ========================================================= */
 
 
@@ -1168,7 +1391,7 @@ function sleep(
 
 
 /* =========================================================
-   RESAMPLING
+   RESAMPLE
 ========================================================= */
 
 
@@ -1182,7 +1405,7 @@ function resample(
     60_000;
 
 
-  const map =
+  const groups =
     new Map();
 
 
@@ -1209,12 +1432,12 @@ function resample(
 
 
     if (
-      !map.has(
+      !groups.has(
         key
       )
     ) {
 
-      map.set(
+      groups.set(
         key,
         {
 
@@ -1239,7 +1462,8 @@ function resample(
             bar.volume,
 
           turnover:
-            bar.turnover
+            bar.turnover ||
+            0
 
         }
       );
@@ -1248,7 +1472,7 @@ function resample(
     } else {
 
       const current =
-        map.get(
+        groups.get(
           key
         );
 
@@ -1282,7 +1506,8 @@ function resample(
 
 
       current.turnover +=
-        bar.turnover;
+        bar.turnover ||
+        0;
 
     }
 
@@ -1291,7 +1516,7 @@ function resample(
 
   return [
 
-    ...map.values()
+    ...groups.values()
 
   ]
     .sort(
@@ -1339,21 +1564,21 @@ function ema(
 
 
   for (
-    let i = 1;
-    i <
+    let index = 1;
+    index <
       values.length;
-    i++
+    index++
   ) {
 
     output.push(
 
-      values[i] *
+      values[index] *
       multiplier
 
       +
 
       output[
-        i - 1
+        index - 1
       ]
 
       *
@@ -1402,15 +1627,19 @@ function rsi(
 
 
   for (
-    let i = 1;
-    i <= period;
-    i++
+    let index = 1;
+    index <= period;
+    index++
   ) {
 
     const change =
-      values[i] -
+
+      values[index]
+
+      -
+
       values[
-        i - 1
+        index - 1
       ];
 
 
@@ -1439,19 +1668,23 @@ function rsi(
 
 
   for (
-    let i =
+    let index =
       period + 1;
 
-    i <
+    index <
       values.length;
 
-    i++
+    index++
   ) {
 
     const change =
-      values[i] -
+
+      values[index]
+
+      -
+
       values[
-        i - 1
+        index - 1
       ];
 
 
@@ -1513,7 +1746,7 @@ function rsi(
   }
 
 
-  const relativeStrength =
+  const rs =
     gain /
     loss;
 
@@ -1527,7 +1760,7 @@ function rsi(
     100 /
     (
       1 +
-      relativeStrength
+      rs
     )
 
   );
@@ -1554,25 +1787,28 @@ function atrSeries(
   }
 
 
-  const trueRanges =
+  const values =
     [];
 
 
   for (
-    let i = 0;
-    i <
+    let index = 0;
+    index <
       bars.length;
-    i++
+    index++
   ) {
 
     if (
-      i === 0
+      index === 0
     ) {
 
-      trueRanges.push(
+      values.push(
 
-        bars[i].high -
-        bars[i].low
+        bars[index].high
+
+        -
+
+        bars[index].low
 
       );
 
@@ -1584,27 +1820,33 @@ function atrSeries(
 
     const previousClose =
       bars[
-        i - 1
+        index - 1
       ].close;
 
 
-    trueRanges.push(
+    values.push(
 
       Math.max(
 
-        bars[i].high -
-        bars[i].low,
+        bars[index].high -
+        bars[index].low,
 
         Math.abs(
 
-          bars[i].high -
+          bars[index].high
+
+          -
+
           previousClose
 
         ),
 
         Math.abs(
 
-          bars[i].low -
+          bars[index].low
+
+          -
+
           previousClose
 
         )
@@ -1617,8 +1859,11 @@ function atrSeries(
 
 
   return ema(
-    trueRanges,
+
+    values,
+
     period
+
   );
 
 }
@@ -1631,7 +1876,7 @@ function atrSeries(
 
 function pivots(
   bars,
-  pivot = 3,
+  size = 3,
   lookback = 180
 ) {
 
@@ -1646,7 +1891,7 @@ function pivots(
   const start =
     Math.max(
 
-      pivot,
+      size,
 
       bars.length -
       lookback
@@ -1655,47 +1900,44 @@ function pivots(
 
 
   for (
-    let i =
-      start;
-
-    i <
+    let index = start;
+    index <
       bars.length -
-      pivot;
-
-    i++
+      size;
+    index++
   ) {
 
-    let isHigh =
+    let highPivot =
       true;
 
 
-    let isLow =
+    let lowPivot =
       true;
 
 
     for (
       let offset = 1;
-      offset <= pivot;
+      offset <= size;
       offset++
     ) {
 
       if (
 
-        bars[i].high <=
+        bars[index].high <=
         bars[
-          i - offset
+          index - offset
         ].high
 
         ||
 
-        bars[i].high <
+        bars[index].high <
         bars[
-          i + offset
+          index + offset
         ].high
 
       ) {
 
-        isHigh =
+        highPivot =
           false;
 
       }
@@ -1703,21 +1945,21 @@ function pivots(
 
       if (
 
-        bars[i].low >=
+        bars[index].low >=
         bars[
-          i - offset
+          index - offset
         ].low
 
         ||
 
-        bars[i].low >
+        bars[index].low >
         bars[
-          i + offset
+          index + offset
         ].low
 
       ) {
 
-        isLow =
+        lowPivot =
           false;
 
       }
@@ -1726,16 +1968,16 @@ function pivots(
 
 
     if (
-      isHigh
+      highPivot
     ) {
 
       highs.push({
 
         price:
-          bars[i].high,
+          bars[index].high,
 
         time:
-          bars[i].time
+          bars[index].time
 
       });
 
@@ -1743,16 +1985,16 @@ function pivots(
 
 
     if (
-      isLow
+      lowPivot
     ) {
 
       lows.push({
 
         price:
-          bars[i].low,
+          bars[index].low,
 
         time:
-          bars[i].time
+          bars[index].time
 
       });
 
@@ -1773,11 +2015,11 @@ function pivots(
 
 
 /* =========================================================
-   MARKET STRUCTURE
+   STRUCTURE
 ========================================================= */
 
 
-function structure(
+function detectStructure(
   bars
 ) {
 
@@ -1853,8 +2095,7 @@ function structure(
 
 
   const close =
-    bars.at(-1)
-      .close;
+    bars.at(-1).close;
 
 
   let event =
@@ -1959,7 +2200,7 @@ function structure(
 
 
 /* =========================================================
-   TIMEFRAME ANALYSIS
+   FRAME
 ========================================================= */
 
 
@@ -1998,8 +2239,12 @@ function frame(
         200,
 
         Math.max(
+
           20,
-          closes.length - 1
+
+          closes.length -
+          1
+
         )
 
       )
@@ -2007,8 +2252,8 @@ function frame(
     );
 
 
-  const structureData =
-    structure(
+  const structure =
+    detectStructure(
       bars
     );
 
@@ -2044,10 +2289,7 @@ function frame(
 
     last(
       ema20
-    )
-
-    >
-
+    ) >
     last(
       ema50
     )
@@ -2065,10 +2307,7 @@ function frame(
 
     last(
       ema50
-    )
-
-    >
-
+    ) >
     last(
       ema200
     )
@@ -2105,7 +2344,7 @@ function frame(
 
 
   if (
-    structureData.bias ===
+    structure.bias ===
     "BULLISH"
   ) {
 
@@ -2116,7 +2355,7 @@ function frame(
 
 
   if (
-    structureData.bias ===
+    structure.bias ===
     "BEARISH"
   ) {
 
@@ -2128,9 +2367,13 @@ function frame(
 
   score =
     clamp(
+
       score,
+
       -100,
+
       100
+
     );
 
 
@@ -2215,8 +2458,7 @@ function frame(
       ),
 
 
-    structure:
-      structureData
+    structure
 
   };
 
@@ -2272,7 +2514,7 @@ function zoneParts(
       );
 
 
-  const object = {};
+  const result = {};
 
 
   for (
@@ -2284,7 +2526,7 @@ function zoneParts(
       "literal"
     ) {
 
-      object[
+      result[
         part.type
       ] =
         part.value;
@@ -2317,32 +2559,32 @@ function zoneParts(
 
     year:
       Number(
-        object.year
+        result.year
       ),
 
     month:
       Number(
-        object.month
+        result.month
       ),
 
     day:
       Number(
-        object.day
+        result.day
       ),
 
     hour:
       Number(
-        object.hour
+        result.hour
       ),
 
     minute:
       Number(
-        object.minute
+        result.minute
       ),
 
     weekday:
       weekdays[
-        object.weekday
+        result.weekday
       ]
 
   };
@@ -2409,9 +2651,13 @@ function dateKey(
 
     `${parts.year}-` +
 
-    `${pad(parts.month)}-` +
+    `${pad(
+      parts.month
+    )}-` +
 
-    `${pad(parts.day)}`
+    `${pad(
+      parts.day
+    )}`
 
   );
 
@@ -2450,8 +2696,12 @@ function windowRange(
 
 
     const minute =
+
       parts.hour *
-      60 +
+      60
+
+      +
+
       parts.minute;
 
 
@@ -2503,12 +2753,11 @@ function windowRange(
   }
 
 
-  const keys = [
-
-    ...groups.keys()
-
-  ]
-    .sort();
+  const keys =
+    [
+      ...groups.keys()
+    ]
+      .sort();
 
 
   const key =
@@ -2541,7 +2790,7 @@ function windowRange(
 
 
   if (
-    !rows.length
+    !rows?.length
   ) {
 
     return null;
@@ -2622,7 +2871,7 @@ function windowRange(
 
 
 /* =========================================================
-   SESSION TRANSITION
+   SESSION EVENT
 ========================================================= */
 
 
@@ -2633,7 +2882,7 @@ function nextTransition(
   timezone
 ) {
 
-  const state =
+  const sessionState =
     date => {
 
       const parts =
@@ -2647,8 +2896,12 @@ function nextTransition(
 
 
       const minute =
+
         parts.hour *
-        60 +
+        60
+
+        +
+
         parts.minute;
 
 
@@ -2677,61 +2930,66 @@ function nextTransition(
     };
 
 
-  let previousState =
-    state(
+  let previous =
+    sessionState(
       now
     );
 
 
   for (
-    let minuteOffset = 1;
-    minuteOffset <= 10080;
-    minuteOffset++
+    let offset = 1;
+    offset <= 10080;
+    offset++
   ) {
 
-    const nextDate =
+    const date =
       new Date(
 
         now.getTime()
 
         +
 
-        minuteOffset *
+        offset *
         60_000
 
       );
 
 
-    const nextState =
-      state(
-        nextDate
+    const current =
+      sessionState(
+        date
       );
 
 
     if (
-      nextState !==
-      previousState
+      current !==
+      previous
     ) {
 
       return {
 
         type:
-          nextState
+
+          current
+
             ?
-              "OPEN"
+
+            "OPEN"
+
             :
-              "CLOSE",
+
+            "CLOSE",
 
         time:
-          nextDate
+          date
 
       };
 
     }
 
 
-    previousState =
-      nextState;
+    previous =
+      current;
 
   }
 
@@ -2761,7 +3019,7 @@ function nextTransition(
 
 function buildSessions(
   m1,
-  m5,
+  m15,
   now
 ) {
 
@@ -2783,7 +3041,10 @@ function buildSessions(
 
       end:
         9 * 60 +
-        30
+        30,
+
+      source:
+        m1
 
     },
 
@@ -2804,7 +3065,10 @@ function buildSessions(
         30,
 
       end:
-        16 * 60
+        16 * 60,
+
+      source:
+        m15
 
     },
 
@@ -2824,7 +3088,10 @@ function buildSessions(
         15 * 60,
 
       end:
-        16 * 60
+        16 * 60,
+
+      source:
+        m15
 
     },
 
@@ -2844,7 +3111,10 @@ function buildSessions(
         8 * 60,
 
       end:
-        17 * 60
+        17 * 60,
+
+      source:
+        m15
 
     }
 
@@ -2879,8 +3149,12 @@ function buildSessions(
 
 
       const minute =
+
         local.hour *
-        60 +
+        60
+
+        +
+
         local.minute;
 
 
@@ -2906,11 +3180,16 @@ function buildSessions(
 
 
       let phase =
+
         active
+
           ?
-            "ACTIVE"
+
+          "ACTIVE"
+
           :
-            "CLOSED";
+
+          "CLOSED";
 
 
       if (
@@ -2996,6 +3275,7 @@ function buildSessions(
 
         phase,
 
+
         localTime:
           timeInZone(
 
@@ -3005,36 +3285,32 @@ function buildSessions(
 
           ),
 
+
         openLocal:
           minuteLabel(
             definition.start
           ),
+
 
         closeLocal:
           minuteLabel(
             definition.end
           ),
 
+
         nextEvent:
           transition.type,
+
 
         nextEventAt:
           transition.time
             .toISOString(),
 
+
         range:
           windowRange(
 
-            definition.id ===
-            "premarket"
-
-              ?
-
-              m1
-
-              :
-
-              m5,
+            definition.source,
 
             definition.timezone,
 
@@ -3053,7 +3329,7 @@ function buildSessions(
 
 
 /* =========================================================
-   REFERENCE LIQUIDITY
+   REFERENCE LEVELS
 ========================================================= */
 
 
@@ -3065,18 +3341,8 @@ function referenceLevels(
 ) {
 
   const previousDay =
-    windowRange(
-
-      h1,
-
-      "America/New_York",
-
-      0,
-
-      24 * 60,
-
-      "previous"
-
+    previousNyDayRange(
+      m15
     );
 
 
@@ -3141,7 +3407,7 @@ function referenceLevels(
     );
 
 
-  const equals =
+  const equal =
     equalClusters(
 
       m15,
@@ -3151,7 +3417,7 @@ function referenceLevels(
     );
 
 
-  const swingData =
+  const swing =
     pivots(
 
       h1,
@@ -3163,21 +3429,17 @@ function referenceLevels(
     );
 
 
-  const roundStep =
-    100;
-
-
-  const roundBase =
+  const base =
     Math.round(
 
       price /
-      roundStep
+      100
 
     )
 
     *
 
-    roundStep;
+    100;
 
 
   return {
@@ -3194,15 +3456,15 @@ function referenceLevels(
 
 
     equalHighs:
-      equals.highs,
+      equal.highs,
 
 
     equalLows:
-      equals.lows,
+      equal.lows,
 
 
     h1Highs:
-      swingData.highs
+      swing.highs
 
         .slice(
           -5
@@ -3220,7 +3482,7 @@ function referenceLevels(
 
 
     h1Lows:
-      swingData.lows
+      swing.lows
 
         .slice(
           -5
@@ -3239,21 +3501,171 @@ function referenceLevels(
 
     roundNumbers: [
 
-      roundBase -
+      base -
       200,
 
-      roundBase -
+      base -
       100,
 
-      roundBase,
+      base,
 
-      roundBase +
+      base +
       100,
 
-      roundBase +
+      base +
       200
 
     ]
+
+  };
+
+}
+
+
+function previousNyDayRange(
+  bars
+) {
+
+  const groups =
+    new Map();
+
+
+  for (
+    const bar of bars
+  ) {
+
+    const parts =
+      nyParts(
+        bar.time
+      );
+
+
+    const key =
+      dateKey(
+        parts
+      );
+
+
+    if (
+      !groups.has(
+        key
+      )
+    ) {
+
+      groups.set(
+        key,
+        []
+      );
+
+    }
+
+
+    groups
+      .get(
+        key
+      )
+      .push(
+        bar
+      );
+
+  }
+
+
+  const today =
+    dateKey(
+      nyParts(
+        new Date()
+      )
+    );
+
+
+  const keys =
+    [
+      ...groups.keys()
+    ]
+
+      .filter(
+        key =>
+          key <
+          today
+      )
+
+      .sort();
+
+
+  const key =
+    keys.at(-1);
+
+
+  if (
+    !key
+  ) {
+
+    return null;
+
+  }
+
+
+  const rows =
+    groups.get(
+      key
+    );
+
+
+  const high =
+    Math.max(
+
+      ...rows.map(
+        row =>
+          row.high
+      )
+
+    );
+
+
+  const low =
+    Math.min(
+
+      ...rows.map(
+        row =>
+          row.low
+      )
+
+    );
+
+
+  return {
+
+    date:
+      key,
+
+    high:
+      round(
+        high,
+        2
+      ),
+
+    low:
+      round(
+        low,
+        2
+      ),
+
+    midpoint:
+      round(
+
+        (
+          high +
+          low
+        )
+
+        /
+
+        2,
+
+        2
+
+      )
 
   };
 
@@ -3270,7 +3682,7 @@ function equalClusters(
   atrValue
 ) {
 
-  const pivotData =
+  const pivot =
     pivots(
 
       bars,
@@ -3304,7 +3716,7 @@ function equalClusters(
     highs:
       clusterPrices(
 
-        pivotData.highs.map(
+        pivot.highs.map(
           item =>
             item.price
         ),
@@ -3317,7 +3729,7 @@ function equalClusters(
     lows:
       clusterPrices(
 
-        pivotData.lows.map(
+        pivot.lows.map(
           item =>
             item.price
         ),
@@ -3332,20 +3744,20 @@ function equalClusters(
 
 
 function clusterPrices(
-  prices,
+  values,
   tolerance
 ) {
 
-  const clusters =
+  const groups =
     [];
 
 
   for (
-    const price of prices
+    const price of values
   ) {
 
-    let cluster =
-      clusters.find(
+    let group =
+      groups.find(
 
         item =>
 
@@ -3357,16 +3769,17 @@ function clusterPrices(
           )
 
           <=
+
           tolerance
 
       );
 
 
     if (
-      !cluster
+      !group
     ) {
 
-      clusters.push({
+      groups.push({
 
         price,
 
@@ -3381,11 +3794,11 @@ function clusterPrices(
     }
 
 
-    cluster.price =
+    group.price =
 
       (
-        cluster.price *
-        cluster.touches
+        group.price *
+        group.touches
 
         +
 
@@ -3396,17 +3809,17 @@ function clusterPrices(
       /
 
       (
-        cluster.touches +
+        group.touches +
         1
       );
 
 
-    cluster.touches++;
+    group.touches++;
 
   }
 
 
-  return clusters
+  return groups
 
     .filter(
       item =>
@@ -3447,7 +3860,7 @@ function clusterPrices(
 
 
 /* =========================================================
-   FOOTPRINT PROXY
+   FOOTPRINT
 ========================================================= */
 
 
@@ -3462,19 +3875,15 @@ function footprintProxy(
     );
 
 
-  const volumeBars =
+  const useVolume =
+
     recent.filter(
 
       bar =>
         bar.volume >
         0
 
-    );
-
-
-  const useVolume =
-
-    volumeBars.length
+    ).length
 
     >=
 
@@ -3486,7 +3895,6 @@ function footprintProxy(
     median(
 
       recent.map(
-
         bar =>
           Math.max(
 
@@ -3496,7 +3904,6 @@ function footprintProxy(
             0.01
 
           )
-
       )
 
     )
@@ -3858,14 +4265,14 @@ function flowDivergence(
   }
 
 
-  const first =
+  const previous =
     rows.slice(
       -40,
       -20
     );
 
 
-  const second =
+  const recent =
     rows.slice(
       -20
     );
@@ -3873,14 +4280,17 @@ function flowDivergence(
 
   const priceMove =
 
-    second.at(-1).price -
-    first.at(-1).price;
+    recent.at(-1).price
+
+    -
+
+    previous.at(-1).price;
 
 
   const delta =
     sum(
 
-      second.map(
+      recent.map(
         row =>
           row.delta
       )
@@ -3944,7 +4354,7 @@ function detectAbsorption(
     );
 
 
-  const activityMedian =
+  const med =
     median(
 
       recentRows.map(
@@ -3959,27 +4369,27 @@ function detectAbsorption(
     1;
 
 
-  let upperAbsorption =
+  let upper =
     0;
 
 
-  let lowerAbsorption =
+  let lower =
     0;
 
 
   for (
-    let i = 0;
-    i <
+    let index = 0;
+    index <
       recentBars.length;
-    i++
+    index++
   ) {
 
     const bar =
-      recentBars[i];
+      recentBars[index];
 
 
-    const row =
-      recentRows[i];
+    const flow =
+      recentRows[index];
 
 
     const range =
@@ -4019,13 +4429,13 @@ function detectAbsorption(
 
     if (
 
-      row.activity >
-      activityMedian *
+      flow.activity >
+      med *
       1.35
 
       &&
 
-      row.delta >
+      flow.delta >
       0
 
       &&
@@ -4036,20 +4446,20 @@ function detectAbsorption(
 
     ) {
 
-      upperAbsorption++;
+      upper++;
 
     }
 
 
     if (
 
-      row.activity >
-      activityMedian *
+      flow.activity >
+      med *
       1.35
 
       &&
 
-      row.delta <
+      flow.delta <
       0
 
       &&
@@ -4060,7 +4470,7 @@ function detectAbsorption(
 
     ) {
 
-      lowerAbsorption++;
+      lower++;
 
     }
 
@@ -4068,7 +4478,7 @@ function detectAbsorption(
 
 
   if (
-    upperAbsorption >=
+    upper >=
     2
   ) {
 
@@ -4078,7 +4488,7 @@ function detectAbsorption(
 
 
   if (
-    lowerAbsorption >=
+    lower >=
     2
   ) {
 
@@ -4219,7 +4629,7 @@ function volumeProfile(
     const bar of bars
   ) {
 
-    const typicalPrice =
+    const typical =
 
       (
         bar.high +
@@ -4232,25 +4642,21 @@ function volumeProfile(
       3;
 
 
-    let index =
-      Math.floor(
-
-        (
-          typicalPrice -
-          low
-        )
-
-        /
-
-        step
-
-      );
-
-
-    index =
+    const index =
       clamp(
 
-        index,
+        Math.floor(
+
+          (
+            typical -
+            low
+          )
+
+          /
+
+          step
+
+        ),
 
         0,
 
@@ -4280,7 +4686,7 @@ function volumeProfile(
   }
 
 
-  const descending =
+  const highVolume =
     [
       ...profile
     ]
@@ -4294,7 +4700,7 @@ function volumeProfile(
       );
 
 
-  const ascending =
+  const lowVolume =
     [
       ...profile
     ]
@@ -4330,17 +4736,14 @@ function volumeProfile(
 
     poc:
       round(
-
-        descending[0]
+        highVolume[0]
           ?.price,
-
         2
-
       ),
 
 
     hvn:
-      descending
+      highVolume
 
         .slice(
           0,
@@ -4357,7 +4760,7 @@ function volumeProfile(
 
 
     lvn:
-      ascending
+      lowVolume
 
         .slice(
           0,
@@ -4443,16 +4846,12 @@ function historicalNySweeps(
     0;
 
 
-  const dates = [
-
-    ...groups.keys()
-
-  ]
-    .sort();
-
-
   for (
-    const key of dates
+    const key of
+    [
+      ...groups.keys()
+    ]
+      .sort()
   ) {
 
     const rows =
@@ -4481,8 +4880,12 @@ function historicalNySweeps(
 
 
           const minute =
+
             parts.hour *
-            60 +
+            60
+
+            +
+
             parts.minute;
 
 
@@ -4514,8 +4917,12 @@ function historicalNySweeps(
 
 
           const minute =
+
             parts.hour *
-            60 +
+            60
+
+            +
+
             parts.minute;
 
 
@@ -4556,7 +4963,7 @@ function historicalNySweeps(
     eligible++;
 
 
-    const premarketHigh =
+    const high =
       Math.max(
 
         ...premarket.map(
@@ -4567,7 +4974,7 @@ function historicalNySweeps(
       );
 
 
-    const premarketLow =
+    const low =
       Math.min(
 
         ...premarket.map(
@@ -4578,7 +4985,7 @@ function historicalNySweeps(
       );
 
 
-    const localAtr =
+    const atr =
 
       last(
         atrSeries(
@@ -4600,51 +5007,51 @@ function historicalNySweeps(
       );
 
 
-    const highSweep =
+    const highEvent =
       sweepEvent(
 
         afterOpen,
 
-        premarketHigh,
+        high,
 
         "HIGH",
 
-        localAtr
+        atr
 
       );
 
 
-    const lowSweep =
+    const lowEvent =
       sweepEvent(
 
         afterOpen,
 
-        premarketLow,
+        low,
 
         "LOW",
 
-        localAtr
+        atr
 
       );
 
 
     if (
-      highSweep
+      highEvent
     ) {
 
       highEvents.push(
-        highSweep
+        highEvent
       );
 
     }
 
 
     if (
-      lowSweep
+      lowEvent
     ) {
 
       lowEvents.push(
-        lowSweep
+        lowEvent
       );
 
     }
@@ -4686,7 +5093,7 @@ function sweepEvent(
   bars,
   level,
   side,
-  atrValue
+  atr
 ) {
 
   const index =
@@ -4744,10 +5151,10 @@ function sweepEvent(
 
 
   for (
-    let i = 0;
-    i <
+    let offset = 0;
+    offset <
       sample.length;
-    i++
+    offset++
   ) {
 
     extension =
@@ -4760,40 +5167,40 @@ function sweepEvent(
 
           ?
 
-          sample[i].high -
+          sample[offset].high -
           level
 
           :
 
           level -
-          sample[i].low
+          sample[offset].low
 
       );
 
 
     if (
-      i >
+      offset >
       0
     ) {
 
-      const returnedInside =
+      const inside =
 
         side ===
         "HIGH"
 
           ?
 
-          sample[i].close <
+          sample[offset].close <
           level
 
           :
 
-          sample[i].close >
+          sample[offset].close >
           level;
 
 
       if (
-        returnedInside
+        inside
       ) {
 
         reversed =
@@ -4801,7 +5208,7 @@ function sweepEvent(
 
 
         barsBack =
-          i;
+          offset;
 
 
         break;
@@ -4826,7 +5233,7 @@ function sweepEvent(
       /
 
       Math.max(
-        atrValue,
+        atr,
         0.01
       ),
 
@@ -4860,10 +5267,8 @@ function summarizeSweeps(
 
   const reversals =
     events.filter(
-
       event =>
         event.reversed
-
     ).length;
 
 
@@ -4921,9 +5326,9 @@ function summarizeSweeps(
           0.25
         )
 
-        ||
+        ??
 
-        0.08,
+        0.10,
 
         3
 
@@ -4938,9 +5343,9 @@ function summarizeSweeps(
           0.50
         )
 
-        ||
+        ??
 
-        0.18,
+        0.22,
 
         3
 
@@ -4955,9 +5360,9 @@ function summarizeSweeps(
           0.75
         )
 
-        ||
+        ??
 
-        0.40,
+        0.45,
 
         3
 
@@ -4969,7 +5374,7 @@ function summarizeSweeps(
 
 
 /* =========================================================
-   LIQUIDITY RANKING
+   LIQUIDITY POOLS
 ========================================================= */
 
 
@@ -4995,7 +5400,7 @@ function rankPools(
     [];
 
 
-  const addPool = (
+  const add = (
 
     name,
 
@@ -5067,144 +5472,88 @@ function rankPools(
   };
 
 
-  addPool(
-
+  add(
     "Premarket High",
-
-    refs.premarket
-      ?.high,
-
+    refs.premarket?.high,
     "HIGH",
-
     "PREMARKET_HIGH",
-
     1.55
-
   );
 
 
-  addPool(
-
+  add(
     "Premarket Low",
-
-    refs.premarket
-      ?.low,
-
+    refs.premarket?.low,
     "LOW",
-
     "PREMARKET_LOW",
-
     1.55
-
   );
 
 
-  addPool(
-
+  add(
     "Opening Range High",
-
-    refs.openingRange30
-      ?.high,
-
+    refs.openingRange30?.high,
     "HIGH",
-
     "OR_HIGH",
-
     1.45
-
   );
 
 
-  addPool(
-
+  add(
     "Opening Range Low",
-
-    refs.openingRange30
-      ?.low,
-
+    refs.openingRange30?.low,
     "LOW",
-
     "OR_LOW",
-
     1.45
-
   );
 
 
-  addPool(
-
+  add(
     "Previous Cash High",
-
-    refs.previousCash
-      ?.high,
-
+    refs.previousCash?.high,
     "HIGH",
-
-    "PREV_CASH_HIGH",
-
+    "PREVIOUS_CASH_HIGH",
     1.35
-
   );
 
 
-  addPool(
-
+  add(
     "Previous Cash Low",
-
-    refs.previousCash
-      ?.low,
-
+    refs.previousCash?.low,
     "LOW",
-
-    "PREV_CASH_LOW",
-
+    "PREVIOUS_CASH_LOW",
     1.35
-
   );
 
 
-  addPool(
-
+  add(
     "Previous Day High",
-
-    refs.previousDay
-      ?.high,
-
+    refs.previousDay?.high,
     "HIGH",
-
     "PDH",
-
     1.50
-
   );
 
 
-  addPool(
-
+  add(
     "Previous Day Low",
-
-    refs.previousDay
-      ?.low,
-
+    refs.previousDay?.low,
     "LOW",
-
     "PDL",
-
     1.50
-
   );
 
 
   for (
-    const item of
+    const level of
     refs.equalHighs
   ) {
 
-    addPool(
+    add(
 
-      `Equal Highs (${item.touches}x)`,
+      `Equal Highs (${level.touches}x)`,
 
-      item.price,
+      level.price,
 
       "HIGH",
 
@@ -5218,15 +5567,15 @@ function rankPools(
 
 
   for (
-    const item of
+    const level of
     refs.equalLows
   ) {
 
-    addPool(
+    add(
 
-      `Equal Lows (${item.touches}x)`,
+      `Equal Lows (${level.touches}x)`,
 
-      item.price,
+      level.price,
 
       "LOW",
 
@@ -5240,18 +5589,18 @@ function rankPools(
 
 
   for (
-    const priceLevel of
+    const level of
     refs.h1Highs.slice(
       0,
       3
     )
   ) {
 
-    addPool(
+    add(
 
       "H1 Swing High",
 
-      priceLevel,
+      level,
 
       "HIGH",
 
@@ -5265,18 +5614,18 @@ function rankPools(
 
 
   for (
-    const priceLevel of
+    const level of
     refs.h1Lows.slice(
       0,
       3
     )
   ) {
 
-    addPool(
+    add(
 
       "H1 Swing Low",
 
-      priceLevel,
+      level,
 
       "LOW",
 
@@ -5290,19 +5639,19 @@ function rankPools(
 
 
   for (
-    const priceLevel of
+    const level of
     refs.roundNumbers
   ) {
 
-    addPool(
+    add(
 
       `Round ${Math.round(
-        priceLevel
+        level
       )}`,
 
-      priceLevel,
+      level,
 
-      priceLevel >=
+      level >=
       price
 
         ?
@@ -5322,30 +5671,26 @@ function rankPools(
   }
 
 
-  const merged =
-    mergePools(
+  return mergePools(
 
-      pools,
+    pools,
 
-      Math.max(
+    Math.max(
 
-        10,
+      10,
 
-        (
-          atr15 ||
-          100
-        )
-
-        *
-
-        0.08
-
+      (
+        atr15 ||
+        100
       )
 
-    );
+      *
 
+      0.08
 
-  return merged
+    )
+
+  )
 
     .map(
       pool =>
@@ -5384,7 +5729,8 @@ function mergePools(
     [];
 
 
-  const sorted =
+  for (
+    const pool of
     [
       ...pools
     ]
@@ -5395,11 +5741,7 @@ function mergePools(
         ) =>
           a.level -
           b.level
-      );
-
-
-  for (
-    const pool of sorted
+      )
   ) {
 
     const existing =
@@ -5420,6 +5762,7 @@ function mergePools(
           )
 
           <=
+
           tolerance
 
       );
@@ -5451,10 +5794,8 @@ function mergePools(
 
 
     if (
-
       pool.importance >
       existing.importance
-
     ) {
 
       existing.name =
@@ -5491,7 +5832,7 @@ function mergePools(
 
 
 /* =========================================================
-   ENRICH LIQUIDITY POOL
+   LIQUIDITY SCORE
 ========================================================= */
 
 
@@ -5557,7 +5898,7 @@ function enrichPool(
     );
 
 
-  const trendScore =
+  const trend =
 
     frames.m5.score *
     0.18
@@ -5578,36 +5919,28 @@ function enrichPool(
     0.15;
 
 
-  const delta15 =
-    flow.last15
-      ?.deltaPct
-
-    ||
-
+  const delta =
+    flow.last15?.deltaPct ||
     0;
 
 
   const cash =
     sessions.find(
-
       session =>
         session.id ===
         "cash"
-
     );
 
 
   const premarket =
     sessions.find(
-
       session =>
         session.id ===
         "premarket"
-
     );
 
 
-  let likelihoodScore =
+  let score =
 
     16
 
@@ -5631,7 +5964,7 @@ function enrichPool(
     clamp(
 
       direction *
-      trendScore /
+      trend /
       6,
 
       -14,
@@ -5645,7 +5978,7 @@ function enrichPool(
     clamp(
 
       direction *
-      delta15 /
+      delta /
       3,
 
       -10,
@@ -5662,7 +5995,7 @@ function enrichPool(
 
   ) {
 
-    likelihoodScore +=
+    score +=
       14;
 
   }
@@ -5675,13 +6008,13 @@ function enrichPool(
 
   ) {
 
-    likelihoodScore +=
+    score +=
       9;
 
   }
 
 
-  const correctSide =
+  const validSide =
 
     pool.side ===
     "HIGH"
@@ -5698,30 +6031,21 @@ function enrichPool(
 
 
   if (
-    !correctSide
+    !validSide
   ) {
 
-    likelihoodScore -=
+    score -=
       24;
 
   }
 
 
-  likelihoodScore =
+  score =
     clamp(
-
-      likelihoodScore,
-
+      score,
       5,
-
       95
-
     );
-
-
-  /* =====================================================
-     HISTORICAL OVERSHOOT MODEL
-  ===================================================== */
 
 
   let historical =
@@ -5750,12 +6074,12 @@ function enrichPool(
   }
 
 
-  let q25 =
+  let p25 =
 
     historical
       ?.p25OvershootAtr
 
-    ||
+    ??
 
     0.10;
 
@@ -5765,28 +6089,25 @@ function enrichPool(
     historical
       ?.medianOvershootAtr
 
-    ||
+    ??
 
     0.22;
 
 
-  let q75 =
+  let p75 =
 
     historical
       ?.p75OvershootAtr
 
-    ||
+    ??
 
     0.45;
-
-
-  /* Strong flow into liquidity can deepen sweep. */
 
 
   if (
 
     direction *
-    delta15 >
+    delta >
     18
 
   ) {
@@ -5795,13 +6116,10 @@ function enrichPool(
       1.22;
 
 
-    q75 *=
+    p75 *=
       1.32;
 
   }
-
-
-  /* Absorption can reduce expected extension. */
 
 
   if (
@@ -5811,10 +6129,9 @@ function enrichPool(
 
     &&
 
-    flow.absorption
-      .includes(
-        "BUYING"
-      )
+    flow.absorption.includes(
+      "BUYING"
+    )
 
   ) {
 
@@ -5822,7 +6139,7 @@ function enrichPool(
       0.72;
 
 
-    q75 *=
+    p75 *=
       0.82;
 
   }
@@ -5835,10 +6152,9 @@ function enrichPool(
 
     &&
 
-    flow.absorption
-      .includes(
-        "SELLING"
-      )
+    flow.absorption.includes(
+      "SELLING"
+    )
 
   ) {
 
@@ -5846,20 +6162,20 @@ function enrichPool(
       0.72;
 
 
-    q75 *=
+    p75 *=
       0.82;
 
   }
 
 
-  const zonePoint1 =
+  const zone1 =
 
     pool.level
 
     +
 
     direction *
-    q25 *
+    p25 *
     atr5;
 
 
@@ -5874,34 +6190,28 @@ function enrichPool(
     atr5;
 
 
-  const zonePoint2 =
+  const zone2 =
 
     pool.level
 
     +
 
     direction *
-    q75 *
+    p75 *
     atr5;
 
 
   const zoneLow =
     Math.min(
-
-      zonePoint1,
-
-      zonePoint2
-
+      zone1,
+      zone2
     );
 
 
   const zoneHigh =
     Math.max(
-
-      zonePoint1,
-
-      zonePoint2
-
+      zone1,
+      zone2
     );
 
 
@@ -5922,7 +6232,7 @@ function enrichPool(
   ];
 
 
-  const confluences =
+  const confluence =
     profileNodes
 
       .filter(
@@ -6014,14 +6324,14 @@ function enrichPool(
 
     likelihoodScore:
       round(
-        likelihoodScore,
+        score,
         1
       ),
 
 
     likelihood:
 
-      likelihoodScore >=
+      score >=
       75
 
         ?
@@ -6030,7 +6340,7 @@ function enrichPool(
 
         :
 
-        likelihoodScore >=
+        score >=
         58
 
           ?
@@ -6125,7 +6435,7 @@ function enrichPool(
       )}×`,
 
       `15m delta proxy ${round(
-        delta15,
+        delta,
         1
       )}%`,
 
@@ -6140,7 +6450,7 @@ function enrichPool(
 
         null,
 
-      ...confluences
+      ...confluence
 
     ]
       .filter(
@@ -6397,7 +6707,7 @@ function trapWindows({
 
 
 /* =========================================================
-   MARKET REGIME
+   REGIME
 ========================================================= */
 
 
@@ -6421,29 +6731,25 @@ function marketRegime(
   ];
 
 
-  const bullishCount =
+  const bulls =
     biases.filter(
-
       bias =>
         bias ===
         "BULLISH"
-
     ).length;
 
 
-  const bearishCount =
+  const bears =
     biases.filter(
-
       bias =>
         bias ===
         "BEARISH"
-
     ).length;
 
 
   const trend =
 
-    bullishCount >=
+    bulls >=
     3
 
       ?
@@ -6452,7 +6758,7 @@ function marketRegime(
 
       :
 
-      bearishCount >=
+      bears >=
       3
 
         ?
@@ -6464,22 +6770,19 @@ function marketRegime(
         "MIXED";
 
 
-  const atrValues =
+  const values =
     atrSeries(
-
       m5,
-
       14
-
     )
       .filter(
         Number.isFinite
       );
 
 
-  const atrMedian =
+  const baseline =
     median(
-      atrValues
+      values
     )
 
     ||
@@ -6487,21 +6790,21 @@ function marketRegime(
     atr5;
 
 
-  const expansionRatio =
+  const ratio =
 
     atr5
 
     /
 
     Math.max(
-      atrMedian,
+      baseline,
       0.01
     );
 
 
   const volatility =
 
-    expansionRatio >
+    ratio >
     1.30
 
       ?
@@ -6510,7 +6813,7 @@ function marketRegime(
 
       :
 
-      expansionRatio <
+      ratio <
       0.75
 
         ?
@@ -6522,18 +6825,14 @@ function marketRegime(
         "NORMAL";
 
 
-  const delta15 =
-    flow.last15
-      ?.deltaPct
-
-    ||
-
+  const delta =
+    flow.last15?.deltaPct ||
     0;
 
 
   const orderFlow =
 
-    delta15 >
+    delta >
     18
 
       ?
@@ -6542,7 +6841,7 @@ function marketRegime(
 
       :
 
-      delta15 <
+      delta <
       -18
 
         ?
@@ -6565,7 +6864,7 @@ function marketRegime(
 
     atrExpansion:
       round(
-        expansionRatio,
+        ratio,
         2
       ),
 
@@ -6584,7 +6883,7 @@ function marketRegime(
 
 
 /* =========================================================
-   HELPERS
+   GENERAL HELPERS
 ========================================================= */
 
 
@@ -6593,21 +6892,22 @@ function last(
 ) {
 
   for (
-    let i =
+    let index =
       values.length - 1;
 
-    i >= 0;
+    index >=
+      0;
 
-    i--
+    index--
   ) {
 
     if (
       Number.isFinite(
-        values[i]
+        values[index]
       )
     ) {
 
-      return values[i];
+      return values[index];
 
     }
 
@@ -6659,26 +6959,18 @@ function mean(
   values
 ) {
 
-  if (
-    !values.length
-  ) {
+  return values.length
 
-    return 0;
-
-  }
-
-
-  return (
+    ?
 
     sum(
       values
-    )
-
-    /
-
+    ) /
     values.length
 
-  );
+    :
+
+    0;
 
 }
 
@@ -6717,6 +7009,7 @@ function percentile(
 
 
   const position =
+
     (
       sorted.length -
       1
@@ -6727,25 +7020,25 @@ function percentile(
     q;
 
 
-  const lower =
+  const low =
     Math.floor(
       position
     );
 
 
-  const upper =
+  const high =
     Math.ceil(
       position
     );
 
 
   if (
-    lower ===
-    upper
+    low ===
+    high
   ) {
 
     return sorted[
-      lower
+      low
     ];
 
   }
@@ -6753,17 +7046,12 @@ function percentile(
 
   const weight =
     position -
-    lower;
+    low;
 
 
   return (
 
-    sorted[
-      lower
-    ]
-
-    *
-
+    sorted[low] *
     (
       1 -
       weight
@@ -6771,12 +7059,7 @@ function percentile(
 
     +
 
-    sorted[
-      upper
-    ]
-
-    *
-
+    sorted[high] *
     weight
 
   );
@@ -6790,7 +7073,7 @@ function median(
 
   return percentile(
     values,
-    0.5
+    0.50
   );
 
 }
@@ -6832,7 +7115,7 @@ function round(
   }
 
 
-  const multiplier =
+  const power =
     10 **
     decimals;
 
@@ -6840,15 +7123,13 @@ function round(
   return (
 
     Math.round(
-
       value *
-      multiplier
-
+      power
     )
 
     /
 
-    multiplier
+    power
 
   );
 
