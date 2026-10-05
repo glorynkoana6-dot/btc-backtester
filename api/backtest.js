@@ -1,5 +1,5 @@
 /* ============================================================
-   MKAYFX BTC BACKTESTER
+   MKAYFX BTC BACKTESTER V2
    /api/backtest.js
 
    SOURCE
@@ -16,17 +16,36 @@
    +
    M15 EMA pullback
 
+   BUY
+   ---
+   H1 close > EMA200
+   H1 EMA50 > EMA200
+   M15 pulls into EMA20 / EMA50
+   Bullish confirmation
+   RSI > 52
+
+   SELL
+   ----
+   H1 close < EMA200
+   H1 EMA50 < EMA200
+   M15 pulls into EMA20 / EMA50
+   Bearish confirmation
+   RSI < 48
+
+   RISK
+   ----
+   SL = 1.2 ATR
+   TP = 2.2R
+   Breakeven at +1R
+
    IMPORTANT
    ---------
-   Historical entries use NEXT M15 candle open.
+   Entry is at NEXT M15 candle open.
 
-   That prevents entering before the signal candle
-   has actually closed.
-
-   Same-bar TP + SL collision:
+   Same-bar SL + TP collision:
    STOP is assumed first.
 
-   This is deliberately conservative.
+   NO API KEY REQUIRED.
 ============================================================ */
 
 
@@ -60,6 +79,7 @@ const SETTINGS = {
   emaPullback:
     50,
 
+
   h1Fast:
     50,
 
@@ -88,7 +108,7 @@ const SETTINGS = {
     0.10,
 
   maxAtrPercent:
-    3.5,
+    3.50,
 
 
   minBodyPercent:
@@ -176,14 +196,14 @@ function round(
 
 function clamp(
   value,
-  min,
-  max
+  minimum,
+  maximum
 ) {
 
   return Math.max(
-    min,
+    minimum,
     Math.min(
-      max,
+      maximum,
       value
     )
   );
@@ -192,14 +212,14 @@ function clamp(
 
 
 function sleep(
-  ms
+  milliseconds
 ) {
 
   return new Promise(
     resolve =>
       setTimeout(
         resolve,
-        ms
+        milliseconds
       )
   );
 
@@ -214,7 +234,11 @@ function errorText(
     error instanceof Error
   ) {
 
-    return error.message;
+    return (
+      error.message ||
+      error.name ||
+      "Unknown error"
+    );
 
   }
 
@@ -225,6 +249,17 @@ function errorText(
   ) {
 
     return error;
+
+  }
+
+
+  if (
+    error &&
+    typeof error.message ===
+    "string"
+  ) {
+
+    return error.message;
 
   }
 
@@ -286,7 +321,7 @@ async function getJSON(
               "application/json",
 
             "User-Agent":
-              "MKAYFX-BTC-BACKTEST"
+              "MKAYFX-BTC-BACKTEST-V2"
 
           },
 
@@ -316,7 +351,7 @@ async function getJSON(
     catch {
 
       throw new Error(
-        `Invalid Coinbase JSON (${response.status})`
+        `Coinbase returned invalid JSON (${response.status})`
       );
 
     }
@@ -338,6 +373,30 @@ async function getJSON(
 
   }
 
+  catch (
+    error
+  ) {
+
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+
+      throw new Error(
+        "Coinbase request timed out"
+      );
+
+    }
+
+
+    throw new Error(
+      errorText(
+        error
+      )
+    );
+
+  }
+
   finally {
 
     clearTimeout(
@@ -350,7 +409,7 @@ async function getJSON(
 
 
 /* ============================================================
-   SINGLE COINBASE CHUNK
+   FETCH ONE COINBASE CANDLE CHUNK
 ============================================================ */
 
 async function fetchChunk(
@@ -438,6 +497,29 @@ async function fetchChunk(
 
       })
     )
+    .filter(
+      candle =>
+
+        candle.timestamp >
+          0 &&
+
+        Number.isFinite(
+          candle.open
+        ) &&
+
+        Number.isFinite(
+          candle.high
+        ) &&
+
+        Number.isFinite(
+          candle.low
+        ) &&
+
+        Number.isFinite(
+          candle.close
+        )
+
+    )
     .sort(
       (
         a,
@@ -452,11 +534,6 @@ async function fetchChunk(
 
 /* ============================================================
    FETCH LARGE HISTORY
-
-   Coinbase candle endpoint has a limited number of
-   candles per request.
-
-   We split history into chunks.
 ============================================================ */
 
 async function fetchHistory(
@@ -521,10 +598,7 @@ async function fetchHistory(
 
 
   /*
-     Small batches.
-
-     This is friendlier to Coinbase and Vercel
-     than firing every request simultaneously.
+     Fetch only a few Coinbase requests simultaneously.
   */
 
   for (
@@ -542,7 +616,7 @@ async function fetchHistory(
       );
 
 
-    const result =
+    const results =
       await Promise.all(
 
         batch.map(
@@ -557,6 +631,7 @@ async function fetchHistory(
               window.end
 
             )
+
         )
 
       );
@@ -564,7 +639,7 @@ async function fetchHistory(
 
     for (
       const candles of
-      result
+      results
     ) {
 
       all.push(
@@ -590,7 +665,7 @@ async function fetchHistory(
 
 
   /*
-     Remove duplicates at chunk boundaries.
+     Remove overlapping chunk duplicates.
   */
 
   const unique =
@@ -654,7 +729,7 @@ function ema(
   }
 
 
-  let sum =
+  let total =
     0;
 
 
@@ -665,14 +740,14 @@ function ema(
     i++
   ) {
 
-    sum +=
+    total +=
       values[i];
 
   }
 
 
   let current =
-    sum /
+    total /
     period;
 
 
@@ -908,7 +983,7 @@ function atr(
     );
 
 
-  const trueRange =
+  const ranges =
     new Array(
       candles.length
     ).fill(
@@ -933,7 +1008,7 @@ function atr(
     i++
   ) {
 
-    trueRange[i] =
+    ranges[i] =
       Math.max(
 
         candles[i].high -
@@ -966,7 +1041,7 @@ function atr(
   ) {
 
     total +=
-      trueRange[i];
+      ranges[i];
 
   }
 
@@ -996,7 +1071,7 @@ function atr(
           period -
           1
         ) +
-        trueRange[i]
+        ranges[i]
       ) /
       period;
 
@@ -1049,7 +1124,7 @@ function candleStrength(
 
 
 /* ============================================================
-   PULLBACK
+   PULLBACK CHECK
 ============================================================ */
 
 function hadPullback(
@@ -1135,10 +1210,13 @@ function hadPullback(
 
 
 /* ============================================================
-   FIND LAST COMPLETED H1 CANDLE
+   FIND COMPLETED H1 BAR
 
-   M15 signal cannot use an H1 candle which had
-   not closed yet.
+   Prevents future leakage.
+
+   Example:
+   An M15 bar at 12:30 cannot use the still-forming
+   H1 bar that opened at 12:00.
 ============================================================ */
 
 function findCompletedH1Index(
@@ -1147,19 +1225,14 @@ function findCompletedH1Index(
 
   signalTimestamp,
 
-  startIndex
+  startingIndex
 
 ) {
-
-  /*
-     H1 candle timestamp represents its opening time.
-
-     It becomes usable only 1 hour later.
-  */
 
   const cutoff =
 
     signalTimestamp -
+
     60 *
     60 *
     1000;
@@ -1168,7 +1241,7 @@ function findCompletedH1Index(
   let index =
     Math.max(
       0,
-      startIndex
+      startingIndex
     );
 
 
@@ -1211,7 +1284,7 @@ function findCompletedH1Index(
 
 
 /* ============================================================
-   BACKTEST
+   RUN BACKTEST
 ============================================================ */
 
 function runBacktest(
@@ -1219,14 +1292,14 @@ function runBacktest(
   h1
 ) {
 
-  const mClose =
+  const m15Close =
     m15.map(
       candle =>
         candle.close
     );
 
 
-  const hClose =
+  const h1Close =
     h1.map(
       candle =>
         candle.close
@@ -1235,21 +1308,21 @@ function runBacktest(
 
   const mEMA20 =
     ema(
-      mClose,
+      m15Close,
       SETTINGS.emaFast
     );
 
 
   const mEMA50 =
     ema(
-      mClose,
+      m15Close,
       SETTINGS.emaPullback
     );
 
 
   const mRSI =
     rsi(
-      mClose,
+      m15Close,
       SETTINGS.rsiPeriod
     );
 
@@ -1263,14 +1336,14 @@ function runBacktest(
 
   const hEMA50 =
     ema(
-      hClose,
+      h1Close,
       SETTINGS.h1Fast
     );
 
 
   const hEMA200 =
     ema(
-      hClose,
+      h1Close,
       SETTINGS.h1Slow
     );
 
@@ -1304,7 +1377,7 @@ function runBacktest(
 
 
     /* ======================================================
-       MANAGE ACTIVE POSITION
+       MANAGE ACTIVE TRADE
     ====================================================== */
 
     if (
@@ -1315,9 +1388,9 @@ function runBacktest(
         activeTrade.stop;
 
 
-      /*
-         BREAKEVEN AFTER +1R
-      */
+      /* ====================================================
+         MOVE TO BREAKEVEN
+      ==================================================== */
 
       if (
         !activeTrade.breakeven
@@ -1351,7 +1424,7 @@ function runBacktest(
         }
 
 
-        if (
+        else if (
 
           activeTrade.side ===
             "SELL" &&
@@ -1381,11 +1454,11 @@ function runBacktest(
       }
 
 
-      let resultR =
+      let exit =
         null;
 
 
-      let exit =
+      let resultR =
         null;
 
 
@@ -1394,7 +1467,7 @@ function runBacktest(
 
 
       /* ====================================================
-         BUY EXIT
+         BUY
       ==================================================== */
 
       if (
@@ -1413,11 +1486,6 @@ function runBacktest(
           candle.high >=
           activeTrade.target;
 
-
-        /*
-           Conservative same-candle assumption:
-           SL first.
-        */
 
         if (
           stopHit
@@ -1444,6 +1512,7 @@ function runBacktest(
 
         }
 
+
         else if (
           targetHit
         ) {
@@ -1465,7 +1534,7 @@ function runBacktest(
 
 
       /* ====================================================
-         SELL EXIT
+         SELL
       ==================================================== */
 
       else {
@@ -1507,6 +1576,7 @@ function runBacktest(
 
         }
 
+
         else if (
           targetHit
         ) {
@@ -1528,7 +1598,7 @@ function runBacktest(
 
 
       /* ====================================================
-         MAX HOLD
+         TIME EXIT
       ==================================================== */
 
       const heldBars =
@@ -1575,6 +1645,10 @@ function runBacktest(
       }
 
 
+      /* ====================================================
+         RECORD EXIT
+      ==================================================== */
+
       if (
         exit !==
         null
@@ -1593,22 +1667,26 @@ function runBacktest(
 
           entry:
             round(
-              activeTrade.entry
-            ),
-
-          originalStop:
-            round(
-              activeTrade.originalStop
-            ),
-
-          target:
-            round(
-              activeTrade.target
+              activeTrade.entry,
+              2
             ),
 
           exit:
             round(
-              exit
+              exit,
+              2
+            ),
+
+          stop:
+            round(
+              activeTrade.originalStop,
+              2
+            ),
+
+          target:
+            round(
+              activeTrade.target,
+              2
             ),
 
           resultR:
@@ -1639,6 +1717,10 @@ function runBacktest(
     }
 
 
+    /* ======================================================
+       COOLDOWN
+    ====================================================== */
+
     if (
       i <=
       cooldownUntil
@@ -1650,7 +1732,7 @@ function runBacktest(
 
 
     /* ======================================================
-       INDICATORS READY
+       M15 INDICATORS READY
     ====================================================== */
 
     if (
@@ -1675,7 +1757,7 @@ function runBacktest(
 
 
     /* ======================================================
-       H1 CONTEXT
+       FIND COMPLETED H1
     ====================================================== */
 
     hIndex =
@@ -1719,6 +1801,10 @@ function runBacktest(
     }
 
 
+    /* ======================================================
+       H1 TREND
+    ====================================================== */
+
     const h1Bullish =
 
       h1[
@@ -1754,7 +1840,7 @@ function runBacktest(
 
 
     /* ======================================================
-       VOLATILITY
+       ATR FILTER
     ====================================================== */
 
     const atrPercent =
@@ -1780,7 +1866,7 @@ function runBacktest(
 
 
     /* ======================================================
-       CANDLE STRENGTH
+       CANDLE BODY FILTER
     ====================================================== */
 
     const strength =
@@ -1829,7 +1915,7 @@ function runBacktest(
 
 
     /* ======================================================
-       SIGNAL
+       BUY
     ====================================================== */
 
     const buy =
@@ -1848,6 +1934,10 @@ function runBacktest(
       mRSI[i] >
       SETTINGS.buyRsi;
 
+
+    /* ======================================================
+       SELL
+    ====================================================== */
 
     const sell =
 
@@ -1877,7 +1967,7 @@ function runBacktest(
 
 
     /* ======================================================
-       ENTRY AT NEXT M15 OPEN
+       ENTRY = NEXT M15 OPEN
     ====================================================== */
 
     const next =
@@ -1912,6 +2002,10 @@ function runBacktest(
 
     }
 
+
+    /* ======================================================
+       CREATE POSITION
+    ====================================================== */
 
     if (
       buy
@@ -2012,7 +2106,7 @@ function statistics(
     trades.length;
 
 
-  const wins =
+  const winners =
     trades.filter(
       trade =>
         trade.resultR >
@@ -2020,7 +2114,7 @@ function statistics(
     );
 
 
-  const losses =
+  const losers =
     trades.filter(
       trade =>
         trade.resultR <
@@ -2036,25 +2130,25 @@ function statistics(
     );
 
 
-  const totalR =
+  const netR =
     trades.reduce(
       (
-        sum,
+        total,
         trade
       ) =>
-        sum +
+        total +
         trade.resultR,
       0
     );
 
 
   const grossProfit =
-    wins.reduce(
+    winners.reduce(
       (
-        sum,
+        total,
         trade
       ) =>
-        sum +
+        total +
         trade.resultR,
       0
     );
@@ -2063,12 +2157,12 @@ function statistics(
   const grossLoss =
     Math.abs(
 
-      losses.reduce(
+      losers.reduce(
         (
-          sum,
+          total,
           trade
         ) =>
-          sum +
+          total +
           trade.resultR,
         0
       )
@@ -2079,10 +2173,9 @@ function statistics(
   const winRate =
 
     total >
-
     0
 
-      ? wins.length /
+      ? winners.length /
         total *
         100
 
@@ -2108,7 +2201,7 @@ function statistics(
     total >
     0
 
-      ? totalR /
+      ? netR /
         total
 
       : 0;
@@ -2216,10 +2309,10 @@ function statistics(
       total,
 
     wins:
-      wins.length,
+      winners.length,
 
     losses:
-      losses.length,
+      losers.length,
 
     breakevens:
       breakevens.length,
@@ -2232,7 +2325,7 @@ function statistics(
 
     netR:
       round(
-        totalR,
+        netR,
         2
       ),
 
@@ -2260,15 +2353,16 @@ function statistics(
     buyTrades:
       buys.length,
 
+
     buyNetR:
       round(
 
         buys.reduce(
           (
-            sum,
+            total,
             trade
           ) =>
-            sum +
+            total +
             trade.resultR,
           0
         ),
@@ -2281,15 +2375,16 @@ function statistics(
     sellTrades:
       sells.length,
 
+
     sellNetR:
       round(
 
         sells.reduce(
           (
-            sum,
+            total,
             trade
           ) =>
-            sum +
+            total +
             trade.resultR,
           0
         ),
@@ -2304,7 +2399,7 @@ function statistics(
 
 
 /* ============================================================
-   HANDLER
+   API HANDLER
 ============================================================ */
 
 module.exports =
@@ -2356,9 +2451,8 @@ async function handler(
 
 
     /*
-       Add 10 days of warm-up history.
-
-       H1 EMA200 needs a decent amount of historical data.
+       We need extra data before the requested
+       period for EMA200 warmup.
     */
 
     const warmupDays =
@@ -2375,6 +2469,10 @@ async function handler(
       ) *
       86400;
 
+
+    /* ======================================================
+       DOWNLOAD M15 + H1
+    ====================================================== */
 
     const [
 
@@ -2432,19 +2530,16 @@ async function handler(
     }
 
 
+    /* ======================================================
+       RUN
+    ====================================================== */
+
     const allTrades =
       runBacktest(
         m15,
         h1
       );
 
-
-    /*
-       Only count trades occurring inside the
-       actual requested test period.
-
-       Warm-up trades are discarded.
-    */
 
     const testStart =
 
@@ -2455,6 +2550,10 @@ async function handler(
       ) *
       1000;
 
+
+    /*
+       Remove warm-up trades from results.
+    */
 
     const trades =
       allTrades.filter(
@@ -2472,6 +2571,31 @@ async function handler(
         trades
       );
 
+
+    const from =
+      new Date(
+        testStart
+      ).toISOString();
+
+
+    const to =
+      new Date()
+        .toISOString();
+
+
+    /* ======================================================
+       RESPONSE
+
+       IMPORTANT FIX:
+
+       We return BOTH:
+
+       data.period.from
+       AND
+       data.data.from
+
+       so either frontend version works.
+    ====================================================== */
 
     return res
       .status(200)
@@ -2491,13 +2615,58 @@ async function handler(
 
         days,
 
+
+        /* ===============================================
+           YOUR CURRENT INDEX.HTML EXPECTS THIS
+        =============================================== */
+
+        period: {
+
+          from,
+
+          to,
+
+          m15Candles:
+            m15.length,
+
+          h1Candles:
+            h1.length
+
+        },
+
+
+        /* ===============================================
+           ALSO KEEP THE NEW DATA FORMAT
+        =============================================== */
+
+        data: {
+
+          from,
+
+          to,
+
+          m15Candles:
+            m15.length,
+
+          h1Candles:
+            h1.length
+
+        },
+
+
         settings: {
 
-          h1Trend:
-            "EMA50 vs EMA200",
+          trendTimeframe:
+            "H1",
 
-          m15EMA:
-            "20 / 50",
+          entryTimeframe:
+            "M15",
+
+          h1Trend:
+            "EMA50 / EMA200",
+
+          m15Pullback:
+            "EMA20 / EMA50",
 
           buyRSI:
             SETTINGS.buyRsi,
@@ -2514,31 +2683,23 @@ async function handler(
           breakevenAtR:
             SETTINGS.breakevenR,
 
+          minimumATRPercent:
+            SETTINGS.minAtrPercent,
+
+          maximumATRPercent:
+            SETTINGS.maxAtrPercent,
+
           minimumCandleBody:
             SETTINGS.minBodyPercent,
 
           pullbackLookback:
-            SETTINGS.pullbackLookback
+            SETTINGS.pullbackLookback,
 
-        },
+          cooldownBars:
+            SETTINGS.cooldownBars,
 
-
-        data: {
-
-          m15Candles:
-            m15.length,
-
-          h1Candles:
-            h1.length,
-
-          from:
-            new Date(
-              testStart
-            ).toISOString(),
-
-          to:
-            new Date()
-              .toISOString()
+          maxHoldBars:
+            SETTINGS.maxHoldBars
 
         },
 
@@ -2547,6 +2708,7 @@ async function handler(
 
 
         lastTrades:
+
           trades
             .slice(
               -50
@@ -2567,7 +2729,7 @@ async function handler(
   ) {
 
     console.error(
-      "BACKTEST ERROR:",
+      "BTC BACKTEST ERROR:",
       error
     );
 
@@ -2581,6 +2743,9 @@ async function handler(
 
         source:
           "Coinbase Exchange",
+
+        product:
+          PRODUCT,
 
         error:
           errorText(
