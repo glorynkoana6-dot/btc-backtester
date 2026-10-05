@@ -35,7 +35,7 @@ const SYMBOL =
 
 
 const BASE =
-  "https://quote.alltick.co/quote-stock-b-api/kline";
+  "https://quote.alltick.co/quote-b-api/kline";
 
 
 /*
