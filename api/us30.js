@@ -1,5 +1,32 @@
+/* =========================================================
+   MKAYFX US30 LIQUIDITY INTELLIGENCE
+   ALLTICK EDITION V1.1
+   /api/us30.js
+
+   FIXES IN THIS VERSION
+   ---------------------
+   - Uses AllTick index gateway:
+     quote-stock-b-api/kline
+
+   - Does NOT use new URL() for the AllTick request
+   - Uses encodeURIComponent()
+   - Uses TOKEN.trim()
+   - Reads raw response before JSON parsing
+   - Better HTTP / AllTick error messages
+   - Supports nested kline_data responses
+========================================================= */
+
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+
 const TOKEN =
-  process.env.ALLTICK_API_TOKEN;
+  String(
+    process.env.ALLTICK_API_TOKEN ||
+    ""
+  ).trim();
 
 
 const GAP =
@@ -17,8 +44,6 @@ const SYMBOL =
 
 
 const BASE =
-  "const BASE =
-  const BASE =
   "https://quote.alltick.co/quote-stock-b-api/kline";
 
 
@@ -39,6 +64,11 @@ const K = {
 };
 
 
+/* =========================================================
+   CACHE
+========================================================= */
+
+
 let CACHE = {
 
   at: 0,
@@ -53,7 +83,7 @@ const CACHE_MS =
 
 
 /* =========================================================
-   MAIN
+   MAIN API
 ========================================================= */
 
 
@@ -161,18 +191,6 @@ export default async function handler(
 
     /* =====================================================
        ALLTICK DATA
-
-       M1:
-       live microstructure
-
-       M5:
-       current execution structure
-
-       M15:
-       NY sweep history
-
-       H1:
-       larger liquidity / structure
     ===================================================== */
 
 
@@ -219,6 +237,11 @@ export default async function handler(
       );
 
 
+    /* =====================================================
+       DATA VALIDATION
+    ===================================================== */
+
+
     if (
 
       m1.length <
@@ -245,11 +268,11 @@ export default async function handler(
 
         `Not enough AllTick data: ` +
 
-        `M1=${m1.length} ` +
+        `M1=${m1.length}, ` +
 
-        `M5=${m5.length} ` +
+        `M5=${m5.length}, ` +
 
-        `M15=${m15.length} ` +
+        `M15=${m15.length}, ` +
 
         `H1=${h1.length}`
 
@@ -262,8 +285,12 @@ export default async function handler(
       new Date();
 
 
+    const latest =
+      m1.at(-1);
+
+
     const price =
-      m1.at(-1).close;
+      latest.close;
 
 
     /* =====================================================
@@ -308,7 +335,7 @@ export default async function handler(
 
 
     /* =====================================================
-       MULTI TIMEFRAME
+       MULTI-TIMEFRAME STRUCTURE
     ===================================================== */
 
 
@@ -346,7 +373,7 @@ export default async function handler(
 
 
     /* =====================================================
-       SESSIONS
+       US SESSION INTELLIGENCE
     ===================================================== */
 
 
@@ -378,7 +405,7 @@ export default async function handler(
 
 
     /* =====================================================
-       ORDER FLOW
+       FOOTPRINT / DELTA PROXY
     ===================================================== */
 
 
@@ -411,7 +438,7 @@ export default async function handler(
 
 
     /* =====================================================
-       HISTORICAL NY SWEEPS
+       HISTORICAL NY SWEEP MODEL
     ===================================================== */
 
 
@@ -478,7 +505,7 @@ export default async function handler(
 
 
     /* =====================================================
-       REGIME
+       MARKET REGIME
     ===================================================== */
 
 
@@ -501,7 +528,7 @@ export default async function handler(
     ===================================================== */
 
 
-    const out = {
+    const output = {
 
       ok: true,
 
@@ -519,8 +546,7 @@ export default async function handler(
 
 
       latestBarTime:
-        m1.at(-1)
-          .time
+        latest.time
           .toISOString(),
 
 
@@ -536,8 +562,7 @@ export default async function handler(
 
               -
 
-              m1.at(-1)
-                .time
+              latest.time
                 .getTime()
             )
 
@@ -551,7 +576,7 @@ export default async function handler(
 
 
       price:
-        r(
+        round(
           price,
           2
         ),
@@ -563,7 +588,10 @@ export default async function handler(
           "AllTick",
 
         endpoint:
-          "quote-b-api/kline",
+          "quote-stock-b-api/kline",
+
+        symbol:
+          SYMBOL,
 
         m1Bars:
           m1.length,
@@ -589,25 +617,25 @@ export default async function handler(
       market: {
 
         atr1:
-          r(
+          round(
             atr1,
             2
           ),
 
         atr5:
-          r(
+          round(
             atr5,
             2
           ),
 
         atr15:
-          r(
+          round(
             atr15,
             2
           ),
 
         atrH1:
-          r(
+          round(
             atrH1,
             2
           ),
@@ -649,9 +677,11 @@ export default async function handler(
 
         "Sweep scores are heuristic rankings, not guaranteed probabilities.",
 
-        "Projected reversal zones are estimates. Acceptance beyond a level can invalidate the reversal idea.",
+        "Projected reversal zones are estimates.",
 
-        "AllTick US30 candle volume is not treated as true centralized aggressor bid/ask footprint volume."
+        "Acceptance beyond a projected zone can mean continuation instead of reversal.",
+
+        "AllTick US30 volume is treated as a footprint-style proxy, not true centralized bid/ask aggressor volume."
 
       ]
 
@@ -664,7 +694,7 @@ export default async function handler(
         Date.now(),
 
       data:
-        out
+        output
 
     };
 
@@ -672,16 +702,17 @@ export default async function handler(
     return res
       .status(200)
       .json(
-        out
+        output
       );
 
 
   } catch (
-    e
+    error
   ) {
 
     console.error(
-      e
+      "US30 API ERROR:",
+      error
     );
 
 
@@ -694,9 +725,12 @@ export default async function handler(
         provider:
           "AllTick",
 
+        symbol:
+          SYMBOL,
+
         error:
-          e?.message ||
-          "Unknown error"
+          error?.message ||
+          "Unknown US30 engine error"
 
       });
 
@@ -706,7 +740,7 @@ export default async function handler(
 
 
 /* =========================================================
-   ALLTICK
+   ALLTICK KLINE
 ========================================================= */
 
 
@@ -747,66 +781,136 @@ async function fetchK(
   };
 
 
-  const u =
-    new URL(
-      BASE
-    );
+  /* =====================================================
+     IMPORTANT FIX
+
+     We build the URL manually instead of using new URL().
+  ===================================================== */
 
 
-  u.searchParams.set(
-    "token",
-    TOKEN
-  );
+  const requestUrl =
+
+    `${BASE}` +
+
+    `?token=${encodeURIComponent(
+      TOKEN
+    )}` +
+
+    `&query=${encodeURIComponent(
+      JSON.stringify(query)
+    )}`;
 
 
-  u.searchParams.set(
-    "query",
-    JSON.stringify(
-      query
-    )
-  );
+  let response;
 
 
-  const resp =
-    await fetch(
+  try {
 
-      u,
+    response =
+      await fetch(
 
-      {
+        requestUrl,
 
-        headers: {
+        {
 
-          Accept:
-            "application/json"
+          method:
+            "GET",
 
-        },
+          headers: {
 
-        cache:
-          "no-store"
+            Accept:
+              "application/json"
 
-      }
+          },
 
-    );
+          cache:
+            "no-store"
+
+        }
+
+      );
 
 
-  if (
-    !resp.ok
+  } catch (
+    error
   ) {
 
     throw new Error(
-      `AllTick HTTP ${resp.status}`
+
+      `AllTick network request failed: ${error.message}`
+
     );
 
   }
 
 
-  const j =
-    await resp.json();
+  const raw =
+    await response.text();
+
+
+  /* =====================================================
+     HTTP ERROR
+  ===================================================== */
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+
+      `AllTick HTTP ${response.status}: ` +
+
+      raw.slice(
+        0,
+        250
+      )
+
+    );
+
+  }
+
+
+  /* =====================================================
+     JSON PARSE
+  ===================================================== */
+
+
+  let json;
+
+
+  try {
+
+    json =
+      JSON.parse(
+        raw
+      );
+
+
+  } catch {
+
+    throw new Error(
+
+      `AllTick returned non-JSON data: ` +
+
+      raw.slice(
+        0,
+        250
+      )
+
+    );
+
+  }
+
+
+  /* =====================================================
+     ALLTICK ERROR
+  ===================================================== */
 
 
   if (
     Number(
-      j.ret
+      json.ret
     ) !==
     200
   ) {
@@ -814,17 +918,33 @@ async function fetchK(
     throw new Error(
 
       `AllTick: ${
-        j.msg ||
+
+        json.msg ||
+        json.message ||
         "request failed"
-      }`
+
+      } (ret ${
+
+        json.ret ??
+        "unknown"
+
+      })`
 
     );
 
   }
 
 
+  /* =====================================================
+     KLINE LIST
+  ===================================================== */
+
+
   let list =
-    j?.data?.kline_list;
+    json?.data?.kline_list;
+
+
+  /* Some AllTick responses can contain nested kline_data. */
 
 
   if (
@@ -848,8 +968,8 @@ async function fetchK(
     list =
       list.flatMap(
 
-        x =>
-          x.kline_data ||
+        item =>
+          item.kline_data ||
           []
 
       );
@@ -865,90 +985,186 @@ async function fetchK(
 
     throw new Error(
 
-      "AllTick response missing kline_list"
+      `AllTick response missing kline_list. Response: ` +
+
+      raw.slice(
+        0,
+        250
+      )
 
     );
 
   }
 
 
-  return list
+  const candles =
+    list
 
-    .map(
-      x => ({
+      .map(
+        item => {
 
-        time:
-          new Date(
+          const timestamp =
             Number(
-              x.timestamp
-            ) *
-            1000
-          ),
+              item.timestamp
+            );
 
-        open:
-          +x.open_price,
 
-        high:
-          +x.high_price,
+          const open =
+            Number(
+              item.open_price
+            );
 
-        low:
-          +x.low_price,
 
-        close:
-          +x.close_price,
+          const high =
+            Number(
+              item.high_price
+            );
 
-        volume:
-          +x.volume ||
-          0,
 
-        turnover:
-          +x.turnover ||
-          0
+          const low =
+            Number(
+              item.low_price
+            );
 
-      })
-    )
 
-    .filter(
-      x =>
+          const close =
+            Number(
+              item.close_price
+            );
 
-        Number.isFinite(
-          x.time.getTime()
-        )
 
-        &&
+          const volume =
+            Number(
+              item.volume
+            );
 
-        [
-          x.open,
-          x.high,
-          x.low,
-          x.close
-        ]
-          .every(
-            Number.isFinite
+
+          const turnover =
+            Number(
+              item.turnover
+            );
+
+
+          return {
+
+            time:
+              new Date(
+                timestamp *
+                1000
+              ),
+
+            open,
+
+            high,
+
+            low,
+
+            close,
+
+            volume:
+              Number.isFinite(
+                volume
+              )
+                ?
+                  volume
+                :
+                  0,
+
+            turnover:
+              Number.isFinite(
+                turnover
+              )
+                ?
+                  turnover
+                :
+                  0
+
+          };
+
+        }
+      )
+
+      .filter(
+        candle =>
+
+          Number.isFinite(
+            candle.time.getTime()
           )
-    )
 
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.time -
-        b.time
+          &&
+
+          Number.isFinite(
+            candle.open
+          )
+
+          &&
+
+          Number.isFinite(
+            candle.high
+          )
+
+          &&
+
+          Number.isFinite(
+            candle.low
+          )
+
+          &&
+
+          Number.isFinite(
+            candle.close
+          )
+      )
+
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a.time -
+          b.time
+      );
+
+
+  if (
+    candles.length ===
+    0
+  ) {
+
+    throw new Error(
+
+      `AllTick returned zero valid candles for ${SYMBOL}, kline_type=${type}`
+
     );
+
+  }
+
+
+  return candles;
 
 }
 
 
-const sleep =
-  ms =>
-    new Promise(
-      ok =>
-        setTimeout(
-          ok,
-          ms
-        )
-    );
+/* =========================================================
+   DELAY
+========================================================= */
+
+
+function sleep(
+  milliseconds
+) {
+
+  return new Promise(
+
+    resolve =>
+      setTimeout(
+        resolve,
+        milliseconds
+      )
+
+  );
+
+}
 
 
 /* =========================================================
@@ -961,7 +1177,7 @@ function resample(
   minutes
 ) {
 
-  const ms =
+  const milliseconds =
     minutes *
     60_000;
 
@@ -971,21 +1187,25 @@ function resample(
 
 
   for (
-    const b of bars
+    const bar of bars
   ) {
 
     const key =
 
       Math.floor(
 
-        b.time.getTime() /
-        ms
+        bar.time
+          .getTime()
+
+        /
+
+        milliseconds
 
       )
 
       *
 
-      ms;
+      milliseconds;
 
 
     if (
@@ -1004,19 +1224,22 @@ function resample(
             ),
 
           open:
-            b.open,
+            bar.open,
 
           high:
-            b.high,
+            bar.high,
 
           low:
-            b.low,
+            bar.low,
 
           close:
-            b.close,
+            bar.close,
 
           volume:
-            b.volume
+            bar.volume,
+
+          turnover:
+            bar.turnover
 
         }
       );
@@ -1024,32 +1247,42 @@ function resample(
 
     } else {
 
-      const x =
+      const current =
         map.get(
           key
         );
 
 
-      x.high =
+      current.high =
         Math.max(
-          x.high,
-          b.high
+
+          current.high,
+
+          bar.high
+
         );
 
 
-      x.low =
+      current.low =
         Math.min(
-          x.low,
-          b.low
+
+          current.low,
+
+          bar.low
+
         );
 
 
-      x.close =
-        b.close;
+      current.close =
+        bar.close;
 
 
-      x.volume +=
-        b.volume;
+      current.volume +=
+        bar.volume;
+
+
+      current.turnover +=
+        bar.turnover;
 
     }
 
@@ -1057,7 +1290,9 @@ function resample(
 
 
   return [
+
     ...map.values()
+
   ]
     .sort(
       (
@@ -1090,7 +1325,7 @@ function ema(
   }
 
 
-  const k =
+  const multiplier =
     2 /
     (
       period +
@@ -1098,7 +1333,7 @@ function ema(
     );
 
 
-  const out = [
+  const output = [
     values[0]
   ];
 
@@ -1110,14 +1345,14 @@ function ema(
     i++
   ) {
 
-    out.push(
+    output.push(
 
       values[i] *
-      k
+      multiplier
 
       +
 
-      out[
+      output[
         i - 1
       ]
 
@@ -1125,7 +1360,7 @@ function ema(
 
       (
         1 -
-        k
+        multiplier
       )
 
     );
@@ -1133,7 +1368,7 @@ function ema(
   }
 
 
-  return out;
+  return output;
 
 }
 
@@ -1172,21 +1407,23 @@ function rsi(
     i++
   ) {
 
-    const d =
+    const change =
       values[i] -
-      values[i - 1];
+      values[
+        i - 1
+      ];
 
 
     gain +=
       Math.max(
-        d,
+        change,
         0
       );
 
 
     loss +=
       Math.max(
-        -d,
+        -change,
         0
       );
 
@@ -1204,14 +1441,18 @@ function rsi(
   for (
     let i =
       period + 1;
+
     i <
       values.length;
+
     i++
   ) {
 
-    const d =
+    const change =
       values[i] -
-      values[i - 1];
+      values[
+        i - 1
+      ];
 
 
     gain =
@@ -1226,7 +1467,7 @@ function rsi(
         +
 
         Math.max(
-          d,
+          change,
           0
         )
 
@@ -1249,7 +1490,7 @@ function rsi(
         +
 
         Math.max(
-          -d,
+          -change,
           0
         )
 
@@ -1263,12 +1504,18 @@ function rsi(
 
 
   if (
-    loss === 0
+    loss ===
+    0
   ) {
 
     return 100;
 
   }
+
+
+  const relativeStrength =
+    gain /
+    loss;
 
 
   return (
@@ -1280,8 +1527,7 @@ function rsi(
     100 /
     (
       1 +
-      gain /
-      loss
+      relativeStrength
     )
 
   );
@@ -1299,52 +1545,79 @@ function atrSeries(
   period = 14
 ) {
 
-  const tr =
-    bars.map(
-      (
-        x,
-        i
-      ) =>
+  if (
+    !bars.length
+  ) {
 
-        i
+    return [];
 
-          ?
+  }
 
-          Math.max(
 
-            x.high -
-            x.low,
+  const trueRanges =
+    [];
 
-            Math.abs(
 
-              x.high -
-              bars[
-                i - 1
-              ].close
+  for (
+    let i = 0;
+    i <
+      bars.length;
+    i++
+  ) {
 
-            ),
+    if (
+      i === 0
+    ) {
 
-            Math.abs(
+      trueRanges.push(
 
-              x.low -
-              bars[
-                i - 1
-              ].close
+        bars[i].high -
+        bars[i].low
 
-            )
+      );
 
-          )
 
-          :
+      continue;
 
-          x.high -
-          x.low
+    }
+
+
+    const previousClose =
+      bars[
+        i - 1
+      ].close;
+
+
+    trueRanges.push(
+
+      Math.max(
+
+        bars[i].high -
+        bars[i].low,
+
+        Math.abs(
+
+          bars[i].high -
+          previousClose
+
+        ),
+
+        Math.abs(
+
+          bars[i].low -
+          previousClose
+
+        )
+
+      )
 
     );
 
+  }
+
 
   return ema(
-    tr,
+    trueRanges,
     period
   );
 
@@ -1370,54 +1643,59 @@ function pivots(
     [];
 
 
-  for (
+  const start =
+    Math.max(
 
+      pivot,
+
+      bars.length -
+      lookback
+
+    );
+
+
+  for (
     let i =
-      Math.max(
-        pivot,
-        bars.length -
-        lookback
-      );
+      start;
 
     i <
-    bars.length -
-    pivot;
+      bars.length -
+      pivot;
 
     i++
-
   ) {
 
-    let hi =
+    let isHigh =
       true;
 
 
-    let lo =
+    let isLow =
       true;
 
 
     for (
-      let j = 1;
-      j <= pivot;
-      j++
+      let offset = 1;
+      offset <= pivot;
+      offset++
     ) {
 
       if (
 
         bars[i].high <=
         bars[
-          i - j
+          i - offset
         ].high
 
         ||
 
         bars[i].high <
         bars[
-          i + j
+          i + offset
         ].high
 
       ) {
 
-        hi =
+        isHigh =
           false;
 
       }
@@ -1427,19 +1705,19 @@ function pivots(
 
         bars[i].low >=
         bars[
-          i - j
+          i - offset
         ].low
 
         ||
 
         bars[i].low >
         bars[
-          i + j
+          i + offset
         ].low
 
       ) {
 
-        lo =
+        isLow =
           false;
 
       }
@@ -1448,7 +1726,7 @@ function pivots(
 
 
     if (
-      hi
+      isHigh
     ) {
 
       highs.push({
@@ -1465,7 +1743,7 @@ function pivots(
 
 
     if (
-      lo
+      isLow
     ) {
 
       lows.push({
@@ -1495,7 +1773,7 @@ function pivots(
 
 
 /* =========================================================
-   STRUCTURE
+   MARKET STRUCTURE
 ========================================================= */
 
 
@@ -1503,26 +1781,26 @@ function structure(
   bars
 ) {
 
-  const p =
+  const pivotData =
     pivots(
       bars
     );
 
 
-  const h1 =
-    p.highs.at(-1);
+  const high1 =
+    pivotData.highs.at(-1);
 
 
-  const h2 =
-    p.highs.at(-2);
+  const high2 =
+    pivotData.highs.at(-2);
 
 
-  const l1 =
-    p.lows.at(-1);
+  const low1 =
+    pivotData.lows.at(-1);
 
 
-  const l2 =
-    p.lows.at(-2);
+  const low2 =
+    pivotData.lows.at(-2);
 
 
   let bias =
@@ -1530,21 +1808,21 @@ function structure(
 
 
   if (
-    h1 &&
-    h2 &&
-    l1 &&
-    l2
+    high1 &&
+    high2 &&
+    low1 &&
+    low2
   ) {
 
     if (
 
-      h1.price >
-      h2.price
+      high1.price >
+      high2.price
 
       &&
 
-      l1.price >
-      l2.price
+      low1.price >
+      low2.price
 
     ) {
 
@@ -1556,13 +1834,13 @@ function structure(
 
     if (
 
-      h1.price <
-      h2.price
+      high1.price <
+      high2.price
 
       &&
 
-      l1.price <
-      l2.price
+      low1.price <
+      low2.price
 
     ) {
 
@@ -1575,7 +1853,8 @@ function structure(
 
 
   const close =
-    bars.at(-1).close;
+    bars.at(-1)
+      .close;
 
 
   let event =
@@ -1583,9 +1862,14 @@ function structure(
 
 
   if (
-    h1 &&
+
+    high1
+
+    &&
+
     close >
-    h1.price
+    high1.price
+
   ) {
 
     event =
@@ -1605,9 +1889,14 @@ function structure(
 
 
   if (
-    l1 &&
+
+    low1
+
+    &&
+
     close <
-    l1.price
+    low1.price
+
   ) {
 
     event =
@@ -1632,14 +1921,15 @@ function structure(
 
     event,
 
+
     swingHigh:
 
-      h1
+      high1
 
         ?
 
-        r(
-          h1.price,
+        round(
+          high1.price,
           2
         )
 
@@ -1647,14 +1937,15 @@ function structure(
 
         null,
 
+
     swingLow:
 
-      l1
+      low1
 
         ?
 
-        r(
-          l1.price,
+        round(
+          low1.price,
           2
         )
 
@@ -1668,7 +1959,7 @@ function structure(
 
 
 /* =========================================================
-   TIMEFRAME FRAME
+   TIMEFRAME ANALYSIS
 ========================================================= */
 
 
@@ -1678,26 +1969,26 @@ function frame(
 
   const closes =
     bars.map(
-      x =>
-        x.close
+      bar =>
+        bar.close
     );
 
 
-  const e20 =
+  const ema20 =
     ema(
       closes,
       20
     );
 
 
-  const e50 =
+  const ema50 =
     ema(
       closes,
       50
     );
 
 
-  const e200 =
+  const ema200 =
     ema(
 
       closes,
@@ -1716,13 +2007,13 @@ function frame(
     );
 
 
-  const s =
+  const structureData =
     structure(
       bars
     );
 
 
-  const rv =
+  const rsi14 =
     rsi(
       closes,
       14
@@ -1737,7 +2028,7 @@ function frame(
 
     closes.at(-1) >
     last(
-      e20
+      ema20
     )
 
       ?
@@ -1752,13 +2043,13 @@ function frame(
   score +=
 
     last(
-      e20
+      ema20
     )
 
     >
 
     last(
-      e50
+      ema50
     )
 
       ?
@@ -1773,13 +2064,13 @@ function frame(
   score +=
 
     last(
-      e50
+      ema50
     )
 
     >
 
     last(
-      e200
+      ema200
     )
 
       ?
@@ -1791,50 +2082,48 @@ function frame(
       -16;
 
 
-  score +=
-
-    rv >
+  if (
+    rsi14 >
     55
+  ) {
 
-      ?
+    score +=
+      12;
 
-      12
-
-      :
-
-      rv <
-      45
-
-        ?
-
-        -12
-
-        :
-
-        0;
+  }
 
 
-  score +=
+  if (
+    rsi14 <
+    45
+  ) {
 
-    s.bias ===
+    score -=
+      12;
+
+  }
+
+
+  if (
+    structureData.bias ===
     "BULLISH"
+  ) {
 
-      ?
+    score +=
+      22;
 
-      22
+  }
 
-      :
 
-      s.bias ===
-      "BEARISH"
+  if (
+    structureData.bias ===
+    "BEARISH"
+  ) {
 
-        ?
+    score -=
+      22;
 
-        -22
-
-        :
-
-        0;
+  }
 
 
   score =
@@ -1871,60 +2160,63 @@ function frame(
 
 
     score:
-      r(
+      round(
         score,
         1
       ),
 
 
     rsi14:
-      r(
-        rv,
+      round(
+        rsi14,
         1
       ),
 
 
     ema20:
-      r(
+      round(
         last(
-          e20
+          ema20
         ),
         2
       ),
 
 
     ema50:
-      r(
+      round(
         last(
-          e50
+          ema50
         ),
         2
       ),
 
 
     ema200:
-      r(
+      round(
         last(
-          e200
+          ema200
         ),
         2
       ),
 
 
     atr14:
-      r(
+      round(
+
         last(
           atrSeries(
             bars,
             14
           )
         ),
+
         2
+
       ),
 
 
     structure:
-      s
+      structureData
 
   };
 
@@ -1932,20 +2224,8 @@ function frame(
 
 
 /* =========================================================
-   TIMEZONE HELPERS
+   TIMEZONE
 ========================================================= */
-
-
-function nyParts(
-  date
-) {
-
-  return zoneParts(
-    date,
-    "America/New_York"
-  );
-
-}
 
 
 function zoneParts(
@@ -1992,20 +2272,22 @@ function zoneParts(
       );
 
 
-  const obj = {};
+  const object = {};
 
 
   for (
-    const p of parts
+    const part of parts
   ) {
 
     if (
-      p.type !==
+      part.type !==
       "literal"
     ) {
 
-      obj[p.type] =
-        p.value;
+      object[
+        part.type
+      ] =
+        part.value;
 
     }
 
@@ -2034,26 +2316,51 @@ function zoneParts(
   return {
 
     year:
-      +obj.year,
+      Number(
+        object.year
+      ),
 
     month:
-      +obj.month,
+      Number(
+        object.month
+      ),
 
     day:
-      +obj.day,
+      Number(
+        object.day
+      ),
 
     hour:
-      +obj.hour,
+      Number(
+        object.hour
+      ),
 
     minute:
-      +obj.minute,
+      Number(
+        object.minute
+      ),
 
     weekday:
       weekdays[
-        obj.weekday
+        object.weekday
       ]
 
   };
+
+}
+
+
+function nyParts(
+  date
+) {
+
+  return zoneParts(
+
+    date,
+
+    "America/New_York"
+
+  );
 
 }
 
@@ -2095,16 +2402,16 @@ function timeInZone(
 
 
 function dateKey(
-  p
+  parts
 ) {
 
   return (
 
-    `${p.year}-` +
+    `${parts.year}-` +
 
-    `${pad(p.month)}-` +
+    `${pad(parts.month)}-` +
 
-    `${pad(p.day)}`
+    `${pad(parts.day)}`
 
   );
 
@@ -2121,7 +2428,7 @@ function windowRange(
   timezone,
   startMinute,
   endMinute,
-  keyMode = "latest"
+  mode = "latest"
 ) {
 
   const groups =
@@ -2129,20 +2436,23 @@ function windowRange(
 
 
   for (
-    const b of bars
+    const bar of bars
   ) {
 
-    const p =
+    const parts =
       zoneParts(
-        b.time,
+
+        bar.time,
+
         timezone
+
       );
 
 
     const minute =
-      p.hour *
+      parts.hour *
       60 +
-      p.minute;
+      parts.minute;
 
 
     if (
@@ -2164,7 +2474,7 @@ function windowRange(
 
     const key =
       dateKey(
-        p
+        parts
       );
 
 
@@ -2187,7 +2497,7 @@ function windowRange(
         key
       )
       .push(
-        b
+        bar
       );
 
   }
@@ -2203,7 +2513,7 @@ function windowRange(
 
   const key =
 
-    keyMode ===
+    mode ===
     "previous"
 
       ?
@@ -2224,27 +2534,40 @@ function windowRange(
   }
 
 
-  const arr =
+  const rows =
     groups.get(
       key
     );
 
 
+  if (
+    !rows.length
+  ) {
+
+    return null;
+
+  }
+
+
   const high =
     Math.max(
-      ...arr.map(
-        x =>
-          x.high
+
+      ...rows.map(
+        row =>
+          row.high
       )
+
     );
 
 
   const low =
     Math.min(
-      ...arr.map(
-        x =>
-          x.low
+
+      ...rows.map(
+        row =>
+          row.low
       )
+
     );
 
 
@@ -2253,39 +2576,45 @@ function windowRange(
     date:
       key,
 
+
     high:
-      r(
+      round(
         high,
         2
       ),
 
+
     low:
-      r(
+      round(
         low,
         2
       ),
 
+
     open:
-      r(
-        arr[0].open,
+      round(
+        rows[0].open,
         2
       ),
+
 
     close:
-      r(
-        arr.at(-1).close,
+      round(
+        rows.at(-1).close,
         2
       ),
 
+
     range:
-      r(
+      round(
         high -
         low,
         2
       ),
 
+
     bars:
-      arr.length
+      rows.length
 
   };
 
@@ -2293,7 +2622,7 @@ function windowRange(
 
 
 /* =========================================================
-   NEXT SESSION EVENT
+   SESSION TRANSITION
 ========================================================= */
 
 
@@ -2307,27 +2636,30 @@ function nextTransition(
   const state =
     date => {
 
-      const p =
+      const parts =
         zoneParts(
+
           date,
+
           timezone
+
         );
 
 
       const minute =
-        p.hour *
+        parts.hour *
         60 +
-        p.minute;
+        parts.minute;
 
 
       return (
 
-        p.weekday >=
+        parts.weekday >=
         1
 
         &&
 
-        p.weekday <=
+        parts.weekday <=
         5
 
         &&
@@ -2345,61 +2677,61 @@ function nextTransition(
     };
 
 
-  let previous =
+  let previousState =
     state(
       now
     );
 
 
   for (
-    let i = 1;
-    i <= 10080;
-    i++
+    let minuteOffset = 1;
+    minuteOffset <= 10080;
+    minuteOffset++
   ) {
 
-    const d =
+    const nextDate =
       new Date(
 
         now.getTime()
 
         +
 
-        i *
-        60000
+        minuteOffset *
+        60_000
 
       );
 
 
-    const s =
+    const nextState =
       state(
-        d
+        nextDate
       );
 
 
     if (
-      s !==
-      previous
+      nextState !==
+      previousState
     ) {
 
       return {
 
         type:
-          s
+          nextState
             ?
-            "OPEN"
+              "OPEN"
             :
-            "CLOSE",
+              "CLOSE",
 
         time:
-          d
+          nextDate
 
       };
 
     }
 
 
-    previous =
-      s;
+    previousState =
+      nextState;
 
   }
 
@@ -2411,8 +2743,10 @@ function nextTransition(
 
     time:
       new Date(
+
         now.getTime() +
-        86400000
+        86_400_000
+
       )
 
   };
@@ -2431,7 +2765,7 @@ function buildSessions(
   now
 ) {
 
-  const defs = [
+  const definitions = [
 
     {
 
@@ -2441,14 +2775,15 @@ function buildSessions(
       name:
         "US Premarket",
 
-      tz:
+      timezone:
         "America/New_York",
 
       start:
-        240,
+        4 * 60,
 
       end:
-        570
+        9 * 60 +
+        30
 
     },
 
@@ -2461,14 +2796,15 @@ function buildSessions(
       name:
         "New York Cash",
 
-      tz:
+      timezone:
         "America/New_York",
 
       start:
-        570,
+        9 * 60 +
+        30,
 
       end:
-        960
+        16 * 60
 
     },
 
@@ -2481,14 +2817,14 @@ function buildSessions(
       name:
         "Power Hour",
 
-      tz:
+      timezone:
         "America/New_York",
 
       start:
-        900,
+        15 * 60,
 
       end:
-        960
+        16 * 60
 
     },
 
@@ -2501,87 +2837,85 @@ function buildSessions(
       name:
         "London",
 
-      tz:
+      timezone:
         "Europe/London",
 
       start:
-        480,
+        8 * 60,
 
       end:
-        1020
+        17 * 60
 
     }
 
   ];
 
 
-  return defs.map(
-    d => {
+  return definitions.map(
+    definition => {
 
       const transition =
         nextTransition(
 
           now,
 
-          d.start,
+          definition.start,
 
-          d.end,
+          definition.end,
 
-          d.tz
+          definition.timezone
 
         );
 
 
-      const p =
+      const local =
         zoneParts(
+
           now,
-          d.tz
+
+          definition.timezone
+
         );
 
 
       const minute =
-        p.hour *
+        local.hour *
         60 +
-        p.minute;
+        local.minute;
 
 
       const active =
 
-        p.weekday >=
+        local.weekday >=
         1
 
         &&
 
-        p.weekday <=
+        local.weekday <=
         5
 
         &&
 
         minute >=
-        d.start
+        definition.start
 
         &&
 
         minute <
-        d.end;
+        definition.end;
 
 
       let phase =
-
         active
-
           ?
-
-          "ACTIVE"
-
+            "ACTIVE"
           :
-
-          "CLOSED";
+            "CLOSED";
 
 
       if (
 
-        d.id ===
+        definition.id ===
         "cash"
 
         &&
@@ -2591,7 +2925,8 @@ function buildSessions(
         &&
 
         minute <
-        630
+        10 * 60 +
+        30
 
       ) {
 
@@ -2601,9 +2936,9 @@ function buildSessions(
       }
 
 
-      else if (
+      if (
 
-        d.id ===
+        definition.id ===
         "premarket"
 
         &&
@@ -2613,12 +2948,13 @@ function buildSessions(
         &&
 
         minute >=
-        540
+        9 * 60
 
         &&
 
         minute <
-        570
+        9 * 60 +
+        30
 
       ) {
 
@@ -2628,9 +2964,9 @@ function buildSessions(
       }
 
 
-      else if (
+      if (
 
-        d.id ===
+        definition.id ===
         "powerhour"
 
         &&
@@ -2648,13 +2984,13 @@ function buildSessions(
       return {
 
         id:
-          d.id,
+          definition.id,
 
         name:
-          d.name,
+          definition.name,
 
         zone:
-          d.tz,
+          definition.timezone,
 
         active,
 
@@ -2662,18 +2998,21 @@ function buildSessions(
 
         localTime:
           timeInZone(
+
             now,
-            d.tz
+
+            definition.timezone
+
           ),
 
         openLocal:
-          minLabel(
-            d.start
+          minuteLabel(
+            definition.start
           ),
 
         closeLocal:
-          minLabel(
-            d.end
+          minuteLabel(
+            definition.end
           ),
 
         nextEvent:
@@ -2686,7 +3025,7 @@ function buildSessions(
         range:
           windowRange(
 
-            d.id ===
+            definition.id ===
             "premarket"
 
               ?
@@ -2697,11 +3036,11 @@ function buildSessions(
 
               m5,
 
-            d.tz,
+            definition.timezone,
 
-            d.start,
+            definition.start,
 
-            d.end
+            definition.end
 
           )
 
@@ -2714,7 +3053,7 @@ function buildSessions(
 
 
 /* =========================================================
-   REFERENCE LEVELS
+   REFERENCE LIQUIDITY
 ========================================================= */
 
 
@@ -2725,7 +3064,7 @@ function referenceLevels(
   atr15
 ) {
 
-  const day =
+  const previousDay =
     windowRange(
 
       h1,
@@ -2734,7 +3073,7 @@ function referenceLevels(
 
       0,
 
-      1440,
+      24 * 60,
 
       "previous"
 
@@ -2748,9 +3087,10 @@ function referenceLevels(
 
       "America/New_York",
 
-      570,
+      9 * 60 +
+      30,
 
-      960,
+      16 * 60,
 
       "previous"
 
@@ -2764,9 +3104,10 @@ function referenceLevels(
 
       "America/New_York",
 
-      240,
+      4 * 60,
 
-      570
+      9 * 60 +
+      30
 
     );
 
@@ -2780,7 +3121,7 @@ function referenceLevels(
 
       0,
 
-      240
+      4 * 60
 
     );
 
@@ -2792,25 +3133,33 @@ function referenceLevels(
 
       "America/New_York",
 
-      570,
+      9 * 60 +
+      30,
 
-      600
+      10 * 60
 
     );
 
 
-  const eq =
+  const equals =
     equalClusters(
+
       m15,
+
       atr15
+
     );
 
 
-  const swings =
+  const swingData =
     pivots(
+
       h1,
+
       3,
+
       160
+
     );
 
 
@@ -2818,18 +3167,22 @@ function referenceLevels(
     100;
 
 
-  const base =
+  const roundBase =
     Math.round(
+
       price /
       roundStep
-    ) *
+
+    )
+
+    *
+
     roundStep;
 
 
   return {
 
-    previousDay:
-      day,
+    previousDay,
 
     previousCash,
 
@@ -2841,34 +3194,44 @@ function referenceLevels(
 
 
     equalHighs:
-      eq.highs,
+      equals.highs,
 
 
     equalLows:
-      eq.lows,
+      equals.lows,
 
 
     h1Highs:
-      swings.highs
-        .slice(-5)
+      swingData.highs
+
+        .slice(
+          -5
+        )
+
         .reverse()
+
         .map(
-          x =>
-            r(
-              x.price,
+          item =>
+            round(
+              item.price,
               2
             )
         ),
 
 
     h1Lows:
-      swings.lows
-        .slice(-5)
+      swingData.lows
+
+        .slice(
+          -5
+        )
+
         .reverse()
+
         .map(
-          x =>
-            r(
-              x.price,
+          item =>
+            round(
+              item.price,
               2
             )
         ),
@@ -2876,18 +3239,18 @@ function referenceLevels(
 
     roundNumbers: [
 
-      base -
+      roundBase -
       200,
 
-      base -
+      roundBase -
       100,
 
-      base,
+      roundBase,
 
-      base +
+      roundBase +
       100,
 
-      base +
+      roundBase +
       200
 
     ]
@@ -2898,20 +3261,24 @@ function referenceLevels(
 
 
 /* =========================================================
-   EQUAL HIGH / LOW
+   EQUAL LEVELS
 ========================================================= */
 
 
 function equalClusters(
   bars,
-  atr15
+  atrValue
 ) {
 
-  const p =
+  const pivotData =
     pivots(
+
       bars,
+
       2,
+
       180
+
     );
 
 
@@ -2921,7 +3288,7 @@ function equalClusters(
       6,
 
       (
-        atr15 ||
+        atrValue ||
         50
       )
 
@@ -2935,11 +3302,11 @@ function equalClusters(
   return {
 
     highs:
-      cluster(
+      clusterPrices(
 
-        p.highs.map(
-          x =>
-            x.price
+        pivotData.highs.map(
+          item =>
+            item.price
         ),
 
         tolerance
@@ -2948,11 +3315,11 @@ function equalClusters(
 
 
     lows:
-      cluster(
+      clusterPrices(
 
-        p.lows.map(
-          x =>
-            x.price
+        pivotData.lows.map(
+          item =>
+            item.price
         ),
 
         tolerance
@@ -2964,8 +3331,8 @@ function equalClusters(
 }
 
 
-function cluster(
-  values,
+function clusterPrices(
+  prices,
   tolerance
 ) {
 
@@ -2974,27 +3341,29 @@ function cluster(
 
 
   for (
-    const price of values
+    const price of prices
   ) {
 
-    let group =
+    let cluster =
       clusters.find(
 
-        x =>
+        item =>
+
           Math.abs(
-            x.price -
+
+            item.price -
             price
+
           )
 
           <=
-
           tolerance
 
       );
 
 
     if (
-      !group
+      !cluster
     ) {
 
       clusters.push({
@@ -3007,31 +3376,32 @@ function cluster(
       });
 
 
-    } else {
-
-
-      group.price =
-
-        (
-          group.price *
-          group.touches
-
-          +
-
-          price
-        )
-
-        /
-
-        (
-          group.touches +
-          1
-        );
-
-
-      group.touches++;
+      continue;
 
     }
+
+
+    cluster.price =
+
+      (
+        cluster.price *
+        cluster.touches
+
+        +
+
+        price
+
+      )
+
+      /
+
+      (
+        cluster.touches +
+        1
+      );
+
+
+    cluster.touches++;
 
   }
 
@@ -3039,8 +3409,8 @@ function cluster(
   return clusters
 
     .filter(
-      x =>
-        x.touches >=
+      item =>
+        item.touches >=
         2
     )
 
@@ -3059,16 +3429,16 @@ function cluster(
     )
 
     .map(
-      x => ({
+      item => ({
 
         price:
-          r(
-            x.price,
+          round(
+            item.price,
             2
           ),
 
         touches:
-          x.touches
+          item.touches
 
       })
     );
@@ -3092,13 +3462,19 @@ function footprintProxy(
     );
 
 
+  const volumeBars =
+    recent.filter(
+
+      bar =>
+        bar.volume >
+        0
+
+    );
+
+
   const useVolume =
 
-    recent.filter(
-      x =>
-        x.volume >
-        0
-    ).length
+    volumeBars.length
 
     >=
 
@@ -3110,12 +3486,17 @@ function footprintProxy(
     median(
 
       recent.map(
-        x =>
+
+        bar =>
           Math.max(
-            x.high -
-            x.low,
+
+            bar.high -
+            bar.low,
+
             0.01
+
           )
+
       )
 
     )
@@ -3131,21 +3512,24 @@ function footprintProxy(
 
   const rows =
     recent.map(
-      x => {
+      bar => {
 
         const range =
           Math.max(
-            x.high -
-            x.low,
+
+            bar.high -
+            bar.low,
+
             0.01
+
           );
 
 
         const body =
 
           (
-            x.close -
-            x.open
+            bar.close -
+            bar.open
           )
 
           /
@@ -3153,20 +3537,20 @@ function footprintProxy(
           range;
 
 
-        const clv =
+        const closeLocation =
 
           (
 
             (
-              x.close -
-              x.low
+              bar.close -
+              bar.low
             )
 
             -
 
             (
-              x.high -
-              x.close
+              bar.high -
+              bar.close
             )
 
           )
@@ -3183,7 +3567,7 @@ function footprintProxy(
             ?
 
             Math.max(
-              x.volume,
+              bar.volume,
               1
             )
 
@@ -3212,13 +3596,13 @@ function footprintProxy(
 
             +
 
-            0.30 *
-            clv
+            closeLocation *
+            0.30
 
             +
 
-            0.20 *
-            body,
+            body *
+            0.20,
 
             0.05,
 
@@ -3240,7 +3624,7 @@ function footprintProxy(
         return {
 
           price:
-            x.close,
+            bar.close,
 
           activity,
 
@@ -3253,16 +3637,16 @@ function footprintProxy(
             sell,
 
           high:
-            x.high,
+            bar.high,
 
           low:
-            x.low,
+            bar.low,
 
           open:
-            x.open,
+            bar.open,
 
           close:
-            x.close
+            bar.close
 
         };
 
@@ -3274,18 +3658,18 @@ function footprintProxy(
     0;
 
 
-  rows.forEach(
-    x => {
+  for (
+    const row of rows
+  ) {
 
-      cvd +=
-        x.delta;
+    cvd +=
+      row.delta;
 
 
-      x.cvd =
-        cvd;
+    row.cvd =
+      cvd;
 
-    }
-  );
+  }
 
 
   return {
@@ -3313,30 +3697,46 @@ function footprintProxy(
 
     last5:
       aggregateFlow(
-        rows.slice(-5)
+
+        rows.slice(
+          -5
+        )
+
       ),
 
 
     last15:
       aggregateFlow(
-        rows.slice(-15)
+
+        rows.slice(
+          -15
+        )
+
       ),
 
 
     last30:
       aggregateFlow(
-        rows.slice(-30)
+
+        rows.slice(
+          -30
+        )
+
       ),
 
 
     last60:
       aggregateFlow(
-        rows.slice(-60)
+
+        rows.slice(
+          -60
+        )
+
       ),
 
 
     cvd:
-      r(
+      round(
         cvd,
         1
       ),
@@ -3349,9 +3749,12 @@ function footprintProxy(
 
 
     absorption:
-      absorption(
+      detectAbsorption(
+
         recent,
+
         rows
+
       )
 
   };
@@ -3365,28 +3768,34 @@ function aggregateFlow(
 
   const activity =
     sum(
+
       rows.map(
-        x =>
-          x.activity
+        row =>
+          row.activity
       )
+
     );
 
 
   const buy =
     sum(
+
       rows.map(
-        x =>
-          x.buy
+        row =>
+          row.buy
       )
+
     );
 
 
   const sell =
     sum(
+
       rows.map(
-        x =>
-          x.sell
+        row =>
+          row.sell
       )
+
     );
 
 
@@ -3398,19 +3807,21 @@ function aggregateFlow(
   return {
 
     activity:
-      r(
+      round(
         activity,
         1
       ),
 
+
     delta:
-      r(
+      round(
         delta,
         1
       ),
 
+
     deltaPct:
-      r(
+      round(
 
         activity
 
@@ -3468,10 +3879,12 @@ function flowDivergence(
 
   const delta =
     sum(
+
       second.map(
-        x =>
-          x.delta
+        row =>
+          row.delta
       )
+
     );
 
 
@@ -3514,29 +3927,29 @@ function flowDivergence(
 }
 
 
-function absorption(
+function detectAbsorption(
   bars,
   rows
 ) {
 
-  const bs =
+  const recentBars =
     bars.slice(
       -30
     );
 
 
-  const rs =
+  const recentRows =
     rows.slice(
       -30
     );
 
 
-  const med =
+  const activityMedian =
     median(
 
-      rs.map(
-        x =>
-          x.activity
+      recentRows.map(
+        row =>
+          row.activity
       )
 
     )
@@ -3546,67 +3959,73 @@ function absorption(
     1;
 
 
-  let upper =
+  let upperAbsorption =
     0;
 
 
-  let lower =
+  let lowerAbsorption =
     0;
 
 
   for (
     let i = 0;
     i <
-      bs.length;
+      recentBars.length;
     i++
   ) {
 
-    const b =
-      bs[i];
+    const bar =
+      recentBars[i];
 
 
-    const f =
-      rs[i];
+    const row =
+      recentRows[i];
 
 
     const range =
       Math.max(
-        b.high -
-        b.low,
+
+        bar.high -
+        bar.low,
+
         0.01
+
       );
 
 
     const upperWick =
 
-      b.high -
+      bar.high
+
+      -
+
       Math.max(
-        b.open,
-        b.close
+        bar.open,
+        bar.close
       );
 
 
     const lowerWick =
 
       Math.min(
-        b.open,
-        b.close
+        bar.open,
+        bar.close
       )
 
       -
 
-      b.low;
+      bar.low;
 
 
     if (
 
-      f.activity >
-      med *
+      row.activity >
+      activityMedian *
       1.35
 
       &&
 
-      f.delta >
+      row.delta >
       0
 
       &&
@@ -3617,20 +4036,20 @@ function absorption(
 
     ) {
 
-      upper++;
+      upperAbsorption++;
 
     }
 
 
     if (
 
-      f.activity >
-      med *
+      row.activity >
+      activityMedian *
       1.35
 
       &&
 
-      f.delta <
+      row.delta <
       0
 
       &&
@@ -3641,7 +4060,7 @@ function absorption(
 
     ) {
 
-      lower++;
+      lowerAbsorption++;
 
     }
 
@@ -3649,7 +4068,7 @@ function absorption(
 
 
   if (
-    upper >=
+    upperAbsorption >=
     2
   ) {
 
@@ -3659,7 +4078,7 @@ function absorption(
 
 
   if (
-    lower >=
+    lowerAbsorption >=
     2
   ) {
 
@@ -3689,6 +4108,9 @@ function volumeProfile(
 
     return {
 
+      mode:
+        "Unavailable",
+
       poc:
         null,
 
@@ -3705,19 +4127,23 @@ function volumeProfile(
 
   const low =
     Math.min(
+
       ...bars.map(
-        x =>
-          x.low
+        bar =>
+          bar.low
       )
+
     );
 
 
   const high =
     Math.max(
+
       ...bars.map(
-        x =>
-          x.high
+        bar =>
+          bar.high
       )
+
     );
 
 
@@ -3740,9 +4166,11 @@ function volumeProfile(
   const useVolume =
 
     bars.filter(
-      x =>
-        x.volume >
+
+      bar =>
+        bar.volume >
         0
+
     ).length
 
     >=
@@ -3751,7 +4179,7 @@ function volumeProfile(
     0.5;
 
 
-  const arr =
+  const profile =
     Array.from(
 
       {
@@ -3761,15 +4189,22 @@ function volumeProfile(
 
       (
         _,
-        i
+        index
       ) => ({
 
         price:
-          low +
+
+          low
+
+          +
+
           (
-            i +
+            index +
             0.5
-          ) *
+          )
+
+          *
+
           step,
 
         volume:
@@ -3781,15 +4216,15 @@ function volumeProfile(
 
 
   for (
-    const b of bars
+    const bar of bars
   ) {
 
-    const typical =
+    const typicalPrice =
 
       (
-        b.high +
-        b.low +
-        b.close
+        bar.high +
+        bar.low +
+        bar.close
       )
 
       /
@@ -3797,21 +4232,25 @@ function volumeProfile(
       3;
 
 
-    const index =
+    let index =
+      Math.floor(
+
+        (
+          typicalPrice -
+          low
+        )
+
+        /
+
+        step
+
+      );
+
+
+    index =
       clamp(
 
-        Math.floor(
-
-          (
-            typical -
-            low
-          )
-
-          /
-
-          step
-
-        ),
+        index,
 
         0,
 
@@ -3821,7 +4260,7 @@ function volumeProfile(
       );
 
 
-    arr[
+    profile[
       index
     ].volume +=
 
@@ -3830,7 +4269,7 @@ function volumeProfile(
         ?
 
         Math.max(
-          b.volume,
+          bar.volume,
           1
         )
 
@@ -3843,7 +4282,7 @@ function volumeProfile(
 
   const descending =
     [
-      ...arr
+      ...profile
     ]
       .sort(
         (
@@ -3857,11 +4296,11 @@ function volumeProfile(
 
   const ascending =
     [
-      ...arr
+      ...profile
     ]
       .filter(
-        x =>
-          x.volume >
+        item =>
+          item.volume >
           0
       )
       .sort(
@@ -3886,26 +4325,32 @@ function volumeProfile(
 
         :
 
-        "Activity Profile",
+        "Price Activity Profile",
 
 
     poc:
-      r(
-        descending[0].price,
+      round(
+
+        descending[0]
+          ?.price,
+
         2
+
       ),
 
 
     hvn:
       descending
+
         .slice(
           0,
           3
         )
+
         .map(
-          x =>
-            r(
-              x.price,
+          item =>
+            round(
+              item.price,
               2
             )
         ),
@@ -3913,14 +4358,16 @@ function volumeProfile(
 
     lvn:
       ascending
+
         .slice(
           0,
           3
         )
+
         .map(
-          x =>
-            r(
-              x.price,
+          item =>
+            round(
+              item.price,
               2
             )
         )
@@ -3944,18 +4391,18 @@ function historicalNySweeps(
 
 
   for (
-    const b of m15
+    const bar of m15
   ) {
 
-    const p =
+    const parts =
       nyParts(
-        b.time
+        bar.time
       );
 
 
     const key =
       dateKey(
-        p
+        parts
       );
 
 
@@ -3978,7 +4425,7 @@ function historicalNySweeps(
         key
       )
       .push(
-        b
+        bar
       );
 
   }
@@ -3996,11 +4443,12 @@ function historicalNySweeps(
     0;
 
 
-  const dates =
-    [
-      ...groups.keys()
-    ]
-      .sort();
+  const dates = [
+
+    ...groups.keys()
+
+  ]
+    .sort();
 
 
   for (
@@ -4024,29 +4472,30 @@ function historicalNySweeps(
 
     const premarket =
       rows.filter(
-        b => {
+        bar => {
 
-          const p =
+          const parts =
             nyParts(
-              b.time
+              bar.time
             );
 
 
           const minute =
-            p.hour *
+            parts.hour *
             60 +
-            p.minute;
+            parts.minute;
 
 
           return (
 
             minute >=
-            240
+            4 * 60
 
             &&
 
             minute <
-            570
+            9 * 60 +
+            30
 
           );
 
@@ -4054,31 +4503,32 @@ function historicalNySweeps(
       );
 
 
-    const postOpen =
+    const afterOpen =
       rows.filter(
-        b => {
+        bar => {
 
-          const p =
+          const parts =
             nyParts(
-              b.time
+              bar.time
             );
 
 
           const minute =
-            p.hour *
+            parts.hour *
             60 +
-            p.minute;
+            parts.minute;
 
 
           return (
 
             minute >=
-            570
+            9 * 60 +
+            30
 
             &&
 
             minute <
-            720
+            12 * 60
 
           );
 
@@ -4093,7 +4543,7 @@ function historicalNySweeps(
 
       ||
 
-      postOpen.length <
+      afterOpen.length <
       4
 
     ) {
@@ -4106,25 +4556,29 @@ function historicalNySweeps(
     eligible++;
 
 
-    const high =
+    const premarketHigh =
       Math.max(
+
         ...premarket.map(
-          x =>
-            x.high
+          bar =>
+            bar.high
         )
+
       );
 
 
-    const low =
+    const premarketLow =
       Math.min(
+
         ...premarket.map(
-          x =>
-            x.low
+          bar =>
+            bar.low
         )
+
       );
 
 
-    const atrValue =
+    const localAtr =
 
       last(
         atrSeries(
@@ -4138,59 +4592,59 @@ function historicalNySweeps(
       mean(
 
         premarket.map(
-          x =>
-            x.high -
-            x.low
+          bar =>
+            bar.high -
+            bar.low
         )
 
       );
 
 
-    const highEvent =
+    const highSweep =
       sweepEvent(
 
-        postOpen,
+        afterOpen,
 
-        high,
+        premarketHigh,
 
         "HIGH",
 
-        atrValue
+        localAtr
 
       );
 
 
-    const lowEvent =
+    const lowSweep =
       sweepEvent(
 
-        postOpen,
+        afterOpen,
 
-        low,
+        premarketLow,
 
         "LOW",
 
-        atrValue
+        localAtr
 
       );
 
 
     if (
-      highEvent
+      highSweep
     ) {
 
       highEvents.push(
-        highEvent
+        highSweep
       );
 
     }
 
 
     if (
-      lowEvent
+      lowSweep
     ) {
 
       lowEvents.push(
-        lowEvent
+        lowSweep
       );
 
     }
@@ -4238,19 +4692,19 @@ function sweepEvent(
   const index =
     bars.findIndex(
 
-      b =>
+      bar =>
 
         side ===
         "HIGH"
 
           ?
 
-          b.high >
+          bar.high >
           level
 
           :
 
-          b.low <
+          bar.low <
           level
 
     );
@@ -4268,8 +4722,12 @@ function sweepEvent(
 
   const sample =
     bars.slice(
+
       index,
-      index + 12
+
+      index +
+      12
+
     );
 
 
@@ -4314,49 +4772,41 @@ function sweepEvent(
 
 
     if (
-
       i >
       0
+    ) {
 
-      &&
+      const returnedInside =
 
-      (
+        side ===
+        "HIGH"
 
-        (
-          side ===
-          "HIGH"
-
-          &&
+          ?
 
           sample[i].close <
           level
-        )
 
-        ||
-
-        (
-          side ===
-          "LOW"
-
-          &&
+          :
 
           sample[i].close >
-          level
-        )
-
-      )
-
-    ) {
-
-      reversed =
-        true;
+          level;
 
 
-      barsBack =
-        i;
+      if (
+        returnedInside
+      ) {
+
+        reversed =
+          true;
 
 
-      break;
+        barsBack =
+          i;
+
+
+        break;
+
+      }
 
     }
 
@@ -4368,6 +4818,7 @@ function sweepEvent(
     overshoot:
       extension,
 
+
     overshootAtr:
 
       extension
@@ -4378,6 +4829,7 @@ function sweepEvent(
         atrValue,
         0.01
       ),
+
 
     reversed,
 
@@ -4397,8 +4849,8 @@ function summarizeSweeps(
     events
 
       .map(
-        x =>
-          x.overshootAtr
+        event =>
+          event.overshootAtr
       )
 
       .filter(
@@ -4408,8 +4860,10 @@ function summarizeSweeps(
 
   const reversals =
     events.filter(
-      x =>
-        x.reversed
+
+      event =>
+        event.reversed
+
     ).length;
 
 
@@ -4420,7 +4874,7 @@ function summarizeSweeps(
 
 
     sweepRatePct:
-      r(
+      round(
 
         eligible
 
@@ -4440,7 +4894,7 @@ function summarizeSweeps(
 
 
     reversalRatePct:
-      r(
+      round(
 
         events.length
 
@@ -4460,7 +4914,7 @@ function summarizeSweeps(
 
 
     p25OvershootAtr:
-      r(
+      round(
 
         percentile(
           overshoots,
@@ -4477,11 +4931,11 @@ function summarizeSweeps(
 
 
     medianOvershootAtr:
-      r(
+      round(
 
         percentile(
           overshoots,
-          0.5
+          0.50
         )
 
         ||
@@ -4494,7 +4948,7 @@ function summarizeSweeps(
 
 
     p75OvershootAtr:
-      r(
+      round(
 
         percentile(
           overshoots,
@@ -4515,12 +4969,12 @@ function summarizeSweeps(
 
 
 /* =========================================================
-   LIQUIDITY POOLS
+   LIQUIDITY RANKING
 ========================================================= */
 
 
 function rankPools(
-  ctx
+  context
 ) {
 
   const {
@@ -4534,19 +4988,25 @@ function rankPools(
     refs
 
   } =
-    ctx;
+    context;
 
 
   const pools =
     [];
 
 
-  const add = (
+  const addPool = (
+
     name,
+
     level,
+
     side,
+
     type,
+
     importance
+
   ) => {
 
     if (
@@ -4607,187 +5067,263 @@ function rankPools(
   };
 
 
-  add(
+  addPool(
+
     "Premarket High",
-    refs.premarket?.high,
+
+    refs.premarket
+      ?.high,
+
     "HIGH",
+
     "PREMARKET_HIGH",
+
     1.55
+
   );
 
 
-  add(
+  addPool(
+
     "Premarket Low",
-    refs.premarket?.low,
+
+    refs.premarket
+      ?.low,
+
     "LOW",
+
     "PREMARKET_LOW",
+
     1.55
+
   );
 
 
-  add(
+  addPool(
+
     "Opening Range High",
-    refs.openingRange30?.high,
+
+    refs.openingRange30
+      ?.high,
+
     "HIGH",
+
     "OR_HIGH",
+
     1.45
+
   );
 
 
-  add(
+  addPool(
+
     "Opening Range Low",
-    refs.openingRange30?.low,
+
+    refs.openingRange30
+      ?.low,
+
     "LOW",
+
     "OR_LOW",
+
     1.45
+
   );
 
 
-  add(
+  addPool(
+
     "Previous Cash High",
-    refs.previousCash?.high,
+
+    refs.previousCash
+      ?.high,
+
     "HIGH",
+
     "PREV_CASH_HIGH",
+
     1.35
+
   );
 
 
-  add(
+  addPool(
+
     "Previous Cash Low",
-    refs.previousCash?.low,
+
+    refs.previousCash
+      ?.low,
+
     "LOW",
+
     "PREV_CASH_LOW",
+
     1.35
+
   );
 
 
-  add(
+  addPool(
+
     "Previous Day High",
-    refs.previousDay?.high,
+
+    refs.previousDay
+      ?.high,
+
     "HIGH",
+
     "PDH",
+
     1.50
+
   );
 
 
-  add(
+  addPool(
+
     "Previous Day Low",
-    refs.previousDay?.low,
+
+    refs.previousDay
+      ?.low,
+
     "LOW",
+
     "PDL",
+
     1.50
+
   );
 
 
-  refs.equalHighs
-    .forEach(
-      x =>
-        add(
+  for (
+    const item of
+    refs.equalHighs
+  ) {
 
-          `Equal Highs (${x.touches}x)`,
+    addPool(
 
-          x.price,
+      `Equal Highs (${item.touches}x)`,
 
-          "HIGH",
+      item.price,
 
-          "EQH",
+      "HIGH",
 
-          1.30
+      "EQH",
 
-        )
+      1.30
+
     );
 
+  }
 
-  refs.equalLows
-    .forEach(
-      x =>
-        add(
 
-          `Equal Lows (${x.touches}x)`,
+  for (
+    const item of
+    refs.equalLows
+  ) {
 
-          x.price,
+    addPool(
 
-          "LOW",
+      `Equal Lows (${item.touches}x)`,
 
-          "EQL",
+      item.price,
 
-          1.30
+      "LOW",
 
-        )
+      "EQL",
+
+      1.30
+
     );
 
+  }
 
-  refs.h1Highs
-    .slice(
+
+  for (
+    const priceLevel of
+    refs.h1Highs.slice(
       0,
       3
     )
-    .forEach(
-      x =>
-        add(
+  ) {
 
-          "H1 Swing High",
+    addPool(
 
-          x,
+      "H1 Swing High",
 
-          "HIGH",
+      priceLevel,
 
-          "H1_HIGH",
+      "HIGH",
 
-          1
+      "H1_HIGH",
 
-        )
+      1
+
     );
 
+  }
 
-  refs.h1Lows
-    .slice(
+
+  for (
+    const priceLevel of
+    refs.h1Lows.slice(
       0,
       3
     )
-    .forEach(
-      x =>
-        add(
+  ) {
 
-          "H1 Swing Low",
+    addPool(
 
-          x,
+      "H1 Swing Low",
 
-          "LOW",
+      priceLevel,
 
-          "H1_LOW",
+      "LOW",
 
-          1
+      "H1_LOW",
 
-        )
+      1
+
     );
 
+  }
 
-  refs.roundNumbers
-    .forEach(
-      x =>
-        add(
 
-          `Round ${Math.round(x)}`,
+  for (
+    const priceLevel of
+    refs.roundNumbers
+  ) {
 
-          x,
+    addPool(
 
-          x >= price
-            ?
-            "HIGH"
-            :
-            "LOW",
+      `Round ${Math.round(
+        priceLevel
+      )}`,
 
-          "ROUND",
+      priceLevel,
 
-          0.85
+      priceLevel >=
+      price
 
-        )
+        ?
+
+        "HIGH"
+
+        :
+
+        "LOW",
+
+      "ROUND",
+
+      0.85
+
     );
+
+  }
 
 
   const merged =
-    mergePool(
+    mergePools(
 
       pools,
 
@@ -4814,8 +5350,11 @@ function rankPools(
     .map(
       pool =>
         enrichPool(
+
           pool,
-          ctx
+
+          context
+
         )
     )
 
@@ -4836,17 +5375,16 @@ function rankPools(
 }
 
 
-function mergePool(
+function mergePools(
   pools,
   tolerance
 ) {
 
-  const out =
+  const output =
     [];
 
 
-  for (
-    const x of
+  const sorted =
     [
       ...pools
     ]
@@ -4857,26 +5395,31 @@ function mergePool(
         ) =>
           a.level -
           b.level
-      )
+      );
+
+
+  for (
+    const pool of sorted
   ) {
 
     const existing =
-      out.find(
+      output.find(
 
-        y =>
+        item =>
 
-          y.side ===
-          x.side
+          item.side ===
+          pool.side
 
           &&
 
           Math.abs(
-            y.level -
-            x.level
+
+            item.level -
+            pool.level
+
           )
 
           <=
-
           tolerance
 
       );
@@ -4886,9 +5429,9 @@ function mergePool(
       !existing
     ) {
 
-      out.push({
+      output.push({
 
-        ...x,
+        ...pool,
 
         aliases:
           []
@@ -4896,65 +5439,65 @@ function mergePool(
       });
 
 
-    } else {
-
-
-      existing.aliases
-        .push(
-          x.name
-        );
-
-
-      if (
-
-        x.importance >
-        existing.importance
-
-      ) {
-
-        existing.name =
-          x.name;
-
-
-        existing.type =
-          x.type;
-
-
-        existing.importance =
-          x.importance;
-
-      }
-
-
-      existing.level =
-
-        (
-          existing.level +
-          x.level
-        )
-
-        /
-
-        2;
+      continue;
 
     }
+
+
+    existing.aliases
+      .push(
+        pool.name
+      );
+
+
+    if (
+
+      pool.importance >
+      existing.importance
+
+    ) {
+
+      existing.name =
+        pool.name;
+
+
+      existing.type =
+        pool.type;
+
+
+      existing.importance =
+        pool.importance;
+
+    }
+
+
+    existing.level =
+
+      (
+        existing.level +
+        pool.level
+      )
+
+      /
+
+      2;
 
   }
 
 
-  return out;
+  return output;
 
 }
 
 
 /* =========================================================
-   POOL SCORE + SWEEP END
+   ENRICH LIQUIDITY POOL
 ========================================================= */
 
 
 function enrichPool(
   pool,
-  ctx
+  context
 ) {
 
   const {
@@ -4976,7 +5519,7 @@ function enrichPool(
     history
 
   } =
-    ctx;
+    context;
 
 
   const direction =
@@ -4995,8 +5538,10 @@ function enrichPool(
 
   const distance =
     Math.abs(
+
       pool.level -
       price
+
     );
 
 
@@ -5012,7 +5557,7 @@ function enrichPool(
     );
 
 
-  const trend =
+  const trendScore =
 
     frames.m5.score *
     0.18
@@ -5033,28 +5578,36 @@ function enrichPool(
     0.15;
 
 
-  const flowDelta =
-    flow.last15.deltaPct ||
+  const delta15 =
+    flow.last15
+      ?.deltaPct
+
+    ||
+
     0;
 
 
   const cash =
     sessions.find(
-      x =>
-        x.id ===
+
+      session =>
+        session.id ===
         "cash"
+
     );
 
 
   const premarket =
     sessions.find(
-      x =>
-        x.id ===
+
+      session =>
+        session.id ===
         "premarket"
+
     );
 
 
-  let score =
+  let likelihoodScore =
 
     16
 
@@ -5078,7 +5631,7 @@ function enrichPool(
     clamp(
 
       direction *
-      trend /
+      trendScore /
       6,
 
       -14,
@@ -5092,7 +5645,7 @@ function enrichPool(
     clamp(
 
       direction *
-      flowDelta /
+      delta15 /
       3,
 
       -10,
@@ -5109,7 +5662,7 @@ function enrichPool(
 
   ) {
 
-    score +=
+    likelihoodScore +=
       14;
 
   }
@@ -5122,7 +5675,7 @@ function enrichPool(
 
   ) {
 
-    score +=
+    likelihoodScore +=
       9;
 
   }
@@ -5148,22 +5701,26 @@ function enrichPool(
     !correctSide
   ) {
 
-    score -=
+    likelihoodScore -=
       24;
 
   }
 
 
-  score =
+  likelihoodScore =
     clamp(
-      score,
+
+      likelihoodScore,
+
       5,
+
       95
+
     );
 
 
   /* =====================================================
-     HISTORICAL SWEEP DEPTH
+     HISTORICAL OVERSHOOT MODEL
   ===================================================== */
 
 
@@ -5203,7 +5760,7 @@ function enrichPool(
     0.10;
 
 
-  let median =
+  let medianOvershoot =
 
     historical
       ?.medianOvershootAtr
@@ -5223,17 +5780,18 @@ function enrichPool(
     0.45;
 
 
-  /* Strong directional flow can push the stop-run deeper. */
+  /* Strong flow into liquidity can deepen sweep. */
+
 
   if (
 
     direction *
-    flowDelta >
+    delta15 >
     18
 
   ) {
 
-    median *=
+    medianOvershoot *=
       1.22;
 
 
@@ -5243,7 +5801,8 @@ function enrichPool(
   }
 
 
-  /* Absorption can shorten expected extension. */
+  /* Absorption can reduce expected extension. */
+
 
   if (
 
@@ -5259,7 +5818,7 @@ function enrichPool(
 
   ) {
 
-    median *=
+    medianOvershoot *=
       0.72;
 
 
@@ -5283,7 +5842,7 @@ function enrichPool(
 
   ) {
 
-    median *=
+    medianOvershoot *=
       0.72;
 
 
@@ -5293,7 +5852,7 @@ function enrichPool(
   }
 
 
-  const zone1 =
+  const zonePoint1 =
 
     pool.level
 
@@ -5311,11 +5870,11 @@ function enrichPool(
     +
 
     direction *
-    median *
+    medianOvershoot *
     atr5;
 
 
-  const zone2 =
+  const zonePoint2 =
 
     pool.level
 
@@ -5328,46 +5887,62 @@ function enrichPool(
 
   const zoneLow =
     Math.min(
-      zone1,
-      zone2
+
+      zonePoint1,
+
+      zonePoint2
+
     );
 
 
   const zoneHigh =
     Math.max(
-      zone1,
-      zone2
+
+      zonePoint1,
+
+      zonePoint2
+
     );
 
 
-  const profileConfluence =
-    [
+  const profileNodes = [
 
-      profile.poc,
+    profile.poc,
 
-      ...profile.hvn,
+    ...(
+      profile.hvn ||
+      []
+    ),
 
-      ...profile.lvn
+    ...(
+      profile.lvn ||
+      []
+    )
 
-    ]
+  ];
+
+
+  const confluences =
+    profileNodes
+
       .filter(
 
-        x =>
+        node =>
 
           Number.isFinite(
-            x
+            node
           )
 
           &&
 
-          x >=
+          node >=
           zoneLow -
           atr5 *
           0.15
 
           &&
 
-          x <=
+          node <=
           zoneHigh +
           atr5 *
           0.15
@@ -5375,8 +5950,13 @@ function enrichPool(
       )
 
       .map(
-        x =>
-          `Volume node ${r(x,0)}`
+
+        node =>
+          `Volume node ${round(
+            node,
+            0
+          )}`
+
       );
 
 
@@ -5385,7 +5965,7 @@ function enrichPool(
 
 
   if (
-    median <
+    medianOvershoot <
     0.12
   ) {
 
@@ -5395,8 +5975,8 @@ function enrichPool(
   }
 
 
-  else if (
-    median >
+  if (
+    medianOvershoot >
     0.35
   ) {
 
@@ -5412,36 +5992,36 @@ function enrichPool(
 
 
     level:
-      r(
+      round(
         pool.level,
         2
       ),
 
 
     distance:
-      r(
+      round(
         distance,
         2
       ),
 
 
     distanceAtr:
-      r(
+      round(
         distanceAtr,
         2
       ),
 
 
     likelihoodScore:
-      r(
-        score,
+      round(
+        likelihoodScore,
         1
       ),
 
 
     likelihood:
 
-      score >=
+      likelihoodScore >=
       75
 
         ?
@@ -5450,7 +6030,7 @@ function enrichPool(
 
         :
 
-        score >=
+        likelihoodScore >=
         58
 
           ?
@@ -5468,39 +6048,41 @@ function enrichPool(
     projectedSweep: {
 
       target:
-        r(
+        round(
           pool.level,
           2
         ),
 
 
       likelyEnd:
-        r(
+        round(
           likelyEnd,
           2
         ),
 
 
       zoneLow:
-        r(
+        round(
           zoneLow,
           2
         ),
 
 
       zoneHigh:
-        r(
+        round(
           zoneHigh,
           2
         ),
 
 
       overshoot:
-        r(
+        round(
 
           Math.abs(
+
             likelyEnd -
             pool.level
+
           ),
 
           2
@@ -5509,8 +6091,8 @@ function enrichPool(
 
 
       overshootAtr:
-        r(
-          median,
+        round(
+          medianOvershoot,
           3
         ),
 
@@ -5532,11 +6114,20 @@ function enrichPool(
 
     reasons: [
 
-      `${r(distanceAtr,2)}× M15 ATR from price`,
+      `${round(
+        distanceAtr,
+        2
+      )}× M15 ATR from price`,
 
-      `Liquidity importance ${r(pool.importance,2)}×`,
+      `Liquidity importance ${round(
+        pool.importance,
+        2
+      )}×`,
 
-      `15m delta proxy ${r(flowDelta,1)}%`,
+      `15m delta proxy ${round(
+        delta15,
+        1
+      )}%`,
 
       cash?.phase ===
       "CASH OPEN LIQUIDITY WINDOW"
@@ -5549,7 +6140,7 @@ function enrichPool(
 
         null,
 
-      ...profileConfluence
+      ...confluences
 
     ]
       .filter(
@@ -5580,12 +6171,12 @@ function trapWindows({
 
 }) {
 
-  const out =
+  const output =
     [];
 
 
   for (
-    const s of sessions
+    const session of sessions
   ) {
 
     let score =
@@ -5597,7 +6188,7 @@ function trapWindows({
 
 
     if (
-      s.phase ===
+      session.phase ===
       "PRE-CASH-OPEN WINDOW"
     ) {
 
@@ -5613,7 +6204,7 @@ function trapWindows({
 
 
     if (
-      s.phase ===
+      session.phase ===
       "CASH OPEN LIQUIDITY WINDOW"
     ) {
 
@@ -5629,7 +6220,7 @@ function trapWindows({
 
 
     if (
-      s.phase ===
+      session.phase ===
       "CLOSING LIQUIDITY WINDOW"
     ) {
 
@@ -5647,8 +6238,8 @@ function trapWindows({
     const nearby =
       pools.filter(
 
-        x =>
-          x.distance <=
+        pool =>
+          pool.distance <=
           atr15 *
           0.7
 
@@ -5696,25 +6287,29 @@ function trapWindows({
 
 
     if (
-      score
+      score >
+      0
     ) {
 
-      out.push({
+      output.push({
 
         session:
-          s.name,
+          session.name,
 
         phase:
-          s.phase,
+          session.phase,
 
         score:
-          r(
+          round(
+
             clamp(
               score,
               0,
               95
             ),
+
             1
+
           ),
 
         risk:
@@ -5752,7 +6347,7 @@ function trapWindows({
     pools[0]
   ) {
 
-    out.push({
+    output.push({
 
       session:
         "Primary liquidity magnet",
@@ -5768,7 +6363,10 @@ function trapWindows({
 
       reasons: [
 
-        `Current ${r(price,2)} → ${pools[0].level}`,
+        `Current ${round(
+          price,
+          2
+        )} → ${pools[0].level}`,
 
         `Projected raid end ${pools[0].projectedSweep.likelyEnd}`
 
@@ -5779,7 +6377,7 @@ function trapWindows({
   }
 
 
-  return out
+  return output
 
     .sort(
       (
@@ -5799,7 +6397,7 @@ function trapWindows({
 
 
 /* =========================================================
-   REGIME
+   MARKET REGIME
 ========================================================= */
 
 
@@ -5823,25 +6421,29 @@ function marketRegime(
   ];
 
 
-  const bulls =
+  const bullishCount =
     biases.filter(
-      x =>
-        x ===
+
+      bias =>
+        bias ===
         "BULLISH"
+
     ).length;
 
 
-  const bears =
+  const bearishCount =
     biases.filter(
-      x =>
-        x ===
+
+      bias =>
+        bias ===
         "BEARISH"
+
     ).length;
 
 
   const trend =
 
-    bulls >=
+    bullishCount >=
     3
 
       ?
@@ -5850,7 +6452,7 @@ function marketRegime(
 
       :
 
-      bears >=
+      bearishCount >=
       3
 
         ?
@@ -5864,38 +6466,42 @@ function marketRegime(
 
   const atrValues =
     atrSeries(
+
       m5,
+
       14
+
     )
       .filter(
         Number.isFinite
       );
 
 
-  const ratio =
+  const atrMedian =
+    median(
+      atrValues
+    )
+
+    ||
+
+    atr5;
+
+
+  const expansionRatio =
 
     atr5
 
     /
 
     Math.max(
-
-      median(
-        atrValues
-      )
-
-      ||
-
-      atr5,
-
+      atrMedian,
       0.01
-
     );
 
 
   const volatility =
 
-    ratio >
+    expansionRatio >
     1.30
 
       ?
@@ -5904,7 +6510,7 @@ function marketRegime(
 
       :
 
-      ratio <
+      expansionRatio <
       0.75
 
         ?
@@ -5916,9 +6522,18 @@ function marketRegime(
         "NORMAL";
 
 
+  const delta15 =
+    flow.last15
+      ?.deltaPct
+
+    ||
+
+    0;
+
+
   const orderFlow =
 
-    flow.last15.deltaPct >
+    delta15 >
     18
 
       ?
@@ -5927,7 +6542,7 @@ function marketRegime(
 
       :
 
-      flow.last15.deltaPct <
+      delta15 <
       -18
 
         ?
@@ -5947,11 +6562,13 @@ function marketRegime(
 
     orderFlow,
 
+
     atrExpansion:
-      r(
-        ratio,
+      round(
+        expansionRatio,
         2
       ),
+
 
     label:
 
@@ -5978,7 +6595,9 @@ function last(
   for (
     let i =
       values.length - 1;
+
     i >= 0;
+
     i--
   ) {
 
@@ -6040,18 +6659,26 @@ function mean(
   values
 ) {
 
-  return values.length
+  if (
+    !values.length
+  ) {
 
-    ?
+    return 0;
+
+  }
+
+
+  return (
 
     sum(
       values
-    ) /
+    )
+
+    /
+
     values.length
 
-    :
-
-    0;
+  );
 
 }
 
@@ -6112,6 +6739,18 @@ function percentile(
     );
 
 
+  if (
+    lower ===
+    upper
+  ) {
+
+    return sorted[
+      lower
+    ];
+
+  }
+
+
   const weight =
     position -
     lower;
@@ -6119,7 +6758,12 @@ function percentile(
 
   return (
 
-    sorted[lower] *
+    sorted[
+      lower
+    ]
+
+    *
+
     (
       1 -
       weight
@@ -6127,7 +6771,12 @@ function percentile(
 
     +
 
-    sorted[upper] *
+    sorted[
+      upper
+    ]
+
+    *
+
     weight
 
   );
@@ -6167,7 +6816,7 @@ function clamp(
 }
 
 
-function r(
+function round(
   value,
   decimals = 2
 ) {
@@ -6183,7 +6832,7 @@ function r(
   }
 
 
-  const power =
+  const multiplier =
     10 **
     decimals;
 
@@ -6191,13 +6840,15 @@ function r(
   return (
 
     Math.round(
+
       value *
-      power
+      multiplier
+
     )
 
     /
 
-    power
+    multiplier
 
   );
 
@@ -6219,7 +6870,7 @@ function pad(
 }
 
 
-function minLabel(
+function minuteLabel(
   minutes
 ) {
 
