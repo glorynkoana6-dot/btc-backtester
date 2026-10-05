@@ -1,6 +1,14 @@
 {
-  "name": "mkayfx-us30-liquidity-intelligence",
+  "name": "mkayfx-xau-liquidity-intelligence",
   "version": "1.0.0",
   "private": true,
-  "type": "module"
+  "description": "MKAYFX XAUUSD Liquidity Intelligence powered by Massive Polygon market data",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "engines": {
+    "node": "22.x"
+  }
 }
