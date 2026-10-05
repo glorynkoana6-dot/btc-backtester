@@ -1,12 +1,9 @@
 {
-  "name": "mkayfx-btc-dynamic-structure",
+  "name": "mkayfx-btc-15m-breakout",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "vercel dev"
-  },
-  "engines": {
-    "node": "22.x"
   }
 }
