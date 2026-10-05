@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/xau.js": {
+    "api/us30.js": {
       "maxDuration": 60
     }
   },
