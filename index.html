@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -11,60 +10,39 @@
   content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"
 >
 
-<meta
-  name="theme-color"
-  content="#05070b"
->
+<meta name="theme-color" content="#030405">
 
-<meta
-  name="apple-mobile-web-app-capable"
-  content="yes"
->
-
-<meta
-  name="apple-mobile-web-app-status-bar-style"
-  content="black-translucent"
->
-
-<title>MKAYFX BTC Dynamic</title>
-
+<title>MKAYFX BTC BREAKOUT</title>
 
 <style>
 
 *{
   box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
 }
 
 :root{
-
-  --bg:#05070b;
-  --card:#0c111b;
-  --card2:#111722;
-
-  --border:rgba(255,255,255,.085);
-
-  --text:#f4f6fa;
-  --muted:#7f899d;
-
-  --green:#39e6a7;
-  --red:#ff5f78;
-  --blue:#7295ff;
-  --gold:#f2c866;
-
+  --bg:#030405;
+  --card:#090c10;
+  --card2:#0d1117;
+  --border:rgba(255,255,255,.08);
+  --text:#f7f7f7;
+  --muted:#7d8795;
+  --green:#25e59a;
+  --red:#ff566d;
+  --gold:#f4c95d;
+  --blue:#6f8cff;
 }
 
 body{
 
   margin:0;
 
-  min-height:100vh;
-
   background:
     radial-gradient(
       circle at top,
-      #101726 0,
-      #05070b 42%
+      #111824 0,
+      #050709 40%,
+      #030405 100%
     );
 
   color:var(--text);
@@ -75,122 +53,74 @@ body{
     "Segoe UI",
     sans-serif;
 
+  min-height:100vh;
 }
 
 .app{
 
-  width:min(
-    100%,
-    760px
-  );
+  max-width:800px;
 
   margin:auto;
 
   padding:
-    24px 18px 80px;
-
+    20px 14px 60px;
 }
 
-.hero{
+.logo{
 
-  padding:
-    28px 24px;
+  font-size:13px;
 
-  border:
-    1px solid var(--border);
+  letter-spacing:4px;
 
-  border-radius:
-    30px;
+  font-weight:800;
 
-  background:
-    linear-gradient(
-      145deg,
-      #111827,
-      #090d15
-    );
+  color:var(--muted);
 
-  margin-bottom:
-    22px;
-
-}
-
-.brand{
-
-  color:
-    var(--green);
-
-  font-size:
-    13px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    3px;
-
+  margin-bottom:7px;
 }
 
 h1{
 
-  margin:
-    12px 0 4px;
+  margin:0;
 
-  font-size:
-    30px;
+  font-size:30px;
 
+  line-height:1;
 }
 
 .subtitle{
 
-  color:
-    var(--muted);
+  color:var(--muted);
 
-  line-height:
-    1.6;
+  font-size:13px;
 
+  margin-top:8px;
+
+  margin-bottom:22px;
 }
 
 .card{
 
   background:
-    rgba(
-      12,
-      17,
-      27,
-      .94
+    linear-gradient(
+      145deg,
+      var(--card2),
+      var(--card)
     );
 
   border:
-    1px solid var(--border);
+    1px solid
+    var(--border);
 
-  border-radius:
-    28px;
+  border-radius:18px;
 
-  padding:
-    24px;
+  padding:17px;
 
-  margin-top:
-    20px;
+  margin-bottom:13px;
 
-}
-
-.title{
-
-  color:
-    #919bb0;
-
-  font-size:
-    13px;
-
-  font-weight:
-    900;
-
-  letter-spacing:
-    3px;
-
-  margin-bottom:
-    20px;
-
+  box-shadow:
+    0 12px 35px
+    rgba(0,0,0,.25);
 }
 
 .grid{
@@ -200,304 +130,45 @@ h1{
   grid-template-columns:
     repeat(
       2,
-      minmax(
-        0,
-        1fr
-      )
+      1fr
     );
 
-  gap:
-    14px;
-
+  gap:10px;
 }
 
 .stat{
 
-  min-height:
-    105px;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:
-    22px;
-
-  padding:
-    18px;
-
   background:
-    var(--card2);
+    rgba(
+      255,
+      255,
+      255,
+      .025
+    );
 
+  border-radius:13px;
+
+  padding:13px;
 }
 
 .label{
 
-  color:
-    var(--muted);
+  color:var(--muted);
 
-  font-size:
-    12px;
+  font-size:11px;
 
-  font-weight:
-    800;
+  text-transform:uppercase;
 
-  letter-spacing:
-    1.5px;
-
+  letter-spacing:1px;
 }
 
 .value{
 
-  margin-top:
-    12px;
+  font-size:22px;
 
-  font-size:
-    24px;
+  font-weight:800;
 
-  font-weight:
-    900;
-
-}
-
-.signal{
-
-  font-size:
-    38px;
-
-  font-weight:
-    1000;
-
-}
-
-.buy{
-  color:var(--green);
-}
-
-.sell{
-  color:var(--red);
-}
-
-.wait{
-  color:var(--gold);
-}
-
-.row{
-
-  display:flex;
-
-  gap:12px;
-
-}
-
-.field{
-
-  flex:1;
-
-}
-
-.field label{
-
-  display:block;
-
-  margin:
-    0 0 8px;
-
-  color:
-    var(--muted);
-
-  font-size:
-    12px;
-
-  font-weight:
-    800;
-
-  letter-spacing:
-    1.2px;
-
-}
-
-input,
-select{
-
-  width:100%;
-
-  padding:
-    17px;
-
-  border-radius:
-    18px;
-
-  border:
-    1px solid var(--border);
-
-  background:
-    #111722;
-
-  color:
-    white;
-
-  font-size:
-    16px;
-
-  outline:none;
-
-}
-
-button{
-
-  width:100%;
-
-  margin-top:
-    18px;
-
-  padding:
-    19px;
-
-  border:0;
-
-  border-radius:
-    20px;
-
-  background:
-    #1b2230;
-
-  color:white;
-
-  font-weight:
-    900;
-
-  font-size:
-    15px;
-
-  letter-spacing:
-    .6px;
-
-}
-
-button:active{
-
-  transform:
-    scale(.99);
-
-}
-
-.small{
-
-  color:
-    var(--muted);
-
-  font-size:
-    13px;
-
-  line-height:
-    1.6;
-
-}
-
-.bias{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      1fr
-    );
-
-  gap:
-    8px;
-
-  margin-top:
-    18px;
-
-}
-
-.biasBox{
-
-  padding:
-    12px 5px;
-
-  text-align:center;
-
-  border:
-    1px solid var(--border);
-
-  border-radius:
-    15px;
-
-  background:
-    #0b1018;
-
-}
-
-.biasTF{
-
-  color:
-    var(--muted);
-
-  font-size:
-    10px;
-
-  font-weight:
-    900;
-
-}
-
-.biasValue{
-
-  margin-top:
-    6px;
-
-  font-size:
-    11px;
-
-  font-weight:
-    900;
-
-}
-
-.trade{
-
-  padding:
-    18px 0;
-
-  border-bottom:
-    1px solid var(--border);
-
-}
-
-.trade:last-child{
-
-  border-bottom:0;
-
-}
-
-.tradeTop{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  font-weight:
-    900;
-
-}
-
-.tradeMeta{
-
-  margin-top:
-    8px;
-
-  color:
-    var(--muted);
-
-  font-size:
-    13px;
-
-  line-height:
-    1.55;
-
+  margin-top:5px;
 }
 
 .green{
@@ -512,40 +183,154 @@ button:active{
   color:var(--gold);
 }
 
-.loading{
+.controls{
 
-  opacity:.55;
+  display:grid;
 
-  pointer-events:none;
+  grid-template-columns:
+    1fr 1fr;
 
+  gap:10px;
 }
 
-@media(
-  max-width:480px
-){
+input,
+select,
+button{
 
-  .app{
+  width:100%;
 
-    padding:
-      18px 14px 70px;
+  padding:14px;
 
+  border-radius:12px;
+
+  border:
+    1px solid
+    var(--border);
+
+  background:#070a0e;
+
+  color:white;
+
+  font-size:15px;
+}
+
+button{
+
+  grid-column:
+    1 / -1;
+
+  background:
+    linear-gradient(
+      135deg,
+      #4169ff,
+      #745cff
+    );
+
+  font-weight:800;
+
+  cursor:pointer;
+}
+
+button:disabled{
+
+  opacity:.5;
+}
+
+.trade{
+
+  border-top:
+    1px solid
+    var(--border);
+
+  padding:
+    13px 0;
+}
+
+.trade:first-child{
+
+  border-top:none;
+}
+
+.trade-head{
+
+  display:flex;
+
+  justify-content:
+    space-between;
+
+  align-items:center;
+
+  font-weight:800;
+}
+
+.trade-info{
+
+  margin-top:7px;
+
+  color:var(--muted);
+
+  font-size:12px;
+
+  line-height:1.7;
+}
+
+.badge{
+
+  padding:
+    5px 9px;
+
+  border-radius:20px;
+
+  font-size:11px;
+
+  font-weight:800;
+}
+
+.long{
+
+  color:var(--green);
+
+  background:
+    rgba(
+      37,
+      229,
+      154,
+      .10
+    );
+}
+
+.short{
+
+  color:var(--red);
+
+  background:
+    rgba(
+      255,
+      86,
+      109,
+      .10
+    );
+}
+
+.status{
+
+  font-size:13px;
+
+  color:var(--muted);
+
+  margin-top:12px;
+}
+
+@media(min-width:650px){
+
+  .grid{
+
+    grid-template-columns:
+      repeat(
+        4,
+        1fr
+      );
   }
-
-  .hero,
-  .card{
-
-    border-radius:
-      24px;
-
-  }
-
-  h1{
-
-    font-size:
-      26px;
-
-  }
-
 }
 
 </style>
@@ -557,366 +342,152 @@ button:active{
 
 <div class="app">
 
-
-<div class="hero">
-
-  <div class="brand">
+  <div class="logo">
     MKAYFX
   </div>
 
   <h1>
-    BTC DYNAMIC
+    BTC BREAKOUT
   </h1>
 
   <div class="subtitle">
-    Coinbase BTC-USD • M1 execution • M5 structure • M15 direction
-  </div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="title">
-    LIVE ANALYSIS
+    Dangerous V1 • 15M Range Breakout • Coinbase
   </div>
 
 
-  <div
-    id="signal"
-    class="signal wait"
-  >
-    WAIT
-  </div>
+  <div class="card">
 
+    <div class="controls">
 
-  <div
-    id="setup"
-    class="small"
-  >
-    Loading BTC analysis...
-  </div>
+      <div>
 
+        <div class="label">
+          Starting Balance
+        </div>
 
-  <div class="grid" style="margin-top:20px">
-
-    <div class="stat">
-
-      <div class="label">
-        PRICE
-      </div>
-
-      <div
-        id="price"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        SCORE
-      </div>
-
-      <div
-        id="score"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        ENTRY
-      </div>
-
-      <div
-        id="entry"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        STOP
-      </div>
-
-      <div
-        id="stop"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        TARGET
-      </div>
-
-      <div
-        id="target"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        RR
-      </div>
-
-      <div
-        id="rr"
-        class="value"
-      >
-        1.5R
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <div
-    id="bias"
-    class="bias"
-  ></div>
-
-
-  <button
-    onclick="loadLive()"
-  >
-    REFRESH ANALYSIS
-  </button>
-
-
-  <div
-    id="updated"
-    class="small"
-    style="
-      text-align:center;
-      margin-top:14px
-    "
-  ></div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="title">
-    BTC DYNAMIC BACKTEST
-  </div>
-
-
-  <div class="row">
-
-    <div class="field">
-
-      <label>
-        DAYS
-      </label>
-
-      <input
-        id="days"
-        type="number"
-        value="10"
-        min="1"
-        max="30"
-      >
-
-    </div>
-
-
-    <div class="field">
-
-      <label>
-        MODE
-      </label>
-
-      <select id="mode">
-
-        <option value="SELECTIVE">
-          SELECTIVE
-        </option>
-
-        <option
-          value="BALANCED"
-          selected
+        <input
+          id="balance"
+          type="number"
+          value="200"
         >
-          BALANCED
-        </option>
 
-        <option value="AGGRESSIVE">
-          AGGRESSIVE
-        </option>
+      </div>
 
-      </select>
+
+      <div>
+
+        <div class="label">
+          Backtest
+        </div>
+
+        <select id="days">
+
+          <option value="7">
+            7 Days
+          </option>
+
+          <option value="14">
+            14 Days
+          </option>
+
+          <option
+            value="30"
+            selected
+          >
+            30 Days
+          </option>
+
+          <option value="60">
+            60 Days
+          </option>
+
+          <option value="90">
+            90 Days
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <button
+        id="run"
+        onclick="runBacktest()"
+      >
+        RUN BACKTEST
+      </button>
 
     </div>
 
-  </div>
-
-
-  <button
-    id="backtestButton"
-    onclick="runBacktest()"
-  >
-    RUN BACKTEST
-  </button>
-
-
-  <div
-    id="backtestInfo"
-    class="small"
-    style="
-      text-align:center;
-      margin-top:14px
-    "
-  ></div>
-
-</div>
-
-
-<div
-  id="performanceCard"
-  class="card"
-  style="display:none"
->
-
-  <div class="title">
-    PERFORMANCE
-  </div>
-
-
-  <div class="grid">
-
-    <div class="stat">
-
-      <div class="label">
-        TRADES
-      </div>
-
-      <div
-        id="trades"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        WIN RATE
-      </div>
-
-      <div
-        id="winRate"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        PROFIT FACTOR
-      </div>
-
-      <div
-        id="pf"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        NET R
-      </div>
-
-      <div
-        id="netR"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        EXPECTANCY
-      </div>
-
-      <div
-        id="expectancy"
-        class="value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="stat">
-
-      <div class="label">
-        MAX DD
-      </div>
-
-      <div
-        id="drawdown"
-        class="value"
-      >
-        —
-      </div>
-
+    <div
+      class="status"
+      id="status"
+    >
+      Ready.
     </div>
 
   </div>
 
 
   <div
-    id="tradeList"
-    style="margin-top:20px"
+    class="grid"
+    id="stats"
   ></div>
 
-</div>
 
+  <div class="card">
+
+    <div
+      style="
+        font-size:16px;
+        font-weight:800;
+        margin-bottom:5px
+      "
+    >
+      Strategy
+    </div>
+
+    <div
+      class="trade-info"
+    >
+
+      15M breakout of previous 3-hour range.<br>
+
+      RSI + EMA momentum confirmation.<br>
+
+      2% risk per trade.<br>
+
+      2R initial target.<br>
+
+      Breakeven + ATR trailing management.<br>
+
+      Fees and slippage included.
+
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div
+      style="
+        font-size:16px;
+        font-weight:800
+      "
+    >
+      Trades
+    </div>
+
+    <div id="trades">
+
+      <div class="status">
+        Run the backtest.
+      </div>
+
+    </div>
+
+  </div>
 
 </div>
 
@@ -927,265 +498,33 @@ function money(
   value
 ){
 
-  if(
-    value === null ||
-    value === undefined ||
-    !Number.isFinite(
-      Number(
-        value
-      )
-    )
-  ){
-    return "—";
-  }
-
   return (
-    "$" +
-    Number(
-      value
-    ).toLocaleString(
-      undefined,
-      {
-        maximumFractionDigits:2
-      }
-    )
+    "R" +
+    Number(value)
+      .toFixed(2)
   );
-
 }
 
 
-function setText(
-  id,
-  value
+function stat(
+  title,
+  value,
+  cls = ""
 ){
 
-  document
-    .getElementById(
-      id
-    )
-    .textContent =
-      value;
-
-}
-
-
-function signalClass(
-  signal
-){
-
-  if(
-    signal === "BUY"
-  ){
-    return "signal buy";
-  }
-
-  if(
-    signal === "SELL"
-  ){
-    return "signal sell";
-  }
-
-  return "signal wait";
-
-}
-
-
-function biasColor(
-  value
-){
-
-  if(
-    value === "BULLISH"
-  ){
-    return "green";
-  }
-
-  if(
-    value === "BEARISH"
-  ){
-    return "red";
-  }
-
-  return "gold";
-
-}
-
-
-async function loadLive(){
-
-  const signalEl =
-    document.getElementById(
-      "signal"
-    );
-
-
-  try{
-
-    const mode =
-      document.getElementById(
-        "mode"
-      )?.value ||
-      "BALANCED";
-
-
-    const response =
-      await fetch(
-        `/api/btc?mode=${encodeURIComponent(mode)}&t=${Date.now()}`,
-        {
-          cache:"no-store"
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if(
-      !response.ok ||
-      !data.ok
-    ){
-
-      throw new Error(
-        data.error ||
-        "Live analysis failed"
-      );
-
-    }
-
-
-    signalEl.textContent =
-      data.signal;
-
-
-    signalEl.className =
-      signalClass(
-        data.signal
-      );
-
-
-    setText(
-      "setup",
-      data.signal === "WAIT"
-        ?
-          `No qualifying trade • BUY ${data.buyScore ?? "—"} • SELL ${data.sellScore ?? "—"}`
-        :
-          `${data.setup} • ${data.mode}`
-    );
-
-
-    setText(
-      "price",
-      money(
-        data.price
-      )
-    );
-
-
-    setText(
-      "score",
-      data.score ?? "—"
-    );
-
-
-    setText(
-      "entry",
-      money(
-        data.entry
-      )
-    );
-
-
-    setText(
-      "stop",
-      money(
-        data.stop
-      )
-    );
-
-
-    setText(
-      "target",
-      money(
-        data.target
-      )
-    );
-
-
-    setText(
-      "rr",
-      `${data.rr}R`
-    );
-
-
-    const bias =
-      data.timeframeBias ||
-      {};
-
-
-    document
-      .getElementById(
-        "bias"
-      )
-      .innerHTML =
-        [
-          "M1",
-          "M5",
-          "M15",
-          "H1"
-        ]
-        .map(
-          tf => {
-
-            const value =
-              bias[tf] ||
-              "N/A";
-
-            return `
-              <div class="biasBox">
-
-                <div class="biasTF">
-                  ${tf}
-                </div>
-
-                <div class="biasValue ${biasColor(value)}">
-                  ${value}
-                </div>
-
-              </div>
-            `;
-
-          }
-        )
-        .join("");
-
-
-    setText(
-      "updated",
-      "Updated " +
-      new Date()
-        .toLocaleTimeString()
-    );
-
-  }catch(
-    error
-  ){
-
-    signalEl.textContent =
-      "ERROR";
-
-
-    signalEl.className =
-      "signal sell";
-
-
-    setText(
-      "setup",
-      error.message
-    );
-
-  }
-
+  return `
+    <div class="stat">
+
+      <div class="label">
+        ${title}
+      </div>
+
+      <div class="value ${cls}">
+        ${value}
+      </div>
+
+    </div>
+  `;
 }
 
 
@@ -1193,28 +532,25 @@ async function runBacktest(){
 
   const button =
     document.getElementById(
-      "backtestButton"
+      "run"
+    );
+
+
+  const status =
+    document.getElementById(
+      "status"
     );
 
 
   const days =
-    Math.max(
-      1,
-      Math.min(
-        30,
-        Number(
-          document.getElementById(
-            "days"
-          ).value
-        ) ||
-        10
-      )
-    );
-
-
-  const mode =
     document.getElementById(
-      "mode"
+      "days"
+    ).value;
+
+
+  const balance =
+    document.getElementById(
+      "balance"
     ).value;
 
 
@@ -1226,40 +562,15 @@ async function runBacktest(){
     "RUNNING...";
 
 
-  document
-    .body
-    .classList
-    .add(
-      "loading"
-    );
-
-
-  /*
-    Keep the button usable while loading.
-  */
-
-  button.style.pointerEvents =
-    "auto";
-
-
-  setText(
-    "backtestInfo",
-    "Downloading Coinbase M1 candles and rebuilding M5/M15 structure..."
-  );
+  status.textContent =
+    "Downloading Coinbase BTC candles and running strategy...";
 
 
   try{
 
-    const started =
-      Date.now();
-
-
     const response =
       await fetch(
-        `/api/backtest?days=${days}&mode=${encodeURIComponent(mode)}&t=${Date.now()}`,
-        {
-          cache:"no-store"
-        }
+        `/api/btc?days=${days}&balance=${balance}&t=${Date.now()}`
       );
 
 
@@ -1267,236 +578,29 @@ async function runBacktest(){
       await response.json();
 
 
-    if(
-      !response.ok ||
-      !data.ok
-    ){
+    if(!data.ok){
 
       throw new Error(
         data.error ||
         "Backtest failed"
       );
-
     }
 
 
-    const p =
-      data.performance;
-
-
-    document
-      .getElementById(
-        "performanceCard"
-      )
-      .style
-      .display =
-        "block";
-
-
-    setText(
-      "trades",
-      p.trades
+    render(
+      data
     );
 
 
-    setText(
-      "winRate",
-      `${p.winRate}%`
-    );
+    status.textContent =
+      `${data.candles} candles analysed • ${data.requestedDays} days`;
 
 
-    setText(
-      "pf",
-      p.profitFactor
-    );
+  }catch(error){
 
-
-    setText(
-      "netR",
-      `${p.netR}R`
-    );
-
-
-    setText(
-      "expectancy",
-      `${p.expectancyR}R`
-    );
-
-
-    setText(
-      "drawdown",
-      `${p.maxDrawdownR}R`
-    );
-
-
-    const pfEl =
-      document.getElementById(
-        "pf"
-      );
-
-
-    const netEl =
-      document.getElementById(
-        "netR"
-      );
-
-
-    pfEl.className =
-      "value " +
-      (
-        p.profitFactor > 1
-          ?
-            "green"
-          :
-            "red"
-      );
-
-
-    netEl.className =
-      "value " +
-      (
-        p.netR > 0
-          ?
-            "green"
-          :
-        p.netR < 0
-          ?
-            "red"
-          :
-            ""
-      );
-
-
-    setText(
-      "backtestInfo",
-      `${days} days • ${mode} • ${Date.now() - started}ms`
-    );
-
-
-    const list =
-      document.getElementById(
-        "tradeList"
-      );
-
-
-    const visibleTrades =
-      data.trades
-        .slice()
-        .reverse()
-        .slice(
-          0,
-          50
-        );
-
-
-    list.innerHTML =
-      visibleTrades.length
-        ?
-          visibleTrades
-          .map(
-            trade => {
-
-              const sideClass =
-                trade.side === "BUY"
-                  ?
-                    "green"
-                  :
-                    "red";
-
-
-              const resultClass =
-                trade.r > 0
-                  ?
-                    "green"
-                  :
-                trade.r < 0
-                  ?
-                    "red"
-                  :
-                    "gold";
-
-
-              return `
-
-                <div class="trade">
-
-                  <div class="tradeTop">
-
-                    <span class="${sideClass}">
-                      ${trade.side}
-                    </span>
-
-                    <span class="${resultClass}">
-                      ${trade.r}R
-                    </span>
-
-                  </div>
-
-
-                  <div class="tradeMeta">
-
-                    ${trade.setup}<br>
-
-                    Score:
-                    ${trade.score}
-                    •
-                    ${trade.session}
-                    <br>
-
-                    Entry:
-                    ${money(trade.entry)}
-                    •
-                    Stop:
-                    ${money(trade.stop)}
-                    •
-                    Target:
-                    ${money(trade.target)}
-                    <br>
-
-                    MFE:
-                    ${trade.mfeR}R
-                    •
-                    MAE:
-                    ${trade.maeR}R
-                    •
-                    ${trade.barsHeld} min
-
-                  </div>
-
-                </div>
-
-              `;
-
-            }
-          )
-          .join("")
-        :
-          `
-            <div class="small">
-              No qualifying trades in this period.
-            </div>
-          `;
-
-
-    document
-      .getElementById(
-        "performanceCard"
-      )
-      .scrollIntoView(
-        {
-          behavior:"smooth"
-        }
-      );
-
-  }catch(
-    error
-  ){
-
-    setText(
-      "backtestInfo",
+    status.textContent =
       "ERROR: " +
-      error.message
-    );
+      error.message;
 
   }finally{
 
@@ -1506,21 +610,207 @@ async function runBacktest(){
 
     button.textContent =
       "RUN BACKTEST";
-
-
-    document
-      .body
-      .classList
-      .remove(
-        "loading"
-      );
-
   }
-
 }
 
 
-loadLive();
+function render(
+  data
+){
+
+  const s =
+    data.statistics;
+
+
+  const returnClass =
+    s.returnPercent >= 0
+      ? "green"
+      : "red";
+
+
+  document.getElementById(
+    "stats"
+  ).innerHTML =
+
+    stat(
+      "Trades",
+      s.trades
+    ) +
+
+    stat(
+      "Win Rate",
+      s.winRate + "%"
+    ) +
+
+    stat(
+      "Profit Factor",
+      s.profitFactor
+    ) +
+
+    stat(
+      "Total R",
+      s.totalR,
+      s.totalR >= 0
+        ? "green"
+        : "red"
+    ) +
+
+    stat(
+      "Start",
+      money(
+        s.startingBalance
+      )
+    ) +
+
+    stat(
+      "End",
+      money(
+        s.endingBalance
+      ),
+      returnClass
+    ) +
+
+    stat(
+      "Return",
+      s.returnPercent + "%",
+      returnClass
+    ) +
+
+    stat(
+      "Max DD",
+      s.maximumDrawdownPercent + "%",
+      "gold"
+    );
+
+
+  renderTrades(
+    data.trades
+  );
+}
+
+
+function renderTrades(
+  trades
+){
+
+  const el =
+    document.getElementById(
+      "trades"
+    );
+
+
+  if(!trades.length){
+
+    el.innerHTML =
+      `
+      <div class="status">
+        No trades were generated.
+      </div>
+      `;
+
+    return;
+  }
+
+
+  el.innerHTML =
+    trades
+      .map(
+        trade => {
+
+          const positive =
+            trade.r > 0;
+
+
+          const sideClass =
+            trade.side ===
+            "LONG"
+              ? "long"
+              : "short";
+
+
+          return `
+            <div class="trade">
+
+              <div class="trade-head">
+
+                <span
+                  class="badge ${sideClass}"
+                >
+                  ${trade.side}
+                </span>
+
+                <span
+                  class="${
+                    positive
+                      ? "green"
+                      : "red"
+                  }"
+                >
+                  ${
+                    trade.r > 0
+                      ? "+"
+                      : ""
+                  }${trade.r}R
+                </span>
+
+              </div>
+
+
+              <div class="trade-info">
+
+                Entry:
+                $${trade.entry}
+
+                <br>
+
+                SL:
+                $${trade.stop}
+
+                • TP:
+                $${trade.target}
+
+                <br>
+
+                Exit:
+                $${trade.exit}
+
+                • ${trade.reason}
+
+                <br>
+
+                RSI:
+                ${trade.rsi}
+
+                • Range:
+                ${trade.rangeAtr} ATR
+
+                <br>
+
+                P/L:
+                ${
+                  trade.pnl >= 0
+                    ? "+"
+                    : ""
+                }${money(trade.pnl)}
+
+                • Balance:
+                ${money(trade.balance)}
+
+                <br>
+
+                ${new Date(
+                  trade.entryTime
+                ).toLocaleString()}
+
+              </div>
+
+            </div>
+          `;
+        }
+      )
+      .join("");
+}
+
 
 </script>
 
