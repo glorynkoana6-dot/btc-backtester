@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -13,7 +12,7 @@
 
 <meta
   name="theme-color"
-  content="#020407"
+  content="#020406"
 >
 
 <meta
@@ -26,471 +25,346 @@
   content="black-translucent"
 >
 
+<meta
+  name="apple-mobile-web-app-title"
+  content="MKAYFX GOLD"
+>
+
 <title>
-MKAYFX GOLD
+  MKAYFX GOLD V8
 </title>
 
 
 <style>
 
-:root{
-
-  --bg:#020407;
-  --bg2:#05080d;
-
-  --card:#081019;
-  --card2:#0b1520;
-  --card3:#050a10;
-
-  --line:rgba(255,255,255,.075);
-  --line2:rgba(255,255,255,.13);
-
-  --text:#f5f7fb;
-  --muted:#768292;
-  --muted2:#aeb7c2;
-
-  --gold:#f3cb63;
-  --green:#35e5a1;
-  --red:#ff6178;
-  --blue:#7896ff;
-  --cyan:#63d9ed;
-  --orange:#ffac5c;
-  --purple:#b789ff;
-
-}
-
+/* ============================================================
+   RESET
+============================================================ */
 
 *{
-
   box-sizing:border-box;
-
-  -webkit-tap-highlight-color:
-    transparent;
-
+  -webkit-tap-highlight-color:transparent;
 }
 
+:root{
 
-html,
+  --bg:#020406;
+  --bg2:#04080d;
+
+  --card:#071019;
+  --card2:#09141f;
+  --card3:#050b11;
+
+  --border:rgba(255,255,255,.075);
+  --border2:rgba(255,255,255,.045);
+
+  --text:#f7f8fa;
+  --muted:#7d8997;
+  --muted2:#56616d;
+
+  --green:#34e7a2;
+  --red:#ff637c;
+  --gold:#f5ca67;
+  --blue:#6d8dff;
+  --cyan:#48d7ff;
+  --orange:#ffad50;
+  --purple:#a883ff;
+}
+
+html{
+  background:var(--bg);
+}
+
 body{
 
   margin:0;
 
-  min-height:100%;
+  min-height:100vh;
 
-  background:
-    var(--bg);
-
-  color:
-    var(--text);
-
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    "Segoe UI",
-    sans-serif;
-
-}
-
-
-body{
+  color:var(--text);
 
   background:
 
     radial-gradient(
       circle at 50% -10%,
-      rgba(243,203,99,.10),
-      transparent 28%
+      rgba(41,85,135,.18),
+      transparent 30%
     ),
 
     radial-gradient(
       circle at 100% 10%,
-      rgba(120,150,255,.05),
-      transparent 26%
+      rgba(245,202,103,.05),
+      transparent 28%
     ),
 
-    var(--bg);
+    linear-gradient(
+      180deg,
+      #020406 0%,
+      #03070b 100%
+    );
 
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Display",
+    "SF Pro Text",
+    Inter,
+    Arial,
+    sans-serif;
+
+  -webkit-font-smoothing:
+    antialiased;
 }
-
 
 button{
-
   font:inherit;
-
 }
 
+
+/* ============================================================
+   PAGE
+============================================================ */
 
 .app{
 
-  width:
-    min(
-      1300px,
-      100%
-    );
+  width:100%;
+
+  max-width:980px;
 
   margin:auto;
 
   padding:
-    16px 10px 50px;
 
+    max(
+      19px,
+      env(safe-area-inset-top)
+    )
+
+    13px
+
+    calc(
+      90px +
+      env(safe-area-inset-bottom)
+    );
 }
 
 
-/* HEADER */
+/* ============================================================
+   HEADER
+============================================================ */
 
-header{
+.header{
 
   display:flex;
 
-  justify-content:space-between;
+  justify-content:
+    space-between;
 
-  gap:12px;
+  align-items:
+    flex-start;
 
-  align-items:flex-start;
+  gap:15px;
 
+  margin-bottom:20px;
 }
 
+.logo{
 
-.eyebrow{
+  color:var(--gold);
 
-  font-size:9px;
-
-  letter-spacing:.2em;
-
-  color:
-    var(--gold);
+  font-size:10px;
 
   font-weight:950;
 
+  letter-spacing:2.4px;
 }
 
+.title{
 
-h1{
-
-  margin:
-    6px 0 0;
+  margin-top:5px;
 
   font-size:
     clamp(
-      26px,
-      8vw,
-      42px
+      31px,
+      9vw,
+      53px
     );
 
-  letter-spacing:-.055em;
+  font-weight:950;
 
-  line-height:.95;
+  line-height:.92;
 
+  letter-spacing:-2.4px;
 }
-
 
 .subtitle{
 
-  color:
-    var(--muted);
+  margin-top:9px;
+
+  color:var(--muted);
 
   font-size:10px;
 
-  margin-top:8px;
-
-  max-width:780px;
-
-  line-height:1.5;
-
+  letter-spacing:.5px;
 }
 
-
-.refresh{
-
-  flex:0 0 50px;
-
-  width:50px;
-
-  height:50px;
-
-  border-radius:15px;
-
-  border:
-    1px solid
-    var(--line2);
-
-  background:
-    var(--card2);
-
-  color:white;
-
-  font-size:21px;
-
-}
-
-
-/* STATUS */
-
-.statusbar{
-
-  display:flex;
-
-  gap:6px;
-
-  overflow-x:auto;
-
-  padding:
-    14px 0 10px;
-
-  scrollbar-width:none;
-
-}
-
-
-.statusbar::-webkit-scrollbar{
-
-  display:none;
-
-}
-
-
-.pill{
-
-  flex:0 0 auto;
-
-  padding:
-    7px 9px;
-
-  border-radius:999px;
-
-  border:
-    1px solid
-    var(--line);
-
-  background:
-    rgba(255,255,255,.02);
-
-  color:
-    var(--muted2);
-
-  font-size:8px;
-
-  font-weight:900;
+.live-pill{
 
   white-space:nowrap;
 
-}
-
-
-.pill.live{
-
-  color:
-    var(--green);
-
-}
-
-
-.pill.warn{
-
-  color:
-    var(--orange);
-
-}
-
-
-.pill.gold{
-
-  color:
-    var(--gold);
-
-}
-
-
-/* ERROR */
-
-.error{
-
-  display:none;
-
-  padding:12px;
+  padding:
+    8px
+    11px;
 
   border:
     1px solid
-    rgba(255,97,120,.3);
+    rgba(52,231,162,.25);
+
+  border-radius:99px;
 
   background:
-    rgba(255,97,120,.06);
+    rgba(52,231,162,.07);
 
-  border-radius:14px;
+  color:var(--green);
 
-  color:#ffc0c9;
+  font-size:9px;
 
-  font-size:10px;
+  font-weight:950;
 
-  white-space:pre-wrap;
-
-  line-height:1.5;
-
-  margin-bottom:10px;
-
+  letter-spacing:1px;
 }
 
 
-/* GENERAL */
+/* ============================================================
+   CARD
+============================================================ */
 
 .card{
 
+  position:relative;
+
+  overflow:hidden;
+
+  margin-bottom:12px;
+
+  padding:18px;
+
   border:
     1px solid
-    var(--line);
+    var(--border);
+
+  border-radius:25px;
 
   background:
 
     linear-gradient(
-      180deg,
-      var(--card2),
-      var(--card3)
+      145deg,
+      rgba(10,22,34,.98),
+      rgba(5,11,17,.98)
     );
 
-  border-radius:17px;
+  box-shadow:
 
-  padding:12px;
+    inset
+    0
+    1px
+    0
+    rgba(255,255,255,.02),
 
+    0
+    14px
+    45px
+    rgba(0,0,0,.10);
 }
 
+.card-glow::before{
 
-.section{
+  content:"";
 
-  display:flex;
+  position:absolute;
 
-  justify-content:space-between;
+  width:180px;
+  height:180px;
 
-  align-items:center;
+  right:-80px;
+  top:-100px;
 
-  gap:8px;
+  border-radius:50%;
 
-  margin:
-    20px 2px 8px;
+  background:
+    rgba(245,202,103,.06);
 
+  filter:
+    blur(5px);
+
+  pointer-events:none;
 }
-
-
-.section h2{
-
-  margin:0;
-
-  font-size:13px;
-
-}
-
-
-.section span{
-
-  font-size:8px;
-
-  color:
-    var(--muted);
-
-  text-align:right;
-
-}
-
 
 .label{
 
-  color:
-    var(--muted);
+  position:relative;
 
-  font-size:8px;
+  z-index:1;
 
-  font-weight:900;
+  color:#8995a3;
 
-  letter-spacing:.1em;
-
-  text-transform:uppercase;
-
-}
-
-
-.value{
-
-  margin-top:5px;
-
-  font-size:18px;
+  font-size:9px;
 
   font-weight:950;
 
+  letter-spacing:1.8px;
+
+  text-transform:uppercase;
 }
 
 
-.small{
+/* ============================================================
+   HERO PRICE
+============================================================ */
 
-  font-size:10px;
+.price{
 
+  position:relative;
+
+  z-index:1;
+
+  margin-top:5px;
+
+  font-size:
+    clamp(
+      49px,
+      15vw,
+      79px
+    );
+
+  line-height:1;
+
+  font-weight:950;
+
+  letter-spacing:-4px;
+}
+
+.change{
+
+  position:relative;
+
+  z-index:1;
+
+  margin-top:5px;
+
+  font-size:11px;
+
+  color:var(--muted);
 }
 
 
-.tiny{
-
-  font-size:8px;
-
-}
-
-
-.muted{
-
-  color:
-    var(--muted);
-
-}
-
-
-.green{
-
-  color:
-    var(--green);
-
-}
-
-
-.red{
-
-  color:
-    var(--red);
-
-}
-
-
-.gold{
-
-  color:
-    var(--gold);
-
-}
-
-
-.blue{
-
-  color:
-    var(--blue);
-
-}
-
-
-.orange{
-
-  color:
-    var(--orange);
-
-}
-
+/* ============================================================
+   GRID
+============================================================ */
 
 .grid{
 
   display:grid;
-
-  gap:8px;
-
-}
-
-
-.g2{
 
   grid-template-columns:
     repeat(
@@ -498,889 +372,811 @@ h1{
       minmax(0,1fr)
     );
 
+  gap:8px;
+
+  margin-top:14px;
 }
 
+.metric{
 
-.g3{
+  min-width:0;
 
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-
-}
-
-
-.g4{
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
-}
-
-
-.g5{
-
-  grid-template-columns:
-    repeat(
-      5,
-      minmax(0,1fr)
-    );
-
-}
-
-
-/* HERO */
-
-.hero{
-
-  border-color:
-    rgba(243,203,99,.19);
-
-  background:
-
-    radial-gradient(
-      circle at 100% 0%,
-      rgba(243,203,99,.075),
-      transparent 38%
-    ),
-
-    linear-gradient(
-      180deg,
-      #0b141e,
-      #050a10
-    );
-
-}
-
-
-.hero-top{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  align-items:flex-start;
-
-  gap:12px;
-
-}
-
-
-.price{
-
-  font-size:
-    clamp(
-      43px,
-      13vw,
-      65px
-    );
-
-  font-weight:950;
-
-  line-height:.92;
-
-  letter-spacing:-.065em;
-
-  margin-top:5px;
-
-}
-
-
-.primary-score{
-
-  min-width:90px;
-
-  padding:10px;
-
-  border-radius:13px;
+  padding:12px;
 
   border:
     1px solid
-    rgba(243,203,99,.25);
+    var(--border2);
 
-  background:
-    rgba(243,203,99,.055);
-
-  text-align:center;
-
-}
-
-
-.primary-score strong{
-
-  display:block;
-
-  color:
-    var(--gold);
-
-  font-size:27px;
-
-  margin-top:4px;
-
-}
-
-
-.divider{
-
-  height:1px;
-
-  background:
-    var(--line);
-
-  margin:
-    14px 0;
-
-}
-
-
-.primary-name{
-
-  font-size:20px;
-
-  font-weight:950;
-
-  margin-top:5px;
-
-}
-
-
-.primary-stage{
-
-  display:inline-flex;
-
-  margin-top:7px;
-
-  padding:
-    6px 8px;
-
-  border-radius:8px;
-
-  border:
-    1px solid
-    rgba(243,203,99,.18);
-
-  color:
-    var(--gold);
-
-  font-size:9px;
-
-  font-weight:950;
-
-}
-
-
-/* SCORES */
-
-.scores{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
-  gap:7px;
-
-  margin-top:12px;
-
-}
-
-
-.score-card{
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:11px;
-
-  padding:9px;
-
-  background:
-    rgba(255,255,255,.02);
-
-}
-
-
-.score-number{
-
-  margin-top:6px;
-
-  font-size:21px;
-
-  font-weight:950;
-
-}
-
-
-.meter{
-
-  height:6px;
-
-  background:
-    rgba(255,255,255,.05);
-
-  border-radius:999px;
-
-  overflow:hidden;
-
-  margin-top:7px;
-
-}
-
-
-.meter div{
-
-  height:100%;
-
-  border-radius:999px;
-
-}
-
-
-.liq-fill{
-
-  background:
-    var(--blue);
-
-}
-
-
-.raid-fill{
-
-  background:
-    var(--gold);
-
-}
-
-
-.hist-fill{
-
-  background:
-    var(--purple);
-
-}
-
-
-.quality-fill{
-
-  background:
-    var(--green);
-
-}
-
-
-/* LEVEL BOXES */
-
-.level-grid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
-  gap:7px;
-
-  margin-top:10px;
-
-}
-
-
-.level-box{
-
-  border:
-    1px solid
-    var(--line);
+  border-radius:15px;
 
   background:
     rgba(255,255,255,.018);
-
-  border-radius:10px;
-
-  padding:9px;
-
 }
 
+.metric-label{
 
-.level-value{
-
-  font-weight:950;
-
-  font-size:13px;
-
-  margin-top:5px;
-
-}
-
-
-/* CHART */
-
-.chart-card{
-
-  padding:
-    10px 8px 8px;
-
-}
-
-
-.chart-toolbar{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  gap:8px;
-
-  align-items:center;
-
-  flex-wrap:wrap;
-
-  padding:
-    2px 2px 9px;
-
-}
-
-
-.tf-buttons{
-
-  display:flex;
-
-  gap:5px;
-
-}
-
-
-.tf-btn{
-
-  border:
-    1px solid
-    var(--line);
-
-  background:
-    rgba(255,255,255,.025);
-
-  color:
-    var(--muted2);
-
-  padding:
-    6px 9px;
-
-  border-radius:8px;
+  color:var(--muted);
 
   font-size:8px;
 
   font-weight:900;
 
+  letter-spacing:.9px;
+
+  text-transform:uppercase;
 }
 
+.metric-value{
 
-.tf-btn.active{
-
-  color:
-    var(--gold);
-
-  border-color:
-    rgba(243,203,99,.3);
-
-  background:
-    rgba(243,203,99,.07);
-
-}
-
-
-.chart-stage{
-
-  position:relative;
-
-  height:
-    min(
-      68vh,
-      560px
-    );
-
-  min-height:390px;
-
-  border-radius:12px;
+  margin-top:5px;
 
   overflow:hidden;
 
+  font-size:16px;
+
+  font-weight:950;
+
+  text-overflow:ellipsis;
+}
+
+
+/* ============================================================
+   COLORS
+============================================================ */
+
+.bull{
+  color:var(--green);
+}
+
+.bear{
+  color:var(--red);
+}
+
+.neutral{
+  color:var(--gold);
+}
+
+.cyan{
+  color:var(--cyan);
+}
+
+.purple{
+  color:var(--purple);
+}
+
+
+/* ============================================================
+   CONSENSUS
+============================================================ */
+
+.consensus{
+
+  margin-top:8px;
+
+  font-size:
+    clamp(
+      38px,
+      12vw,
+      60px
+    );
+
+  font-weight:950;
+
+  letter-spacing:-2.4px;
+}
+
+.consensus-sub{
+
+  color:var(--muted);
+
+  font-size:10px;
+
+  line-height:1.5;
+}
+
+.score-track{
+
+  position:relative;
+
+  height:9px;
+
+  margin:
+    17px
+    0;
+
+  border-radius:99px;
+
   background:
-    #03070b;
-
-  border:
-    1px solid
-    var(--line);
-
+    linear-gradient(
+      90deg,
+      rgba(255,99,124,.85),
+      rgba(245,202,103,.8),
+      rgba(52,231,162,.85)
+    );
 }
 
-
-#goldChart{
-
-  width:100%;
-
-  height:100%;
-
-  display:block;
-
-}
-
-
-.chart-legend{
+.score-marker{
 
   position:absolute;
 
-  top:8px;
+  top:-4px;
 
-  left:8px;
+  width:4px;
 
-  z-index:3;
+  height:17px;
 
-  display:flex;
+  border-radius:99px;
 
-  flex-direction:column;
+  background:#fff;
 
-  gap:4px;
+  transform:
+    translateX(-2px);
 
-  pointer-events:none;
-
+  box-shadow:
+    0
+    0
+    8px
+    rgba(255,255,255,.6);
 }
 
 
-.legend-pill{
+/* ============================================================
+   DOMINANT ZONE
+============================================================ */
+
+.zone-hero{
+
+  margin-top:11px;
+
+  padding:17px;
+
+  border:
+    1px solid
+    rgba(245,202,103,.25);
+
+  border-radius:21px;
+
+  background:
+
+    linear-gradient(
+      145deg,
+      rgba(245,202,103,.065),
+      rgba(255,255,255,.01)
+    );
+}
+
+.zone-name{
+
+  font-size:
+    clamp(
+      22px,
+      7vw,
+      32px
+    );
+
+  line-height:1.05;
+
+  font-weight:950;
+
+  letter-spacing:-1px;
+}
+
+.zone-range{
+
+  margin-top:5px;
+
+  color:var(--gold);
+
+  font-size:21px;
+
+  font-weight:950;
+}
+
+.zone-stage{
 
   display:inline-flex;
 
-  width:max-content;
+  margin-top:10px;
 
   padding:
-    4px 6px;
+    6px
+    9px;
 
-  border-radius:6px;
-
-  background:
-    rgba(3,7,11,.80);
-
-  border:
-    1px solid
-    var(--line);
-
-  font-size:7px;
-
-  color:
-    var(--muted2);
-
-}
-
-
-.chart-tooltip{
-
-  position:absolute;
-
-  display:none;
-
-  z-index:5;
-
-  left:10px;
-
-  bottom:10px;
-
-  max-width:
-    calc(
-      100% - 20px
-    );
-
-  padding:9px;
-
-  border-radius:10px;
+  border-radius:99px;
 
   background:
-    rgba(5,10,16,.94);
+    rgba(255,255,255,.06);
 
-  border:
-    1px solid
-    var(--line2);
+  color:#dfe5eb;
 
   font-size:8px;
 
-  line-height:1.5;
+  font-weight:950;
 
-  pointer-events:none;
-
+  letter-spacing:.8px;
 }
 
 
-/* SESSION */
+/* ============================================================
+   PROGRESS BARS
+============================================================ */
 
-.session{
+.bar-wrap{
 
-  position:relative;
-
-  overflow:hidden;
-
+  margin-top:13px;
 }
 
-
-.session::before{
-
-  content:"";
-
-  position:absolute;
-
-  left:0;
-
-  top:0;
-
-  bottom:0;
-
-  width:3px;
-
-  background:
-    rgba(255,255,255,.1);
-
-}
-
-
-.session.active::before{
-
-  background:
-    var(--green);
-
-}
-
-
-.session-top{
+.bar-head{
 
   display:flex;
 
-  justify-content:space-between;
+  justify-content:
+    space-between;
 
-  gap:8px;
+  gap:10px;
 
+  margin-bottom:6px;
+
+  font-size:9px;
+}
+
+.bar-head span:first-child{
+
+  color:var(--muted);
+
+  font-weight:800;
+}
+
+.bar-head span:last-child{
+
+  font-weight:950;
+}
+
+.bar{
+
+  height:7px;
+
+  overflow:hidden;
+
+  border-radius:99px;
+
+  background:
+    rgba(255,255,255,.055);
+}
+
+.bar-fill{
+
+  height:100%;
+
+  width:0%;
+
+  border-radius:99px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(245,202,103,.55),
+      rgba(245,202,103,1)
+    );
+}
+
+.bar-green{
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(52,231,162,.45),
+      var(--green)
+    );
+}
+
+.bar-red{
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255,99,124,.45),
+      var(--red)
+    );
+}
+
+.bar-blue{
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(72,215,255,.45),
+      var(--cyan)
+    );
+}
+
+.bar-purple{
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(168,131,255,.45),
+      var(--purple)
+    );
 }
 
 
-.range-grid{
+/* ============================================================
+   ROW
+============================================================ */
+
+.row{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr auto;
+
+  align-items:center;
+
+  gap:13px;
+
+  padding:
+    12px
+    0;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.055);
+}
+
+.row:last-child{
+  border-bottom:0;
+}
+
+.row-title{
+
+  font-size:12px;
+
+  font-weight:850;
+}
+
+.row-sub{
+
+  margin-top:3px;
+
+  color:var(--muted);
+
+  font-size:9px;
+
+  line-height:1.45;
+}
+
+.row-value{
+
+  max-width:160px;
+
+  text-align:right;
+
+  font-size:12px;
+
+  font-weight:950;
+}
+
+
+/* ============================================================
+   ZONE CARDS
+============================================================ */
+
+.zone-card{
+
+  margin-top:9px;
+
+  padding:15px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius:18px;
+
+  background:
+    rgba(255,255,255,.015);
+}
+
+.zone-card.top{
+
+  border-color:
+    rgba(245,202,103,.28);
+
+  background:
+    rgba(245,202,103,.035);
+}
+
+.zone-card-head{
+
+  display:flex;
+
+  justify-content:
+    space-between;
+
+  gap:12px;
+}
+
+.zone-card-name{
+
+  font-size:13px;
+
+  font-weight:950;
+}
+
+.zone-score{
+
+  color:var(--gold);
+
+  font-size:21px;
+
+  font-weight:950;
+}
+
+.zone-meta{
 
   display:grid;
 
   grid-template-columns:
     repeat(
       3,
-      1fr
+      minmax(0,1fr)
     );
 
-  gap:5px;
+  gap:6px;
 
-  margin-top:9px;
-
+  margin-top:10px;
 }
 
+.zone-mini{
 
-.mini{
-
-  padding:7px;
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:9px;
-
-}
-
-
-/* TIMEFRAMES */
-
-.tf{
-
-  text-align:center;
-
-}
-
-
-.tf-bias{
-
-  font-size:11px;
-
-  font-weight:950;
-
-  margin-top:6px;
-
-}
-
-
-/* FLOW */
-
-.delta-grid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      1fr
-    );
-
-  gap:7px;
-
-}
-
-
-.delta-box{
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:10px;
+  min-width:0;
 
   padding:8px;
 
-}
-
-
-.delta-value{
-
-  margin-top:5px;
-
-  font-size:19px;
-
-  font-weight:950;
-
-}
-
-
-/* INFO ROW */
-
-.info{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  gap:10px;
-
-  align-items:center;
-
-  padding:
-    8px 0;
-
-  border-bottom:
-    1px solid
-    var(--line);
-
-  font-size:9px;
-
-}
-
-
-.info:last-child{
-
-  border-bottom:none;
-
-}
-
-
-/* TABLE */
-
-.table-wrap{
-
-  overflow:auto;
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:13px;
-
-}
-
-
-table{
-
-  width:100%;
-
-  min-width:1050px;
-
-  border-collapse:collapse;
-
-}
-
-
-th,
-td{
-
-  padding:
-    9px 7px;
-
-  border-bottom:
-    1px solid
-    var(--line);
-
-  text-align:left;
-
-  font-size:9px;
-
-}
-
-
-th{
-
-  color:
-    var(--muted);
+  border-radius:10px;
 
   background:
-    #071019;
+    rgba(0,0,0,.18);
+}
+
+.zone-mini span{
+
+  display:block;
+
+  color:var(--muted);
 
   font-size:7px;
 
-  letter-spacing:.07em;
+  letter-spacing:.5px;
 
   text-transform:uppercase;
-
 }
 
+.zone-mini strong{
+
+  display:block;
+
+  margin-top:4px;
+
+  overflow:hidden;
+
+  font-size:10px;
+
+  text-overflow:ellipsis;
+}
+
+
+/* ============================================================
+   COMPONENT CHIP
+============================================================ */
+
+.chips{
+
+  display:flex;
+
+  flex-wrap:wrap;
+
+  gap:5px;
+
+  margin-top:10px;
+}
+
+.chip{
+
+  padding:
+    5px
+    7px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius:99px;
+
+  color:#aab4bf;
+
+  background:
+    rgba(255,255,255,.03);
+
+  font-size:7px;
+
+  font-weight:850;
+}
+
+
+/* ============================================================
+   BADGES
+============================================================ */
 
 .badge{
 
   display:inline-flex;
 
+  align-items:center;
+
+  justify-content:center;
+
   padding:
-    4px 6px;
+    5px
+    8px;
 
-  border-radius:7px;
-
-  background:
-    rgba(120,150,255,.08);
-
-  color:
-    var(--blue);
-
-  font-weight:950;
-
-}
-
-
-.badge.hot{
-
-  color:
-    var(--gold);
-
-  background:
-    rgba(243,203,99,.08);
-
-}
-
-
-/* NOTICE */
-
-.notice{
-
-  margin-top:15px;
-
-  padding:11px;
-
-  border:
-    1px solid
-    rgba(255,172,92,.18);
-
-  background:
-    rgba(255,172,92,.035);
-
-  border-radius:12px;
-
-  color:
-    var(--muted2);
+  border-radius:99px;
 
   font-size:8px;
 
-  line-height:1.5;
+  font-weight:950;
 
+  letter-spacing:.5px;
+
+  background:
+    rgba(255,255,255,.06);
+}
+
+.badge.good{
+
+  color:var(--green);
+
+  background:
+    rgba(52,231,162,.08);
+}
+
+.badge.warn{
+
+  color:var(--gold);
+
+  background:
+    rgba(245,202,103,.08);
+}
+
+.badge.bad{
+
+  color:var(--red);
+
+  background:
+    rgba(255,99,124,.08);
+}
+
+.badge.blue{
+
+  color:var(--cyan);
+
+  background:
+    rgba(72,215,255,.08);
+}
+
+.badge.purple{
+
+  color:var(--purple);
+
+  background:
+    rgba(168,131,255,.08);
 }
 
 
-/* MOBILE */
+/* ============================================================
+   PATH
+============================================================ */
+
+.path-item{
+
+  position:relative;
+
+  padding:
+    13px
+    0
+    13px
+    24px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.05);
+}
+
+.path-item:last-child{
+  border-bottom:0;
+}
+
+.path-dot{
+
+  position:absolute;
+
+  left:0;
+
+  top:17px;
+
+  width:9px;
+  height:9px;
+
+  border-radius:50%;
+
+  background:var(--gold);
+
+  box-shadow:
+    0
+    0
+    9px
+    rgba(245,202,103,.35);
+}
+
+.path-line{
+
+  position:absolute;
+
+  left:4px;
+
+  top:27px;
+
+  bottom:-4px;
+
+  width:1px;
+
+  background:
+    rgba(255,255,255,.08);
+}
+
+.path-item:last-child
+.path-line{
+  display:none;
+}
+
+
+/* ============================================================
+   HISTORICAL
+============================================================ */
+
+.history-card{
+
+  margin-top:9px;
+
+  padding:14px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.06);
+
+  border-radius:17px;
+
+  background:
+    rgba(255,255,255,.014);
+}
+
+.history-header{
+
+  display:flex;
+
+  align-items:flex-start;
+
+  justify-content:
+    space-between;
+
+  gap:12px;
+}
+
+.history-name{
+
+  color:#9da8b4;
+
+  font-size:9px;
+
+  font-weight:950;
+
+  letter-spacing:1px;
+}
+
+.history-rate{
+
+  margin-top:4px;
+
+  font-size:25px;
+
+  font-weight:950;
+}
+
+
+/* ============================================================
+   BUTTON
+============================================================ */
+
+.refresh{
+
+  width:100%;
+
+  margin-top:2px;
+
+  padding:16px;
+
+  border:0;
+
+  border-radius:17px;
+
+  background:
+    #f5f6f8;
+
+  color:#030506;
+
+  font-size:12px;
+
+  font-weight:950;
+
+  cursor:pointer;
+}
+
+
+/* ============================================================
+   FOOTER
+============================================================ */
+
+.footer{
+
+  padding:
+    22px
+    8px;
+
+  color:var(--muted2);
+
+  text-align:center;
+
+  font-size:8px;
+
+  line-height:1.7;
+}
+
+.error{
+  color:var(--red);
+}
+
+
+/* ============================================================
+   DESKTOP
+============================================================ */
 
 @media(
-  max-width:850px
+  min-width:700px
 ){
 
-  .desktop2{
-
-    grid-template-columns:
-      1fr;
-
-  }
-
-
-  .g5{
+  .grid{
 
     grid-template-columns:
       repeat(
-        3,
-        1fr
+        4,
+        minmax(0,1fr)
       );
-
   }
 
-}
-
-
-@media(
-  max-width:600px
-){
-
-  .scores{
+  .zone-meta{
 
     grid-template-columns:
-      1fr 1fr;
-
+      repeat(
+        6,
+        minmax(0,1fr)
+      );
   }
 
-
-  .level-grid{
-
-    grid-template-columns:
-      1fr 1fr;
-
+  .app{
+    padding-top:28px;
   }
-
-
-  .g5,
-  .g4{
-
-    grid-template-columns:
-      1fr 1fr;
-
-  }
-
-
-  .g3,
-  .g2{
-
-    grid-template-columns:
-      1fr;
-
-  }
-
-
-  .delta-grid{
-
-    grid-template-columns:
-      1fr 1fr;
-
-  }
-
 }
 
 </style>
@@ -1390,104 +1186,52 @@ th{
 
 <body>
 
-
 <div class="app">
 
 
-<header>
+<!-- =========================================================
+     HEADER
+========================================================= -->
 
-<div>
+<div class="header">
 
-  <div class="eyebrow">
-    MKAYFX · THREE-ENGINE GOLD MODEL
+  <div>
+
+    <div class="logo">
+      MKAYFX · V8
+    </div>
+
+    <div class="title">
+      DEEP GOLD<br>
+      LIQUIDITY
+    </div>
+
+    <div class="subtitle">
+      XAU/USD · ZONES · RAIDS · INTERMARKET · MACRO
+    </div>
+
   </div>
 
-  <h1>
-    XAU/USD Intelligence
-  </h1>
 
-  <div class="subtitle">
-
-    Live price intelligence + deep market structure +
-    historical sweep statistics + FRED macro context.
-
+  <div
+    id="status"
+    class="live-pill"
+  >
+    CONNECTING
   </div>
 
 </div>
 
 
-<button
-  id="refresh"
-  class="refresh"
->
-  ↻
-</button>
 
-</header>
+<!-- =========================================================
+     MARKET HERO
+========================================================= -->
 
-
-<div class="statusbar">
-
-<div
-  id="liveStatus"
-  class="pill"
->
-  CONNECTING
-</div>
-
-<div class="pill gold">
-  XAU/USD
-</div>
-
-<div
-  id="api1Status"
-  class="pill"
->
-  API 1 · LIVE
-</div>
-
-<div
-  id="api2Status"
-  class="pill"
->
-  API 2 · STRUCTURE
-</div>
-
-<div
-  id="api3Status"
-  class="pill"
->
-  API 3 · HISTORY
-</div>
-
-<div
-  id="dataAge"
-  class="pill"
->
-  AGE —
-</div>
-
-</div>
-
-
-<div
-  id="error"
-  class="error"
-></div>
-
-
-<!-- HERO -->
-
-<div class="card hero">
-
-
-<div class="hero-top">
-
-
-<div>
+<div class="card card-glow">
 
   <div class="label">
-    XAU / USD · SPOT GOLD
+    XAU / USD LIVE
   </div>
 
   <div
@@ -1498,941 +1242,541 @@ th{
   </div>
 
   <div
-    id="updateTime"
-    class="muted tiny"
-    style="margin-top:7px"
+    id="change"
+    class="change"
   >
     —
+  </div>
+
+
+  <div class="grid">
+
+    <div class="metric">
+
+      <div class="metric-label">
+        ATR M5
+      </div>
+
+      <div
+        id="atrM5"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        RSI M5
+      </div>
+
+      <div
+        id="rsiM5"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        VWAP
+      </div>
+
+      <div
+        id="vwap"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Regime
+      </div>
+
+      <div
+        id="regime"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
   </div>
 
 </div>
 
 
-<div class="primary-score">
+
+<!-- =========================================================
+     CONSENSUS
+========================================================= -->
+
+<div class="card">
 
   <div class="label">
-    QUALITY
+    GOLD CONSENSUS
   </div>
 
-  <strong id="heroQuality">
-    —
-  </strong>
-
   <div
-    id="heroQualityLabel"
-    class="tiny muted"
+    id="consensus"
+    class="consensus neutral"
   >
     —
   </div>
 
-</div>
-
-
-</div>
-
-
-<div class="divider"></div>
-
-
-<div class="label">
-  Primary Liquidity Draw
-</div>
-
-
-<div
-  id="primaryName"
-  class="primary-name"
->
-  Waiting…
-</div>
-
-
-<div
-  id="primaryMeta"
-  class="muted small"
-  style="margin-top:4px"
->
-  —
-</div>
-
-
-<div
-  id="primaryStage"
-  class="primary-stage"
->
-  —
-</div>
-
-
-<div class="scores">
-
-
-<div class="score-card">
-
-  <div class="label">
-    Liquidity Strength
-  </div>
-
   <div
-    id="liqScore"
-    class="score-number blue"
+    id="consensusSub"
+    class="consensus-sub"
   >
     —
   </div>
 
-  <div class="meter">
+
+  <div class="score-track">
+
     <div
-      id="liqMeter"
-      class="liq-fill"
+      id="scoreMarker"
+      class="score-marker"
+      style="left:50%"
     ></div>
+
+  </div>
+
+
+  <div class="grid">
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Confidence
+      </div>
+
+      <div
+        id="confidence"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Technical
+      </div>
+
+      <div
+        id="technical"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Liquidity Draw
+      </div>
+
+      <div
+        id="liquidityDraw"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
+
+    <div class="metric">
+
+      <div class="metric-label">
+        Intermarket
+      </div>
+
+      <div
+        id="intermarketScore"
+        class="metric-value"
+      >
+        —
+      </div>
+
+    </div>
+
   </div>
 
 </div>
 
 
-<div class="score-card">
 
-  <div class="label">
-    Raid Strength
-  </div>
-
-  <div
-    id="raidScore"
-    class="score-number gold"
-  >
-    —
-  </div>
-
-  <div class="meter">
-    <div
-      id="raidMeter"
-      class="raid-fill"
-    ></div>
-  </div>
-
-</div>
-
-
-<div class="score-card">
-
-  <div class="label">
-    Historical Match
-  </div>
-
-  <div
-    id="historyScore"
-    class="score-number"
-    style="color:var(--purple)"
-  >
-    —
-  </div>
-
-  <div class="meter">
-    <div
-      id="historyMeter"
-      class="hist-fill"
-    ></div>
-  </div>
-
-</div>
-
-
-<div class="score-card">
-
-  <div class="label">
-    Combined Quality
-  </div>
-
-  <div
-    id="qualityScore"
-    class="score-number green"
-  >
-    —
-  </div>
-
-  <div class="meter">
-    <div
-      id="qualityMeter"
-      class="quality-fill"
-    ></div>
-  </div>
-
-</div>
-
-
-</div>
-
-
-<div class="level-grid">
-
-
-<div class="level-box">
-
-  <div class="label">
-    Liquidity Level
-  </div>
-
-  <div
-    id="primaryLevel"
-    class="level-value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="level-box">
-
-  <div class="label">
-    Likely Raid End
-  </div>
-
-  <div
-    id="likelyEnd"
-    class="level-value gold"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="level-box">
-
-  <div class="label">
-    Reversal Zone
-  </div>
-
-  <div
-    id="reversalZone"
-    class="level-value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="level-box">
-
-  <div class="label">
-    Acceptance Level
-  </div>
-
-  <div
-    id="acceptanceLevel"
-    class="level-value orange"
-  >
-    —
-  </div>
-
-</div>
-
-
-</div>
-
-
-<div
-  id="primaryReasons"
-  class="muted tiny"
-  style="
-    margin-top:10px;
-    line-height:1.6
-  "
-></div>
-
-
-</div>
-
-
-<!-- CHART -->
-
-
-<div class="section">
-
-<h2>
-  Gold Liquidity Map
-</h2>
-
-<span>
-  candles · raids · liquidity · sweep zones
-</span>
-
-</div>
-
-
-<div class="card chart-card">
-
-
-<div class="chart-toolbar">
-
-
-<div class="tf-buttons">
-
-<button
-  class="tf-btn"
-  data-tf="m1"
->
-  M1
-</button>
-
-<button
-  class="tf-btn active"
-  data-tf="m5"
->
-  M5
-</button>
-
-<button
-  class="tf-btn"
-  data-tf="m15"
->
-  M15
-</button>
-
-<button
-  class="tf-btn"
-  data-tf="h1"
->
-  H1
-</button>
-
-</div>
-
-
-<div
-  id="chartStatus"
-  class="tiny muted"
->
-  ALL LIQUIDITY ON
-</div>
-
-
-</div>
-
-
-<div class="chart-stage">
-
-
-<canvas id="goldChart"></canvas>
-
-
-<div class="chart-legend">
-
-<div class="legend-pill">
-  GOLD = primary raid
-</div>
-
-<div class="legend-pill">
-  RED = liquidity above price
-</div>
-
-<div class="legend-pill">
-  GREEN = liquidity below price
-</div>
-
-<div class="legend-pill">
-  SHADED = reversal-watch zone
-</div>
-
-</div>
-
-
-<div
-  id="chartTooltip"
-  class="chart-tooltip"
-></div>
-
-
-</div>
-
-
-</div>
-
-
-<!-- SESSIONS -->
-
-
-<div class="section">
-
-<h2>
-  Global Sessions
-</h2>
-
-<span id="clock">
-  —
-</span>
-
-</div>
-
-
-<div
-  id="sessions"
-  class="grid g3"
-></div>
-
-
-<!-- MARKET STATE -->
-
-
-<div class="section">
-
-<h2>
-  Market State
-</h2>
-
-<span>
-  volatility · VWAP · regime
-</span>
-
-</div>
-
-
-<div class="grid g5">
-
+<!-- =========================================================
+     DOMINANT LIQUIDITY ZONE
+========================================================= -->
 
 <div class="card">
 
   <div class="label">
-    M1 ATR
+    DOMINANT LIQUIDITY ZONE
   </div>
 
   <div
-    id="atr1"
-    class="value"
+    id="dominantZone"
+    class="zone-hero"
   >
-    —
+    Loading…
   </div>
 
 </div>
 
+
+
+<!-- =========================================================
+     LIQUIDITY PATH
+========================================================= -->
 
 <div class="card">
 
   <div class="label">
-    M5 ATR
+    MOST LIKELY LIQUIDITY PATH
   </div>
 
   <div
-    id="atr5"
-    class="value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="label">
-    M15 ATR
-  </div>
-
-  <div
-    id="atr15"
-    class="value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="label">
-    VWAP
-  </div>
-
-  <div
-    id="vwap"
-    class="value gold"
-  >
-    —
-  </div>
-
-  <div
-    id="vwapDistance"
-    class="muted tiny"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="card">
-
-  <div class="label">
-    Regime
-  </div>
-
-  <div
-    id="regime"
-    class="value small"
-  >
-    —
-  </div>
-
-</div>
-
-
-</div>
-
-
-<!-- MTF -->
-
-
-<div class="section">
-
-<h2>
-  Multi-Timeframe Intelligence
-</h2>
-
-<span>
-  structure · RSI · BOS · CHOCH
-</span>
-
-</div>
-
-
-<div
-  id="timeframes"
-  class="grid g5"
-></div>
-
-
-<!-- FLOW -->
-
-
-<div class="section">
-
-<h2>
-  Live Flow Engine
-</h2>
-
-<span id="flowMode">
-  —
-</span>
-
-</div>
-
-
-<div class="grid g2 desktop2">
-
-
-<div class="card">
-
-
-<div class="delta-grid">
-
-
-<div class="delta-box">
-
-  <div class="label">
-    5m Delta
-  </div>
-
-  <div
-    id="delta5"
-    class="delta-value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="delta-box">
-
-  <div class="label">
-    15m Delta
-  </div>
-
-  <div
-    id="delta15"
-    class="delta-value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="delta-box">
-
-  <div class="label">
-    30m Delta
-  </div>
-
-  <div
-    id="delta30"
-    class="delta-value"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="delta-box">
-
-  <div class="label">
-    1H Delta
-  </div>
-
-  <div
-    id="delta60"
-    class="delta-value"
-  >
-    —
-  </div>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-<div class="card">
-
-<div class="info">
-
-<span class="muted">
-  CVD Proxy
-</span>
-
-<b id="cvd">
-  —
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-  Flow Divergence
-</span>
-
-<b id="divergence">
-  —
-</b>
-
-</div>
-
-
-<div class="info">
-
-<span class="muted">
-  Absorption
-</span>
-
-<b id="absorption">
-  —
-</b>
-
-</div>
-
-
-</div>
-
-
-</div>
-
-
-<!-- MACRO -->
-
-
-<div class="section">
-
-<h2>
-  Gold Macro Engine
-</h2>
-
-<span>
-  FRED
-</span>
-
-</div>
-
-
-<div class="grid g2 desktop2">
-
-
-<div class="card">
-
-  <div class="label">
-    Macro Pressure
-  </div>
-
-  <div
-    id="macroBias"
-    class="value"
-  >
-    —
-  </div>
-
-  <div
-    id="macroScore"
-    class="value gold"
-  >
-    —
-  </div>
-
-  <div
-    id="macroCoverage"
-    class="muted tiny"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="card">
-
-  <div
-    id="macroDrivers"
+    id="liquidityPath"
   ></div>
 
 </div>
 
 
-</div>
 
-
-<!-- HISTORICAL -->
-
-
-<div class="section">
-
-<h2>
-  Historical Sweep Intelligence
-</h2>
-
-<span>
-  API 3 statistical engine
-</span>
-
-</div>
-
-
-<div
-  id="historicalCards"
-  class="grid g3"
-></div>
-
-
-<!-- LIQUIDITY TABLE -->
-
-
-<div class="section">
-
-<h2>
-  Complete Liquidity Matrix
-</h2>
-
-<span>
-  strongest targets first
-</span>
-
-</div>
-
-
-<div class="table-wrap">
-
-
-<table>
-
-
-<thead>
-
-<tr>
-
-<th>
-  Pool
-</th>
-
-<th>
-  Side
-</th>
-
-<th>
-  Level
-</th>
-
-<th>
-  Stage
-</th>
-
-<th>
-  Distance
-</th>
-
-<th>
-  Liquidity
-</th>
-
-<th>
-  Raid
-</th>
-
-<th>
-  History
-</th>
-
-<th>
-  Quality
-</th>
-
-<th>
-  Likely End
-</th>
-
-<th>
-  Acceptance
-</th>
-
-</tr>
-
-</thead>
-
-
-<tbody id="liquidityRows"></tbody>
-
-
-</table>
-
-
-</div>
-
-
-<!-- TRAPS -->
-
-
-<div class="section">
-
-<h2>
-  Trap / Raid Radar
-</h2>
-
-<span>
-  manipulation-risk windows
-</span>
-
-</div>
-
-
-<div
-  id="traps"
-  class="card"
-></div>
-
-
-<!-- ENGINE HEALTH -->
-
-
-<div class="section">
-
-<h2>
-  Engine Health
-</h2>
-
-<span>
-  3 Twelve Data engines + FRED
-</span>
-
-</div>
-
-
-<div class="grid g4">
-
+<!-- =========================================================
+     DEEP ZONE MAP
+========================================================= -->
 
 <div class="card">
 
-<div class="label">
-  Live Engine
-</div>
+  <div class="label">
+    DEEP LIQUIDITY HEATMAP
+  </div>
 
-<div
-  id="engine1"
-  class="value small"
->
-  —
-</div>
+  <div
+    id="zoneList"
+  ></div>
 
 </div>
 
+
+
+<!-- =========================================================
+     SWEEP QUALITY
+========================================================= -->
 
 <div class="card">
 
-<div class="label">
-  Structure Engine
-</div>
+  <div class="label">
+    RAID / REJECTION QUALITY
+  </div>
 
-<div
-  id="engine2"
-  class="value small"
->
-  —
-</div>
+  <div
+    id="sweepQuality"
+  ></div>
 
 </div>
 
+
+
+<!-- =========================================================
+     DEALING RANGE
+========================================================= -->
 
 <div class="card">
 
-<div class="label">
-  History Engine
-</div>
+  <div class="label">
+    H1 DEALING RANGE
+  </div>
 
-<div
-  id="engine3"
-  class="value small"
->
-  —
-</div>
+  <div
+    id="dealingRange"
+  ></div>
 
 </div>
 
+
+
+<!-- =========================================================
+     STRUCTURE
+========================================================= -->
 
 <div class="card">
 
-<div class="label">
-  Macro Engine
+  <div class="label">
+    MULTI-TIMEFRAME STRUCTURE
+  </div>
+
+  <div
+    id="structure"
+  ></div>
+
 </div>
+
+
+
+<!-- =========================================================
+     SESSIONS
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    SESSION LIQUIDITY
+  </div>
+
+  <div
+    id="sessions"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     FLOW
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    FLOW / DELTA INTELLIGENCE
+  </div>
+
+  <div
+    id="flowHeading"
+    style="
+      margin-top:8px;
+      font-size:24px;
+      font-weight:950;
+    "
+  >
+    —
+  </div>
+
+  <div
+    id="flow"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     DISPLACEMENT
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    DISPLACEMENT
+  </div>
+
+  <div
+    id="displacement"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     INTERMARKET
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    API #4 · INTERMARKET GOLD PRESSURE
+  </div>
+
+  <div
+    id="intermarketHeading"
+    style="
+      margin-top:8px;
+      font-size:26px;
+      font-weight:950;
+    "
+  >
+    —
+  </div>
+
+  <div
+    id="intermarket"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     MACRO
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    FRED MACRO PRESSURE
+  </div>
+
+  <div
+    id="macroHeading"
+    style="
+      margin-top:8px;
+      font-size:26px;
+      font-weight:950;
+    "
+  >
+    —
+  </div>
+
+  <div
+    id="macro"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     HISTORICAL
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    HISTORICAL LIQUIDITY BEHAVIOUR
+  </div>
+
+  <div
+    style="
+      color:var(--muted);
+      font-size:9px;
+      line-height:1.5;
+      margin-top:7px;
+    "
+  >
+    Historical sweep and return statistics use API #3.
+    Current zone likelihood scores are model heuristics,
+    not guaranteed probabilities.
+  </div>
+
+  <div
+    id="historical"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     FVG
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    M15 IMBALANCE / FVG
+  </div>
+
+  <div
+    id="fvg"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     DATA QUALITY
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    DATA QUALITY
+  </div>
+
+  <div
+    id="quality"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     SYSTEM HEALTH
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    ENGINE HEALTH
+  </div>
+
+  <div
+    id="health"
+  ></div>
+
+</div>
+
+
+
+<!-- =========================================================
+     REASONS
+========================================================= -->
+
+<div class="card">
+
+  <div class="label">
+    MODEL REASONS
+  </div>
+
+  <div
+    id="reasons"
+  ></div>
+
+</div>
+
+
+
+<button
+  id="refresh"
+  class="refresh"
+>
+  FORCE NEW ANALYSIS
+</button>
+
 
 <div
-  id="engineFred"
-  class="value small"
+  id="footer"
+  class="footer"
 >
-  —
-</div>
-
-</div>
-
-
-</div>
-
-
-<div class="notice">
-
-<strong>
-Important:
-</strong>
-
-Liquidity Strength, Raid Strength, Historical Match and
-Combined Quality are analytical model scores, not guaranteed
-probabilities. A liquidity sweep does not automatically mean
-price will reverse. Acceptance beyond the projected raid zone
-can instead indicate continuation.
-
+  Connecting to MKAYFX V8…
 </div>
 
 
@@ -2441,3024 +1785,2348 @@ can instead indicate continuation.
 
 <script>
 
-(() => {
-
+/* ============================================================
+   CONFIG
+============================================================ */
 
 const API =
   "/api/xau";
 
 
-let DATA =
-  null;
+/* ============================================================
+   HELPERS
+============================================================ */
 
+function el(
+  id
+){
 
-let CURRENT_TF =
-  "m5";
-
-
-let busy =
-  false;
-
-
-const $ =
-  id =>
+  return (
     document.getElementById(
       id
-    );
+    )
+  );
+}
 
 
-/* =========================================================
-   FORMAT
-========================================================= */
-
-function fmt(
+function num(
   value,
   decimals = 2
-) {
+){
 
-  const number =
-    Number(
-      value
-    );
+  const n =
+    Number(value);
 
 
   if (
-    !Number.isFinite(
-      number
-    )
-  ) {
+    !Number.isFinite(n)
+  ){
 
     return "—";
-
   }
 
 
-  return number
-    .toLocaleString(
-
-      "en-ZA",
-
+  return (
+    n.toLocaleString(
+      undefined,
       {
-
         minimumFractionDigits:
           decimals,
 
         maximumFractionDigits:
           decimals
-
       }
-
-    );
-
-}
-
-
-function escapeHTML(
-  value
-) {
-
-  return String(
-    value ??
-    ""
-  )
-    .replace(
-
-      /[&<>"']/g,
-
-      char => ({
-
-        "&":
-          "&amp;",
-
-        "<":
-          "&lt;",
-
-        ">":
-          "&gt;",
-
-        '"':
-          "&quot;",
-
-        "'":
-          "&#39;"
-
-      })[
-        char
-      ]
-
-    );
-
-}
-
-
-function scoreLabel(
-  score
-) {
-
-  score =
-    Number(
-      score
-    ) ||
-    0;
-
-
-  if (
-    score >=
-    85
-  ) {
-
-    return "EXTREME";
-
-  }
-
-
-  if (
-    score >=
-    75
-  ) {
-
-    return "VERY STRONG";
-
-  }
-
-
-  if (
-    score >=
-    60
-  ) {
-
-    return "STRONG";
-
-  }
-
-
-  if (
-    score >=
-    45
-  ) {
-
-    return "MODERATE";
-
-  }
-
-
-  return "WEAK";
-
-}
-
-
-function colorClass(
-  text
-) {
-
-  text =
-    String(
-      text ||
-      ""
     )
-      .toUpperCase();
+  );
+}
+
+
+function signed(
+  value,
+  decimals = 1
+){
+
+  const n =
+    Number(value);
 
 
   if (
+    !Number.isFinite(n)
+  ){
 
+    return "—";
+  }
+
+
+  return (
+    (
+      n > 0
+        ? "+"
+        : ""
+    ) +
+    num(
+      n,
+      decimals
+    )
+  );
+}
+
+
+function biasClass(
+  value
+){
+
+  const text =
+    String(
+      value ||
+      ""
+    ).toUpperCase();
+
+
+  if (
     text.includes(
       "BULL"
-    )
-
-    ||
-
+    ) ||
     text.includes(
-      "BUY"
-    )
-
-    ||
-
+      "BUYING"
+    ) ||
     text.includes(
-      "SUPPORT"
+      "UP "
     )
+  ){
 
-  ) {
-
-    return "green";
-
+    return "bull";
   }
 
 
   if (
-
     text.includes(
       "BEAR"
-    )
-
-    ||
-
+    ) ||
     text.includes(
-      "SELL"
-    )
-
-    ||
-
+      "SELLING"
+    ) ||
     text.includes(
-      "HEADWIND"
+      "DOWN "
     )
+  ){
 
-  ) {
-
-    return "red";
-
+    return "bear";
   }
 
 
-  return "muted";
-
+  return "neutral";
 }
 
 
-/* =========================================================
-   LOAD
-========================================================= */
+function row(
+  title,
+  value,
+  sub = ""
+){
 
-async function load() {
+  return `
+
+    <div class="row">
+
+      <div>
+
+        <div class="row-title">
+          ${title}
+        </div>
+
+        ${
+          sub
+            ? `
+              <div class="row-sub">
+                ${sub}
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+
+      <div class="row-value">
+        ${value}
+      </div>
+
+    </div>
+  `;
+}
 
 
-  if (
-    busy
-  ) {
+function badge(
+  text,
+  type = ""
+){
+
+  return `
+    <span
+      class="badge ${type}"
+    >
+      ${text}
+    </span>
+  `;
+}
+
+
+function progress(
+  title,
+  value,
+  className = ""
+){
+
+  const safe =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number(value) ||
+        0
+      )
+    );
+
+
+  return `
+
+    <div class="bar-wrap">
+
+      <div class="bar-head">
+
+        <span>
+          ${title}
+        </span>
+
+        <span>
+          ${num(
+            safe,
+            1
+          )}
+        </span>
+
+      </div>
+
+      <div class="bar">
+
+        <div
+          class="bar-fill ${className}"
+          style="width:${safe}%"
+        ></div>
+
+      </div>
+
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   MARKET
+============================================================ */
+
+function renderMarket(
+  data
+){
+
+  const market =
+    data.market;
+
+
+  el("price")
+    .textContent =
+      "$" +
+      num(
+        market.price,
+        2
+      );
+
+
+  el("change")
+    .textContent =
+      `${signed(
+        market.change,
+        2
+      )} · ${signed(
+        market.percentChange,
+        3
+      )}%`;
+
+
+  el("atrM5")
+    .textContent =
+      num(
+        market.atr
+          ?.M5,
+        2
+      );
+
+
+  el("rsiM5")
+    .textContent =
+      num(
+        market.rsi
+          ?.M5,
+        1
+      );
+
+
+  el("vwap")
+    .innerHTML =
+
+      `${num(
+        market.vwap,
+        2
+      )}
+
+      <div class="row-sub">
+        ${market.vwapPosition}
+      </div>`;
+
+
+  el("regime")
+    .innerHTML =
+
+      `${market.regime
+          ?.regime ||
+        "—"}
+
+      <div class="row-sub">
+        ${market.regime
+            ?.volatility ||
+          "—"}
+      </div>`;
+}
+
+
+/* ============================================================
+   CONSENSUS
+============================================================ */
+
+function renderConsensus(
+  data
+){
+
+  const c =
+    data.consensus;
+
+
+  const heading =
+    el(
+      "consensus"
+    );
+
+
+  heading.textContent =
+    c.direction;
+
+
+  heading.className =
+    "consensus " +
+    biasClass(
+      c.direction
+    );
+
+
+  el("consensusSub")
+    .innerHTML =
+
+      `MODEL SCORE
+      <strong>
+        ${signed(
+          c.score,
+          1
+        )}
+      </strong>
+
+      ·
+
+      ${c.liquidityDrawDirection}`;
+
+
+  el("confidence")
+    .textContent =
+      num(
+        c.confidence,
+        1
+      ) + "%";
+
+
+  el("technical")
+    .textContent =
+      signed(
+        c.components
+          ?.technical,
+        1
+      );
+
+
+  el("liquidityDraw")
+    .textContent =
+      signed(
+        c.components
+          ?.liquidityDraw,
+        1
+      );
+
+
+  el("intermarketScore")
+    .textContent =
+      signed(
+        c.components
+          ?.intermarket,
+        1
+      );
+
+
+  const marker =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        (
+          Number(
+            c.score
+          ) +
+          100
+        ) /
+        2
+      )
+    );
+
+
+  el("scoreMarker")
+    .style.left =
+      marker +
+      "%";
+}
+
+
+/* ============================================================
+   DOMINANT ZONE
+============================================================ */
+
+function renderDominantZone(
+  data
+){
+
+  const zone =
+    data.deepLiquidity
+      ?.dominantZone;
+
+
+  if (!zone){
+
+    el("dominantZone")
+      .innerHTML =
+        "No active liquidity zone.";
 
     return;
-
   }
 
 
-  busy =
-    true;
+  const sideClass =
+    zone.side ===
+    "BUY_SIDE"
+      ? "bull"
+      : "bear";
 
 
-  $("refresh").disabled =
-    true;
+  const lifecycle =
+    zone.lifecycle
+      ?.stage ||
+    "TRACKING";
 
 
-  $("liveStatus").textContent =
-    "ANALYZING";
+  el("dominantZone")
+    .innerHTML = `
+
+      <div
+        class="
+          zone-name
+          ${sideClass}
+        "
+      >
+        ${zone.name}
+      </div>
 
 
-  try {
+      <div class="zone-range">
+        ${num(
+          zone.low,
+          2
+        )}
+        –
+        ${num(
+          zone.high,
+          2
+        )}
+      </div>
 
 
-    const response =
-      await fetch(
+      <div class="zone-stage">
+        ${lifecycle}
+      </div>
 
-        `${API}?t=${Date.now()}`,
 
-        {
-          cache:
-            "no-store"
+      <div
+        style="
+          margin-top:10px;
+          color:var(--muted);
+          font-size:10px;
+          line-height:1.6;
+        "
+      >
+
+        ${zone.side}
+
+        ·
+
+        ${zone.liquidityClass}
+
+        ·
+
+        ${num(
+          zone.distanceATR,
+          2
+        )} ATR away
+
+        <br>
+
+        Components:
+        <strong>
+          ${zone.componentCount}
+        </strong>
+
+        ·
+
+        Freshness:
+        <strong>
+          ${zone.freshnessState}
+        </strong>
+
+      </div>
+
+
+      ${progress(
+        "LIQUIDITY HEAT",
+        zone.heat
+      )}
+
+
+      ${progress(
+        "RAID LIKELIHOOD",
+        zone.raidLikelihood,
+        "bar-blue"
+      )}
+
+
+      ${progress(
+        "REVERSAL LIKELIHOOD",
+        zone.reversalLikelihood,
+        "bar-green"
+      )}
+
+
+      ${progress(
+        "CONTINUATION LIKELIHOOD",
+        zone.continuationLikelihood,
+        "bar-red"
+      )}
+
+
+      <div class="grid">
+
+        <div class="metric">
+
+          <div class="metric-label">
+            Density
+          </div>
+
+          <div class="metric-value">
+            ${num(
+              zone.density,
+              1
+            )}
+          </div>
+
+        </div>
+
+
+        <div class="metric">
+
+          <div class="metric-label">
+            Freshness
+          </div>
+
+          <div class="metric-value">
+            ${num(
+              zone.freshness,
+              1
+            )}
+          </div>
+
+        </div>
+
+
+        <div class="metric">
+
+          <div class="metric-label">
+            Approach
+          </div>
+
+          <div class="metric-value">
+            ${zone.approach
+                ?.label ||
+              "—"}
+          </div>
+
+        </div>
+
+
+        <div class="metric">
+
+          <div class="metric-label">
+            FVG overlap
+          </div>
+
+          <div class="metric-value">
+            ${zone.fvgOverlap
+                ? "YES"
+                : "NO"}
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        style="
+          margin-top:13px;
+          color:var(--muted);
+          font-size:9px;
+          line-height:1.6;
+        "
+      >
+
+        Estimated stops:
+
+        <strong
+          style="color:var(--text)"
+        >
+          ${num(
+            zone.estimatedStopPool
+              ?.low,
+            2
+          )}
+          –
+          ${num(
+            zone.estimatedStopPool
+              ?.high,
+            2
+          )}
+        </strong>
+
+        <br>
+
+        Projected raid zone:
+
+        <strong
+          style="color:var(--text)"
+        >
+          ${num(
+            zone.projectedRaidZone
+              ?.low,
+            2
+          )}
+          –
+          ${num(
+            zone.projectedRaidZone
+              ?.high,
+            2
+          )}
+        </strong>
+
+      </div>
+
+
+      <div class="chips">
+
+        ${
+          (
+            zone.componentNames ||
+            []
+          )
+          .map(
+            name =>
+              `<span class="chip">
+                ${name}
+              </span>`
+          )
+          .join("")
         }
 
+      </div>
+    `;
+}
+
+
+/* ============================================================
+   LIQUIDITY PATH
+============================================================ */
+
+function renderLiquidityPath(
+  data
+){
+
+  const path =
+    data.deepLiquidity
+      ?.path ||
+    [];
+
+
+  if (!path.length){
+
+    el("liquidityPath")
+      .innerHTML =
+        row(
+          "No liquidity path",
+          "—"
+        );
+
+    return;
+  }
+
+
+  el("liquidityPath")
+    .innerHTML =
+
+      path
+        .slice(
+          0,
+          6
+        )
+        .map(
+          item => `
+
+            <div class="path-item">
+
+              <div class="path-dot"></div>
+
+              <div class="path-line"></div>
+
+              <div
+                style="
+                  display:flex;
+                  justify-content:space-between;
+                  gap:12px;
+                "
+              >
+
+                <div>
+
+                  <div class="row-title">
+                    #${item.rank}
+                    ${item.name}
+                  </div>
+
+                  <div class="row-sub">
+
+                    ${item.side}
+
+                    ·
+
+                    ${num(
+                      item.range
+                        ?.low,
+                      2
+                    )}
+
+                    –
+
+                    ${num(
+                      item.range
+                        ?.high,
+                      2
+                    )}
+
+                    ·
+
+                    ${item.stage}
+
+                  </div>
+
+                </div>
+
+
+                <div
+                  style="
+                    text-align:right;
+                  "
+                >
+
+                  <div
+                    style="
+                      color:var(--gold);
+                      font-size:17px;
+                      font-weight:950;
+                    "
+                  >
+                    ${num(
+                      item.nextTargetScore,
+                      1
+                    )}
+                  </div>
+
+                  <div class="row-sub">
+                    target score
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+          `
+        )
+        .join("");
+}
+
+
+/* ============================================================
+   ZONE LIST
+============================================================ */
+
+function renderZones(
+  data
+){
+
+  const zones =
+    data.deepLiquidity
+      ?.zones ||
+    [];
+
+
+  const root =
+    el(
+      "zoneList"
+    );
+
+
+  root.innerHTML =
+    "";
+
+
+  zones
+    .slice(
+      0,
+      12
+    )
+    .forEach(
+      (
+        zone,
+        index
+      ) => {
+
+        const div =
+          document.createElement(
+            "div"
+          );
+
+
+        div.className =
+          "zone-card" +
+          (
+            index === 0
+              ? " top"
+              : ""
+          );
+
+
+        const sideClass =
+          zone.side ===
+          "BUY_SIDE"
+            ? "bull"
+            : "bear";
+
+
+        div.innerHTML = `
+
+          <div class="zone-card-head">
+
+            <div>
+
+              <div
+                class="
+                  zone-card-name
+                  ${sideClass}
+                "
+              >
+                ${zone.name}
+              </div>
+
+              <div class="row-sub">
+
+                ${num(
+                  zone.low,
+                  2
+                )}
+
+                –
+
+                ${num(
+                  zone.high,
+                  2
+                )}
+
+                ·
+
+                ${zone.liquidityClass}
+
+                ·
+
+                ${zone.lifecycle
+                    ?.stage ||
+                  "TRACKING"}
+
+              </div>
+
+            </div>
+
+
+            <div class="zone-score">
+              ${num(
+                zone.heat,
+                0
+              )}
+            </div>
+
+          </div>
+
+
+          <div class="zone-meta">
+
+            <div class="zone-mini">
+
+              <span>
+                RAID
+              </span>
+
+              <strong>
+                ${num(
+                  zone.raidLikelihood,
+                  1
+                )}
+              </strong>
+
+            </div>
+
+
+            <div class="zone-mini">
+
+              <span>
+                DENSITY
+              </span>
+
+              <strong>
+                ${num(
+                  zone.density,
+                  1
+                )}
+              </strong>
+
+            </div>
+
+
+            <div class="zone-mini">
+
+              <span>
+                FRESHNESS
+              </span>
+
+              <strong>
+                ${num(
+                  zone.freshness,
+                  1
+                )}
+              </strong>
+
+            </div>
+
+
+            <div class="zone-mini">
+
+              <span>
+                DISTANCE
+              </span>
+
+              <strong>
+                ${num(
+                  zone.distanceATR,
+                  2
+                )} ATR
+              </strong>
+
+            </div>
+
+
+            <div class="zone-mini">
+
+              <span>
+                COMPONENTS
+              </span>
+
+              <strong>
+                ${zone.componentCount}
+              </strong>
+
+            </div>
+
+
+            <div class="zone-mini">
+
+              <span>
+                APPROACH
+              </span>
+
+              <strong>
+                ${zone.approach
+                    ?.label ||
+                  "—"}
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="chips">
+
+            ${
+              (
+                zone.componentNames ||
+                []
+              )
+              .map(
+                name =>
+                  `<span class="chip">
+                    ${name}
+                  </span>`
+              )
+              .join("")
+            }
+
+          </div>
+        `;
+
+
+        root.appendChild(
+          div
+        );
+      }
+    );
+}
+
+
+/* ============================================================
+   SWEEP QUALITY
+============================================================ */
+
+function renderSweepQuality(
+  data
+){
+
+  const quality =
+    data.deepLiquidity
+      ?.dominantSweepQuality;
+
+
+  if (!quality){
+
+    return;
+  }
+
+
+  const checks =
+    quality.checks ||
+    {};
+
+
+  el("sweepQuality")
+    .innerHTML =
+
+      row(
+        "Overall Quality",
+        `${quality.quality} · ${num(
+          quality.score,
+          1
+        )}/100`
+      ) +
+
+      row(
+        "Zone Penetrated",
+        checks.zonePenetrated
+          ? badge(
+              "YES",
+              "good"
+            )
+          : badge(
+              "NO"
+            )
+      ) +
+
+      row(
+        "Close Back Inside",
+        checks.closeBackInside
+          ? badge(
+              "YES",
+              "good"
+            )
+          : badge(
+              "NO"
+            )
+      ) +
+
+      row(
+        "M1 Reversal Structure",
+        checks.m1ReversalStructure
+          ? badge(
+              "CONFIRMED",
+              "good"
+            )
+          : badge(
+              "WAIT"
+            )
+      ) +
+
+      row(
+        "Displacement Away",
+        checks.displacementAway
+          ? badge(
+              "CONFIRMED",
+              "good"
+            )
+          : badge(
+              "WAIT"
+            )
+      ) +
+
+      row(
+        "Delta Divergence",
+        checks.deltaDivergence
+          ? badge(
+              "YES",
+              "good"
+            )
+          : badge(
+              "NO"
+            )
+      ) +
+
+      row(
+        "Absorption",
+        checks.absorption
+          ? badge(
+              "YES",
+              "good"
+            )
+          : badge(
+              "NO"
+            )
       );
+}
 
 
-    const json =
-      await response.json();
+/* ============================================================
+   DEALING RANGE
+============================================================ */
+
+function renderDealingRange(
+  data
+){
+
+  const range =
+    data.dealingRange;
 
 
-    if (
+  el("dealingRange")
+    .innerHTML =
 
-      !response.ok
+      row(
+        "Range High",
+        num(
+          range?.high,
+          2
+        )
+      ) +
 
-      ||
+      row(
+        "Midpoint",
+        num(
+          range?.midpoint,
+          2
+        )
+      ) +
 
-      !json.ok
+      row(
+        "Range Low",
+        num(
+          range?.low,
+          2
+        )
+      ) +
 
-    ) {
-
-      throw new Error(
-
-        json.error ||
-        `HTTP ${response.status}`
-
+      row(
+        "Range Width",
+        `$${num(
+          range?.range,
+          2
+        )}`
       );
+}
 
+
+/* ============================================================
+   STRUCTURE
+============================================================ */
+
+function renderStructure(
+  data
+){
+
+  const root =
+    el(
+      "structure"
+    );
+
+
+  root.innerHTML =
+    "";
+
+
+  for (
+    const timeframe
+    of
+    [
+      "M1",
+      "M5",
+      "M15",
+      "H1",
+      "H4"
+    ]
+  ){
+
+    const s =
+      data.structure
+        ?.[timeframe];
+
+
+    if (!s){
+      continue;
     }
 
 
-    DATA =
-      json;
+    root.innerHTML += `
+
+      <div class="row">
+
+        <div>
+
+          <div class="row-title">
+            ${timeframe}
+          </div>
+
+          <div class="row-sub">
+
+            EMA20
+            ${num(
+              s.ema20,
+              2
+            )}
+
+            ·
+
+            EMA50
+            ${num(
+              s.ema50,
+              2
+            )}
+
+            ${
+              s.bos
+                ? ` · ${s.bos}`
+                : ""
+            }
+
+            ${
+              s.choch
+                ? ` · ${s.choch}`
+                : ""
+            }
+
+          </div>
+
+        </div>
 
 
-    $("error").style.display =
-      "none";
+        <div
+          class="
+            row-value
+            ${biasClass(
+              s.bias
+            )}
+          "
+        >
+          ${s.bias}
+        </div>
 
-
-    render(
-      json
-    );
-
-
-    $("liveStatus").textContent =
-
-      json.cached
-
-        ?
-
-        "LIVE · CACHE"
-
-        :
-
-        "LIVE";
-
-
-    $("liveStatus").className =
-      "pill live";
-
-
-  } catch (
-    error
-  ) {
-
-
-    $("liveStatus").textContent =
-      "ERROR";
-
-
-    $("liveStatus").className =
-      "pill warn";
-
-
-    $("error").style.display =
-      "block";
-
-
-    $("error").textContent =
-
-      `Could not load XAU/USD intelligence.\n\n` +
-
-      `${error.message}\n\n` +
-
-      `Check all three Twelve Data API variables and redeploy.`;
-
-
-  } finally {
-
-
-    busy =
-      false;
-
-
-    $("refresh").disabled =
-      false;
-
+      </div>
+    `;
   }
-
 }
 
 
-/* =========================================================
-   RENDER EVERYTHING
-========================================================= */
+/* ============================================================
+   SESSIONS
+============================================================ */
 
-function render(
+function renderSessions(
   data
-) {
+){
+
+  const sessions =
+    data.sessions ||
+    {};
 
 
-  $("price").textContent =
-    fmt(
-      data.price,
-      3
+  const blocks = [];
+
+
+  for (
+    const name
+    of
+    [
+      "ASIA",
+      "LONDON",
+      "NEW_YORK"
+    ]
+  ){
+
+    const session =
+      sessions[name];
+
+
+    if (!session){
+      continue;
+    }
+
+
+    blocks.push(
+
+      row(
+        name.replace(
+          "_",
+          " "
+        ),
+
+        `${num(
+          session.low,
+          2
+        )} – ${num(
+          session.high,
+          2
+        )}`,
+
+        `Range $${num(
+          session.range,
+          2
+        )}`
+      )
     );
-
-
-  $("updateTime").textContent =
-
-    new Date(
-      data.latestBarTime
-    )
-      .toLocaleString();
-
-
-  $("dataAge").textContent =
-    `AGE ${data.dataAgeSeconds}s`;
-
-
-  renderEngineStatus(
-    data.engines
-  );
-
-
-  renderPrimary(
-    data.primaryLiquidity
-  );
-
-
-  renderChart();
-
-
-  renderSessions(
-    data.sessions
-  );
-
-
-  renderMarket(
-    data.market
-  );
-
-
-  renderTimeframes(
-    data.structure
-  );
-
-
-  renderFlow(
-    data.flow
-  );
-
-
-  renderMacro(
-    data.macro
-  );
-
-
-  renderHistorical(
-    data.historical
-  );
-
-
-  renderLiquidity(
-    data.liquidityPools
-  );
-
-
-  renderTraps(
-    data.trapRadar
-  );
-
-}
-
-
-/* =========================================================
-   ENGINE STATUS
-========================================================= */
-
-function renderEngineStatus(
-  engines
-) {
-
-
-  const liveAPIs =
-    engines.live
-      ?.apiUsed ||
-    [];
-
-
-  const structureAPIs =
-    engines.structure
-      ?.apiUsed ||
-    [];
-
-
-  const historyAPIs =
-    engines.historical
-      ?.apiUsed ||
-    [];
-
-
-  $("api1Status").textContent =
-
-    `LIVE · API ${liveAPIs.join("/") || "1"}`;
-
-
-  $("api2Status").textContent =
-
-    `STRUCTURE · API ${structureAPIs.join("/") || "2"}`;
-
-
-  $("api3Status").textContent =
-
-    `HISTORY · API ${historyAPIs.join("/") || "3"}`;
-
-
-  $("engine1").textContent =
-
-    `API ${liveAPIs.join("/")} · ` +
-
-    `${engines.live.m1Bars} M1 · ` +
-
-    `${engines.live.m5Bars} M5`;
-
-
-  $("engine2").textContent =
-
-    `API ${structureAPIs.join("/")} · ` +
-
-    `${engines.structure.m15Bars} M15 · ` +
-
-    `${engines.structure.h1Bars} H1`;
-
-
-  $("engine3").textContent =
-
-    `API ${historyAPIs.join("/")} · ` +
-
-    `${engines.historical.sessionsStudied} sessions`;
-
-
-  $("engineFred").textContent =
-
-    engines.macro.enabled
-
-      ?
-
-      "FRED ACTIVE"
-
-      :
-
-      "FRED OFF";
-
-}
-
-
-/* =========================================================
-   PRIMARY LIQUIDITY
-========================================================= */
-
-function renderPrimary(
-  pool
-) {
+  }
 
 
   if (
-    !pool
-  ) {
+    data.previousDay
+  ){
 
-    return;
+    blocks.push(
 
+      row(
+        "Previous Day",
+        `${num(
+          data.previousDay.low,
+          2
+        )} – ${num(
+          data.previousDay.high,
+          2
+        )}`,
+        data.previousDay.date
+      )
+    );
   }
 
 
-  $("primaryName").textContent =
+  if (
+    data.previousWeek
+  ){
 
-    `${
-      pool.side ===
-      "HIGH"
+    blocks.push(
 
-        ?
-
-        "UPSIDE"
-
-        :
-
-        "DOWNSIDE"
-    } → ${pool.name}`;
-
-
-  $("primaryMeta").textContent =
-
-    `${pool.type} · ` +
-
-    `${fmt(
-      pool.distanceAtr,
-      2
-    )}× M15 ATR away`;
-
-
-  $("primaryStage").textContent =
-    pool.stage;
-
-
-  $("liqScore").textContent =
-    `${pool.liquidityStrength}/100`;
-
-
-  $("raidScore").textContent =
-    `${pool.raidStrength}/100`;
-
-
-  $("historyScore").textContent =
-    `${pool.historicalMatch}/100`;
-
-
-  $("qualityScore").textContent =
-    `${pool.combinedQuality}/100`;
-
-
-  $("heroQuality").textContent =
-    pool.combinedQuality;
-
-
-  $("heroQualityLabel").textContent =
-    scoreLabel(
-      pool.combinedQuality
-    );
-
-
-  $("liqMeter").style.width =
-    `${pool.liquidityStrength}%`;
-
-
-  $("raidMeter").style.width =
-    `${pool.raidStrength}%`;
-
-
-  $("historyMeter").style.width =
-    `${pool.historicalMatch}%`;
-
-
-  $("qualityMeter").style.width =
-    `${pool.combinedQuality}%`;
-
-
-  $("primaryLevel").textContent =
-    fmt(
-      pool.level,
-      3
-    );
-
-
-  $("likelyEnd").textContent =
-    fmt(
-      pool.projectedSweep
-        ?.likelyEnd,
-      3
-    );
-
-
-  $("reversalZone").textContent =
-
-    `${fmt(
-      pool.projectedSweep?.zoneLow,
-      3
-    )} – ` +
-
-    `${fmt(
-      pool.projectedSweep?.zoneHigh,
-      3
-    )}`;
-
-
-  $("acceptanceLevel").textContent =
-    fmt(
-
-      pool.projectedSweep
-        ?.acceptanceThreshold,
-
-      3
-
-    );
-
-
-  $("primaryReasons").innerHTML =
-
-    (
-      pool.reasons ||
-      []
-    )
-
-      .map(
-        reason =>
-          `• ${escapeHTML(reason)}`
+      row(
+        "Previous Week",
+        `${num(
+          data.previousWeek.low,
+          2
+        )} – ${num(
+          data.previousWeek.high,
+          2
+        )}`,
+        data.previousWeek.week
       )
+    );
+  }
 
-      .join(
-        "<br>"
-      );
 
+  el("sessions")
+    .innerHTML =
+      blocks.join("");
 }
 
 
-/* =========================================================
-   SESSIONS
-========================================================= */
-
-function renderSessions(
-  sessions
-) {
-
-
-  $("sessions").innerHTML =
-
-    (
-      sessions ||
-      []
-    )
-
-      .map(
-        session => `
-
-<div
-  class="card session ${session.active ? "active" : ""}"
->
-
-<div class="session-top">
-
-<div>
-
-<div class="label">
-${escapeHTML(session.name)}
-</div>
-
-<div
-  class="value ${
-    session.active
-      ?
-      "green"
-      :
-      "muted"
-  }"
->
-${session.active ? "OPEN" : "CLOSED"}
-</div>
-
-<div
-  class="tiny muted"
-  style="margin-top:3px"
->
-${escapeHTML(session.phase)}
-</div>
-
-</div>
-
-
-<div style="text-align:right">
-
-<div class="label">
-${escapeHTML(session.nextEvent)}
-</div>
-
-<div
-  class="value small sessionCountdown"
-  data-time="${escapeHTML(session.nextEventAt)}"
->
-—
-</div>
-
-</div>
-
-</div>
-
-
-<div class="range-grid">
-
-<div class="mini">
-
-<div class="label">
-HIGH
-</div>
-
-<div class="value small">
-${fmt(session.range?.high,3)}
-</div>
-
-</div>
-
-
-<div class="mini">
-
-<div class="label">
-LOW
-</div>
-
-<div class="value small">
-${fmt(session.range?.low,3)}
-</div>
-
-</div>
-
-
-<div class="mini">
-
-<div class="label">
-RANGE
-</div>
-
-<div class="value small">
-${fmt(session.range?.range,3)}
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-`
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
-   MARKET
-========================================================= */
-
-function renderMarket(
-  market
-) {
-
-
-  $("atr1").textContent =
-    fmt(
-      market.atr1,
-      3
-    );
-
-
-  $("atr5").textContent =
-    fmt(
-      market.atr5,
-      3
-    );
-
-
-  $("atr15").textContent =
-    fmt(
-      market.atr15,
-      3
-    );
-
-
-  $("vwap").textContent =
-    fmt(
-      market.vwap,
-      3
-    );
-
-
-  $("vwapDistance").textContent =
-
-    `${market.vwapDistance >= 0 ? "+" : ""}` +
-
-    `${fmt(
-      market.vwapDistance,
-      3
-    )}`;
-
-
-  $("regime").textContent =
-    market.regime
-      ?.label ||
-    "—";
-
-}
-
-
-/* =========================================================
-   TIMEFRAMES
-========================================================= */
-
-function renderTimeframes(
-  structure
-) {
-
-
-  const order = [
-
-    "m1",
-
-    "m5",
-
-    "m15",
-
-    "h1",
-
-    "h4"
-
-  ];
-
-
-  $("timeframes").innerHTML =
-
-    order
-
-      .map(
-        key => {
-
-
-          const frame =
-            structure[
-              key
-            ] ||
-            {};
-
-
-          return `
-
-<div class="card tf">
-
-<div class="label">
-${key.toUpperCase()}
-</div>
-
-<div
-  class="tf-bias ${colorClass(frame.bias)}"
->
-${escapeHTML(frame.bias || "—")}
-</div>
-
-<div class="tiny muted">
-Score ${fmt(frame.score,0)}
-</div>
-
-<div class="tiny muted">
-RSI ${fmt(frame.rsi,1)}
-</div>
-
-<div
-  class="tiny"
-  style="margin-top:4px"
->
-${escapeHTML(frame.structure?.event || "NONE")}
-</div>
-
-</div>
-
-`;
-
-        }
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
+/* ============================================================
    FLOW
-========================================================= */
+============================================================ */
 
 function renderFlow(
-  flow
-) {
+  data
+){
+
+  const flow =
+    data.flow;
 
 
-  $("flowMode").textContent =
-    flow.mode ||
-    "—";
-
-
-  setDelta(
-    "delta5",
-    flow.m5
-      ?.deltaPct
-  );
-
-
-  setDelta(
-    "delta15",
-    flow.m15
-      ?.deltaPct
-  );
-
-
-  setDelta(
-    "delta30",
-    flow.m30
-      ?.deltaPct
-  );
-
-
-  setDelta(
-    "delta60",
-    flow.h1
-      ?.deltaPct
-  );
-
-
-  $("cvd").textContent =
-    fmt(
-      flow.cvd,
-      1
+  const heading =
+    el(
+      "flowHeading"
     );
 
 
-  $("divergence").textContent =
-    flow.divergence ||
-    "NONE";
+  heading.textContent =
+    flow.bias;
 
 
-  $("absorption").textContent =
-    flow.absorption ||
-    "NONE";
-
-}
-
-
-function setDelta(
-  id,
-  value
-) {
-
-
-  value =
-    Number(
-      value
-    ) ||
-    0;
-
-
-  const element =
-    $(
-      id
+  heading.className =
+    biasClass(
+      flow.bias
     );
 
 
-  element.textContent =
+  el("flow")
+    .innerHTML =
 
-    `${value >= 0 ? "+" : ""}` +
+      row(
+        "Delta Proxy",
+        num(
+          flow.delta,
+          2
+        )
+      ) +
 
-    `${fmt(
-      value,
-      1
-    )}%`;
+      row(
+        "CVD Proxy",
+        num(
+          flow.cvd,
+          2
+        )
+      ) +
 
+      row(
+        "Absorption",
+        flow.absorption ||
+        "NONE"
+      ) +
 
-  element.className =
-
-    `delta-value ${
-      value >
-      3
-
-        ?
-
-        "green"
-
-        :
-
-        value <
-        -3
-
-          ?
-
-          "red"
-
-          :
-
-          "muted"
-    }`;
-
+      row(
+        "Delta Divergence",
+        flow.divergence ||
+        "NONE"
+      );
 }
 
 
-/* =========================================================
-   MACRO
-========================================================= */
+/* ============================================================
+   DISPLACEMENT
+============================================================ */
 
-function renderMacro(
-  macro
-) {
+function renderDisplacement(
+  data
+){
+
+  const m1 =
+    data.displacement
+      ?.M1;
+
+  const m5 =
+    data.displacement
+      ?.M5;
 
 
-  $("macroBias").textContent =
-    macro.bias ||
-    "—";
+  el("displacement")
+    .innerHTML =
+
+      row(
+        "M1",
+        m1?.active
+          ? `<span class="${biasClass(
+              m1.direction
+            )}">
+              ${m1.direction}
+            </span>`
+          : "NONE",
+        `Strength ${num(
+          m1?.strength,
+          1
+        )} · Expansion ${num(
+          m1?.expansion,
+          2
+        )}x`
+      ) +
+
+      row(
+        "M5",
+        m5?.active
+          ? `<span class="${biasClass(
+              m5.direction
+            )}">
+              ${m5.direction}
+            </span>`
+          : "NONE",
+        `Strength ${num(
+          m5?.strength,
+          1
+        )} · Expansion ${num(
+          m5?.expansion,
+          2
+        )}x`
+      );
+}
 
 
-  $("macroBias").className =
+/* ============================================================
+   INTERMARKET
+============================================================ */
 
-    `value ${colorClass(
-      macro.bias
+function renderIntermarket(
+  data
+){
+
+  const market =
+    data.intermarket;
+
+
+  const heading =
+    el(
+      "intermarketHeading"
+    );
+
+
+  heading.textContent =
+    `${market.bias} · ${signed(
+      market.score,
+      1
     )}`;
 
 
-  $("macroScore").textContent =
+  heading.className =
+    biasClass(
+      market.bias
+    );
 
-    `${macro.score >= 0 ? "+" : ""}` +
 
-    `${fmt(
+  el("intermarket")
+    .innerHTML =
+
+      (
+        market.markets ||
+        []
+      )
+      .map(
+        item =>
+
+          row(
+            item.label,
+
+            `<span class="${biasClass(
+              item.goldBias
+            )}">
+              ${signed(
+                item.goldContribution,
+                1
+              )}
+            </span>`,
+
+            `1H ${signed(
+              item.move1h,
+              3
+            )}% · 3H ${signed(
+              item.move3h,
+              3
+            )}% · 6H ${signed(
+              item.move6h,
+              3
+            )}% · 12H ${signed(
+              item.move12h,
+              3
+            )}%`
+          )
+      )
+      .join("");
+}
+
+
+/* ============================================================
+   MACRO
+============================================================ */
+
+function renderMacro(
+  data
+){
+
+  const macro =
+    data.macro;
+
+
+  const heading =
+    el(
+      "macroHeading"
+    );
+
+
+  heading.textContent =
+    `${macro.bias} · ${signed(
       macro.score,
       1
     )}`;
 
 
-  $("macroCoverage").textContent =
-
-    macro.enabled
-
-      ?
-
-      `${fmt(
-        macro.coverage,
-        0
-      )}% FRED coverage`
-
-      :
-
-      "FRED unavailable";
-
-
-  $("macroDrivers").innerHTML =
-
-    (
-      macro.drivers ||
-      []
-    )
-
-      .map(
-        driver => `
-
-<div class="info">
-
-<div>
-
-${escapeHTML(driver.name)}
-
-<div class="tiny muted">
-${escapeHTML(driver.date)}
-</div>
-
-</div>
-
-<div style="text-align:right">
-
-<b>
-${fmt(driver.value,3)}
-</b>
-
-<div
-  class="tiny ${
-    driver.goldPressure >
-    15
-
-      ?
-
-      "green"
-
-      :
-
-      driver.goldPressure <
-      -15
-
-        ?
-
-        "red"
-
-        :
-
-        "muted"
-  }"
->
-
-${driver.goldPressure >= 0 ? "+" : ""}
-
-${fmt(
-  driver.goldPressure,
-  1
-)}
-
-</div>
-
-</div>
-
-</div>
-
-`
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
-   HISTORICAL
-========================================================= */
-
-function renderHistorical(
-  historical
-) {
-
-
-  const items = [
-
-    [
-      "Asia High",
-      historical.asiaHigh
-    ],
-
-    [
-      "Asia Low",
-      historical.asiaLow
-    ],
-
-    [
-      "London High",
-      historical.londonHigh
-    ],
-
-    [
-      "London Low",
-      historical.londonLow
-    ],
-
-    [
-      "New York High",
-      historical.nyHigh
-    ],
-
-    [
-      "New York Low",
-      historical.nyLow
-    ]
-
-  ];
-
-
-  $("historicalCards").innerHTML =
-
-    items
-
-      .map(
-        item => {
-
-
-          const stat =
-            item[1] ||
-            {};
-
-
-          return `
-
-<div class="card">
-
-<div class="label">
-${item[0]}
-</div>
-
-<div class="value">
-${fmt(
-  stat.sweepRatePct,
-  1
-)}%
-</div>
-
-<div class="tiny muted">
-Sweep Rate
-</div>
-
-<div class="info">
-
-<span class="muted">
-Return
-</span>
-
-<b>
-${fmt(
-  stat.returnRatePct,
-  1
-)}%
-</b>
-
-</div>
-
-<div class="info">
-
-<span class="muted">
-Median raid
-</span>
-
-<b>
-${fmt(
-  stat.medianOvershootAtr,
-  2
-)} ATR
-</b>
-
-</div>
-
-<div class="info">
-
-<span class="muted">
-P75
-</span>
-
-<b>
-${fmt(
-  stat.p75OvershootAtr,
-  2
-)} ATR
-</b>
-
-</div>
-
-<div class="info">
-
-<span class="muted">
-P90
-</span>
-
-<b>
-${fmt(
-  stat.p90OvershootAtr,
-  2
-)} ATR
-</b>
-
-</div>
-
-</div>
-
-`;
-
-        }
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
-   LIQUIDITY MATRIX
-========================================================= */
-
-function renderLiquidity(
-  pools
-) {
-
-
-  $("liquidityRows").innerHTML =
-
-    (
-      pools ||
-      []
-    )
-
-      .map(
-        pool => `
-
-<tr>
-
-<td>
-
-<b>
-${escapeHTML(pool.name)}
-</b>
-
-<div class="tiny muted">
-${escapeHTML(pool.type)}
-</div>
-
-</td>
-
-
-<td class="${
-  pool.side ===
-  "HIGH"
-
-    ?
-
-    "red"
-
-    :
-
-    "green"
-}">
-
-${pool.side}
-
-</td>
-
-
-<td>
-${fmt(pool.level,3)}
-</td>
-
-
-<td>
-${escapeHTML(pool.stage)}
-</td>
-
-
-<td>
-
-${fmt(pool.distance,3)}
-
-<div class="tiny muted">
-${fmt(pool.distanceAtr,2)} ATR
-</div>
-
-</td>
-
-
-<td>
-
-<span
-  class="badge ${
-    pool.liquidityStrength >=
-    75
-
-      ?
-
-      "hot"
-
-      :
-
-      ""
-  }"
->
-${pool.liquidityStrength}
-</span>
-
-</td>
-
-
-<td>
-
-<span
-  class="badge ${
-    pool.raidStrength >=
-    75
-
-      ?
-
-      "hot"
-
-      :
-
-      ""
-  }"
->
-${pool.raidStrength}
-</span>
-
-</td>
-
-
-<td>
-${pool.historicalMatch}
-</td>
-
-
-<td>
-
-<b class="gold">
-${pool.combinedQuality}
-</b>
-
-</td>
-
-
-<td>
-${fmt(
-  pool.projectedSweep?.likelyEnd,
-  3
-)}
-</td>
-
-
-<td>
-${fmt(
-  pool.projectedSweep?.acceptanceThreshold,
-  3
-)}
-</td>
-
-</tr>
-
-`
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
-   TRAPS
-========================================================= */
-
-function renderTraps(
-  traps
-) {
-
-
-  $("traps").innerHTML =
-
-    (
-      traps ||
-      []
-    )
-
-      .map(
-        trap => `
-
-<div class="info">
-
-<div>
-
-<b>
-${escapeHTML(trap.name)}
-</b>
-
-<div class="tiny muted">
-${escapeHTML(trap.stage)}
-</div>
-
-</div>
-
-<div style="text-align:right">
-
-<b class="${
-  trap.score >=
-  75
-
-    ?
-
-    "orange"
-
-    :
-
-    "gold"
-}">
-${trap.score}/100
-</b>
-
-<div class="tiny muted">
-${escapeHTML(trap.risk)}
-</div>
-
-</div>
-
-</div>
-
-`
-      )
-
-      .join("");
-
-}
-
-
-/* =========================================================
-   CHART
-========================================================= */
-
-function renderChart() {
-
-
-  if (
-    !DATA?.chart
-  ) {
-
-    return;
-
-  }
-
-
-  const canvas =
-    $("goldChart");
-
-
-  const stage =
-    canvas.parentElement;
-
-
-  const ratio =
-    window.devicePixelRatio ||
-    1;
-
-
-  const width =
-    stage.clientWidth;
-
-
-  const height =
-    stage.clientHeight;
-
-
-  canvas.width =
-    width *
-    ratio;
-
-
-  canvas.height =
-    height *
-    ratio;
-
-
-  canvas.style.width =
-    `${width}px`;
-
-
-  canvas.style.height =
-    `${height}px`;
-
-
-  const ctx =
-    canvas.getContext(
-      "2d"
+  heading.className =
+    biasClass(
+      macro.bias
     );
 
 
-  ctx.setTransform(
+  if (
+    !macro.enabled
+  ){
 
-    ratio,
+    el("macro")
+      .innerHTML =
 
-    0,
+        row(
+          "FRED",
+          "UNAVAILABLE",
+          macro.error ||
+          macro.reason ||
+          ""
+        );
 
-    0,
-
-    ratio,
-
-    0,
-
-    0
-
-  );
-
-
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
+    return;
+  }
 
 
-  const candles =
-    DATA.chart
-      .candles[
-        CURRENT_TF
-      ] ||
+  el("macro")
+    .innerHTML =
+
+      row(
+        "US 2Y Yield",
+        `${num(
+          macro.twoYear
+            ?.value,
+          3
+        )}%`,
+        `Δ ${signed(
+          macro.twoYear
+            ?.change,
+          3
+        )} · ${macro.twoYear
+            ?.date ||
+          "—"}`
+      ) +
+
+      row(
+        "US 10Y Yield",
+        `${num(
+          macro.tenYear
+            ?.value,
+          3
+        )}%`,
+        `Δ ${signed(
+          macro.tenYear
+            ?.change,
+          3
+        )} · ${macro.tenYear
+            ?.date ||
+          "—"}`
+      ) +
+
+      row(
+        "Fed Funds",
+        `${num(
+          macro.fedFunds
+            ?.value,
+          3
+        )}%`,
+        macro.fedFunds
+          ?.date ||
+        "—"
+      );
+}
+
+
+/* ============================================================
+   HISTORICAL CARD
+============================================================ */
+
+function historyCard(
+  name,
+  stat
+){
+
+  let badgeClass =
+    "";
+
+
+  if (
+    stat.confidence ===
+    "HIGH"
+  ){
+
+    badgeClass =
+      "good";
+
+  } else if (
+    stat.confidence ===
+    "MEDIUM"
+  ){
+
+    badgeClass =
+      "warn";
+  }
+
+
+  return `
+
+    <div class="history-card">
+
+      <div class="history-header">
+
+        <div>
+
+          <div class="history-name">
+            ${name}
+          </div>
+
+          <div class="history-rate">
+            ${num(
+              stat.sweepRate,
+              1
+            )}%
+          </div>
+
+          <div class="row-sub">
+            sweep rate
+          </div>
+
+        </div>
+
+
+        ${badge(
+          stat.confidence,
+          badgeClass
+        )}
+
+      </div>
+
+
+      ${row(
+        "Samples",
+        stat.samples
+      )}
+
+
+      ${row(
+        "Sweeps",
+        `${stat.swept} / ${stat.samples}`
+      )}
+
+
+      ${row(
+        "Returned",
+        `${num(
+          stat.returnRate,
+          1
+        )}%`
+      )}
+
+
+      ${row(
+        "Median Raid",
+        `${num(
+          stat.medianRaidATR,
+          2
+        )} ATR`
+      )}
+
+
+      ${row(
+        "P75 Raid",
+        `${num(
+          stat.p75RaidATR,
+          2
+        )} ATR`
+      )}
+
+
+      ${row(
+        "P90 Raid",
+        `${num(
+          stat.p90RaidATR,
+          2
+        )} ATR`
+      )}
+
+    </div>
+  `;
+}
+
+
+/* ============================================================
+   HISTORICAL
+============================================================ */
+
+function renderHistorical(
+  data
+){
+
+  const stats =
+    data.historicalLiquidity
+      ?.sessions;
+
+
+  if (!stats){
+    return;
+  }
+
+
+  el("historical")
+    .innerHTML =
+
+      historyCard(
+        "ASIA HIGH",
+        stats.ASIA.high
+      ) +
+
+      historyCard(
+        "ASIA LOW",
+        stats.ASIA.low
+      ) +
+
+      historyCard(
+        "LONDON HIGH",
+        stats.LONDON.high
+      ) +
+
+      historyCard(
+        "LONDON LOW",
+        stats.LONDON.low
+      ) +
+
+      historyCard(
+        "NEW YORK HIGH",
+        stats.NEW_YORK.high
+      ) +
+
+      historyCard(
+        "NEW YORK LOW",
+        stats.NEW_YORK.low
+      );
+}
+
+
+/* ============================================================
+   FVG
+============================================================ */
+
+function renderFVG(
+  data
+){
+
+  const gaps =
+    data.fairValueGaps ||
     [];
 
 
-  if (
-    !candles.length
-  ) {
+  if (!gaps.length){
+
+    el("fvg")
+      .innerHTML =
+        row(
+          "No recent imbalance",
+          "—"
+        );
 
     return;
-
   }
 
 
-  const left =
-    8;
-
-
-  const right =
-    72;
-
-
-  const top =
-    12;
-
-
-  const bottom =
-    28;
-
-
-  const plotWidth =
-    width -
-    left -
-    right;
-
-
-  const plotHeight =
-    height -
-    top -
-    bottom;
-
-
-  let minPrice =
-    Math.min(
-
-      ...candles.map(
-        c =>
-          c.low
-      )
-
-    );
-
-
-  let maxPrice =
-    Math.max(
-
-      ...candles.map(
-        c =>
-          c.high
-      )
-
-    );
-
-
-  const relevantLevels =
-    (
-      DATA.chart.levels ||
-      []
-    )
-      .slice(
-        0,
-        12
-      );
-
-
-  for (
-    const level of
-    relevantLevels
-  ) {
-
-
-    minPrice =
-      Math.min(
-
-        minPrice,
-
-        level.price,
-
-        level.zoneLow ??
-        level.price,
-
-        level.likelyEnd ??
-        level.price
-
-      );
-
-
-    maxPrice =
-      Math.max(
-
-        maxPrice,
-
-        level.price,
-
-        level.zoneHigh ??
-        level.price,
-
-        level.likelyEnd ??
-        level.price
-
-      );
-
-  }
-
-
-  if (
-    Number.isFinite(
-      DATA.chart.vwap
-    )
-  ) {
-
-    minPrice =
-      Math.min(
-        minPrice,
-        DATA.chart.vwap
-      );
-
-
-    maxPrice =
-      Math.max(
-        maxPrice,
-        DATA.chart.vwap
-      );
-
-  }
-
-
-  const priceRange =
-    Math.max(
-
-      maxPrice -
-      minPrice,
-
-      .01
-
-    );
-
-
-  const padding =
-    priceRange *
-    .07;
-
-
-  minPrice -=
-    padding;
-
-
-  maxPrice +=
-    padding;
-
-
-  function y(
-    price
-  ) {
-
-    return (
-
-      top
-
-      +
-
-      (
-        maxPrice -
-        price
-      )
-
-      /
-      (
-        maxPrice -
-        minPrice
-      )
-
-      *
-      plotHeight
-
-    );
-
-  }
-
-
-  /* GRID */
-
-  ctx.strokeStyle =
-    "rgba(255,255,255,.045)";
-
-
-  ctx.lineWidth =
-    1;
-
-
-  for (
-    let i = 0;
-    i <= 5;
-    i++
-  ) {
-
-
-    const yy =
-
-      top
-
-      +
-
-      plotHeight *
-      i /
-      5;
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-
-    const price =
-
-      maxPrice
-
-      -
-
-      (
-        maxPrice -
-        minPrice
-      )
-
-      *
-      i /
-      5;
-
-
-    ctx.fillStyle =
-      "#6f7b89";
-
-
-    ctx.font =
-      "9px -apple-system";
-
-
-    ctx.fillText(
-
-      price.toFixed(
-        2
-      ),
-
-      width -
-      right +
-      5,
-
-      yy +
-      3
-
-    );
-
-  }
-
-
-  /* RAID ZONE */
-
-  const primary =
-    DATA.primaryLiquidity;
-
-
-  if (
-    primary?.projectedSweep
-  ) {
-
-
-    const y1 =
-      y(
-        primary.projectedSweep
-          .zoneHigh
-      );
-
-
-    const y2 =
-      y(
-        primary.projectedSweep
-          .zoneLow
-      );
-
-
-    ctx.fillStyle =
-      "rgba(243,203,99,.08)";
-
-
-    ctx.fillRect(
-
-      left,
-
-      Math.min(
-        y1,
-        y2
-      ),
-
-      plotWidth,
-
-      Math.abs(
-        y2 -
-        y1
-      )
-
-    );
-
-  }
-
-
-  /* CANDLES */
-
-  const candleSpace =
-    plotWidth /
-    candles.length;
-
-
-  const bodyWidth =
-    Math.max(
-
-      1,
-
-      Math.min(
-        7,
-        candleSpace *
-        .62
-      )
-
-    );
-
-
-  candles.forEach(
-    (
-      candle,
-      index
-    ) => {
-
-
-      const x =
-
-        left
-
-        +
-
-        candleSpace *
-        index
-
-        +
-
-        candleSpace /
-        2;
-
-
-      const bullish =
-        candle.close >=
-        candle.open;
-
-
-      const color =
-
-        bullish
-
-          ?
-
-          "#35e5a1"
-
-          :
-
-          "#ff6178";
-
-
-      ctx.strokeStyle =
-        color;
-
-
-      ctx.fillStyle =
-        color;
-
-
-      ctx.lineWidth =
-        1;
-
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        x,
-        y(
-          candle.high
+  el("fvg")
+    .innerHTML =
+
+      gaps
+        .slice(
+          -8
         )
-      );
+        .reverse()
+        .map(
+          gap =>
 
-      ctx.lineTo(
-        x,
-        y(
-          candle.low
+            row(
+              `${gap.direction} FVG`,
+
+              `${num(
+                gap.low,
+                2
+              )} – ${num(
+                gap.high,
+                2
+              )}`,
+
+              `Mid ${num(
+                gap.midpoint,
+                2
+              )}`
+            )
         )
-      );
-
-      ctx.stroke();
-
-
-      const openY =
-        y(
-          candle.open
-        );
-
-
-      const closeY =
-        y(
-          candle.close
-        );
-
-
-      const bodyTop =
-        Math.min(
-          openY,
-          closeY
-        );
-
-
-      const bodyHeight =
-        Math.max(
-
-          1,
-
-          Math.abs(
-            closeY -
-            openY
-          )
-
-        );
-
-
-      ctx.fillRect(
-
-        x -
-        bodyWidth /
-        2,
-
-        bodyTop,
-
-        bodyWidth,
-
-        bodyHeight
-
-      );
-
-    }
-  );
-
-
-  /* ALL LIQUIDITY LEVELS */
-
-  relevantLevels.forEach(
-    (
-      level,
-      index
-    ) => {
-
-
-      const yy =
-        y(
-          level.price
-        );
-
-
-      const primaryLevel =
-        index ===
-        0;
-
-
-      ctx.strokeStyle =
-
-        primaryLevel
-
-          ?
-
-          "#f3cb63"
-
-          :
-
-          level.side ===
-          "HIGH"
-
-            ?
-
-            "rgba(255,97,120,.62)"
-
-            :
-
-            "rgba(53,229,161,.62)";
-
-
-      ctx.lineWidth =
-
-        primaryLevel
-
-          ?
-
-          2
-
-          :
-
-          1;
-
-
-      ctx.setLineDash(
-
-        primaryLevel
-
-          ?
-
-          []
-
-          :
-
-          [4,4]
-
-      );
-
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        left,
-        yy
-      );
-
-      ctx.lineTo(
-        left +
-        plotWidth,
-        yy
-      );
-
-      ctx.stroke();
-
-
-      ctx.setLineDash(
-        []
-      );
-
-
-      ctx.fillStyle =
-
-        primaryLevel
-
-          ?
-
-          "#f3cb63"
-
-          :
-
-          "#aeb7c2";
-
-
-      ctx.font =
-
-        primaryLevel
-
-          ?
-
-          "bold 9px -apple-system"
-
-          :
-
-          "8px -apple-system";
-
-
-      const label =
-
-        `${level.name} ` +
-
-        `${Number(level.price).toFixed(2)} ` +
-
-        `L${level.liquidityStrength} ` +
-
-        `R${level.raidStrength}`;
-
-
-      ctx.fillText(
-
-        label,
-
-        left +
-        4,
-
-        yy -
-        3
-
-      );
-
-    }
-  );
-
-
-  /* PRIMARY LIKELY END */
-
-  if (
-    primary
-      ?.projectedSweep
-      ?.likelyEnd
-  ) {
-
-
-    const yy =
-      y(
-        primary.projectedSweep
-          .likelyEnd
-      );
-
-
-    ctx.strokeStyle =
-      "#ffac5c";
-
-
-    ctx.lineWidth =
-      1.5;
-
-
-    ctx.setLineDash(
-      [7,4]
-    );
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-
-    ctx.setLineDash(
-      []
-    );
-
-
-    ctx.fillStyle =
-      "#ffac5c";
-
-
-    ctx.font =
-      "bold 9px -apple-system";
-
-
-    ctx.fillText(
-
-      `LIKELY RAID END ${
-
-        Number(
-          primary.projectedSweep
-            .likelyEnd
-        ).toFixed(2)
-
-      }`,
-
-      left +
-      4,
-
-      yy -
-      4
-
-    );
-
-  }
-
-
-  /* ACCEPTANCE */
-
-  if (
-    primary
-      ?.projectedSweep
-      ?.acceptanceThreshold
-  ) {
-
-
-    const yy =
-      y(
-        primary.projectedSweep
-          .acceptanceThreshold
-      );
-
-
-    ctx.strokeStyle =
-      "rgba(255,172,92,.45)";
-
-
-    ctx.setLineDash(
-      [2,5]
-    );
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-
-    ctx.setLineDash(
-      []
-    );
-
-  }
-
-
-  /* VWAP */
-
-  if (
-    Number.isFinite(
-      DATA.chart.vwap
-    )
-  ) {
-
-
-    const yy =
-      y(
-        DATA.chart.vwap
-      );
-
-
-    ctx.strokeStyle =
-      "rgba(120,150,255,.75)";
-
-
-    ctx.lineWidth =
-      1;
-
-
-    ctx.setLineDash(
-      [5,3]
-    );
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-
-    ctx.setLineDash(
-      []
-    );
-
-
-    ctx.fillStyle =
-      "#7896ff";
-
-
-    ctx.font =
-      "8px -apple-system";
-
-
-    ctx.fillText(
-
-      `VWAP ${Number(
-        DATA.chart.vwap
-      ).toFixed(2)}`,
-
-      left +
-      4,
-
-      yy -
-      3
-
-    );
-
-  }
-
-
-  /* POC */
-
-  if (
-    Number.isFinite(
-      DATA.chart.poc
-    )
-  ) {
-
-
-    const yy =
-      y(
-        DATA.chart.poc
-      );
-
-
-    ctx.strokeStyle =
-      "rgba(183,137,255,.65)";
-
-
-    ctx.setLineDash(
-      [2,4]
-    );
-
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-
-    ctx.setLineDash(
-      []
-    );
-
-
-    ctx.fillStyle =
-      "#b789ff";
-
-
-    ctx.font =
-      "8px -apple-system";
-
-
-    ctx.fillText(
-
-      `POC ${Number(
-        DATA.chart.poc
-      ).toFixed(2)}`,
-
-      left +
-      4,
-
-      yy -
-      3
-
-    );
-
-  }
-
-
-  /* CURRENT PRICE */
-
-  const currentY =
-    y(
-      DATA.price
-    );
-
-
-  ctx.strokeStyle =
-    "#ffffff";
-
-
-  ctx.lineWidth =
-    1;
-
-
-  ctx.setLineDash(
-    [2,2]
-  );
-
-
-  ctx.beginPath();
-
-  ctx.moveTo(
-    left,
-    currentY
-  );
-
-  ctx.lineTo(
-    left +
-    plotWidth,
-    currentY
-  );
-
-  ctx.stroke();
-
-
-  ctx.setLineDash(
-    []
-  );
-
-
-  ctx.fillStyle =
-    "#ffffff";
-
-
-  ctx.font =
-    "bold 9px -apple-system";
-
-
-  ctx.fillText(
-
-    `NOW ${Number(
-      DATA.price
-    ).toFixed(2)}`,
-
-    width -
-    right +
-    5,
-
-    currentY +
-    3
-
-  );
-
-
-  canvas._chartState = {
-
-    levels:
-      relevantLevels,
-
-    y,
-
-    width,
-
-    height
-
-  };
-
+        .join("");
 }
 
 
-/* =========================================================
-   CHART TAP
-========================================================= */
+/* ============================================================
+   QUALITY
+============================================================ */
 
-function chartTap(
-  event
-) {
+function renderQuality(
+  data
+){
 
-
-  const canvas =
-    $("goldChart");
-
-
-  const state =
-    canvas._chartState;
+  const quality =
+    data.dataQuality;
 
 
   if (
-    !state
-  ) {
+    !quality.available
+  ){
+
+    el("quality")
+      .innerHTML =
+
+        row(
+          "Secondary XAU",
+          badge(
+            "UNAVAILABLE",
+            "warn"
+          )
+        );
 
     return;
-
   }
 
 
-  const rect =
-    canvas.getBoundingClientRect();
+  let qualityClass =
+    "warn";
 
 
-  const eventX =
+  if (
+    quality.status ===
+    "GOOD"
+  ){
 
-    event.touches
-
-      ?
-
-      event.touches[0]
-        .clientX
-
-      :
-
-      event.clientX;
+    qualityClass =
+      "good";
+  }
 
 
-  const eventY =
+  if (
+    quality.status ===
+    "DISAGREEMENT"
+  ){
 
-    event.touches
-
-      ?
-
-      event.touches[0]
-        .clientY
-
-      :
-
-      event.clientY;
+    qualityClass =
+      "bad";
+  }
 
 
-  const x =
-    eventX -
-    rect.left;
+  el("quality")
+    .innerHTML =
 
-
-  const yPos =
-    eventY -
-    rect.top;
-
-
-  let nearest =
-    null;
-
-
-  let nearestDistance =
-    Infinity;
-
-
-  for (
-    const level of
-    state.levels
-  ) {
-
-
-    const distance =
-
-      Math.abs(
-
-        state.y(
-          level.price
+      row(
+        "Feed Status",
+        badge(
+          quality.status,
+          qualityClass
         )
+      ) +
 
-        -
-        yPos
+      row(
+        "Primary XAU",
+        num(
+          quality.primary,
+          2
+        )
+      ) +
 
+      row(
+        "Secondary XAU",
+        num(
+          quality.secondary,
+          2
+        )
+      ) +
+
+      row(
+        "Difference",
+        `$${num(
+          quality.difference,
+          2
+        )}`,
+        `${num(
+          quality.differenceATR,
+          3
+        )} ATR`
       );
+}
+
+
+/* ============================================================
+   HEALTH
+============================================================ */
+
+function renderHealth(
+  data
+){
+
+  const health =
+    data.health;
+
+
+  function connection(
+    enabled
+  ){
+
+    return (
+      enabled
+        ? badge(
+            "CONNECTED",
+            "good"
+          )
+        : badge(
+            "MISSING",
+            "bad"
+          )
+    );
+  }
+
+
+  el("health")
+    .innerHTML =
+
+      row(
+        "API #1 · XAU LIVE",
+        connection(
+          health.api1
+        )
+      ) +
+
+      row(
+        "API #2 · HTF",
+        connection(
+          health.api2
+        )
+      ) +
+
+      row(
+        "API #3 · HISTORY",
+        connection(
+          health.api3
+        )
+      ) +
+
+      row(
+        "API #4 · INTERMARKET",
+        connection(
+          health.api4
+        )
+      ) +
+
+      row(
+        "FRED",
+        connection(
+          health.fred
+        )
+      );
+}
+
+
+/* ============================================================
+   REASONS
+============================================================ */
+
+function renderReasons(
+  data
+){
+
+  el("reasons")
+    .innerHTML =
+
+      (
+        data.consensus
+          ?.reasons ||
+        []
+      )
+      .map(
+        reason =>
+          row(
+            reason,
+            ""
+          )
+      )
+      .join("");
+}
+
+
+/* ============================================================
+   MAIN RENDER
+============================================================ */
+
+function render(
+  data
+){
+
+  renderMarket(
+    data
+  );
+
+  renderConsensus(
+    data
+  );
+
+  renderDominantZone(
+    data
+  );
+
+  renderLiquidityPath(
+    data
+  );
+
+  renderZones(
+    data
+  );
+
+  renderSweepQuality(
+    data
+  );
+
+  renderDealingRange(
+    data
+  );
+
+  renderStructure(
+    data
+  );
+
+  renderSessions(
+    data
+  );
+
+  renderFlow(
+    data
+  );
+
+  renderDisplacement(
+    data
+  );
+
+  renderIntermarket(
+    data
+  );
+
+  renderMacro(
+    data
+  );
+
+  renderHistorical(
+    data
+  );
+
+  renderFVG(
+    data
+  );
+
+  renderQuality(
+    data
+  );
+
+  renderHealth(
+    data
+  );
+
+  renderReasons(
+    data
+  );
+
+
+  el("status")
+    .textContent =
+      data.cached
+        ? "LIVE · CACHE"
+        : "LIVE";
+
+
+  const time =
+    new Date(
+      data.generatedAt
+    );
+
+
+  el("footer")
+    .innerHTML =
+
+      `Last analysis:
+      ${time.toLocaleTimeString()}
+
+      <br>
+
+      ${data.engine}
+
+      <br>
+
+      ${
+        data.deepLiquidity
+          ?.rawLevelCount ||
+        0
+      } raw liquidity levels
+
+      ·
+
+      ${
+        data.deepLiquidity
+          ?.zoneCount ||
+        0
+      } clustered zones
+
+      ·
+
+      ${
+        data.historicalLiquidity
+          ?.candleCount ||
+        0
+      } historical M5 candles`;
+}
+
+
+/* ============================================================
+   FETCH
+============================================================ */
+
+async function load(){
+
+  el("status")
+    .textContent =
+      "ANALYSING";
+
+
+  try{
+
+    const response =
+      await fetch(
+
+        API +
+        "?t=" +
+        Date.now(),
+
+        {
+          cache:
+            "no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
 
 
     if (
-      distance <
-      nearestDistance
-    ) {
+      !response.ok ||
+      !data.ok
+    ){
 
-      nearestDistance =
-        distance;
-
-      nearest =
-        level;
-
+      throw new Error(
+        data.error ||
+        "MKAYFX V8 analysis failed."
+      );
     }
 
+
+    render(
+      data
+    );
+
+  }catch(
+    error
+  ){
+
+    console.error(
+      error
+    );
+
+
+    el("status")
+      .textContent =
+        "ERROR";
+
+
+    el("footer")
+      .innerHTML =
+
+        `<span class="error">
+          ${error.message}
+        </span>`;
   }
-
-
-  if (
-
-    !nearest
-
-    ||
-
-    nearestDistance >
-    30
-
-  ) {
-
-    $("chartTooltip").style.display =
-      "none";
-
-    return;
-
-  }
-
-
-  $("chartTooltip").style.display =
-    "block";
-
-
-  $("chartTooltip").innerHTML =
-
-    `<b>${escapeHTML(nearest.name)}</b><br>` +
-
-    `Level: ${fmt(nearest.price,3)}<br>` +
-
-    `Liquidity: ${nearest.liquidityStrength}/100<br>` +
-
-    `Raid: ${nearest.raidStrength}/100<br>` +
-
-    `Quality: ${nearest.combinedQuality}/100<br>` +
-
-    `Stage: ${escapeHTML(nearest.stage)}<br>` +
-
-    `Likely raid end: ${fmt(nearest.likelyEnd,3)}<br>` +
-
-    `Zone: ${fmt(nearest.zoneLow,3)} – ${fmt(nearest.zoneHigh,3)}<br>` +
-
-    `Acceptance: ${fmt(nearest.acceptanceThreshold,3)}`;
-
 }
 
 
-/* =========================================================
-   COUNTDOWNS
-========================================================= */
-
-function countdown(
-  iso
-) {
-
-
-  const seconds =
-    Math.max(
-
-      0,
-
-      Math.floor(
-
-        (
-          new Date(
-            iso
-          ).getTime()
-
-          -
-          Date.now()
-        )
-
-        /
-        1000
-
-      )
-
-    );
-
-
-  const hours =
-    Math.floor(
-      seconds /
-      3600
-    );
-
-
-  const minutes =
-    Math.floor(
-
-      (
-        seconds %
-        3600
-      )
-
-      /
-      60
-
-    );
-
-
-  const remaining =
-    seconds %
-    60;
-
-
-  return (
-
-    `${String(hours).padStart(2,"0")}:`
-
-    +
-
-    `${String(minutes).padStart(2,"0")}:`
-
-    +
-
-    `${String(remaining).padStart(2,"0")}`
-
-  );
-
-}
-
-
-function tick() {
-
-
-  $("clock").textContent =
-
-    new Intl.DateTimeFormat(
-
-      "en-ZA",
-
-      {
-
-        timeZone:
-          "Africa/Johannesburg",
-
-        weekday:
-          "short",
-
-        hour:
-          "2-digit",
-
-        minute:
-          "2-digit",
-
-        second:
-          "2-digit",
-
-        hour12:
-          false
-
-      }
-
-    )
-      .format(
-        new Date()
-      )
-
-    +
-
-    " SAST";
-
-
-  document
-
-    .querySelectorAll(
-      ".sessionCountdown"
-    )
-
-    .forEach(
-      element => {
-
-        element.textContent =
-          countdown(
-            element.dataset.time
-          );
-
-      }
-    );
-
-}
-
-
-/* =========================================================
+/* ============================================================
    EVENTS
-========================================================= */
+============================================================ */
 
-$("refresh")
+el("refresh")
   .addEventListener(
     "click",
     load
   );
 
 
-document
-
-  .querySelectorAll(
-    ".tf-btn"
-  )
-
-  .forEach(
-    button => {
-
-
-      button.addEventListener(
-        "click",
-        () => {
-
-
-          CURRENT_TF =
-            button.dataset.tf;
-
-
-          document
-
-            .querySelectorAll(
-              ".tf-btn"
-            )
-
-            .forEach(
-              x =>
-                x.classList.remove(
-                  "active"
-                )
-            );
-
-
-          button.classList.add(
-            "active"
-          );
-
-
-          renderChart();
-
-        }
-      );
-
-    }
-  );
-
-
-$("goldChart")
-  .addEventListener(
-    "click",
-    chartTap
-  );
-
-
-$("goldChart")
-  .addEventListener(
-    "touchstart",
-    chartTap,
-    {
-      passive:
-        true
-    }
-  );
-
-
-window.addEventListener(
-  "resize",
-  () => {
-
-    if (
-      DATA
-    ) {
-
-      renderChart();
-
-    }
-
-  }
-);
-
-
-/* =========================================================
-   START
-========================================================= */
-
 load();
-
-tick();
-
-
-setInterval(
-  tick,
-  1000
-);
 
 
 setInterval(
   load,
-  60_000
+  60 * 1000
 );
-
-
-})();
 
 </script>
 
-
 </body>
-
 </html>
