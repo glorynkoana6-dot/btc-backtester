@@ -1,9 +1,13 @@
 {
-  "name": "mkayfx-gold-liquidity-os",
-  "version": "8.2.0",
+  "name": "mkayfx-gold-v9",
+  "version": "9.0.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "ws": "^8.18.3"
   }
 }
