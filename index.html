@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -12,7 +13,7 @@
 
 <meta
   name="theme-color"
-  content="#030609"
+  content="#05080d"
 >
 
 <meta
@@ -25,870 +26,1106 @@
   content="black-translucent"
 >
 
-<meta
-  name="apple-mobile-web-app-title"
-  content="MKAYFX GOLD"
->
+<title>
+MKAYFX XAU Liquidity Intelligence
+</title>
 
-<title>MKAYFX XAU Liquidity Intelligence</title>
 
 <style>
 
-/* ============================================================
-   RESET
-============================================================ */
+:root{
+
+  --bg:#05080d;
+  --card:#0a111a;
+  --card2:#0d1622;
+
+  --border:
+    rgba(255,255,255,.08);
+
+  --text:#f5f7fa;
+  --muted:#7d8998;
+
+  --green:#35e3a3;
+  --red:#ff6279;
+  --gold:#f0c760;
+  --blue:#7e99ff;
+  --orange:#ffad60;
+
+}
+
 
 *{
+
   box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
+
 }
 
-html{
-  background:#020407;
-}
 
+html,
 body{
-  margin:0;
-  min-height:100vh;
-  background:
-    radial-gradient(
-      circle at 50% -15%,
-      rgba(228,187,75,.08),
-      transparent 30%
-    ),
-    #020407;
 
-  color:#f3f5f8;
+  margin:0;
+
+  min-height:100%;
+
+  background:
+    var(--bg);
+
+  color:
+    var(--text);
 
   font-family:
     -apple-system,
     BlinkMacSystemFont,
-    "SF Pro Display",
-    "SF Pro Text",
-    Inter,
-    Arial,
+    "Segoe UI",
     sans-serif;
 
-  overflow-x:hidden;
 }
 
 
-/* ============================================================
-   VARIABLES
-============================================================ */
+body{
 
-:root{
+  background:
 
-  --bg:#020407;
-  --card:#08101a;
-  --card2:#0a131f;
+    radial-gradient(
+      circle at 50% -5%,
+      rgba(240,199,96,.08),
+      transparent 28%
+    ),
 
-  --border:rgba(255,255,255,.085);
+    #05080d;
 
-  --text:#f4f6fa;
-  --muted:#7f899a;
-
-  --gold:#efc85d;
-  --gold2:#b8943e;
-
-  --green:#3de2a0;
-  --red:#ff6679;
-  --blue:#718cff;
-  --orange:#ffad5b;
-
-  --shadow:
-    0 18px 55px
-    rgba(0,0,0,.22);
 }
 
-
-/* ============================================================
-   APP
-============================================================ */
 
 .app{
-  width:100%;
-  max-width:900px;
+
+  width:
+    min(
+      1180px,
+      100%
+    );
+
   margin:auto;
 
   padding:
-    max(18px,env(safe-area-inset-top))
-    18px
-    calc(80px + env(safe-area-inset-bottom));
+    17px 12px 45px;
+
 }
 
 
-/* ============================================================
-   HEADER
-============================================================ */
+/* HEADER */
+
 
 .header{
+
   display:flex;
-  align-items:flex-start;
+
   justify-content:space-between;
-  gap:15px;
-  margin-top:8px;
+
+  align-items:flex-start;
+
+  gap:12px;
+
 }
+
 
 .eyebrow{
-  color:var(--gold);
-  font-size:12px;
+
+  color:
+    var(--gold);
+
+  font-size:9px;
+
+  letter-spacing:.18em;
+
   font-weight:900;
-  letter-spacing:4px;
-  margin-bottom:10px;
+
 }
 
-.title{
-  margin:0;
-  font-size:34px;
-  line-height:1.04;
-  font-weight:900;
-  letter-spacing:-1.5px;
+
+h1{
+
+  margin:
+    5px 0 0;
+
+  font-size:
+    clamp(
+      23px,
+      7vw,
+      36px
+    );
+
+  letter-spacing:-.045em;
+
 }
+
 
 .subtitle{
-  color:var(--muted);
-  margin-top:12px;
-  font-size:14px;
-  line-height:1.55;
-  max-width:620px;
+
+  margin-top:7px;
+
+  color:
+    var(--muted);
+
+  font-size:11px;
+
+  line-height:1.5;
+
 }
 
+
 .refresh{
-  min-width:58px;
-  width:58px;
-  height:58px;
 
-  border-radius:20px;
+  width:48px;
 
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  background:#09111d;
+  height:48px;
 
   border:
     1px solid
-    rgba(255,255,255,.09);
+    var(--border);
 
-  color:#fff;
+  background:
+    var(--card2);
 
-  font-size:26px;
+  color:white;
 
-  cursor:pointer;
+  border-radius:15px;
+
+  font-size:21px;
+
 }
 
-.refresh:active{
-  transform:scale(.96);
-}
+
+/* STATUS */
 
 
-/* ============================================================
-   PILLS
-============================================================ */
-
-.pills{
-  margin-top:22px;
+.status{
 
   display:flex;
 
-  gap:8px;
+  gap:7px;
 
-  overflow-x:auto;
+  overflow:auto;
 
-  padding-bottom:4px;
+  margin:
+    14px 0 11px;
 
-  scrollbar-width:none;
 }
 
-.pills::-webkit-scrollbar{
-  display:none;
-}
 
 .pill{
-  flex:0 0 auto;
 
-  padding:
-    11px 15px;
+  white-space:nowrap;
+
+  border:
+    1px solid
+    var(--border);
+
+  background:
+    rgba(255,255,255,.02);
+
+  color:
+    var(--muted);
 
   border-radius:999px;
 
-  border:
-    1px solid
-    rgba(255,255,255,.09);
+  padding:
+    7px 10px;
 
-  background:
-    rgba(255,255,255,.025);
+  font-size:9px;
 
-  color:var(--muted);
+  font-weight:850;
 
-  font-size:12px;
-
-  font-weight:800;
-
-  letter-spacing:.5px;
-}
-
-.pill.good{
-  color:var(--green);
-}
-
-.pill.bad{
-  color:#ff9aab;
-}
-
-.pill.gold{
-  color:var(--gold);
 }
 
 
-/* ============================================================
-   ERROR
-============================================================ */
+.pill.live{
+
+  color:
+    var(--green);
+
+}
+
+
+.pill.warn{
+
+  color:
+    var(--orange);
+
+}
+
+
+/* ERROR */
+
 
 .error{
+
   display:none;
 
-  margin-top:18px;
+  margin-bottom:10px;
 
-  padding:18px;
+  padding:13px;
 
-  border-radius:18px;
-
-  background:
-    rgba(255,61,88,.07);
+  border-radius:15px;
 
   border:
     1px solid
-    rgba(255,92,113,.35);
-
-  color:#ffb7c1;
-
-  line-height:1.6;
-
-  font-size:14px;
-}
-
-
-/* ============================================================
-   MAIN HERO
-============================================================ */
-
-.hero{
-  margin-top:18px;
-
-  padding:22px;
+    rgba(255,98,121,.27);
 
   background:
-    linear-gradient(
-      145deg,
-      #09111d,
-      #07101a
-    );
+    rgba(255,98,121,.06);
 
-  border:
-    1px solid
-    rgba(239,200,93,.20);
-
-  border-radius:25px;
-
-  box-shadow:var(--shadow);
-}
-
-.heroTop{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:15px;
-}
-
-.symbol{
-  color:var(--muted);
-
-  font-size:12px;
-
-  font-weight:900;
-
-  letter-spacing:2px;
-}
-
-.price{
-  font-size:43px;
-
-  line-height:1;
-
-  margin-top:14px;
-
-  font-weight:900;
-
-  letter-spacing:-2px;
-}
-
-.priceLabel{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:8px;
-}
-
-
-/* ============================================================
-   RAID BADGE
-============================================================ */
-
-.raid{
-  min-width:90px;
-
-  padding:16px 12px;
-
-  border-radius:19px;
-
-  border:
-    1px solid
-    rgba(239,200,93,.34);
-
-  background:
-    rgba(239,200,93,.065);
-
-  text-align:center;
-}
-
-.raidLabel{
-  color:var(--gold);
+  color:#ffc0c9;
 
   font-size:11px;
 
-  font-weight:900;
+  line-height:1.55;
 
-  letter-spacing:2px;
-}
+  white-space:pre-wrap;
 
-.raidValue{
-  color:#fff;
-
-  font-size:25px;
-
-  font-weight:900;
-
-  margin-top:5px;
 }
 
 
-/* ============================================================
-   DIVIDER
-============================================================ */
+/* GENERIC */
 
-.line{
-  height:1px;
-
-  margin:
-    21px 0;
-
-  background:
-    rgba(255,255,255,.08);
-}
-
-
-/* ============================================================
-   LIQUIDITY DRAW
-============================================================ */
-
-.sectionLabel{
-  color:var(--muted);
-
-  font-size:11px;
-
-  letter-spacing:2.1px;
-
-  font-weight:900;
-}
-
-.drawTitle{
-  font-size:25px;
-
-  margin-top:11px;
-
-  font-weight:900;
-
-  line-height:1.15;
-}
-
-.drawMeta{
-  color:var(--muted);
-
-  font-size:13px;
-
-  margin-top:8px;
-}
-
-
-/* ============================================================
-   PROGRESS
-============================================================ */
-
-.progress{
-  width:100%;
-
-  height:8px;
-
-  background:#121a25;
-
-  border-radius:99px;
-
-  margin-top:18px;
-
-  overflow:hidden;
-}
-
-.progressFill{
-  height:100%;
-
-  width:0%;
-
-  background:
-    linear-gradient(
-      90deg,
-      #ad893a,
-      #f2d06e
-    );
-
-  border-radius:99px;
-
-  transition:
-    width .5s ease;
-}
-
-
-/* ============================================================
-   GRID
-============================================================ */
-
-.grid{
-  display:grid;
-
-  grid-template-columns:
-    repeat(2,1fr);
-
-  gap:11px;
-
-  margin-top:18px;
-}
-
-.box{
-  padding:16px;
-
-  border-radius:18px;
-
-  background:#0b131e;
-
-  border:
-    1px solid
-    rgba(255,255,255,.075);
-
-  min-height:91px;
-}
-
-.boxLabel{
-  color:var(--muted);
-
-  font-size:10px;
-
-  font-weight:900;
-
-  letter-spacing:1.5px;
-}
-
-.boxValue{
-  margin-top:12px;
-
-  font-size:20px;
-
-  font-weight:900;
-}
-
-.boxValue.gold{
-  color:var(--gold);
-}
-
-.boxValue.green{
-  color:var(--green);
-}
-
-.boxValue.red{
-  color:var(--red);
-}
-
-
-/* ============================================================
-   SECTION
-============================================================ */
-
-.section{
-  margin-top:29px;
-}
-
-.sectionHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:15px;
-  margin-bottom:13px;
-}
-
-.sectionTitle{
-  font-size:20px;
-  font-weight:900;
-}
-
-.sectionSmall{
-  color:var(--muted);
-  font-size:11px;
-}
-
-
-/* ============================================================
-   CARD
-============================================================ */
 
 .card{
-  border-radius:22px;
-
-  background:
-    linear-gradient(
-      145deg,
-      #08101a,
-      #060d16
-    );
 
   border:
     1px solid
-    rgba(255,255,255,.075);
+    var(--border);
 
-  padding:17px;
-}
+  background:
 
-
-/* ============================================================
-   METRICS
-============================================================ */
-
-.metrics{
-  display:grid;
-
-  grid-template-columns:
-    repeat(2,1fr);
-
-  gap:10px;
-}
-
-.metric{
-  min-height:95px;
+    linear-gradient(
+      180deg,
+      var(--card2),
+      var(--card)
+    );
 
   border-radius:17px;
 
-  border:
-    1px solid
-    rgba(255,255,255,.065);
+  padding:13px;
 
-  background:#09111c;
-
-  padding:14px;
 }
 
-.metricLabel{
-  color:var(--muted);
 
-  font-size:10px;
+.grid{
 
-  font-weight:900;
+  display:grid;
 
-  letter-spacing:1.3px;
+  gap:9px;
+
 }
 
-.metricValue{
-  margin-top:11px;
+
+.g2{
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+}
+
+
+.g3{
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+}
+
+
+.g5{
+
+  grid-template-columns:
+    repeat(
+      5,
+      minmax(0,1fr)
+    );
+
+}
+
+
+.label{
+
+  color:
+    var(--muted);
+
+  font-size:9px;
+
+  font-weight:850;
+
+  letter-spacing:.085em;
+
+  text-transform:uppercase;
+
+}
+
+
+.value{
+
+  margin-top:5px;
 
   font-size:18px;
 
   font-weight:900;
 
-  line-height:1.15;
 }
 
-.metricSub{
-  color:var(--muted);
+
+.small{
+
   font-size:10px;
-  margin-top:6px;
+
 }
 
 
-/* ============================================================
-   TIMEFRAME BIAS
-============================================================ */
+.tiny{
 
-.biasGrid{
-  display:grid;
+  font-size:9px;
 
-  grid-template-columns:
-    repeat(3,1fr);
-
-  gap:9px;
 }
 
-.bias{
-  padding:14px 8px;
+
+.muted{
+
+  color:
+    var(--muted);
+
+}
+
+
+.green{
+
+  color:
+    var(--green);
+
+}
+
+
+.red{
+
+  color:
+    var(--red);
+
+}
+
+
+.gold{
+
+  color:
+    var(--gold);
+
+}
+
+
+.orange{
+
+  color:
+    var(--orange);
+
+}
+
+
+/* HERO */
+
+
+.hero{
+
+  border-color:
+    rgba(240,199,96,.20);
+
+}
+
+
+.heroTop{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:12px;
+
+}
+
+
+.price{
+
+  font-size:
+    clamp(
+      38px,
+      12vw,
+      58px
+    );
+
+  font-weight:950;
+
+  letter-spacing:-.065em;
+
+  line-height:.95;
+
+  margin-top:4px;
+
+}
+
+
+.scoreBadge{
+
+  min-width:83px;
+
+  border:
+    1px solid
+    rgba(240,199,96,.25);
+
+  background:
+    rgba(240,199,96,.06);
+
+  border-radius:13px;
+
+  padding:9px;
 
   text-align:center;
 
-  border-radius:16px;
+  color:
+    var(--gold);
 
-  background:#09111c;
-
-  border:
-    1px solid
-    rgba(255,255,255,.07);
-}
-
-.biasTf{
-  color:var(--muted);
-
-  font-size:10px;
+  font-size:9px;
 
   font-weight:900;
-}
 
-.biasValue{
-  margin-top:7px;
-
-  font-size:12px;
-
-  font-weight:900;
 }
 
 
-/* ============================================================
-   SESSION CARDS
-============================================================ */
+.divider{
 
-.sessions{
+  height:1px;
+
+  background:
+    var(--border);
+
+  margin:
+    15px 0;
+
+}
+
+
+.bestName{
+
+  font-size:18px;
+
+  font-weight:950;
+
+  margin-top:5px;
+
+}
+
+
+.meter{
+
+  height:7px;
+
+  margin-top:9px;
+
+  background:
+    rgba(255,255,255,.055);
+
+  border-radius:999px;
+
+  overflow:hidden;
+
+}
+
+
+.meter div{
+
+  height:100%;
+
+  width:0;
+
+  background:
+
+    linear-gradient(
+      90deg,
+      var(--blue),
+      var(--gold)
+    );
+
+}
+
+
+.zones{
+
   display:grid;
 
   grid-template-columns:
-    repeat(3,1fr);
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
 
-  gap:9px;
-}
-
-.session{
-  background:#09111c;
-
-  border:
-    1px solid
-    rgba(255,255,255,.065);
-
-  border-radius:16px;
-
-  padding:13px;
-}
-
-.sessionName{
-  color:var(--gold);
-
-  font-size:10px;
-
-  font-weight:900;
-
-  letter-spacing:1px;
-}
-
-.sessionRange{
-  margin-top:10px;
-
-  font-size:11px;
-
-  line-height:1.65;
-}
-
-
-/* ============================================================
-   LIQUIDITY LIST
-============================================================ */
-
-.poolList{
-  display:flex;
-  flex-direction:column;
-  gap:9px;
-}
-
-.pool{
-  padding:14px;
-
-  border-radius:16px;
-
-  background:#09111c;
-
-  border:
-    1px solid
-    rgba(255,255,255,.065);
-}
-
-.poolTop{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-}
-
-.poolName{
-  font-size:13px;
-  font-weight:900;
-}
-
-.poolScore{
-  color:var(--gold);
-  font-size:13px;
-  font-weight:900;
-}
-
-.poolBottom{
-  display:flex;
-  justify-content:space-between;
-  flex-wrap:wrap;
   gap:7px;
 
-  margin-top:8px;
+  margin-top:11px;
 
-  color:var(--muted);
-
-  font-size:10px;
 }
 
 
-/* ============================================================
-   FOOTPRINT
-============================================================ */
+.zone{
 
-.flow{
+  padding:9px;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:11px;
+
+  background:
+    rgba(255,255,255,.02);
+
+}
+
+
+/* SECTION */
+
+
+.section{
+
   display:flex;
+
   align-items:center;
+
   justify-content:space-between;
-  gap:12px;
-}
 
-.flowBig{
-  font-size:20px;
-  font-weight:900;
-}
+  gap:8px;
 
-.flowSub{
-  color:var(--muted);
-  font-size:11px;
-  margin-top:6px;
+  margin:
+    20px 2px 8px;
+
 }
 
 
-/* ============================================================
-   TRAP WINDOWS
-============================================================ */
+.section h2{
 
-.trap{
+  margin:0;
+
+  font-size:13px;
+
+}
+
+
+.section span{
+
+  color:
+    var(--muted);
+
+  font-size:9px;
+
+}
+
+
+/* SESSION */
+
+
+.session{
+
+  position:relative;
+
+  overflow:hidden;
+
+}
+
+
+.session::before{
+
+  content:"";
+
+  position:absolute;
+
+  top:0;
+
+  bottom:0;
+
+  left:0;
+
+  width:3px;
+
+  background:
+    rgba(255,255,255,.12);
+
+}
+
+
+.session.active::before{
+
+  background:
+    var(--green);
+
+}
+
+
+.sessionTop{
+
   display:flex;
+
   justify-content:space-between;
-  align-items:flex-start;
 
-  gap:15px;
+  gap:10px;
 
-  padding:13px 0;
+}
+
+
+.countdown{
+
+  font-weight:950;
+
+  font-size:15px;
+
+  margin-top:5px;
+
+  font-variant-numeric:
+    tabular-nums;
+
+}
+
+
+.range{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap:6px;
+
+  margin-top:10px;
+
+}
+
+
+.mini{
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:10px;
+
+  padding:8px;
+
+}
+
+
+/* TIMEFRAME */
+
+
+.tf{
+
+  text-align:center;
+
+}
+
+
+.tfBias{
+
+  font-size:11px;
+
+  font-weight:950;
+
+  margin-top:6px;
+
+}
+
+
+/* TABLE */
+
+
+.tableWrap{
+
+  overflow:auto;
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:14px;
+
+}
+
+
+table{
+
+  width:100%;
+
+  min-width:800px;
+
+  border-collapse:collapse;
+
+}
+
+
+th,
+td{
+
+  padding:
+    9px 8px;
+
+  text-align:left;
 
   border-bottom:
     1px solid
-    rgba(255,255,255,.06);
+    var(--border);
+
+  font-size:10px;
+
 }
+
+
+th{
+
+  color:
+    var(--muted);
+
+  font-size:8px;
+
+  text-transform:uppercase;
+
+  letter-spacing:.08em;
+
+  background:#0a1017;
+
+}
+
+
+.score{
+
+  display:inline-flex;
+
+  padding:
+    5px 7px;
+
+  min-width:47px;
+
+  justify-content:center;
+
+  border-radius:8px;
+
+  color:
+    var(--blue);
+
+  background:
+    rgba(126,153,255,.08);
+
+  font-weight:900;
+
+}
+
+
+.score.high{
+
+  color:
+    var(--gold);
+
+  background:
+    rgba(240,199,96,.08);
+
+}
+
+
+/* TRAPS */
+
+
+.trap{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:10px;
+
+  padding:
+    10px 0;
+
+  border-bottom:
+    1px solid
+    var(--border);
+
+}
+
 
 .trap:last-child{
+
   border-bottom:0;
+
 }
 
-.trapName{
-  font-size:12px;
+
+.risk{
+
+  border:
+    1px solid
+    var(--border);
+
+  border-radius:8px;
+
+  padding:
+    5px 7px;
+
+  font-size:8px;
+
   font-weight:900;
+
 }
 
-.trapTime{
-  color:var(--muted);
+
+.risk.elevated{
+
+  color:
+    var(--orange);
+
+}
+
+
+.risk.watch{
+
+  color:
+    var(--gold);
+
+}
+
+
+/* INFO */
+
+
+.info{
+
+  display:grid;
+
+  grid-template-columns:
+    minmax(0,1fr)
+    auto;
+
+  gap:8px;
+
+  padding:
+    9px 0;
+
+  border-bottom:
+    1px solid
+    var(--border);
+
   font-size:10px;
-  margin-top:5px;
-}
 
-.trapRisk{
-  font-size:10px;
-
-  font-weight:900;
-
-  color:var(--gold);
 }
 
 
-/* ============================================================
-   FOOTER
-============================================================ */
+.info:last-child{
 
-.footer{
-  color:#505b6a;
+  border-bottom:0;
 
-  font-size:10px;
-
-  text-align:center;
-
-  line-height:1.7;
-
-  margin-top:35px;
-
-  padding-bottom:20px;
 }
 
 
-/* ============================================================
-   LOADING
-============================================================ */
+/* DELTA */
 
-.loading{
-  animation:
-    pulse 1.3s
-    infinite ease-in-out;
+
+.delta{
+
+  height:8px;
+
+  margin-top:8px;
+
+  border-radius:999px;
+
+  background:
+    rgba(255,255,255,.05);
+
+  position:relative;
+
+  overflow:hidden;
+
 }
 
-@keyframes pulse{
 
-  0%,100%{
-    opacity:.45;
-  }
+.zero{
 
-  50%{
-    opacity:1;
-  }
+  position:absolute;
+
+  top:0;
+
+  bottom:0;
+
+  left:50%;
+
+  width:1px;
+
+  background:
+    rgba(255,255,255,.2);
+
 }
 
 
-/* ============================================================
-   DESKTOP
-============================================================ */
+.fill{
+
+  position:absolute;
+
+  top:0;
+
+  bottom:0;
+
+}
+
+
+.fill.pos{
+
+  left:50%;
+
+  background:
+    var(--green);
+
+}
+
+
+.fill.neg{
+
+  right:50%;
+
+  background:
+    var(--red);
+
+}
+
+
+/* REASONS */
+
+
+.reasons{
+
+  margin:
+    8px 0 0;
+
+  padding:0;
+
+  list-style:none;
+
+}
+
+
+.reasons li{
+
+  color:#a7b0bc;
+
+  font-size:9px;
+
+  line-height:1.5;
+
+}
+
+
+.reasons li::before{
+
+  content:"• ";
+
+  color:
+    var(--gold);
+
+}
+
+
+/* NOTICE */
+
+
+.notice{
+
+  margin-top:15px;
+
+  padding:11px;
+
+  border-radius:13px;
+
+  border:
+    1px solid
+    rgba(255,173,96,.18);
+
+  background:
+    rgba(255,173,96,.045);
+
+  color:#a7b0bc;
+
+  font-size:9px;
+
+  line-height:1.5;
+
+}
+
 
 @media(
-  min-width:700px
+  max-width:850px
 ){
 
-  .grid{
+  .sessions,
+  .desktop2{
+
     grid-template-columns:
-      repeat(4,1fr);
+      1fr;
+
   }
 
-  .metrics{
+
+  .g5{
+
     grid-template-columns:
-      repeat(4,1fr);
+      repeat(
+        3,
+        minmax(0,1fr)
+      );
+
   }
 
-  .title{
-    font-size:43px;
+}
+
+
+@media(
+  max-width:580px
+){
+
+  .zones{
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .g5{
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .g3,
+  .g2{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .flowGrid{
+
+    grid-template-columns:
+      1fr 1fr;
+
   }
 
 }
@@ -900,787 +1137,826 @@ body{
 
 <body>
 
+
 <div class="app">
 
 
-<!-- ============================================================
-     HEADER
-============================================================ -->
+<header class="header">
 
-<div class="header">
+<div>
 
-  <div>
+<div class="eyebrow">
+MKAYFX · TWELVE DATA · XAU/USD
+</div>
 
-    <div class="eyebrow">
-      MKAYFX · MASSIVE XAU
-    </div>
+<h1>
+XAU Liquidity Intelligence
+</h1>
 
-    <h1 class="title">
-      XAU/USD Liquidity Intelligence
-    </h1>
+<div class="subtitle">
 
-    <div class="subtitle">
-      Asia · London · New York · PDH/PDL ·
-      liquidity sweeps · raid projection ·
-      structure · footprint proxy
-    </div>
+Asia • London • New York • PDH/PDL • liquidity sweeps •
+projected raid depth • trap radar • footprint-style flow
 
-  </div>
-
-
-  <button
-    class="refresh"
-    id="refreshBtn"
-    onclick="loadData(true)"
-  >
-    ↻
-  </button>
+</div>
 
 </div>
 
 
-<!-- ============================================================
-     STATUS
-============================================================ -->
+<button
+  id="refresh"
+  class="refresh"
+>
+↻
+</button>
 
-<div class="pills">
+</header>
 
-  <div
-    class="pill"
-    id="statusPill"
-  >
-    LOADING
-  </div>
 
-  <div class="pill">
-    MASSIVE · XAUUSD
-  </div>
+<div class="status">
 
-  <div
-    class="pill"
-    id="agePill"
-  >
-    DATA AGE —
-  </div>
+<div
+  id="live"
+  class="pill"
+>
+CONNECTING
+</div>
 
-  <div
-    class="pill"
-    id="regimePill"
-  >
-    REGIME —
-  </div>
+<div class="pill">
+Twelve Data · XAU/USD
+</div>
 
-  <div
-    class="pill"
-    id="flowPill"
-  >
-    FLOW —
-  </div>
+<div
+  id="age"
+  class="pill"
+>
+Data age —
+</div>
+
+<div
+  id="regimeStatus"
+  class="pill"
+>
+Regime —
+</div>
+
+<div
+  id="flowStatus"
+  class="pill"
+>
+Flow —
+</div>
 
 </div>
 
 
 <div
+  id="error"
   class="error"
-  id="errorBox"
 ></div>
 
 
-<!-- ============================================================
-     HERO
-============================================================ -->
-
-<div class="hero">
-
-  <div class="heroTop">
-
-    <div>
-
-      <div class="symbol">
-        XAUUSD
-      </div>
-
-      <div
-        class="price loading"
-        id="price"
-      >
-        —
-      </div>
-
-      <div
-        class="priceLabel"
-        id="priceLabel"
-      >
-        Waiting for Massive...
-      </div>
-
-    </div>
+<section class="card hero">
 
 
-    <div class="raid">
-
-      <div class="raidLabel">
-        RAID
-      </div>
-
-      <div
-        class="raidValue"
-        id="raidScore"
-      >
-        —
-      </div>
-
-    </div>
-
-  </div>
+<div class="heroTop">
 
 
-  <div class="line"></div>
+<div>
 
+<div class="label">
+XAU / USD
+</div>
 
-  <div class="sectionLabel">
-    HIGHEST-RANKED LIQUIDITY DRAW
-  </div>
+<div
+  id="price"
+  class="price"
+>
+—
+</div>
 
-
-  <div
-    class="drawTitle"
-    id="drawTitle"
-  >
-    Waiting for analysis...
-  </div>
-
-
-  <div
-    class="drawMeta"
-    id="drawMeta"
-  >
-    —
-  </div>
-
-
-  <div class="progress">
-
-    <div
-      class="progressFill"
-      id="raidProgress"
-    ></div>
-
-  </div>
-
-
-  <div class="grid">
-
-
-    <div class="box">
-
-      <div class="boxLabel">
-        LIQUIDITY LEVEL
-      </div>
-
-      <div
-        class="boxValue"
-        id="liquidityLevel"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="box">
-
-      <div class="boxLabel">
-        LIKELY RAID END
-      </div>
-
-      <div
-        class="boxValue gold"
-        id="raidEnd"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="box">
-
-      <div class="boxLabel">
-        REVERSAL-WATCH ZONE
-      </div>
-
-      <div
-        class="boxValue"
-        id="reversalZone"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="box">
-
-      <div class="boxLabel">
-        OVERSHOOT
-      </div>
-
-      <div
-        class="boxValue"
-        id="overshoot"
-      >
-        —
-      </div>
-
-    </div>
-
-
-  </div>
+<div
+  id="updated"
+  class="muted tiny"
+  style="margin-top:7px"
+>
+Waiting for Twelve Data…
+</div>
 
 </div>
 
 
-<!-- ============================================================
-     MARKET STATE
-============================================================ -->
+<div
+  id="topScore"
+  class="scoreBadge"
+>
+RAID<br>—
+</div>
+
+
+</div>
+
+
+<div class="divider"></div>
+
+
+<div class="label">
+Highest-ranked liquidity draw
+</div>
+
+
+<div
+  id="bestName"
+  class="bestName"
+>
+Waiting for analysis…
+</div>
+
+
+<div
+  id="bestMeta"
+  class="muted small"
+  style="margin-top:4px"
+>
+—
+</div>
+
+
+<div class="meter">
+
+<div id="bestMeter"></div>
+
+</div>
+
+
+<div class="zones">
+
+
+<div class="zone">
+
+<div class="label">
+Liquidity level
+</div>
+
+<div
+  id="bestLevel"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+<div class="zone">
+
+<div class="label">
+Likely sweep end
+</div>
+
+<div
+  id="bestEnd"
+  class="value gold"
+>
+—
+</div>
+
+</div>
+
+
+<div class="zone">
+
+<div class="label">
+Reversal-watch zone
+</div>
+
+<div
+  id="bestZone"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+<div class="zone">
+
+<div class="label">
+Overshoot
+</div>
+
+<div
+  id="bestOver"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+</div>
+
+
+<ul
+  id="bestReasons"
+  class="reasons"
+></ul>
+
+
+</section>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Sessions
+</h2>
 
-    <div class="sectionTitle">
-      Market State
-    </div>
-
-    <div class="sectionSmall">
-      volatility · momentum
-    </div>
-
-  </div>
-
-
-  <div class="metrics">
-
-
-    <div class="metric">
-
-      <div class="metricLabel">
-        REGIME
-      </div>
-
-      <div
-        class="metricValue"
-        id="marketRegime"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metricLabel">
-        ATR M5
-      </div>
-
-      <div
-        class="metricValue"
-        id="atrM5"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metricLabel">
-        RSI M5
-      </div>
-
-      <div
-        class="metricValue"
-        id="rsiM5"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metricLabel">
-        VWAP
-      </div>
-
-      <div
-        class="metricValue"
-        id="vwap"
-      >
-        —
-      </div>
-
-      <div
-        class="metricSub"
-        id="vwapState"
-      >
-        —
-      </div>
-
-    </div>
-
-
-  </div>
+<span id="clock">
+SAST —
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     STRUCTURE
-============================================================ -->
+<div
+  id="sessions"
+  class="grid g3 sessions"
+></div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Market State
+</h2>
 
-    <div class="sectionTitle">
-      Multi-Timeframe Structure
-    </div>
-
-    <div
-      class="sectionSmall"
-      id="overallBias"
-    >
-      —
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="biasGrid">
-
-
-      <div class="bias">
-
-        <div class="biasTf">
-          M5
-        </div>
-
-        <div
-          class="biasValue"
-          id="biasM5"
-        >
-          —
-        </div>
-
-      </div>
-
-
-      <div class="bias">
-
-        <div class="biasTf">
-          M15
-        </div>
-
-        <div
-          class="biasValue"
-          id="biasM15"
-        >
-          —
-        </div>
-
-      </div>
-
-
-      <div class="bias">
-
-        <div class="biasTf">
-          H1
-        </div>
-
-        <div
-          class="biasValue"
-          id="biasH1"
-        >
-          —
-        </div>
-
-      </div>
-
-
-    </div>
-
-  </div>
+<span>
+ATR · VWAP · regime
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     SESSION LEVELS
-============================================================ -->
+<div class="grid g5">
+
+
+<div class="card">
+
+<div class="label">
+M1 ATR
+</div>
+
+<div
+  id="atr1"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+M5 ATR
+</div>
+
+<div
+  id="atr5"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+M15 ATR
+</div>
+
+<div
+  id="atr15"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+VWAP
+</div>
+
+<div
+  id="vwap"
+  class="value gold"
+>
+—
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+Regime
+</div>
+
+<div
+  id="regime"
+  class="value"
+>
+—
+</div>
+
+</div>
+
+
+</div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Timeframe Structure
+</h2>
 
-    <div class="sectionTitle">
-      Session Liquidity
-    </div>
-
-    <div class="sectionSmall">
-      SAST
-    </div>
-
-  </div>
-
-
-  <div class="sessions">
-
-
-    <div class="session">
-
-      <div class="sessionName">
-        ASIA
-      </div>
-
-      <div class="sessionRange">
-
-        H:
-        <span id="asiaHigh">
-          —
-        </span>
-
-        <br>
-
-        L:
-        <span id="asiaLow">
-          —
-        </span>
-
-      </div>
-
-    </div>
-
-
-    <div class="session">
-
-      <div class="sessionName">
-        LONDON
-      </div>
-
-      <div class="sessionRange">
-
-        H:
-        <span id="londonHigh">
-          —
-        </span>
-
-        <br>
-
-        L:
-        <span id="londonLow">
-          —
-        </span>
-
-      </div>
-
-    </div>
-
-
-    <div class="session">
-
-      <div class="sessionName">
-        NEW YORK
-      </div>
-
-      <div class="sessionRange">
-
-        H:
-        <span id="nyHigh">
-          —
-        </span>
-
-        <br>
-
-        L:
-        <span id="nyLow">
-          —
-        </span>
-
-      </div>
-
-    </div>
-
-
-  </div>
+<span>
+M1 · M5 · M15 · H1 · H4
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     PREVIOUS DAY
-============================================================ -->
+<div
+  id="frames"
+  class="grid g5"
+></div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Sweep Projections
+</h2>
 
-    <div class="sectionTitle">
-      Previous Day
-    </div>
-
-    <div class="sectionSmall">
-      external liquidity
-    </div>
-
-  </div>
-
-
-  <div class="grid">
-
-
-    <div class="box">
-
-      <div class="boxLabel">
-        PDH
-      </div>
-
-      <div
-        class="boxValue"
-        id="pdh"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="box">
-
-      <div class="boxLabel">
-        PDL
-      </div>
-
-      <div
-        class="boxValue"
-        id="pdl"
-      >
-        —
-      </div>
-
-    </div>
-
-
-  </div>
+<span>
+liquidity ranking
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     ORDER FLOW
-============================================================ -->
+<div class="tableWrap">
+
+
+<table>
+
+
+<thead>
+
+<tr>
+
+<th>
+Pool
+</th>
+
+<th>
+Level
+</th>
+
+<th>
+Distance
+</th>
+
+<th>
+Score
+</th>
+
+<th>
+Raid
+</th>
+
+<th>
+Likely end
+</th>
+
+<th>
+Zone
+</th>
+
+<th>
+Basis
+</th>
+
+</tr>
+
+</thead>
+
+
+<tbody id="poolRows"></tbody>
+
+
+</table>
+
+
+</div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Liquidity Trap Radar
+</h2>
 
-    <div class="sectionTitle">
-      Footprint Proxy
-    </div>
-
-    <div class="sectionSmall">
-      quote-derived
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="flow">
-
-      <div>
-
-        <div
-          class="flowBig"
-          id="flowBias"
-        >
-          —
-        </div>
-
-        <div class="flowSub">
-          Estimated directional pressure
-        </div>
-
-      </div>
-
-
-      <div>
-
-        <div
-          class="flowBig"
-          id="delta"
-        >
-          —
-        </div>
-
-        <div class="flowSub">
-          Delta proxy
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
+<span>
+session timing + nearby pools
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     LIQUIDITY RADAR
-============================================================ -->
+<div class="grid g2 desktop2">
+
+
+<div class="card">
+
+<div id="traps"></div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+Interpretation
+</div>
+
+<div class="value">
+Sweep risk
+</div>
+
+<div
+  class="muted small"
+  style="margin-top:8px;line-height:1.55"
+>
+
+Higher scores mean price is near important liquidity during
+a session window where raids may become more likely.
+
+A touch of the level is not automatically a reversal.
+
+</div>
+
+</div>
+
+
+</div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Footprint-Style Flow
+</h2>
 
-    <div class="sectionTitle">
-      Liquidity Radar
-    </div>
-
-    <div class="sectionSmall">
-      ranked targets
-    </div>
-
-  </div>
-
-
-  <div
-    class="poolList"
-    id="poolList"
-  >
-
-    <div class="pool">
-
-      <div class="poolName">
-        Waiting for liquidity map...
-      </div>
-
-    </div>
-
-  </div>
+<span id="flowMode">
+—
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     TRAP WINDOWS
-============================================================ -->
+<div class="grid g2 desktop2">
+
+
+<div class="card">
+
+
+<div class="grid g2 flowGrid">
+
+
+<div>
+
+<div class="label">
+5m Delta
+</div>
+
+<div
+  id="d5"
+  class="value"
+>
+—
+</div>
+
+<div
+  id="b5"
+  class="delta"
+>
+<div class="zero"></div>
+</div>
+
+</div>
+
+
+<div>
+
+<div class="label">
+15m Delta
+</div>
+
+<div
+  id="d15"
+  class="value"
+>
+—
+</div>
+
+<div
+  id="b15"
+  class="delta"
+>
+<div class="zero"></div>
+</div>
+
+</div>
+
+
+<div>
+
+<div class="label">
+30m Delta
+</div>
+
+<div
+  id="d30"
+  class="value"
+>
+—
+</div>
+
+<div
+  id="b30"
+  class="delta"
+>
+<div class="zero"></div>
+</div>
+
+</div>
+
+
+<div>
+
+<div class="label">
+60m Delta
+</div>
+
+<div
+  id="d60"
+  class="value"
+>
+—
+</div>
+
+<div
+  id="b60"
+  class="delta"
+>
+<div class="zero"></div>
+</div>
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+<div class="card">
+
+
+<div class="info">
+
+<span class="muted">
+CVD proxy
+</span>
+
+<b id="cvd">
+—
+</b>
+
+</div>
+
+
+<div class="info">
+
+<span class="muted">
+Delta divergence
+</span>
+
+<b id="divergence">
+—
+</b>
+
+</div>
+
+
+<div class="info">
+
+<span class="muted">
+Absorption
+</span>
+
+<b id="absorption">
+—
+</b>
+
+</div>
+
+
+</div>
+
+
+</div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Asia Sweep History
+</h2>
 
-    <div class="sectionTitle">
-      Liquidity Trap Windows
-    </div>
-
-    <div class="sectionSmall">
-      SAST
-    </div>
-
-  </div>
-
-
-  <div
-    class="card"
-    id="trapList"
-  >
-    Loading...
-  </div>
+<span>
+recent historical behavior
+</span>
 
 </div>
 
 
-<!-- ============================================================
-     SOURCE
-============================================================ -->
+<div class="grid g2 desktop2">
+
+
+<div class="card">
+
+<div class="label">
+Asia High
+</div>
+
+<div
+  id="asiaHigh"
+  class="value"
+>
+—
+</div>
+
+<div
+  id="asiaHighMeta"
+  class="muted small"
+  style="margin-top:6px"
+>
+—
+</div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+Asia Low
+</div>
+
+<div
+  id="asiaLow"
+  class="value"
+>
+—
+</div>
+
+<div
+  id="asiaLowMeta"
+  class="muted small"
+  style="margin-top:6px"
+>
+—
+</div>
+
+</div>
+
+
+</div>
+
 
 <div class="section">
 
-  <div class="sectionHead">
+<h2>
+Reference Liquidity
+</h2>
 
-    <div class="sectionTitle">
-      Data Source
-    </div>
-
-    <div class="sectionSmall">
-      diagnostic
-    </div>
-
-  </div>
-
-
-  <div class="card">
-
-    <div class="flow">
-
-      <div>
-
-        <div
-          class="flowBig"
-          id="provider"
-        >
-          Massive / Polygon
-        </div>
-
-        <div
-          class="flowSub"
-          id="ticker"
-        >
-          C:XAUUSD
-        </div>
-
-      </div>
-
-
-      <div>
-
-        <div
-          class="flowBig"
-          id="candleCount"
-        >
-          —
-        </div>
-
-        <div class="flowSub">
-          candles loaded
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
+<span>
+previous day · previous week
+</span>
 
 </div>
 
 
-<div class="footer">
+<div class="grid g2 desktop2">
 
-  MKAYFX XAU Liquidity Intelligence
 
-  <br>
+<div class="card">
 
-  Liquidity projections are analytical estimates,
-  not guaranteed reversal points or financial advice.
+<div id="reference"></div>
+
+</div>
+
+
+<div class="card">
+
+<div class="label">
+Volume / Activity Profile
+</div>
+
+
+<div class="info">
+
+<span class="muted">
+POC
+</span>
+
+<b
+  id="poc"
+  class="gold"
+>
+—
+</b>
+
+</div>
+
+
+<div class="info">
+
+<span class="muted">
+HVN
+</span>
+
+<b id="hvn">
+—
+</b>
+
+</div>
+
+
+<div class="info">
+
+<span class="muted">
+LVN
+</span>
+
+<b id="lvn">
+—
+</b>
+
+</div>
+
+
+<div
+  id="profileMode"
+  class="muted tiny"
+  style="margin-top:7px"
+>
+—
+</div>
+
+</div>
+
+
+</div>
+
+
+<div class="notice">
+
+<strong>
+Important:
+</strong>
+
+this is an intelligence model, not certainty. Gold can trade
+through an Asia High, Asia Low, PDH or PDL and continue rather
+than reverse. The projected sweep zone is intended to show
+where rejection becomes worth watching, not where a reversal
+is guaranteed.
 
 </div>
 
@@ -1690,610 +1966,474 @@ body{
 
 <script>
 
-/* ============================================================
-   CONFIG
-============================================================ */
+(() => {
 
-const API_URL =
+
+const API =
   "/api/xau";
 
-const AUTO_REFRESH_MS =
-  30_000;
 
-let latestData =
+const SAST =
+  "Africa/Johannesburg";
+
+
+let DATA =
   null;
 
 
-/* ============================================================
-   HELPERS
-============================================================ */
-
-function el(id){
-
-  return document
-    .getElementById(id);
-}
+let busy =
+  false;
 
 
-function text(
-  id,
-  value
-){
-
-  const node =
-    el(id);
-
-  if(node){
-
-    node.textContent =
-      value ?? "—";
-  }
-}
+const $ =
+  id =>
+    document.getElementById(
+      id
+    );
 
 
-function number(
+/* =========================================================
+   FORMAT
+========================================================= */
+
+
+function fmt(
   value,
   decimals = 2
-){
+) {
 
-  const n =
-    Number(value);
+  const number =
+    Number(
+      value
+    );
 
-  if(
-    !Number.isFinite(n)
-  ){
+
+  if (
+    !Number.isFinite(
+      number
+    )
+  ) {
 
     return "—";
+
   }
 
 
-  return n
-    .toLocaleString(
-      undefined,
-      {
-        minimumFractionDigits:
-          decimals,
+  return number.toLocaleString(
 
-        maximumFractionDigits:
-          decimals
-      }
-    );
+    "en-ZA",
+
+    {
+
+      minimumFractionDigits:
+        decimals,
+
+      maximumFractionDigits:
+        decimals
+
+    }
+
+  );
+
 }
 
 
-function setBiasColor(
-  id,
+function esc(
   value
-){
+) {
 
-  const node =
-    el(id);
+  return String(
+    value ??
+    ""
+  )
+    .replace(
 
-  if(!node){
-    return;
-  }
+      /[&<>"']/g,
 
+      character => ({
 
-  node.textContent =
-    value || "—";
+        "&":
+          "&amp;",
 
+        "<":
+          "&lt;",
 
-  node.style.color =
-    value === "BULLISH"
-      ? "var(--green)"
+        ">":
+          "&gt;",
 
-      : value === "BEARISH"
-        ? "var(--red)"
+        '"':
+          "&quot;",
 
-        : "var(--muted)";
+        "'":
+          "&#39;"
+
+      })[
+        character
+      ]
+
+    );
+
 }
 
 
-function ageFrom(
-  timestamp
-){
+function trendClass(
+  text
+) {
 
-  if(!timestamp){
-    return "—";
-  }
-
-
-  const ms =
-    Date.now() -
-    new Date(timestamp)
-      .getTime();
-
-
-  if(
-    !Number.isFinite(ms)
-  ){
-
-    return "—";
-  }
-
-
-  const seconds =
-    Math.max(
-      0,
-      Math.floor(
-        ms / 1000
-      )
+  const value =
+    String(
+      text ||
+      ""
     );
 
 
-  if(
-    seconds < 60
-  ){
+  if (
 
-    return `${seconds}s`;
+    value.includes(
+      "BULL"
+    )
+
+    ||
+
+    value.includes(
+      "BUY"
+    )
+
+  ) {
+
+    return "green";
+
   }
+
+
+  if (
+
+    value.includes(
+      "BEAR"
+    )
+
+    ||
+
+    value.includes(
+      "SELL"
+    )
+
+  ) {
+
+    return "red";
+
+  }
+
+
+  return "muted";
+
+}
+
+
+/* =========================================================
+   TIME
+========================================================= */
+
+
+function countdown(
+  iso
+) {
+
+  if (
+    !iso
+  ) {
+
+    return "—";
+
+  }
+
+
+  const total =
+    Math.max(
+
+      0,
+
+      Math.floor(
+
+        (
+          new Date(
+            iso
+          ).getTime()
+
+          -
+
+          Date.now()
+        )
+
+        /
+
+        1000
+
+      )
+
+    );
+
+
+  const hours =
+    Math.floor(
+      total /
+      3600
+    );
 
 
   const minutes =
     Math.floor(
-      seconds / 60
+
+      (
+        total %
+        3600
+      )
+
+      /
+
+      60
+
     );
 
 
-  if(
-    minutes < 60
-  ){
+  const seconds =
+    total %
+    60;
 
-    return `${minutes}m`;
+
+  return (
+
+    `${String(hours).padStart(2,"0")}:`
+
+    +
+
+    `${String(minutes).padStart(2,"0")}:`
+
+    +
+
+    `${String(seconds).padStart(2,"0")}`
+
+  );
+
+}
+
+
+/* =========================================================
+   LOAD
+========================================================= */
+
+
+async function load() {
+
+  if (
+    busy
+  ) {
+
+    return;
+
   }
 
 
-  return `${Math.floor(
-    minutes / 60
-  )}h`;
-}
+  busy =
+    true;
 
 
-/* ============================================================
-   ERROR STATE
-============================================================ */
+  $("refresh").disabled =
+    true;
 
-function showError(
-  message,
-  data = null
-){
 
-  const box =
-    el("errorBox");
+  $("live").textContent =
+    "ANALYZING";
 
 
-  box.style.display =
-    "block";
+  try {
 
 
-  let extra =
-    "";
+    const response =
+      await fetch(
 
+        `${API}?t=${Date.now()}`,
 
-  if(
-    data?.troubleshooting
-  ){
+        {
+          cache:
+            "no-store"
+        }
 
-    const t =
-      data.troubleshooting;
-
-
-    extra =
-      `
-
-      <br><br>
-
-      <strong>Environment:</strong>
-      ${t.environmentVariable || "MASSIVE_API_KEY"}
-
-      <br>
-
-      <strong>Ticker:</strong>
-      ${t.ticker || "C:XAUUSD"}
-
-      <br><br>
-
-      ${t.note || ""}
-      `;
-  }
-
-
-  box.innerHTML =
-    `
-    <strong>
-      Could not load XAU/USD intelligence.
-    </strong>
-
-    <br><br>
-
-    ${message}
-
-    ${extra}
-    `;
-
-
-  text(
-    "statusPill",
-    "ERROR"
-  );
-
-
-  el(
-    "statusPill"
-  ).className =
-    "pill bad";
-}
-
-
-function hideError(){
-
-  el(
-    "errorBox"
-  ).style.display =
-    "none";
-}
-
-
-/* ============================================================
-   MAIN RENDER
-============================================================ */
-
-function render(
-  data
-){
-
-  latestData =
-    data;
-
-
-  hideError();
-
-
-  text(
-    "statusPill",
-    "LIVE"
-  );
-
-
-  el(
-    "statusPill"
-  ).className =
-    "pill good";
-
-
-  text(
-    "agePill",
-    `DATA AGE ${ageFrom(
-      data.latestBarTime
-    )}`
-  );
-
-
-  text(
-    "regimePill",
-    data.market?.regime ||
-    "—"
-  );
-
-
-  text(
-    "flowPill",
-    data.footprint?.bias ||
-    "—"
-  );
-
-
-  text(
-    "price",
-    number(
-      data.price,
-      2
-    )
-  );
-
-
-  el(
-    "price"
-  ).classList.remove(
-    "loading"
-  );
-
-
-  text(
-    "priceLabel",
-    data.latestBarTime
-      ? `Latest M1 bar · ${new Date(
-          data.latestBarTime
-        ).toLocaleTimeString()}`
-      : "XAU/USD"
-  );
-
-
-  const target =
-    data.highestRankedLiquidity;
-
-
-  if(target){
-
-    text(
-      "raidScore",
-      `${number(
-        target.raidScore,
-        0
-      )}/95`
-    );
-
-
-    text(
-      "drawTitle",
-      target.label
-    );
-
-
-    text(
-      "drawMeta",
-
-      `${target.side} · ` +
-      `${target.stage} · ` +
-      `${number(
-        target.distance,
-        2
-      )} away`
-    );
-
-
-    text(
-      "liquidityLevel",
-      number(
-        target.price,
-        2
-      )
-    );
-
-
-    text(
-      "raidEnd",
-      number(
-        target.likelyRaidEnd,
-        2
-      )
-    );
-
-
-    if(
-      target.reversalWatchZone
-    ){
-
-      text(
-        "reversalZone",
-
-        `${number(
-          target.reversalWatchZone.low,
-          2
-        )} – ${number(
-          target.reversalWatchZone.high,
-          2
-        )}`
       );
 
-    }else{
 
-      text(
-        "reversalZone",
-        "—"
+    const json =
+      await response.json();
+
+
+    if (
+
+      !response.ok
+
+      ||
+
+      !json.ok
+
+    ) {
+
+      throw new Error(
+
+        json.error
+
+        ||
+
+        `HTTP ${response.status}`
+
       );
+
     }
 
 
-    text(
-      "overshoot",
-      number(
-        target.overshoot,
-        2
-      )
+    DATA =
+      json;
+
+
+    $("error").style.display =
+      "none";
+
+
+    render(
+      json
     );
 
 
-    el(
-      "raidProgress"
-    ).style.width =
-      `${Math.min(
-        100,
-        Number(
-          target.raidScore ||
-          0
-        )
-      )}%`;
+    $("live").textContent =
 
-  }else{
+      json.cached
 
-    text(
-      "raidScore",
-      "—"
-    );
+        ?
+
+        "LIVE · CACHE"
+
+        :
+
+        "LIVE";
 
 
-    text(
-      "drawTitle",
-      "No ranked target"
-    );
+    $("live").className =
+      "pill live";
+
+
+  } catch (
+    error
+  ) {
+
+
+    $("live").textContent =
+      "ERROR";
+
+
+    $("live").className =
+      "pill warn";
+
+
+    $("error").style.display =
+      "block";
+
+
+    $("error").textContent =
+
+      `Could not load XAU/USD intelligence.\n\n` +
+
+      `${error.message}\n\n` +
+
+      `Check TWELVE_DATA_API_KEY in Vercel and redeploy.`;
+
+
+  } finally {
+
+
+    busy =
+      false;
+
+
+    $("refresh").disabled =
+      false;
+
   }
 
+}
 
-  /* ==========================================================
-     MARKET
-  ========================================================== */
 
-  text(
-    "marketRegime",
-    data.market?.regime ||
-    "—"
+/* =========================================================
+   MAIN RENDER
+========================================================= */
+
+
+function render(
+  data
+) {
+
+  $("price").textContent =
+    fmt(
+      data.price,
+      3
+    );
+
+
+  $("updated").textContent =
+
+    `Latest Twelve Data candle: ` +
+
+    `${new Date(
+      data.latestBarTime
+    ).toLocaleString()}`;
+
+
+  $("age").textContent =
+
+    `Data age ${data.dataAgeSeconds}s`;
+
+
+  $("regimeStatus").textContent =
+
+    data.market
+      ?.regime
+      ?.label
+
+    ||
+
+    "Regime —";
+
+
+  $("flowStatus").textContent =
+
+    data.market
+      ?.regime
+      ?.orderFlow
+
+    ||
+
+    "Flow —";
+
+
+  renderBest(
+    data.liquidityPools?.[0]
   );
 
 
-  text(
-    "atrM5",
-    number(
-      data.market?.atrM5,
-      2
-    )
+  renderSessions(
+    data.sessions ||
+    []
   );
 
 
-  text(
-    "rsiM5",
-    number(
-      data.market?.rsiM5,
-      1
-    )
+  renderMarket(
+    data.market ||
+    {}
   );
 
 
-  text(
-    "vwap",
-    number(
-      data.market?.vwap,
-      2
-    )
+  renderFrames(
+    data.structure ||
+    {}
   );
 
-
-  text(
-    "vwapState",
-    data.market?.priceVsVWAP
-      ? `Price ${data.market.priceVsVWAP.toLowerCase()} VWAP`
-      : "—"
-  );
-
-
-  /* ==========================================================
-     STRUCTURE
-  ========================================================== */
-
-  text(
-    "overallBias",
-    data.structure?.bias ||
-    "—"
-  );
-
-
-  setBiasColor(
-    "biasM5",
-    data.structure?.m5
-  );
-
-
-  setBiasColor(
-    "biasM15",
-    data.structure?.m15
-  );
-
-
-  setBiasColor(
-    "biasH1",
-    data.structure?.h1
-  );
-
-
-  /* ==========================================================
-     SESSION LEVELS
-  ========================================================== */
-
-  text(
-    "asiaHigh",
-    number(
-      data.sessions?.asia?.high,
-      2
-    )
-  );
-
-
-  text(
-    "asiaLow",
-    number(
-      data.sessions?.asia?.low,
-      2
-    )
-  );
-
-
-  text(
-    "londonHigh",
-    number(
-      data.sessions?.london?.high,
-      2
-    )
-  );
-
-
-  text(
-    "londonLow",
-    number(
-      data.sessions?.london?.low,
-      2
-    )
-  );
-
-
-  text(
-    "nyHigh",
-    number(
-      data.sessions?.newYork?.high,
-      2
-    )
-  );
-
-
-  text(
-    "nyLow",
-    number(
-      data.sessions?.newYork?.low,
-      2
-    )
-  );
-
-
-  text(
-    "pdh",
-    number(
-      data.previousDay?.high,
-      2
-    )
-  );
-
-
-  text(
-    "pdl",
-    number(
-      data.previousDay?.low,
-      2
-    )
-  );
-
-
-  /* ==========================================================
-     FOOTPRINT
-  ========================================================== */
-
-  text(
-    "flowBias",
-    data.footprint?.bias ||
-    "—"
-  );
-
-
-  text(
-    "delta",
-    number(
-      data.footprint?.delta,
-      2
-    )
-  );
-
-
-  /* ==========================================================
-     LIQUIDITY POOLS
-  ========================================================== */
 
   renderPools(
     data.liquidityPools ||
@@ -2301,349 +2441,1121 @@ function render(
   );
 
 
-  /* ==========================================================
-     TRAPS
-  ========================================================== */
-
   renderTraps(
     data.trapWindows ||
     []
   );
 
 
-  /* ==========================================================
-     SOURCE
-  ========================================================== */
-
-  text(
-    "provider",
-    data.source?.api ||
-    data.provider ||
-    "Massive / Polygon"
+  renderFlow(
+    data.footprint ||
+    {}
   );
 
 
-  text(
-    "ticker",
-    data.source?.ticker ||
-    data.providerSymbol ||
-    "C:XAUUSD"
+  renderHistory(
+    data.historicalSweeps ||
+    {}
   );
 
 
-  text(
-    "candleCount",
-    data.source?.candles ??
-    "—"
+  renderReference(
+    data.referenceLevels ||
+    {}
   );
+
+
+  renderProfile(
+    data.volumeProfile ||
+    {}
+  );
+
 }
 
 
-/* ============================================================
-   LIQUIDITY POOLS
-============================================================ */
+/* =========================================================
+   BEST POOL
+========================================================= */
+
+
+function renderBest(
+  pool
+) {
+
+  if (
+    !pool
+  ) {
+
+    return;
+
+  }
+
+
+  $("topScore").innerHTML =
+
+    `${esc(pool.likelihood)}<br>` +
+
+    `${fmt(
+      pool.likelihoodScore,
+      0
+    )}`;
+
+
+  $("bestName").textContent =
+
+    `${
+      pool.side ===
+      "HIGH"
+
+        ?
+
+        "UPSIDE"
+
+        :
+
+        "DOWNSIDE"
+    } → ${pool.name}`;
+
+
+  $("bestMeta").textContent =
+
+    `${pool.raidStyle} · ` +
+
+    `${fmt(
+      pool.distanceAtr,
+      2
+    )}× M15 ATR away`;
+
+
+  $("bestLevel").textContent =
+    fmt(
+      pool.level,
+      3
+    );
+
+
+  $("bestEnd").textContent =
+    fmt(
+
+      pool.projectedSweep
+        ?.likelyEnd,
+
+      3
+
+    );
+
+
+  $("bestZone").textContent =
+
+    `${fmt(
+      pool.projectedSweep?.zoneLow,
+      3
+    )} – ` +
+
+    `${fmt(
+      pool.projectedSweep?.zoneHigh,
+      3
+    )}`;
+
+
+  $("bestOver").textContent =
+
+    `${fmt(
+      pool.projectedSweep?.overshoot,
+      3
+    )} · ` +
+
+    `${fmt(
+      pool.projectedSweep?.overshootAtr,
+      2
+    )} ATR`;
+
+
+  $("bestMeter").style.width =
+
+    `${Math.min(
+
+      100,
+
+      Math.max(
+
+        0,
+
+        Number(
+          pool.likelihoodScore
+        ) ||
+        0
+
+      )
+
+    )}%`;
+
+
+  $("bestReasons").innerHTML =
+
+    (
+      pool.reasons ||
+      []
+    )
+
+      .map(
+        reason =>
+          `<li>${esc(reason)}</li>`
+      )
+
+      .join("");
+
+}
+
+
+/* =========================================================
+   SESSIONS
+========================================================= */
+
+
+function renderSessions(
+  sessions
+) {
+
+  $("sessions").innerHTML =
+
+    sessions.map(
+      session => `
+
+<div
+  class="card session ${session.active ? "active" : ""}"
+>
+
+<div class="sessionTop">
+
+<div>
+
+<div class="label">
+${esc(session.name)}
+</div>
+
+<div
+  class="value ${session.active ? "green" : "muted"}"
+>
+${session.active ? "OPEN" : "CLOSED"}
+</div>
+
+<div
+  class="muted tiny"
+  style="margin-top:4px"
+>
+${esc(session.phase)}
+</div>
+
+</div>
+
+
+<div style="text-align:right">
+
+<div class="label">
+${esc(session.nextEvent)}
+</div>
+
+<div
+  class="countdown sessionCountdown"
+  data-time="${esc(session.nextEventAt)}"
+>
+${countdown(session.nextEventAt)}
+</div>
+
+<div class="muted tiny">
+${esc(session.localTime)} local
+</div>
+
+</div>
+
+</div>
+
+
+<div class="range">
+
+
+<div class="mini">
+
+<div class="label">
+High
+</div>
+
+<div class="value">
+${fmt(session.range?.high,3)}
+</div>
+
+</div>
+
+
+<div class="mini">
+
+<div class="label">
+Low
+</div>
+
+<div class="value">
+${fmt(session.range?.low,3)}
+</div>
+
+</div>
+
+
+</div>
+
+
+<div
+  class="muted tiny"
+  style="margin-top:8px"
+>
+
+${esc(session.openLocal)}
+–
+${esc(session.closeLocal)}
+
+· range
+
+${fmt(session.range?.range,3)}
+
+</div>
+
+
+</div>
+
+`
+    )
+      .join("");
+
+}
+
+
+/* =========================================================
+   MARKET
+========================================================= */
+
+
+function renderMarket(
+  market
+) {
+
+  $("atr1").textContent =
+    fmt(
+      market.atr1,
+      3
+    );
+
+
+  $("atr5").textContent =
+    fmt(
+      market.atr5,
+      3
+    );
+
+
+  $("atr15").textContent =
+    fmt(
+      market.atr15,
+      3
+    );
+
+
+  $("vwap").textContent =
+    fmt(
+      market.vwap,
+      3
+    );
+
+
+  $("regime").textContent =
+    market.regime
+      ?.label
+
+    ||
+
+    "—";
+
+
+  $("regime").className =
+
+    `value ${trendClass(
+
+      market.regime
+        ?.trend
+
+    )}`;
+
+}
+
+
+/* =========================================================
+   FRAMES
+========================================================= */
+
+
+function renderFrames(
+  structure
+) {
+
+  const order = [
+
+    "m1",
+
+    "m5",
+
+    "m15",
+
+    "h1",
+
+    "h4"
+
+  ];
+
+
+  $("frames").innerHTML =
+
+    order.map(
+      key => {
+
+        const frame =
+          structure[key] ||
+          {};
+
+
+        return `
+
+<div class="card tf">
+
+<div class="label">
+${key.toUpperCase()}
+</div>
+
+<div
+  class="tfBias ${trendClass(frame.bias)}"
+>
+${esc(frame.bias || "—")}
+</div>
+
+<div
+  class="muted tiny"
+  style="margin-top:6px"
+>
+Score ${fmt(frame.score,0)}
+</div>
+
+<div class="muted tiny">
+RSI ${fmt(frame.rsi14,1)}
+</div>
+
+<div class="muted tiny">
+${esc(frame.structure?.event || "NONE")}
+</div>
+
+</div>
+
+`;
+
+      }
+    )
+      .join("");
+
+}
+
+
+/* =========================================================
+   POOLS
+========================================================= */
+
 
 function renderPools(
   pools
-){
+) {
 
-  const list =
-    el("poolList");
+  $("poolRows").innerHTML =
 
+    pools.map(
+      pool => `
 
-  if(
-    !pools.length
-  ){
+<tr>
 
-    list.innerHTML =
-      `
-      <div class="pool">
+<td>
 
-        <div class="poolName">
-          No liquidity pools detected.
-        </div>
+<b>
+${esc(pool.name)}
+</b>
 
-      </div>
-      `;
+<div class="muted tiny">
+${esc(pool.type)}
+</div>
 
-    return;
-  }
+</td>
 
 
-  list.innerHTML =
-    pools
-      .slice(
-        0,
-        8
-      )
-      .map(
-        pool => {
-
-          const side =
-            pool.side ===
-            "BUY_SIDE"
-              ? "BSL"
-              : "SSL";
+<td>
+${fmt(pool.level,3)}
+</td>
 
 
-          return `
-          <div class="pool">
+<td>
 
-            <div class="poolTop">
+${fmt(pool.distance,3)}
 
-              <div class="poolName">
+<div class="muted tiny">
+${fmt(pool.distanceAtr,2)} ATR
+</div>
 
-                ${pool.label}
-
-                <span
-                  style="
-                    color:var(--muted);
-                    font-size:9px;
-                    margin-left:5px;
-                  "
-                >
-                  ${side}
-                </span>
-
-              </div>
+</td>
 
 
-              <div class="poolScore">
+<td>
 
-                ${number(
-                  pool.raidScore,
-                  0
-                )}/95
+<span
+  class="score ${pool.likelihoodScore >= 75 ? "high" : ""}"
+>
+${fmt(pool.likelihoodScore,0)}
+</span>
 
-              </div>
+<div class="muted tiny">
+${esc(pool.likelihood)}
+</div>
 
-            </div>
+</td>
 
 
-            <div class="poolBottom">
+<td>
+${esc(pool.raidStyle)}
+</td>
 
-              <span>
-                Level ${number(
-                  pool.price,
-                  2
-                )}
-              </span>
 
-              <span>
-                ${pool.stage || "—"}
-              </span>
+<td class="gold">
 
-              <span>
-                ${number(
-                  pool.distanceATR,
-                  2
-                )} ATR
-              </span>
+<b>
+${fmt(pool.projectedSweep?.likelyEnd,3)}
+</b>
 
-            </div>
+</td>
 
-          </div>
-          `;
-        }
-      )
+
+<td>
+
+${fmt(pool.projectedSweep?.zoneLow,3)}
+
+<br>
+
+${fmt(pool.projectedSweep?.zoneHigh,3)}
+
+</td>
+
+
+<td>
+
+${esc(
+  pool.projectedSweep
+    ?.historicalBasis
+  ||
+  "—"
+)}
+
+</td>
+
+</tr>
+
+`
+    )
       .join("");
+
 }
 
 
-/* ============================================================
+/* =========================================================
    TRAPS
-============================================================ */
+========================================================= */
+
 
 function renderTraps(
-  windows
-){
+  traps
+) {
 
-  const node =
-    el("trapList");
+  $("traps").innerHTML =
 
+    traps.length
 
-  if(
-    !windows.length
-  ){
+      ?
 
-    node.innerHTML =
-      "No trap windows.";
-
-    return;
-  }
-
-
-  node.innerHTML =
-    windows
-      .map(
+      traps.map(
         trap => `
 
-        <div class="trap">
+<div class="trap">
 
-          <div>
+<div>
 
-            <div class="trapName">
-              ${trap.name}
-            </div>
+<b class="small">
+${esc(trap.session)}
+</b>
 
-            <div class="trapTime">
-              ${trap.startSAST}
-              –
-              ${trap.endSAST}
-            </div>
+<div
+  class="muted tiny"
+  style="margin-top:3px"
+>
+${esc(trap.phase)}
+</div>
 
-          </div>
+<div
+  class="muted tiny"
+  style="margin-top:4px"
+>
+${(trap.reasons || []).map(esc).join(" · ")}
+</div>
 
-          <div class="trapRisk">
-            ${trap.risk}
-          </div>
+</div>
 
-        </div>
-        `
+
+<div style="text-align:right">
+
+<div
+  class="risk ${String(trap.risk || "").toLowerCase()}"
+>
+${esc(trap.risk)}
+</div>
+
+<div
+  class="muted tiny"
+  style="margin-top:4px"
+>
+${fmt(trap.score,0)}/100
+</div>
+
+</div>
+
+</div>
+
+`
+      )
+        .join("")
+
+      :
+
+      `<div class="muted small">
+        No elevated trap window right now.
+      </div>`;
+
+}
+
+
+/* =========================================================
+   FLOW
+========================================================= */
+
+
+function setDelta(
+  textId,
+  barId,
+  value
+) {
+
+  const number =
+    Number(
+      value
+    )
+    ||
+    0;
+
+
+  const element =
+    $(
+      textId
+    );
+
+
+  element.textContent =
+
+    `${number >= 0 ? "+" : ""}` +
+
+    `${fmt(number,1)}%`;
+
+
+  element.className =
+
+    `value ${
+
+      number >
+      3
+
+        ?
+
+        "green"
+
+        :
+
+        number <
+        -3
+
+          ?
+
+          "red"
+
+          :
+
+          "muted"
+
+    }`;
+
+
+  const bar =
+    $(
+      barId
+    );
+
+
+  bar
+    .querySelectorAll(
+      ".fill"
+    )
+    .forEach(
+      element =>
+        element.remove()
+    );
+
+
+  const fill =
+    document.createElement(
+      "div"
+    );
+
+
+  fill.className =
+
+    `fill ${
+
+      number >=
+      0
+
+        ?
+
+        "pos"
+
+        :
+
+        "neg"
+
+    }`;
+
+
+  fill.style.width =
+
+    `${Math.min(
+
+      50,
+
+      Math.abs(
+        number
+      ) /
+      2
+
+    )}%`;
+
+
+  bar.appendChild(
+    fill
+  );
+
+}
+
+
+function renderFlow(
+  flow
+) {
+
+  $("flowMode").textContent =
+    flow.mode ||
+    "—";
+
+
+  setDelta(
+    "d5",
+    "b5",
+    flow.last5?.deltaPct
+  );
+
+
+  setDelta(
+    "d15",
+    "b15",
+    flow.last15?.deltaPct
+  );
+
+
+  setDelta(
+    "d30",
+    "b30",
+    flow.last30?.deltaPct
+  );
+
+
+  setDelta(
+    "d60",
+    "b60",
+    flow.last60?.deltaPct
+  );
+
+
+  $("cvd").textContent =
+    fmt(
+      flow.cvd,
+      1
+    );
+
+
+  $("divergence").textContent =
+    flow.divergence ||
+    "—";
+
+
+  $("absorption").textContent =
+    flow.absorption ||
+    "—";
+
+}
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+
+function renderHistory(
+  history
+) {
+
+  const high =
+    history.asiaHigh ||
+    {};
+
+
+  const low =
+    history.asiaLow ||
+    {};
+
+
+  $("asiaHigh").textContent =
+
+    `${fmt(
+      high.sweepRatePct,
+      1
+    )}% swept`;
+
+
+  $("asiaHighMeta").textContent =
+
+    `${fmt(
+      high.reversalRatePct,
+      1
+    )}% returned inside · ` +
+
+    `median ${fmt(
+      high.medianOvershootAtr,
+      2
+    )} ATR · ` +
+
+    `P75 ${fmt(
+      high.p75OvershootAtr,
+      2
+    )} ATR`;
+
+
+  $("asiaLow").textContent =
+
+    `${fmt(
+      low.sweepRatePct,
+      1
+    )}% swept`;
+
+
+  $("asiaLowMeta").textContent =
+
+    `${fmt(
+      low.reversalRatePct,
+      1
+    )}% returned inside · ` +
+
+    `median ${fmt(
+      low.medianOvershootAtr,
+      2
+    )} ATR · ` +
+
+    `P75 ${fmt(
+      low.p75OvershootAtr,
+      2
+    )} ATR`;
+
+}
+
+
+/* =========================================================
+   REFERENCE
+========================================================= */
+
+
+function renderReference(
+  levels
+) {
+
+  const day =
+    levels.previousDay;
+
+
+  const week =
+    levels.previousWeek;
+
+
+  $("reference").innerHTML =
+
+    [
+
+      [
+        "Previous Day High",
+        day?.high
+      ],
+
+      [
+        "Previous Day Low",
+        day?.low
+      ],
+
+      [
+        "Previous Day Mid",
+        day?.midpoint
+      ],
+
+      [
+        "Previous Week High",
+        week?.high
+      ],
+
+      [
+        "Previous Week Low",
+        week?.low
+      ]
+
+    ]
+      .map(
+        row => `
+
+<div class="info">
+
+<span class="muted">
+${row[0]}
+</span>
+
+<b>
+${fmt(row[1],3)}
+</b>
+
+</div>
+
+`
       )
       .join("");
+
 }
 
 
-/* ============================================================
-   FETCH
-============================================================ */
-
-async function loadData(
-  manual = false
-){
-
-  const button =
-    el("refreshBtn");
+/* =========================================================
+   PROFILE
+========================================================= */
 
 
-  if(manual){
+function renderProfile(
+  profile
+) {
 
-    button.style.opacity =
-      ".45";
-
-    button.disabled =
-      true;
-  }
-
-
-  try{
-
-    const response =
-      await fetch(
-        `${API_URL}?t=${Date.now()}`,
-        {
-          cache:
-            "no-store"
-        }
-      );
-
-
-    let data;
-
-
-    try{
-
-      data =
-        await response.json();
-
-    }catch{
-
-      throw new Error(
-        `Server returned HTTP ${response.status} with invalid JSON.`
-      );
-    }
-
-
-    if(
-      !response.ok ||
-      !data.ok
-    ){
-
-      showError(
-        data.error ||
-        `HTTP ${response.status}`,
-        data
-      );
-
-      return;
-    }
-
-
-    render(
-      data
+  $("poc").textContent =
+    fmt(
+      profile.poc,
+      3
     );
 
 
-  }catch(error){
+  $("hvn").textContent =
 
-    showError(
-      error.message ||
-      "Network request failed."
-    );
+    (
+      profile.hvn ||
+      []
+    )
+      .map(
+        value =>
+          fmt(
+            value,
+            2
+          )
+      )
+      .join(" · ")
+
+    ||
+
+    "—";
 
 
-  }finally{
+  $("lvn").textContent =
 
-    if(manual){
+    (
+      profile.lvn ||
+      []
+    )
+      .map(
+        value =>
+          fmt(
+            value,
+            2
+          )
+      )
+      .join(" · ")
 
-      button.style.opacity =
-        "1";
+    ||
 
-      button.disabled =
-        false;
-    }
-  }
+    "—";
+
+
+  $("profileMode").textContent =
+    profile.mode ||
+    "—";
+
 }
 
 
-/* ============================================================
-   DATA AGE CLOCK
-============================================================ */
+/* =========================================================
+   CLOCK
+========================================================= */
+
+
+function tick() {
+
+  $("clock").textContent =
+
+    new Intl.DateTimeFormat(
+
+      "en-ZA",
+
+      {
+
+        timeZone:
+          SAST,
+
+        weekday:
+          "short",
+
+        hour:
+          "2-digit",
+
+        minute:
+          "2-digit",
+
+        second:
+          "2-digit",
+
+        hour12:
+          false
+
+      }
+
+    )
+      .format(
+        new Date()
+      )
+
+    +
+
+    " SAST";
+
+
+  document
+    .querySelectorAll(
+      ".sessionCountdown[data-time]"
+    )
+    .forEach(
+      element => {
+
+        element.textContent =
+          countdown(
+            element.dataset.time
+          );
+
+      }
+    );
+
+
+  if (
+    DATA?.latestBarTime
+  ) {
+
+    const seconds =
+      Math.max(
+
+        0,
+
+        Math.floor(
+
+          (
+            Date.now()
+
+            -
+
+            new Date(
+              DATA.latestBarTime
+            )
+              .getTime()
+          )
+
+          /
+
+          1000
+
+        )
+
+      );
+
+
+    $("age").textContent =
+      `Data age ${seconds}s`;
+
+  }
+
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+
+$("refresh")
+  .addEventListener(
+    "click",
+    load
+  );
+
+
+load();
+
+
+tick();
+
 
 setInterval(
-  () => {
-
-    if(
-      latestData?.latestBarTime
-    ){
-
-      text(
-        "agePill",
-        `DATA AGE ${ageFrom(
-          latestData.latestBarTime
-        )}`
-      );
-    }
-
-  },
+  tick,
   1000
 );
 
 
-/* ============================================================
-   AUTO REFRESH
-============================================================ */
-
 setInterval(
-  () => {
-
-    loadData(
-      false
-    );
-
-  },
-  AUTO_REFRESH_MS
+  load,
+  60_000
 );
 
 
-/* ============================================================
-   INITIAL LOAD
-============================================================ */
-
-loadData();
+})();
 
 </script>
+
 
 </body>
 
