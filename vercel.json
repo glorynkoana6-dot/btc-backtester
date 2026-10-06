@@ -1,9 +1,11 @@
 {
-  "functions": {
-    "api/xau.js": {
-      "maxDuration": 60
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
     }
-  },
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
