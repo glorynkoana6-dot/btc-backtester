@@ -1,18 +1,11 @@
 /* ================================================================
-   MKAYFX FAST XAU PRICE V1
+   MKAYFX FAST XAU PRICE V2
    /api/price.js
 
-   PURPOSE
-   ---------------------------------------------------------------
-   Fast lightweight XAU/USD quote endpoint.
-
-   Uses API #4 first so the heavy intelligence engine does not
-   have to run every few seconds.
-
-   ENVIRONMENT
-   ---------------------------------------------------------------
+   API
    TWELVE_DATA_API_KEY_4
-   fallback:
+
+   FALLBACK
    TWELVE_DATA_API_KEY
 ================================================================ */
 
@@ -36,113 +29,79 @@ const CACHE_MS =
 
 
 let cache = {
-
-  time:
-    0,
-
-  value:
-    null
-
+  time:0,
+  value:null
 };
 
 
-/* ================================================================
-   HELPERS
-================================================================ */
-
 function finite(
   value
-) {
+){
 
-  if (
+  if(
     value === null ||
     value === undefined ||
     value === ""
-  ) {
-
+  ){
     return null;
-
   }
 
-
-  const n =
+  const number =
     Number(
       value
     );
 
-
   return Number.isFinite(
-    n
+    number
   )
-    ? n
+    ? number
     : null;
-
 }
 
 
-/* ================================================================
-   FETCH PRICE
-================================================================ */
+async function getPrice(){
 
-async function fetchPrice() {
-
-  if (
+  if(
     !API_KEY
-  ) {
+  ){
 
     throw new Error(
       "TWELVE_DATA_API_KEY_4 is missing."
     );
-
   }
 
-
   const url =
-
     `${TD_BASE}/quote` +
-
-    `?symbol=${encodeURIComponent(
-      SYMBOL
-    )}` +
-
-    `&apikey=${encodeURIComponent(
-      API_KEY
-    )}`;
-
+    `?symbol=${encodeURIComponent(SYMBOL)}` +
+    `&apikey=${encodeURIComponent(API_KEY)}`;
 
   const response =
     await fetch(
       url
     );
 
-
-  if (
+  if(
     !response.ok
-  ) {
+  ){
 
     throw new Error(
       `Twelve Data HTTP ${response.status}`
     );
-
   }
-
 
   const json =
     await response.json();
 
-
-  if (
+  if(
     json.status ===
     "error"
-  ) {
+  ){
 
     throw new Error(
       json.message ||
-      "Twelve Data price error."
+      "Twelve Data quote error."
     );
-
   }
-
 
   const price =
     finite(
@@ -150,26 +109,21 @@ async function fetchPrice() {
       json.price
     );
 
-
-  if (
+  if(
     price === null ||
     price <= 0
-  ) {
+  ){
 
     throw new Error(
-      "Twelve Data returned an invalid XAU/USD price."
+      "Invalid XAU/USD quote."
     );
-
   }
 
-
   return {
-
-    ok:
-      true,
+    ok:true,
 
     engine:
-      "MKAYFX FAST PRICE V1",
+      "MKAYFX FAST PRICE V2",
 
     symbol:
       SYMBOL,
@@ -200,128 +154,92 @@ async function fetchPrice() {
 
     source:
       "TWELVE_DATA_REST"
-
   };
-
 }
 
-
-/* ================================================================
-   HANDLER
-================================================================ */
 
 export default async function handler(
   req,
   res
-) {
+){
 
   res.setHeader(
     "Cache-Control",
     "no-store, max-age=0"
   );
 
-
   res.setHeader(
     "Access-Control-Allow-Origin",
     "*"
   );
 
-
-  if (
+  if(
     req.method !==
     "GET"
-  ) {
+  ){
 
     return res
-      .status(405)
+      .status(
+        405
+      )
       .json({
-
-        ok:
-          false,
-
-        error:
-          "Method not allowed."
-
+        ok:false,
+        error:"Method not allowed."
       });
-
   }
 
+  try{
 
-  try {
-
-    if (
+    if(
       cache.value &&
       Date.now() -
       cache.time <
       CACHE_MS
-    ) {
+    ){
 
       return res
-        .status(200)
+        .status(
+          200
+        )
         .json({
-
           ...cache.value,
-
-          cached:
-            true
-
+          cached:true
         });
-
     }
 
-
     const result =
-      await fetchPrice();
-
+      await getPrice();
 
     cache = {
-
       time:
         Date.now(),
-
       value:
         result
-
     };
 
-
     return res
-      .status(200)
+      .status(
+        200
+      )
       .json({
-
         ...result,
-
-        cached:
-          false
-
+        cached:false
       });
 
-  } catch (
-    error
-  ) {
-
-    console.error(
-      "PRICE ERROR:",
-      error
-    );
-
+  }catch(error){
 
     return res
-      .status(500)
+      .status(
+        500
+      )
       .json({
-
-        ok:
-          false,
-
+        ok:false,
         engine:
-          "MKAYFX FAST PRICE V1",
-
+          "MKAYFX FAST PRICE V2",
         error:
-          error?.message ||
-          "Unknown price error."
-
+          error
+            ?.message ||
+          "Price error."
       });
-
   }
-
 }
