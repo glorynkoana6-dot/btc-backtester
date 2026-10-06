@@ -1,1877 +1,732 @@
-/* ============================================================
-   MKAYFX XAU/USD INTELLIGENCE ENGINE V4
+/* ================================================================
+   MKAYFX GOLD INTELLIGENCE V8
+   DEEP LIQUIDITY ZONE ENGINE
+   ---------------------------------------------------------------
+   FILE:
    /api/xau.js
 
-   THREE TWELVE DATA ENGINES
-   -------------------------
-   API 1 = LIVE ENGINE
-   API 2 = STRUCTURE ENGINE
-   API 3 = HISTORICAL ENGINE
-
-   FRED = MACRO ENGINE
-
-   ENVIRONMENT VARIABLES
-   ---------------------
+   ARCHITECTURE
+   ---------------------------------------------------------------
+   API #1
    TWELVE_DATA_API_KEY
+   XAU/USD M1 + M5
+
+   API #2
    TWELVE_DATA_API_KEY_2
+   XAU/USD M15 + H1 + H4
+
+   API #3
    TWELVE_DATA_API_KEY_3
+   XAU/USD historical M5
+
+   API #4
+   TWELVE_DATA_API_KEY_4
+   XAG/USD
+   EUR/USD
+   GBP/USD
+   USD/JPY
+   BTC/USD
+   Secondary XAU/USD quote
+
+   FRED
    FRED_API_KEY
+   US 2Y
+   US 10Y
+   Fed Funds
+
+   V8 DEEP LIQUIDITY FEATURES
+   ---------------------------------------------------------------
+   - Raw liquidity level discovery
+   - Liquidity clustering
+   - Multi-level liquidity zones
+   - Internal vs external liquidity
+   - Stop-pool estimation
+   - Zone density
+   - Zone freshness
+   - Touch history
+   - Sweep history
+   - Acceptance history
+   - Rejection history
+   - Approach direction
+   - Compression score
+   - Attack score
+   - Liquidity lifecycle
+   - Raid likelihood
+   - Reversal likelihood
+   - Continuation likelihood
+   - Projected raid depth
+   - Projected raid zone
+   - FVG overlap
+   - Session overlap
+   - H1 swing overlap
+   - Equal high / equal low overlap
+   - Previous day/week confluence
+   - Liquidity heat
+   - Liquidity path ranking
+   - Sweep/rejection quality
+   - M1/M5/M15/H1/H4 structure
+   - BOS / CHOCH
+   - Displacement
+   - Delta proxy
+   - CVD proxy
+   - Absorption proxy
+   - Delta divergence
+   - Historical session statistics
+   - Intermarket confirmation
+   - FRED yield pressure
+   - Secondary XAU feed validation
+   - Final consensus
 
    IMPORTANT
-   ---------
-   Liquidity / raid / historical-match / combined-quality
-   values are heuristic model scores, not guaranteed
+   ---------------------------------------------------------------
+   Model likelihood scores are heuristic scores, NOT guaranteed
    probabilities.
-============================================================ */
+
+   Spot forex / metals volume is decentralized. Delta, CVD,
+   absorption and footprint-style calculations are proxies derived
+   from candle/activity data, not exchange bid/ask order flow.
+================================================================ */
 
 
-/* ============================================================
+/* ================================================================
    CONFIG
-============================================================ */
+================================================================ */
+
+const TD_BASE =
+  "https://api.twelvedata.com";
+
+const FRED_BASE =
+  "https://api.stlouisfed.org/fred";
+
+
+const KEY_1 =
+  process.env.TWELVE_DATA_API_KEY || "";
+
+const KEY_2 =
+  process.env.TWELVE_DATA_API_KEY_2 || KEY_1;
+
+const KEY_3 =
+  process.env.TWELVE_DATA_API_KEY_3 || KEY_1;
+
+const KEY_4 =
+  process.env.TWELVE_DATA_API_KEY_4 || KEY_1;
+
+const FRED_KEY =
+  process.env.FRED_API_KEY || "";
+
 
 const SYMBOL =
   "XAU/USD";
 
-const TD_BASE =
-  "https://api.twelvedata.com/time_series";
 
-const FRED_BASE =
-  "https://api.stlouisfed.org/fred/series/observations";
+const LIVE_CACHE_MS =
+  45 * 1000;
 
+const INTERMARKET_CACHE_MS =
+  5 * 60 * 1000;
 
-const TD_KEYS = [
-
-  String(
-    process.env.TWELVE_DATA_API_KEY ||
-    ""
-  ).trim(),
-
-  String(
-    process.env.TWELVE_DATA_API_KEY_2 ||
-    ""
-  ).trim(),
-
-  String(
-    process.env.TWELVE_DATA_API_KEY_3 ||
-    ""
-  ).trim()
-
-];
-
-
-const FRED_KEY =
-  String(
-    process.env.FRED_API_KEY ||
-    ""
-  ).trim();
-
-
-const CACHE_MS =
-  60_000;
+const HISTORY_CACHE_MS =
+  15 * 60 * 1000;
 
 const MACRO_CACHE_MS =
-  15 * 60_000;
+  20 * 60 * 1000;
 
 
-let CACHE = {
+const MAX_HISTORY =
+  5000;
 
+
+/* ================================================================
+   CACHE
+================================================================ */
+
+let liveCache = {
   time: 0,
+  value: null
+};
 
-  data: null
+let historyCache = {
+  time: 0,
+  value: null
+};
 
+let intermarketCache = {
+  time: 0,
+  value: null
+};
+
+let macroCache = {
+  time: 0,
+  value: null
 };
 
 
-let MACRO_CACHE = {
+/* ================================================================
+   BASIC HELPERS
+================================================================ */
 
-  time: 0,
-
-  data: null
-
-};
-
-
-let IN_FLIGHT =
-  null;
-
-
-/* ============================================================
-   SESSION DEFINITIONS
-============================================================ */
-
-const SESSION_DEFS = [
-
-  {
-
-    id:
-      "asia",
-
-    name:
-      "Asia / Tokyo",
-
-    short:
-      "ASIA",
-
-    zone:
-      "Asia/Tokyo",
-
-    open:
-      9 * 60,
-
-    close:
-      18 * 60,
-
-    importance:
-      1.35
-
-  },
-
-  {
-
-    id:
-      "london",
-
-    name:
-      "London",
-
-    short:
-      "LONDON",
-
-    zone:
-      "Europe/London",
-
-    open:
-      8 * 60,
-
-    close:
-      17 * 60,
-
-    importance:
-      1.32
-
-  },
-
-  {
-
-    id:
-      "newyork",
-
-    name:
-      "New York",
-
-    short:
-      "NEW YORK",
-
-    zone:
-      "America/New_York",
-
-    open:
-      8 * 60,
-
-    close:
-      17 * 60,
-
-    importance:
-      1.38
-
-  }
-
-];
-
-
-/* ============================================================
-   API HANDLER
-============================================================ */
-
-export default async function handler(
-  req,
-  res
+function clamp(
+  value,
+  min,
+  max
 ) {
 
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "*"
+  return Math.max(
+    min,
+    Math.min(
+      max,
+      value
+    )
   );
-
-  res.setHeader(
-    "Cache-Control",
-    "no-store, max-age=0"
-  );
-
-
-  if (
-    req.method ===
-    "OPTIONS"
-  ) {
-
-    return res
-      .status(204)
-      .end();
-
-  }
-
-
-  if (
-    req.method !==
-    "GET"
-  ) {
-
-    return res
-      .status(405)
-      .json({
-
-        ok:
-          false,
-
-        error:
-          "GET only"
-
-      });
-
-  }
-
-
-  if (
-    TD_KEYS.filter(Boolean).length <
-    3
-  ) {
-
-    return res
-      .status(500)
-      .json({
-
-        ok:
-          false,
-
-        error:
-          "Add TWELVE_DATA_API_KEY, TWELVE_DATA_API_KEY_2 and TWELVE_DATA_API_KEY_3 in Vercel."
-
-      });
-
-  }
-
-
-  try {
-
-
-    if (
-
-      CACHE.data
-
-      &&
-
-      Date.now() -
-      CACHE.time <
-      CACHE_MS
-
-    ) {
-
-      return res
-        .status(200)
-        .json({
-
-          ...CACHE.data,
-
-          cached:
-            true
-
-        });
-
-    }
-
-
-    if (
-      IN_FLIGHT
-    ) {
-
-      const shared =
-        await IN_FLIGHT;
-
-      return res
-        .status(200)
-        .json({
-
-          ...shared,
-
-          cached:
-            true,
-
-          sharedRequest:
-            true
-
-        });
-
-    }
-
-
-    IN_FLIGHT =
-      buildIntelligence();
-
-
-    const output =
-      await IN_FLIGHT;
-
-
-    IN_FLIGHT =
-      null;
-
-
-    CACHE = {
-
-      time:
-        Date.now(),
-
-      data:
-        output
-
-    };
-
-
-    return res
-      .status(200)
-      .json(
-        output
-      );
-
-
-  } catch (
-    error
-  ) {
-
-    IN_FLIGHT =
-      null;
-
-
-    console.error(
-      "XAU ENGINE ERROR",
-      error
-    );
-
-
-    return res
-      .status(500)
-      .json({
-
-        ok:
-          false,
-
-        symbol:
-          SYMBOL,
-
-        error:
-          error?.message ||
-          "Unknown XAU engine error"
-
-      });
-
-  }
-
 }
 
 
-/* ============================================================
-   MASTER INTELLIGENCE ENGINE
-============================================================ */
+function safeNumber(
+  value,
+  fallback = 0
+) {
 
-async function buildIntelligence() {
+  const n =
+    Number(value);
 
-
-  /*
-     Engines run in parallel because each has its own
-     primary Twelve Data API key.
-  */
-
-  const [
-
-    live,
-
-    structureEngine,
-
-    historical,
-
-    macro
-
-  ] =
-    await Promise.all([
-
-      buildLiveEngine(),
-
-      buildStructureEngine(),
-
-      buildHistoricalEngine(),
-
-      getMacroEngine()
-
-    ]);
+  return Number.isFinite(n)
+    ? n
+    : fallback;
+}
 
 
-  const m1 =
-    live.m1;
+function round(
+  value,
+  decimals = 2
+) {
 
-  const m5 =
-    live.m5;
+  const n =
+    Number(value);
 
-  const m15 =
-    structureEngine.m15;
-
-  const h1 =
-    structureEngine.h1;
-
-  const h4 =
-    resample(
-      h1,
-      240
-    );
-
-
-  const latest =
-    m1.at(-1);
-
-
-  if (
-    !latest
-  ) {
-
-    throw new Error(
-      "No current XAU/USD data."
-    );
-
+  if (!Number.isFinite(n)) {
+    return null;
   }
 
+  const power =
+    10 ** decimals;
 
-  const price =
-    latest.close;
+  return (
+    Math.round(
+      n * power
+    ) /
+    power
+  );
+}
 
 
-  const atr1 =
-    lastFinite(
-      atrSeries(
-        m1,
-        14
-      )
+function mean(
+  values
+) {
+
+  if (!values.length) {
+    return 0;
+  }
+
+  return (
+    values.reduce(
+      (sum, value) =>
+        sum + value,
+      0
+    ) /
+    values.length
+  );
+}
+
+
+function median(
+  values
+) {
+
+  if (!values.length) {
+    return 0;
+  }
+
+  const sorted =
+    [...values].sort(
+      (a, b) =>
+        a - b
     );
 
-
-  const atr5 =
-    lastFinite(
-      atrSeries(
-        m5,
-        14
-      )
+  const middle =
+    Math.floor(
+      sorted.length / 2
     );
 
+  if (
+    sorted.length % 2
+  ) {
 
-  const atr15 =
-    lastFinite(
-      atrSeries(
-        m15,
-        14
-      )
+    return sorted[middle];
+  }
+
+  return (
+    (
+      sorted[middle - 1] +
+      sorted[middle]
+    ) /
+    2
+  );
+}
+
+
+function percentile(
+  values,
+  percentileValue
+) {
+
+  if (!values.length) {
+    return 0;
+  }
+
+  const sorted =
+    [...values].sort(
+      (a, b) =>
+        a - b
     );
 
-
-  const atrH1 =
-    lastFinite(
-      atrSeries(
-        h1,
-        14
-      )
-    );
-
-
-  /* ========================================================
-     MULTI-TIMEFRAME STRUCTURE
-  ======================================================== */
-
-  const structure = {
-
-    m1:
-      timeframeState(
-        m1
-      ),
-
-    m5:
-      timeframeState(
-        m5
-      ),
-
-    m15:
-      timeframeState(
-        m15
-      ),
-
-    h1:
-      timeframeState(
-        h1
-      ),
-
-    h4:
-      timeframeState(
-        h4
-      )
-
-  };
-
-
-  /* ========================================================
-     SESSIONS
-  ======================================================== */
-
-  const sessions =
-    buildSessions(
-      historical.m5
-    );
-
-
-  /* ========================================================
-     REFERENCE LEVELS
-  ======================================================== */
-
-  const reference =
-    buildReferenceLevels(
-      h1
-    );
-
-
-  /* ========================================================
-     EQUAL LIQUIDITY
-  ======================================================== */
-
-  const equalLevels =
-    detectEqualLiquidity(
-
-      m15,
-
-      atr15
-
-    );
-
-
-  /* ========================================================
-     SWINGS
-  ======================================================== */
-
-  const h1Swings =
-    pivots(
-
-      h1,
-
-      3,
-
-      220
-
-    );
-
-
-  /* ========================================================
-     FLOW
-  ======================================================== */
-
-  const flow =
-    buildFlowEngine(
-      m1
-    );
-
-
-  /* ========================================================
-     VWAP
-  ======================================================== */
-
-  const vwap =
-    buildVWAP(
-      m1
-    );
-
-
-  /* ========================================================
-     PROFILE
-  ======================================================== */
-
-  const profile =
-    buildActivityProfile(
-
-      m5.slice(
-        -500
-      ),
-
-      40
-
-    );
-
-
-  /* ========================================================
-     MARKET REGIME
-  ======================================================== */
-
-  const regime =
-    buildMarketRegime({
-
-      structure,
-
-      m5,
-
-      atr5,
-
-      flow
-
-    });
-
-
-  /* ========================================================
-     LIQUIDITY POOLS
-  ======================================================== */
-
-  const pools =
-    buildLiquidityPools({
-
-      price,
-
-      sessions,
-
-      reference,
-
-      equalLevels,
-
-      h1Swings,
-
-      atrH1
-
-    });
-
-
-  /* ========================================================
-     ENRICH ALL POOLS
-  ======================================================== */
-
-  const rankedPools =
-    pools
-
-      .map(
-        pool =>
-          scoreLiquidityPool({
-
-            pool,
-
-            price,
-
-            atr5,
-
-            atr15,
-
-            structure,
-
-            sessions,
-
-            flow,
-
-            regime,
-
-            historical:
-
-              historical.stats,
-
-            macro,
-
-            profile
-
-          })
-      )
-
-      .sort(
-        (
-          a,
-          b
-        ) =>
-
-          b.combinedQuality -
-          a.combinedQuality
-      )
-
+  const index =
+    (
+      sorted.length - 1
+    ) *
+    percentileValue;
+
+  const lower =
+    Math.floor(index);
+
+  const upper =
+    Math.ceil(index);
+
+  if (
+    lower === upper
+  ) {
+
+    return sorted[lower];
+  }
+
+  return (
+    sorted[lower] +
+    (
+      sorted[upper] -
+      sorted[lower]
+    ) *
+    (
+      index -
+      lower
+    )
+  );
+}
+
+
+function last(
+  array
+) {
+
+  return (
+    array[
+      array.length - 1
+    ]
+  );
+}
+
+
+function unique(
+  values
+) {
+
+  return [
+    ...new Set(values)
+  ];
+}
+
+
+function isoDay(
+  timestamp
+) {
+
+  return (
+    new Date(timestamp)
+      .toISOString()
       .slice(
         0,
-        16
-      );
-
-
-  /* ========================================================
-     PRIMARY DRAW
-  ======================================================== */
-
-  const primary =
-    rankedPools[0] ||
-    null;
-
-
-  /* ========================================================
-     TRAP RADAR
-  ======================================================== */
-
-  const trapRadar =
-    buildTrapRadar({
-
-      pools:
-        rankedPools,
-
-      sessions,
-
-      flow,
-
-      regime,
-
-      atr15
-
-    });
-
-
-  /* ========================================================
-     CHART PAYLOAD
-  ======================================================== */
-
-  const chart =
-    buildChartPayload({
-
-      m1,
-
-      m5,
-
-      m15,
-
-      h1,
-
-      pools:
-        rankedPools,
-
-      sessions,
-
-      reference,
-
-      equalLevels,
-
-      profile,
-
-      vwap,
-
-      price
-
-    });
-
-
-  return {
-
-    ok:
-      true,
-
-
-    symbol:
-      SYMBOL,
-
-
-    generatedAt:
-      new Date()
-        .toISOString(),
-
-
-    latestBarTime:
-      latest.time
-        .toISOString(),
-
-
-    dataAgeSeconds:
-      Math.max(
-
-        0,
-
-        Math.floor(
-
-          (
-            Date.now()
-
-            -
-
-            latest.time.getTime()
-          )
-
-          /
-
-          1000
-
-        )
-
-      ),
-
-
-    price:
-      round(
-        price,
-        3
-      ),
-
-
-    engines: {
-
-      live: {
-
-        role:
-          "LIVE",
-
-        primaryApi:
-          1,
-
-        apiUsed:
-          live.apiUsed,
-
-        m1Bars:
-          m1.length,
-
-        m5Bars:
-          m5.length
-
-      },
-
-
-      structure: {
-
-        role:
-          "STRUCTURE",
-
-        primaryApi:
-          2,
-
-        apiUsed:
-          structureEngine.apiUsed,
-
-        m15Bars:
-          m15.length,
-
-        h1Bars:
-          h1.length,
-
-        h4Bars:
-          h4.length
-
-      },
-
-
-      historical: {
-
-        role:
-          "HISTORICAL",
-
-        primaryApi:
-          3,
-
-        apiUsed:
-          historical.apiUsed,
-
-        bars:
-          historical.m5.length,
-
-        sessionsStudied:
-          historical.stats
-            ?.samples ||
-          0
-
-      },
-
-
-      macro: {
-
-        provider:
-          "FRED",
-
-        enabled:
-          macro.enabled
-
-      }
-
-    },
-
-
-    market: {
-
-      atr1:
-        round(
-          atr1,
-          3
-        ),
-
-      atr5:
-        round(
-          atr5,
-          3
-        ),
-
-      atr15:
-        round(
-          atr15,
-          3
-        ),
-
-      atrH1:
-        round(
-          atrH1,
-          3
-        ),
-
-      vwap:
-        round(
-          vwap.value,
-          3
-        ),
-
-      vwapDistance:
-        round(
-          price -
-          vwap.value,
-          3
-        ),
-
-      vwapMode:
-        vwap.mode,
-
-      regime
-
-    },
-
-
-    structure,
-
-
-    sessions,
-
-
-    referenceLevels:
-      reference,
-
-
-    equalLevels,
-
-
-    flow,
-
-
-    volumeProfile:
-      profile,
-
-
-    historical:
-      historical.stats,
-
-
-    macro,
-
-
-    liquidityPools:
-      rankedPools,
-
-
-    primaryLiquidity:
-      primary,
-
-
-    trapRadar,
-
-
-    chart,
-
-
-    warnings: [
-
-      "Liquidity Strength is a heuristic level-importance score.",
-
-      "Raid Strength estimates current pressure toward a liquidity pool; it is not a calibrated probability.",
-
-      "Historical Match measures similarity to historical sweep conditions.",
-
-      "Combined Quality combines structure, liquidity, raid pressure, historical behavior and macro context.",
-
-      "Spot XAU/USD OHLC data does not provide centralized exchange bid/ask footprint data.",
-
-      "Delta, CVD and absorption are therefore proxies."
-
-    ]
-
-  };
-
+        10
+      )
+  );
 }
 
 
-/* ============================================================
-   ENGINE 1 — LIVE
-============================================================ */
+function utcHour(
+  timestamp
+) {
 
-async function buildLiveEngine() {
-
-
-  const m1Result =
-    await fetchRoleSeries({
-
-      primaryKey:
-        0,
-
-      interval:
-        "1min",
-
-      outputsize:
-        900
-
-    });
-
-
-  const m5Result =
-    await fetchRoleSeries({
-
-      primaryKey:
-        0,
-
-      interval:
-        "5min",
-
-      outputsize:
-        1200
-
-    });
-
-
-  if (
-    m1Result.bars.length <
-    100
-  ) {
-
-    throw new Error(
-      "Live Engine: insufficient M1 candles."
-    );
-
-  }
-
-
-  if (
-    m5Result.bars.length <
-    100
-  ) {
-
-    throw new Error(
-      "Live Engine: insufficient M5 candles."
-    );
-
-  }
-
-
-  return {
-
-    m1:
-      m1Result.bars,
-
-    m5:
-      m5Result.bars,
-
-    apiUsed:
-
-      [
-        ...new Set([
-
-          m1Result.keyNumber,
-
-          m5Result.keyNumber
-
-        ])
-
-      ]
-
-  };
-
+  return (
+    new Date(timestamp)
+      .getUTCHours()
+  );
 }
 
 
-/* ============================================================
-   ENGINE 2 — STRUCTURE
-============================================================ */
+function isoWeekKey(
+  timestamp
+) {
 
-async function buildStructureEngine() {
+  const date =
+    new Date(timestamp);
 
-
-  const m15Result =
-    await fetchRoleSeries({
-
-      primaryKey:
-        1,
-
-      interval:
-        "15min",
-
-      outputsize:
-        1600
-
-    });
-
-
-  const h1Result =
-    await fetchRoleSeries({
-
-      primaryKey:
-        1,
-
-      interval:
-        "1h",
-
-      outputsize:
-        1000
-
-    });
-
-
-  if (
-    m15Result.bars.length <
-    100
-  ) {
-
-    throw new Error(
-      "Structure Engine: insufficient M15 candles."
+  const temp =
+    new Date(
+      Date.UTC(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate()
+      )
     );
 
-  }
-
-
-  if (
-    h1Result.bars.length <
-    80
-  ) {
-
-    throw new Error(
-      "Structure Engine: insufficient H1 candles."
-    );
-
-  }
-
-
-  return {
-
-    m15:
-      m15Result.bars,
-
-    h1:
-      h1Result.bars,
-
-    apiUsed:
-
-      [
-        ...new Set([
-
-          m15Result.keyNumber,
-
-          h1Result.keyNumber
-
-        ])
-
-      ]
-
-  };
-
-}
-
-
-/* ============================================================
-   ENGINE 3 — HISTORICAL
-============================================================ */
-
-async function buildHistoricalEngine() {
-
-
-  const result =
-    await fetchRoleSeries({
-
-      primaryKey:
-        2,
-
-      interval:
-        "5min",
-
-      outputsize:
-        5000
-
-    });
-
-
-  if (
-    result.bars.length <
-    500
-  ) {
-
-    throw new Error(
-      "Historical Engine: insufficient M5 history."
-    );
-
-  }
-
-
-  const stats =
-    buildHistoricalStatistics(
-      result.bars
-    );
-
-
-  return {
-
-    m5:
-      result.bars,
-
-    stats,
-
-    apiUsed: [
-      result.keyNumber
-    ]
-
-  };
-
-}
-
-
-/* ============================================================
-   ROLE-AWARE TWELVE DATA FETCH
-============================================================ */
-
-async function fetchRoleSeries({
-
-  primaryKey,
-
-  interval,
-
-  outputsize
-
-}) {
-
-
-  const order = [
-
-    primaryKey,
-
-    (
-      primaryKey +
-      1
-    ) %
-    3,
-
-    (
-      primaryKey +
-      2
-    ) %
-    3
-
-  ];
-
-
-  let lastError =
-    null;
-
-
-  for (
-    const keyIndex of order
-  ) {
-
-
-    const key =
-      TD_KEYS[
-        keyIndex
-      ];
-
-
-    if (
-      !key
-    ) {
-
-      continue;
-
-    }
-
-
-    try {
-
-
-      const bars =
-        await requestTD({
-
-          key,
-
-          interval,
-
-          outputsize
-
-        });
-
-
-      return {
-
-        bars,
-
-        keyNumber:
-          keyIndex +
-          1
-
-      };
-
-
-    } catch (
-      error
-    ) {
-
-
-      lastError =
-        error;
-
-
-      /*
-         Only rotate keys when the problem is quota/rate
-         related. A malformed symbol or request should not
-         blindly consume the other keys.
-      */
-
-      if (
-        !isRateLimitError(
-          error
-        )
-      ) {
-
-        throw error;
-
-      }
-
-    }
-
-  }
-
-
-  throw new Error(
-
-    `All Twelve Data keys unavailable for ${interval}. ` +
-
-    `${lastError?.message || ""}`
-
+  const day =
+    temp.getUTCDay() || 7;
+
+  temp.setUTCDate(
+    temp.getUTCDate() +
+    4 -
+    day
   );
 
+  const start =
+    new Date(
+      Date.UTC(
+        temp.getUTCFullYear(),
+        0,
+        1
+      )
+    );
+
+  const week =
+    Math.ceil(
+      (
+        (
+          temp -
+          start
+        ) /
+        86400000 +
+        1
+      ) /
+      7
+    );
+
+  return (
+    `${temp.getUTCFullYear()}-W${String(
+      week
+    ).padStart(
+      2,
+      "0"
+    )}`
+  );
 }
 
 
-/* ============================================================
-   TWELVE DATA REQUEST
-============================================================ */
+/* ================================================================
+   TWELVE DATA PARSER
+================================================================ */
 
-async function requestTD({
-
-  key,
-
-  interval,
-
-  outputsize
-
-}) {
-
-
-  const url =
-
-    `${TD_BASE}` +
-
-    `?symbol=${encodeURIComponent(
-      SYMBOL
-    )}` +
-
-    `&interval=${encodeURIComponent(
-      interval
-    )}` +
-
-    `&outputsize=${encodeURIComponent(
-      outputsize
-    )}` +
-
-    `&timezone=UTC` +
-
-    `&format=JSON` +
-
-    `&apikey=${encodeURIComponent(
-      key
-    )}`;
-
-
-  const response =
-    await fetch(
-
-      url,
-
-      {
-
-        cache:
-          "no-store",
-
-        headers: {
-
-          Accept:
-            "application/json"
-
-        }
-
-      }
-
-    );
-
-
-  const text =
-    await response.text();
-
-
-  let json;
-
-
-  try {
-
-    json =
-      JSON.parse(
-        text
-      );
-
-  } catch {
-
-    throw new Error(
-      `Twelve Data returned invalid JSON for ${interval}.`
-    );
-
-  }
-
+function parseTDValues(
+  json
+) {
 
   if (
-    response.status ===
-    429
-  ) {
-
-    const error =
-      new Error(
-        json.message ||
-        "Twelve Data rate limit reached."
-      );
-
-    error.rateLimited =
-      true;
-
-    throw error;
-
-  }
-
-
-  if (
-    !response.ok
-  ) {
-
-    throw new Error(
-
-      `Twelve Data HTTP ${response.status}: ` +
-
-      `${json.message || text.slice(0,150)}`
-
-    );
-
-  }
-
-
-  if (
-    json.status ===
-    "error"
-  ) {
-
-    const error =
-      new Error(
-
-        json.message ||
-        "Twelve Data request failed."
-
-      );
-
-
-    if (
-      looksRateLimited(
-        json.message
-      )
-    ) {
-
-      error.rateLimited =
-        true;
-
-    }
-
-
-    throw error;
-
-  }
-
-
-  if (
+    !json ||
     !Array.isArray(
       json.values
     )
   ) {
 
     throw new Error(
-
-      `Twelve Data returned no ${interval} values.`
-
+      json?.message ||
+      "Twelve Data returned no candle values."
     );
-
   }
-
-
-  return json.values
-
-    .map(
-      row => ({
-
-        time:
-          parseTDTime(
-            row.datetime
-          ),
-
-        open:
-          Number(
-            row.open
-          ),
-
-        high:
-          Number(
-            row.high
-          ),
-
-        low:
-          Number(
-            row.low
-          ),
-
-        close:
-          Number(
-            row.close
-          ),
-
-        volume:
-          Number(
-            row.volume
-          ) ||
-          0
-
-      })
-    )
-
-    .filter(
-      bar =>
-
-        Number.isFinite(
-          bar.time.getTime()
-        )
-
-        &&
-
-        Number.isFinite(
-          bar.open
-        )
-
-        &&
-
-        Number.isFinite(
-          bar.high
-        )
-
-        &&
-
-        Number.isFinite(
-          bar.low
-        )
-
-        &&
-
-        Number.isFinite(
-          bar.close
-        )
-
-    )
-
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.time -
-        b.time
-    );
-
-}
-
-
-/* ============================================================
-   RATE LIMIT DETECTION
-============================================================ */
-
-function isRateLimitError(
-  error
-) {
-
-  return (
-
-    error?.rateLimited ===
-    true
-
-    ||
-
-    looksRateLimited(
-      error?.message
-    )
-
-  );
-
-}
-
-
-function looksRateLimited(
-  value
-) {
-
-  const text =
-    String(
-      value ||
-      ""
-    )
-      .toLowerCase();
 
 
   return (
+    json.values
 
-    text.includes(
-      "rate limit"
-    )
+      .map(
+        item => {
 
-    ||
+          const raw =
+            String(
+              item.datetime
+            );
 
-    text.includes(
-      "credits"
-    )
+          const formatted =
+            raw.includes("T")
+              ? raw
+              : raw.replace(
+                  " ",
+                  "T"
+                );
 
-    ||
-
-    text.includes(
-      "quota"
-    )
-
-    ||
-
-    text.includes(
-      "too many requests"
-    )
-
-  );
-
-}
+          const timestamp =
+            Date.parse(
+              formatted.endsWith("Z")
+                ? formatted
+                : `${formatted}Z`
+            );
 
 
-/* ============================================================
-   TIME PARSER
-============================================================ */
+          return {
 
-function parseTDTime(
-  value
-) {
+            time:
+              timestamp,
 
-  if (
-    !value
-  ) {
+            open:
+              Number(
+                item.open
+              ),
 
-    return new Date(
-      NaN
-    );
+            high:
+              Number(
+                item.high
+              ),
 
-  }
+            low:
+              Number(
+                item.low
+              ),
 
+            close:
+              Number(
+                item.close
+              ),
 
-  if (
-    value.includes(
-      "T"
-    )
-  ) {
-
-    return new Date(
-
-      value.endsWith(
-        "Z"
-      )
-
-        ?
-
-        value
-
-        :
-
-        `${value}Z`
-
-    );
-
-  }
-
-
-  return new Date(
-
-    `${value.replace(
-      " ",
-      "T"
-    )}Z`
-
-  );
-
-}
-
-
-/* ============================================================
-   RESAMPLE
-============================================================ */
-
-function resample(
-  bars,
-  minutes
-) {
-
-
-  const period =
-    minutes *
-    60_000;
-
-
-  const map =
-    new Map();
-
-
-  for (
-    const bar of bars
-  ) {
-
-
-    const bucket =
-
-      Math.floor(
-
-        bar.time.getTime()
-
-        /
-
-        period
-
-      )
-
-      *
-
-      period;
-
-
-    if (
-      !map.has(
-        bucket
-      )
-    ) {
-
-      map.set(
-        bucket,
-        {
-
-          time:
-            new Date(
-              bucket
-            ),
-
-          open:
-            bar.open,
-
-          high:
-            bar.high,
-
-          low:
-            bar.low,
-
-          close:
-            bar.close,
-
-          volume:
-            bar.volume
-
+            volume:
+              Number.isFinite(
+                Number(
+                  item.volume
+                )
+              )
+                ? Number(
+                    item.volume
+                  )
+                : 0
+          };
         }
-      );
+      )
 
-    } else {
+      .filter(
+        candle =>
 
+          Number.isFinite(
+            candle.time
+          ) &&
 
-      const current =
-        map.get(
-          bucket
-        );
+          Number.isFinite(
+            candle.open
+          ) &&
 
+          Number.isFinite(
+            candle.high
+          ) &&
 
-      current.high =
-        Math.max(
+          Number.isFinite(
+            candle.low
+          ) &&
 
-          current.high,
+          Number.isFinite(
+            candle.close
+          )
+      )
 
-          bar.high
-
-        );
-
-
-      current.low =
-        Math.min(
-
-          current.low,
-
-          bar.low
-
-        );
-
-
-      current.close =
-        bar.close;
-
-
-      current.volume +=
-        bar.volume;
-
-    }
-
-  }
-
-
-  return [
-
-    ...map.values()
-
-  ].sort(
-    (
-      a,
-      b
-    ) =>
-      a.time -
-      b.time
+      .sort(
+        (a, b) =>
+          a.time -
+          b.time
+      )
   );
-
 }
 
 
-/* ============================================================
-   EMA
-============================================================ */
+/* ================================================================
+   TWELVE DATA FETCH
+================================================================ */
 
-function emaSeries(
+async function tdSeries({
+  symbol,
+  interval,
+  outputsize,
+  apiKey
+}) {
+
+  if (!apiKey) {
+
+    throw new Error(
+      "Missing Twelve Data API key."
+    );
+  }
+
+
+  const url =
+
+    `${TD_BASE}/time_series` +
+
+    `?symbol=${encodeURIComponent(
+      symbol
+    )}` +
+
+    `&interval=${encodeURIComponent(
+      interval
+    )}` +
+
+    `&outputsize=${outputsize}` +
+
+    `&order=asc` +
+
+    `&timezone=UTC` +
+
+    `&apikey=${encodeURIComponent(
+      apiKey
+    )}`;
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        headers: {
+          "User-Agent":
+            "MKAYFX-GOLD-V8"
+        }
+      }
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      `Twelve Data HTTP ${response.status}`
+    );
+  }
+
+
+  const json =
+    await response.json();
+
+
+  if (
+    json.status === "error"
+  ) {
+
+    throw new Error(
+      json.message ||
+      "Twelve Data error."
+    );
+  }
+
+
+  return (
+    parseTDValues(
+      json
+    )
+  );
+}
+
+
+async function tdQuote({
+  symbol,
+  apiKey
+}) {
+
+  if (!apiKey) {
+    return null;
+  }
+
+
+  const url =
+
+    `${TD_BASE}/quote` +
+
+    `?symbol=${encodeURIComponent(
+      symbol
+    )}` +
+
+    `&apikey=${encodeURIComponent(
+      apiKey
+    )}`;
+
+
+  const response =
+    await fetch(url);
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      `Twelve Data quote HTTP ${response.status}`
+    );
+  }
+
+
+  const json =
+    await response.json();
+
+
+  if (
+    json.status === "error"
+  ) {
+
+    throw new Error(
+      json.message ||
+      "Twelve Data quote error."
+    );
+  }
+
+
+  return {
+
+    symbol,
+
+    price:
+      safeNumber(
+        json.close ||
+        json.price
+      ),
+
+    previousClose:
+      safeNumber(
+        json.previous_close
+      ),
+
+    change:
+      safeNumber(
+        json.change
+      ),
+
+    percentChange:
+      safeNumber(
+        json.percent_change
+      )
+  };
+}
+
+
+/* ================================================================
+   EMA
+================================================================ */
+
+function ema(
   values,
   period
 ) {
 
-
-  if (
-    !values.length
-  ) {
-
+  if (!values.length) {
     return [];
-
   }
 
 
-  const alpha =
+  const multiplier =
     2 /
     (
       period +
@@ -1879,2367 +734,1923 @@ function emaSeries(
     );
 
 
-  const out = [
-    values[0]
+  let current =
+    values[0];
+
+
+  const output = [];
+
+
+  for (
+    let i = 0;
+    i < values.length;
+    i++
+  ) {
+
+    if (
+      i === 0
+    ) {
+
+      current =
+        values[i];
+
+    } else {
+
+      current =
+        values[i] *
+        multiplier +
+        current *
+        (
+          1 -
+          multiplier
+        );
+    }
+
+
+    output.push(
+      current
+    );
+  }
+
+
+  return output;
+}
+
+
+/* ================================================================
+   ATR
+================================================================ */
+
+function atrSeries(
+  candles,
+  period = 14
+) {
+
+  if (
+    candles.length < 2
+  ) {
+
+    return [];
+  }
+
+
+  const trueRanges = [
+    candles[0].high -
+    candles[0].low
   ];
 
 
   for (
     let i = 1;
-    i <
-      values.length;
+    i < candles.length;
     i++
   ) {
 
+    const candle =
+      candles[i];
 
-    out.push(
+    const previous =
+      candles[i - 1];
 
-      values[i] *
-      alpha
 
-      +
+    trueRanges.push(
 
-      out[
-        i - 1
-      ] *
-      (
-        1 -
-        alpha
+      Math.max(
+
+        candle.high -
+        candle.low,
+
+        Math.abs(
+          candle.high -
+          previous.close
+        ),
+
+        Math.abs(
+          candle.low -
+          previous.close
+        )
       )
-
     );
-
   }
 
 
-  return out;
-
+  return (
+    ema(
+      trueRanges,
+      period
+    )
+  );
 }
 
 
-/* ============================================================
-   RSI
-============================================================ */
-
-function rsiValue(
-  values,
+function atr(
+  candles,
   period = 14
 ) {
 
+  const values =
+    atrSeries(
+      candles,
+      period
+    );
+
+
+  return (
+    values.length
+      ? last(values)
+      : 0
+  );
+}
+
+
+/* ================================================================
+   RSI
+================================================================ */
+
+function rsi(
+  candles,
+  period = 14
+) {
 
   if (
-    values.length <=
-    period
+    candles.length <
+    period + 2
   ) {
 
     return 50;
-
   }
 
 
-  let gain =
-    0;
-
-  let loss =
-    0;
-
-
-  for (
-    let i = 1;
-    i <= period;
-    i++
-  ) {
-
-
-    const change =
-      values[i] -
-      values[
-        i - 1
-      ];
-
-
-    gain +=
-      Math.max(
-        change,
-        0
-      );
-
-
-    loss +=
-      Math.max(
-        -change,
-        0
-      );
-
-  }
-
-
-  let avgGain =
-    gain /
-    period;
-
-
-  let avgLoss =
-    loss /
-    period;
+  let gains = 0;
+  let losses = 0;
 
 
   for (
     let i =
-      period + 1;
+      candles.length -
+      period;
 
     i <
-      values.length;
+      candles.length;
 
     i++
   ) {
 
-
-    const change =
-      values[i] -
-      values[
-        i - 1
-      ];
+    const difference =
+      candles[i].close -
+      candles[i - 1].close;
 
 
-    avgGain =
+    if (
+      difference > 0
+    ) {
 
-      (
-        avgGain *
-        (
-          period -
-          1
-        )
+      gains +=
+        difference;
 
-        +
+    } else {
 
-        Math.max(
-          change,
-          0
-        )
-
-      )
-
-      /
-
-      period;
-
-
-    avgLoss =
-
-      (
-        avgLoss *
-        (
-          period -
-          1
-        )
-
-        +
-
-        Math.max(
-          -change,
-          0
-        )
-
-      )
-
-      /
-
-      period;
-
+      losses +=
+        Math.abs(
+          difference
+        );
+    }
   }
 
 
+  const averageGain =
+    gains /
+    period;
+
+  const averageLoss =
+    losses /
+    period;
+
+
   if (
-    avgLoss ===
-    0
+    averageLoss === 0
   ) {
 
     return 100;
-
   }
 
 
   const rs =
-    avgGain /
-    avgLoss;
+    averageGain /
+    averageLoss;
 
 
   return (
-
-    100
-
-    -
-
+    100 -
     100 /
     (
       1 +
       rs
     )
-
   );
-
 }
 
 
-/* ============================================================
-   ATR
-============================================================ */
+/* ================================================================
+   MACD
+================================================================ */
 
-function atrSeries(
-  bars,
-  period = 14
+function macd(
+  candles
 ) {
 
-
-  const tr =
-    [];
-
-
-  for (
-    let i = 0;
-    i <
-      bars.length;
-    i++
+  if (
+    candles.length < 35
   ) {
 
-
-    if (
-      i ===
-      0
-    ) {
-
-      tr.push(
-
-        bars[i].high -
-        bars[i].low
-
-      );
-
-      continue;
-
-    }
-
-
-    tr.push(
-
-      Math.max(
-
-        bars[i].high -
-        bars[i].low,
-
-        Math.abs(
-
-          bars[i].high -
-          bars[
-            i - 1
-          ].close
-
-        ),
-
-        Math.abs(
-
-          bars[i].low -
-          bars[
-            i - 1
-          ].close
-
-        )
-
-      )
-
-    );
-
+    return {
+      macd: 0,
+      signal: 0,
+      histogram: 0
+    };
   }
 
 
-  return emaSeries(
-    tr,
-    period
-  );
+  const closes =
+    candles.map(
+      candle =>
+        candle.close
+    );
 
+
+  const fast =
+    ema(
+      closes,
+      12
+    );
+
+  const slow =
+    ema(
+      closes,
+      26
+    );
+
+
+  const macdLine =
+    closes.map(
+      (_, index) =>
+        fast[index] -
+        slow[index]
+    );
+
+
+  const signal =
+    ema(
+      macdLine,
+      9
+    );
+
+
+  return {
+
+    macd:
+      last(
+        macdLine
+      ),
+
+    signal:
+      last(
+        signal
+      ),
+
+    histogram:
+      last(
+        macdLine
+      ) -
+      last(
+        signal
+      )
+  };
 }
 
 
-/* ============================================================
-   PIVOTS
-============================================================ */
+/* ================================================================
+   ROC
+================================================================ */
 
-function pivots(
-  bars,
-  radius = 3,
-  lookback = 200
+function roc(
+  candles,
+  lookback = 10
 ) {
 
+  if (
+    candles.length <=
+    lookback
+  ) {
 
-  const highs =
-    [];
-
-  const lows =
-    [];
+    return 0;
+  }
 
 
-  const start =
-    Math.max(
+  const current =
+    last(
+      candles
+    ).close;
 
-      radius,
+  const previous =
+    candles[
+      candles.length -
+      lookback -
+      1
+    ].close;
 
-      bars.length -
-      lookback
 
+  if (!previous) {
+    return 0;
+  }
+
+
+  return (
+    (
+      current -
+      previous
+    ) /
+    previous *
+    100
+  );
+}
+
+
+/* ================================================================
+   VWAP PROXY
+================================================================ */
+
+function vwapProxy(
+  candles,
+  lookback = 150
+) {
+
+  const data =
+    candles.slice(
+      -lookback
     );
+
+
+  if (!data.length) {
+    return 0;
+  }
+
+
+  let pv = 0;
+  let volume = 0;
+
+
+  for (
+    const candle
+    of data
+  ) {
+
+    const typical =
+      (
+        candle.high +
+        candle.low +
+        candle.close
+      ) /
+      3;
+
+
+    const activity =
+      candle.volume > 0
+        ? candle.volume
+        : Math.max(
+            candle.high -
+            candle.low,
+            0.0001
+          );
+
+
+    pv +=
+      typical *
+      activity;
+
+    volume +=
+      activity;
+  }
+
+
+  return (
+    volume > 0
+      ? pv /
+        volume
+      : last(
+          data
+        ).close
+  );
+}
+
+
+/* ================================================================
+   PIVOT DETECTION
+================================================================ */
+
+function pivotHigh(
+  candles,
+  index,
+  left = 3,
+  right = 3
+) {
+
+  if (
+    index < left ||
+    index + right >=
+    candles.length
+  ) {
+
+    return false;
+  }
+
+
+  const level =
+    candles[index].high;
 
 
   for (
     let i =
-      start;
+      index -
+      left;
 
-    i <
-      bars.length -
-      radius;
+    i <=
+      index +
+      right;
 
     i++
   ) {
 
-
-    let highPivot =
-      true;
-
-    let lowPivot =
-      true;
-
-
-    for (
-      let j = 1;
-      j <= radius;
-      j++
+    if (
+      i === index
     ) {
 
-
-      if (
-
-        bars[i].high <=
-        bars[
-          i - j
-        ].high
-
-        ||
-
-        bars[i].high <
-        bars[
-          i + j
-        ].high
-
-      ) {
-
-        highPivot =
-          false;
-
-      }
-
-
-      if (
-
-        bars[i].low >=
-        bars[
-          i - j
-        ].low
-
-        ||
-
-        bars[i].low >
-        bars[
-          i + j
-        ].low
-
-      ) {
-
-        lowPivot =
-          false;
-
-      }
-
+      continue;
     }
 
 
     if (
-      highPivot
+      candles[i].high >=
+      level
+    ) {
+
+      return false;
+    }
+  }
+
+
+  return true;
+}
+
+
+function pivotLow(
+  candles,
+  index,
+  left = 3,
+  right = 3
+) {
+
+  if (
+    index < left ||
+    index + right >=
+    candles.length
+  ) {
+
+    return false;
+  }
+
+
+  const level =
+    candles[index].low;
+
+
+  for (
+    let i =
+      index -
+      left;
+
+    i <=
+      index +
+      right;
+
+    i++
+  ) {
+
+    if (
+      i === index
+    ) {
+
+      continue;
+    }
+
+
+    if (
+      candles[i].low <=
+      level
+    ) {
+
+      return false;
+    }
+  }
+
+
+  return true;
+}
+
+
+/* ================================================================
+   SWINGS
+================================================================ */
+
+function swings(
+  candles,
+  lookback = 180
+) {
+
+  const data =
+    candles.slice(
+      -lookback
+    );
+
+
+  const highs = [];
+  const lows = [];
+
+
+  for (
+    let i = 3;
+    i <
+      data.length - 3;
+    i++
+  ) {
+
+    if (
+      pivotHigh(
+        data,
+        i
+      )
     ) {
 
       highs.push({
 
-        price:
-          bars[i].high,
-
         time:
-          bars[i].time
+          data[i].time,
 
+        price:
+          data[i].high
       });
-
     }
 
 
     if (
-      lowPivot
+      pivotLow(
+        data,
+        i
+      )
     ) {
 
       lows.push({
 
-        price:
-          bars[i].low,
-
         time:
-          bars[i].time
+          data[i].time,
 
+        price:
+          data[i].low
       });
-
     }
-
   }
 
 
   return {
-
     highs,
-
     lows
-
   };
-
 }
 
 
-/* ============================================================
-   STRUCTURE
-============================================================ */
+/* ================================================================
+   MARKET STRUCTURE
+================================================================ */
 
-function marketStructure(
-  bars
+function structure(
+  candles
 ) {
 
-
-  const swings =
-    pivots(
-      bars
-    );
-
-
-  const h1 =
-    swings.highs.at(-1);
-
-  const h2 =
-    swings.highs.at(-2);
-
-  const l1 =
-    swings.lows.at(-1);
-
-  const l2 =
-    swings.lows.at(-2);
-
-
-  let bias =
-    "NEUTRAL";
-
-
   if (
-    h1 &&
-    h2 &&
-    l1 &&
-    l2
+    candles.length < 55
   ) {
 
+    return {
 
-    if (
+      bias:
+        "NEUTRAL",
 
-      h1.price >
-      h2.price
+      score:
+        0,
 
-      &&
-
-      l1.price >
-      l2.price
-
-    ) {
-
-      bias =
-        "BULLISH";
-
-    }
-
-
-    else if (
-
-      h1.price <
-      h2.price
-
-      &&
-
-      l1.price <
-      l2.price
-
-    ) {
-
-      bias =
-        "BEARISH";
-
-    }
-
-  }
-
-
-  const close =
-    bars.at(-1)
-      ?.close;
-
-
-  let event =
-    "NONE";
-
-
-  if (
-
-    h1
-
-    &&
-
-    close >
-    h1.price
-
-  ) {
-
-    event =
-
-      bias ===
-      "BEARISH"
-
-        ?
-
-        "CHOCH_UP"
-
-        :
-
-        "BOS_UP";
-
-  }
-
-
-  if (
-
-    l1
-
-    &&
-
-    close <
-    l1.price
-
-  ) {
-
-    event =
-
-      bias ===
-      "BULLISH"
-
-        ?
-
-        "CHOCH_DOWN"
-
-        :
-
-        "BOS_DOWN";
-
-  }
-
-
-  return {
-
-    bias,
-
-    event,
-
-    swingHigh:
-      h1
-        ?
-        round(
-          h1.price,
-          3
-        )
-        :
+      ema20:
         null,
 
-    swingLow:
-      l1
-        ?
-        round(
-          l1.price,
-          3
-        )
-        :
+      ema50:
+        null,
+
+      bos:
+        null,
+
+      choch:
+        null,
+
+      lastSwingHigh:
+        null,
+
+      lastSwingLow:
         null
-
-  };
-
-}
-
-
-/* ============================================================
-   TIMEFRAME STATE
-============================================================ */
-
-function timeframeState(
-  bars
-) {
+    };
+  }
 
 
   const closes =
-    bars.map(
-      bar =>
-        bar.close
+    candles.map(
+      candle =>
+        candle.close
     );
 
 
-  const e20 =
-    emaSeries(
-      closes,
-      20
-    );
-
-
-  const e50 =
-    emaSeries(
-      closes,
-      50
-    );
-
-
-  const e200 =
-    emaSeries(
-
-      closes,
-
-      Math.min(
-        200,
-        Math.max(
-          20,
-          closes.length - 1
-        )
+  const ema20 =
+    last(
+      ema(
+        closes,
+        20
       )
-
     );
 
 
-  const rsi =
-    rsiValue(
-      closes,
-      14
+  const ema50 =
+    last(
+      ema(
+        closes,
+        50
+      )
     );
 
 
-  const structure =
-    marketStructure(
-      bars
+  const price =
+    last(
+      candles
+    ).close;
+
+
+  const swingData =
+    swings(
+      candles,
+      140
     );
 
 
-  let score =
-    0;
+  const swingHigh =
+    swingData.highs.length
+      ? last(
+          swingData.highs
+        )
+      : null;
 
 
-  score +=
-
-    closes.at(-1) >
-    lastFinite(
-      e20
-    )
-
-      ?
-
-      15
-
-      :
-
-      -15;
+  const swingLow =
+    swingData.lows.length
+      ? last(
+          swingData.lows
+        )
+      : null;
 
 
-  score +=
-
-    lastFinite(
-      e20
-    ) >
-    lastFinite(
-      e50
-    )
-
-      ?
-
-      20
-
-      :
-
-      -20;
-
-
-  score +=
-
-    lastFinite(
-      e50
-    ) >
-    lastFinite(
-      e200
-    )
-
-      ?
-
-      20
-
-      :
-
-      -20;
+  let score = 0;
 
 
   if (
-    rsi >
-    55
+    price >
+    ema20
   ) {
 
-    score +=
-      12;
+    score += 1;
 
+  } else {
+
+    score -= 1;
   }
 
 
   if (
-    rsi <
-    45
+    ema20 >
+    ema50
   ) {
 
-    score -=
-      12;
+    score += 1;
 
+  } else {
+
+    score -= 1;
   }
 
 
-  if (
-    structure.bias ===
-    "BULLISH"
-  ) {
-
-    score +=
-      25;
-
-  }
-
-
-  if (
-    structure.bias ===
-    "BEARISH"
-  ) {
-
-    score -=
-      25;
-
-  }
-
-
-  score =
-    clamp(
-      score,
-      -100,
-      100
+  const recent =
+    candles.slice(
+      -10
     );
+
+  const previous =
+    candles.slice(
+      -20,
+      -10
+    );
+
+
+  const recentHigh =
+    Math.max(
+      ...recent.map(
+        candle =>
+          candle.high
+      )
+    );
+
+
+  const olderHigh =
+    Math.max(
+      ...previous.map(
+        candle =>
+          candle.high
+      )
+    );
+
+
+  const recentLow =
+    Math.min(
+      ...recent.map(
+        candle =>
+          candle.low
+      )
+    );
+
+
+  const olderLow =
+    Math.min(
+      ...previous.map(
+        candle =>
+          candle.low
+      )
+    );
+
+
+  if (
+    recentHigh >
+      olderHigh &&
+    recentLow >
+      olderLow
+  ) {
+
+    score += 2;
+  }
+
+
+  if (
+    recentHigh <
+      olderHigh &&
+    recentLow <
+      olderLow
+  ) {
+
+    score -= 2;
+  }
+
+
+  let bos =
+    null;
+
+  let choch =
+    null;
+
+
+  if (
+    swingHigh &&
+    price >
+      swingHigh.price
+  ) {
+
+    bos =
+      "BULLISH BOS";
+  }
+
+
+  if (
+    swingLow &&
+    price <
+      swingLow.price
+  ) {
+
+    bos =
+      "BEARISH BOS";
+  }
+
+
+  if (
+    score <= -1 &&
+    swingHigh &&
+    price >
+      swingHigh.price
+  ) {
+
+    choch =
+      "BULLISH CHOCH";
+  }
+
+
+  if (
+    score >= 1 &&
+    swingLow &&
+    price <
+      swingLow.price
+  ) {
+
+    choch =
+      "BEARISH CHOCH";
+  }
 
 
   return {
 
     bias:
+      score >= 2
+        ? "BULLISH"
+        : score <= -2
+          ? "BEARISH"
+          : "NEUTRAL",
 
-      score >=
-      25
-
-        ?
-
-        "BULLISH"
-
-        :
-
-        score <=
-        -25
-
-          ?
-
-          "BEARISH"
-
-          :
-
-          "NEUTRAL",
-
-    score:
-      round(
-        score,
-        1
-      ),
-
-    rsi:
-      round(
-        rsi,
-        1
-      ),
+    score,
 
     ema20:
       round(
-        lastFinite(
-          e20
-        ),
-        3
+        ema20,
+        2
       ),
 
     ema50:
       round(
-        lastFinite(
-          e50
-        ),
-        3
+        ema50,
+        2
       ),
 
-    ema200:
-      round(
-        lastFinite(
-          e200
-        ),
-        3
-      ),
+    bos,
 
-    atr:
-      round(
+    choch,
 
-        lastFinite(
-          atrSeries(
-            bars,
-            14
+    lastSwingHigh:
+      swingHigh
+        ? {
+            price:
+              round(
+                swingHigh.price,
+                2
+              ),
+
+            time:
+              swingHigh.time
+          }
+        : null,
+
+    lastSwingLow:
+      swingLow
+        ? {
+            price:
+              round(
+                swingLow.price,
+                2
+              ),
+
+            time:
+              swingLow.time
+          }
+        : null
+  };
+}
+
+
+/* ================================================================
+   DISPLACEMENT
+================================================================ */
+
+function displacement(
+  candles
+) {
+
+  if (
+    candles.length < 30
+  ) {
+
+    return {
+
+      active:
+        false,
+
+      direction:
+        null,
+
+      strength:
+        0,
+
+      expansion:
+        0,
+
+      bodyRatio:
+        0
+    };
+  }
+
+
+  const ranges =
+    candles
+      .slice(
+        -25,
+        -1
+      )
+      .map(
+        candle =>
+          candle.high -
+          candle.low
+      );
+
+
+  const averageRange =
+    mean(
+      ranges
+    );
+
+
+  const candle =
+    last(
+      candles
+    );
+
+
+  const range =
+    Math.max(
+      candle.high -
+      candle.low,
+      0.00001
+    );
+
+
+  const body =
+    Math.abs(
+      candle.close -
+      candle.open
+    );
+
+
+  const bodyRatio =
+    body /
+    range;
+
+
+  const expansion =
+    averageRange > 0
+      ? range /
+        averageRange
+      : 0;
+
+
+  const active =
+    expansion >= 1.5 &&
+    bodyRatio >= 0.65;
+
+
+  return {
+
+    active,
+
+    direction:
+      active
+        ? (
+            candle.close >
+            candle.open
+              ? "BULLISH"
+              : "BEARISH"
           )
+        : null,
+
+    expansion:
+      round(
+        expansion,
+        2
+      ),
+
+    bodyRatio:
+      round(
+        bodyRatio,
+        2
+      ),
+
+    strength:
+      round(
+        clamp(
+          expansion *
+          bodyRatio *
+          50,
+          0,
+          100
         ),
-
-        3
-
-      ),
-
-    structure
-
+        1
+      )
   };
-
 }
 
 
-/* ============================================================
-   TIMEZONE
-============================================================ */
+/* ================================================================
+   SESSION DEFINITIONS
+================================================================ */
 
-function zoneParts(
-  date,
-  timezone
+const SESSION_DEFS = {
+
+  ASIA: {
+    start: 0,
+    end: 7
+  },
+
+  LONDON: {
+    start: 7,
+    end: 16
+  },
+
+  NEW_YORK: {
+    start: 12,
+    end: 21
+  }
+};
+
+
+/* ================================================================
+   SESSION RANGE
+================================================================ */
+
+function sessionRange(
+  candles,
+  day,
+  definition
 ) {
 
+  const data =
+    candles.filter(
+      candle => {
 
-  const parts =
-    new Intl.DateTimeFormat(
+        if (
+          isoDay(
+            candle.time
+          ) !== day
+        ) {
 
-      "en-CA",
+          return false;
+        }
 
-      {
 
-        timeZone:
-          timezone,
+        const hour =
+          utcHour(
+            candle.time
+          );
 
-        year:
-          "numeric",
 
-        month:
-          "2-digit",
-
-        day:
-          "2-digit",
-
-        hour:
-          "2-digit",
-
-        minute:
-          "2-digit",
-
-        weekday:
-          "short",
-
-        hourCycle:
-          "h23"
-
+        return (
+          hour >=
+            definition.start &&
+          hour <
+            definition.end
+        );
       }
-
-    )
-      .formatToParts(
-        date
-      );
-
-
-  const object =
-    {};
-
-
-  for (
-    const part of parts
-  ) {
-
-    if (
-      part.type !==
-      "literal"
-    ) {
-
-      object[
-        part.type
-      ] =
-        part.value;
-
-    }
-
-  }
-
-
-  const weekdays = {
-
-    Sun: 0,
-
-    Mon: 1,
-
-    Tue: 2,
-
-    Wed: 3,
-
-    Thu: 4,
-
-    Fri: 5,
-
-    Sat: 6
-
-  };
-
-
-  return {
-
-    year:
-      Number(
-        object.year
-      ),
-
-    month:
-      Number(
-        object.month
-      ),
-
-    day:
-      Number(
-        object.day
-      ),
-
-    hour:
-      Number(
-        object.hour
-      ),
-
-    minute:
-      Number(
-        object.minute
-      ),
-
-    weekday:
-      weekdays[
-        object.weekday
-      ]
-
-  };
-
-}
-
-
-function dateKeyFromParts(
-  p
-) {
-
-  return (
-
-    `${p.year}-` +
-
-    `${pad(p.month)}-` +
-
-    `${pad(p.day)}`
-
-  );
-
-}
-
-
-/* ============================================================
-   SESSIONS
-============================================================ */
-
-function buildSessions(
-  bars
-) {
-
-
-  const now =
-    new Date();
-
-
-  return SESSION_DEFS.map(
-    definition => {
-
-
-      const range =
-        latestSessionRange(
-
-          bars,
-
-          definition
-
-        );
-
-
-      const active =
-        isSessionOpen(
-
-          now,
-
-          definition
-
-        );
-
-
-      const transition =
-        nextSessionTransition(
-
-          now,
-
-          definition
-
-        );
-
-
-      return {
-
-        id:
-          definition.id,
-
-        name:
-          definition.name,
-
-        short:
-          definition.short,
-
-        zone:
-          definition.zone,
-
-        active,
-
-        phase:
-          getSessionPhase(
-
-            now,
-
-            definition
-
-          ),
-
-        openLocal:
-          minuteLabel(
-            definition.open
-          ),
-
-        closeLocal:
-          minuteLabel(
-            definition.close
-          ),
-
-        nextEvent:
-          transition.type,
-
-        nextEventAt:
-          transition.time
-            .toISOString(),
-
-        range
-
-      };
-
-    }
-  );
-
-}
-
-
-function isSessionOpen(
-  date,
-  definition
-) {
-
-
-  const p =
-    zoneParts(
-
-      date,
-
-      definition.zone
-
     );
 
 
-  const minute =
-
-    p.hour *
-    60
-
-    +
-
-    p.minute;
-
-
-  return (
-
-    p.weekday >=
-    1
-
-    &&
-
-    p.weekday <=
-    5
-
-    &&
-
-    minute >=
-    definition.open
-
-    &&
-
-    minute <
-    definition.close
-
-  );
-
-}
-
-
-function getSessionPhase(
-  date,
-  definition
-) {
-
-
-  const p =
-    zoneParts(
-
-      date,
-
-      definition.zone
-
-    );
-
-
-  const minute =
-
-    p.hour *
-    60
-
-    +
-
-    p.minute;
-
-
-  if (
-    isSessionOpen(
-      date,
-      definition
-    )
-  ) {
-
-
-    const elapsed =
-      minute -
-      definition.open;
-
-
-    if (
-      elapsed <=
-      90
-    ) {
-
-      return "OPENING LIQUIDITY WINDOW";
-
-    }
-
-
-    if (
-      definition.close -
-      minute <=
-      60
-    ) {
-
-      return "CLOSING LIQUIDITY WINDOW";
-
-    }
-
-
-    return "MID SESSION";
-
-  }
-
-
-  if (
-
-    minute <
-    definition.open
-
-    &&
-
-    definition.open -
-    minute <=
-    60
-
-  ) {
-
-    return "PRE-OPEN";
-
-  }
-
-
-  return "CLOSED";
-
-}
-
-
-function nextSessionTransition(
-  now,
-  definition
-) {
-
-
-  let oldState =
-    isSessionOpen(
-
-      now,
-
-      definition
-
-    );
-
-
-  for (
-    let i = 1;
-    i <= 10080;
-    i++
-  ) {
-
-
-    const future =
-      new Date(
-
-        now.getTime()
-
-        +
-
-        i *
-        60_000
-
-      );
-
-
-    const state =
-      isSessionOpen(
-
-        future,
-
-        definition
-
-      );
-
-
-    if (
-      state !==
-      oldState
-    ) {
-
-      return {
-
-        type:
-          state
-            ?
-            "OPEN"
-            :
-            "CLOSE",
-
-        time:
-          future
-
-      };
-
-    }
-
-
-    oldState =
-      state;
-
+  if (!data.length) {
+    return null;
   }
 
 
   return {
 
-    type:
-      "UNKNOWN",
+    high:
+      Math.max(
+        ...data.map(
+          candle =>
+            candle.high
+        )
+      ),
 
-    time:
-      new Date(
+    low:
+      Math.min(
+        ...data.map(
+          candle =>
+            candle.low
+        )
+      ),
 
-        now.getTime()
+    open:
+      data[0].open,
 
-        +
+    close:
+      last(
+        data
+      ).close,
 
-        86_400_000
+    startTime:
+      data[0].time,
 
-      )
+    endTime:
+      last(
+        data
+      ).time,
 
+    bars:
+      data.length
   };
-
 }
 
 
-function latestSessionRange(
-  bars,
-  definition
+/* ================================================================
+   CURRENT SESSION LEVELS
+================================================================ */
+
+function currentSessions(
+  candles
 ) {
 
-
-  const groups =
-    new Map();
-
-
-  for (
-    const bar of bars
-  ) {
-
-
-    const p =
-      zoneParts(
-
-        bar.time,
-
-        definition.zone
-
-      );
-
-
-    const minute =
-
-      p.hour *
-      60
-
-      +
-
-      p.minute;
-
-
-    if (
-
-      minute <
-      definition.open
-
-      ||
-
-      minute >=
-      definition.close
-
-    ) {
-
-      continue;
-
-    }
-
-
-    const key =
-      dateKeyFromParts(
-        p
-      );
-
-
-    if (
-      !groups.has(
-        key
-      )
-    ) {
-
-      groups.set(
-        key,
-        []
-      );
-
-    }
-
-
-    groups
-      .get(
-        key
-      )
-      .push(
-        bar
-      );
-
+  if (!candles.length) {
+    return {};
   }
 
 
-  const key =
+  const day =
+    isoDay(
+      last(
+        candles
+      ).time
+    );
 
-    [
-      ...groups.keys()
+
+  const result = {};
+
+
+  for (
+    const [
+      name,
+      definition
     ]
-      .sort()
-      .at(-1);
+    of
+    Object.entries(
+      SESSION_DEFS
+    )
+  ) {
+
+    const range =
+      sessionRange(
+        candles,
+        day,
+        definition
+      );
+
+
+    result[name] =
+      range
+        ? {
+
+            high:
+              round(
+                range.high,
+                2
+              ),
+
+            low:
+              round(
+                range.low,
+                2
+              ),
+
+            open:
+              round(
+                range.open,
+                2
+              ),
+
+            close:
+              round(
+                range.close,
+                2
+              ),
+
+            range:
+              round(
+                range.high -
+                range.low,
+                2
+              )
+          }
+        : null;
+  }
+
+
+  return result;
+}
+
+
+/* ================================================================
+   PREVIOUS DAY
+================================================================ */
+
+function previousDayLevels(
+  candles
+) {
+
+  const days =
+    unique(
+      candles.map(
+        candle =>
+          isoDay(
+            candle.time
+          )
+      )
+    );
 
 
   if (
-    !key
+    days.length < 2
   ) {
 
     return null;
-
   }
 
 
-  const rows =
-    groups.get(
-      key
+  const day =
+    days[
+      days.length -
+      2
+    ];
+
+
+  const data =
+    candles.filter(
+      candle =>
+        isoDay(
+          candle.time
+        ) === day
     );
 
 
-  const high =
-    Math.max(
-
-      ...rows.map(
-        row =>
-          row.high
-      )
-
-    );
-
-
-  const low =
-    Math.min(
-
-      ...rows.map(
-        row =>
-          row.low
-      )
-
-    );
+  if (!data.length) {
+    return null;
+  }
 
 
   return {
 
     date:
-      key,
+      day,
 
     high:
       round(
-        high,
-        3
+        Math.max(
+          ...data.map(
+            candle =>
+              candle.high
+          )
+        ),
+        2
       ),
 
     low:
       round(
-        low,
-        3
-      ),
-
-    midpoint:
-      round(
-
-        (
-          high +
-          low
-        )
-        /
-        2,
-
-        3
-
-      ),
-
-    range:
-      round(
-        high -
-        low,
-        3
+        Math.min(
+          ...data.map(
+            candle =>
+              candle.low
+          )
+        ),
+        2
       )
-
   };
-
 }
 
 
-/* ============================================================
-   PREVIOUS DAY / WEEK
-============================================================ */
+/* ================================================================
+   PREVIOUS WEEK
+================================================================ */
 
-function buildReferenceLevels(
-  h1
+function previousWeekLevels(
+  candles
 ) {
 
-
-  const days =
-    new Map();
-
-
-  for (
-    const bar of h1
-  ) {
-
-
-    const key =
-      bar.time
-        .toISOString()
-        .slice(
-          0,
-          10
-        );
-
-
-    if (
-      !days.has(
-        key
-      )
-    ) {
-
-      days.set(
-        key,
-        []
-      );
-
-    }
-
-
-    days
-      .get(
-        key
-      )
-      .push(
-        bar
-      );
-
-  }
-
-
-  const today =
-    new Date()
-      .toISOString()
-      .slice(
-        0,
-        10
-      );
-
-
-  const completedDays =
-
-    [
-      ...days.keys()
-    ]
-
-      .filter(
-        key =>
-          key <
-          today
-      )
-
-      .sort();
-
-
-  const previousDayKey =
-    completedDays.at(-1);
-
-
-  let previousDay =
-    null;
-
-
-  if (
-    previousDayKey
-  ) {
-
-
-    const rows =
-      days.get(
-        previousDayKey
-      );
-
-
-    const high =
-      Math.max(
-
-        ...rows.map(
-          x =>
-            x.high
-        )
-
-      );
-
-
-    const low =
-      Math.min(
-
-        ...rows.map(
-          x =>
-            x.low
-        )
-
-      );
-
-
-    previousDay = {
-
-      date:
-        previousDayKey,
-
-      high:
-        round(
-          high,
-          3
-        ),
-
-      low:
-        round(
-          low,
-          3
-        ),
-
-      midpoint:
-        round(
-
-          (
-            high +
-            low
-          )
-          /
-          2,
-
-          3
-
-        )
-
-    };
-
-  }
-
-
   const weeks =
-    new Map();
-
-
-  for (
-    const bar of h1
-  ) {
-
-
-    const key =
-      weekKey(
-        bar.time
-      );
-
-
-    if (
-      !weeks.has(
-        key
+    unique(
+      candles.map(
+        candle =>
+          isoWeekKey(
+            candle.time
+          )
       )
-    ) {
-
-      weeks.set(
-        key,
-        []
-      );
-
-    }
-
-
-    weeks
-      .get(
-        key
-      )
-      .push(
-        bar
-      );
-
-  }
-
-
-  const currentWeek =
-    weekKey(
-      new Date()
     );
 
 
-  const completedWeeks =
-
-    [
-      ...weeks.keys()
-    ]
-
-      .filter(
-        key =>
-          key <
-          currentWeek
-      )
-
-      .sort();
-
-
-  const previousWeekKey =
-    completedWeeks.at(-1);
-
-
-  let previousWeek =
-    null;
-
-
   if (
-    previousWeekKey
+    weeks.length < 2
   ) {
 
-
-    const rows =
-      weeks.get(
-        previousWeekKey
-      );
+    return null;
+  }
 
 
-    previousWeek = {
+  const week =
+    weeks[
+      weeks.length -
+      2
+    ];
 
-      week:
-        previousWeekKey,
 
-      high:
-        round(
+  const data =
+    candles.filter(
+      candle =>
+        isoWeekKey(
+          candle.time
+        ) === week
+    );
 
-          Math.max(
 
-            ...rows.map(
-              x =>
-                x.high
-            )
-
-          ),
-
-          3
-
-        ),
-
-      low:
-        round(
-
-          Math.min(
-
-            ...rows.map(
-              x =>
-                x.low
-            )
-
-          ),
-
-          3
-
-        )
-
-    };
-
+  if (!data.length) {
+    return null;
   }
 
 
   return {
 
-    previousDay,
+    week,
 
-    previousWeek
+    high:
+      round(
+        Math.max(
+          ...data.map(
+            candle =>
+              candle.high
+          )
+        ),
+        2
+      ),
 
+    low:
+      round(
+        Math.min(
+          ...data.map(
+            candle =>
+              candle.low
+          )
+        ),
+        2
+      )
   };
-
 }
 
 
-/* ============================================================
-   EQUAL LIQUIDITY
-============================================================ */
+/* ================================================================
+   EQUAL HIGHS / LOWS
+================================================================ */
 
-function detectEqualLiquidity(
-  bars,
-  atr
+function detectEqualLevels(
+  candles,
+  atrValue
 ) {
 
-
-  const swings =
-    pivots(
-
-      bars,
-
-      2,
-
-      240
-
+  const swingData =
+    swings(
+      candles,
+      220
     );
 
 
   const tolerance =
     Math.max(
-
-      (
-        atr ||
-        1
-      ) *
-      .12,
-
-      .10
-
+      atrValue *
+      0.12,
+      0.05
     );
 
 
-  return {
-
-    highs:
-      clusterLiquidity(
-
-        swings.highs,
-
-        tolerance
-
-      ),
-
-    lows:
-      clusterLiquidity(
-
-        swings.lows,
-
-        tolerance
-
-      )
-
-  };
-
-}
-
-
-function clusterLiquidity(
-  swings,
-  tolerance
-) {
-
-
-  const groups =
-    [];
-
-
-  for (
-    const swing of swings
-  ) {
-
-
-    const found =
-      groups.find(
-
-        group =>
-
-          Math.abs(
-
-            group.price -
-            swing.price
-
-          )
-
-          <=
-          tolerance
-
-      );
-
-
-    if (
-      !found
-    ) {
-
-      groups.push({
-
-        price:
-          swing.price,
-
-        touches:
-          1
-
-      });
-
-      continue;
-
-    }
-
-
-    found.price =
-
-      (
-        found.price *
-        found.touches
-
-        +
-
-        swing.price
-
-      )
-
-      /
-
-      (
-        found.touches +
-        1
-      );
-
-
-    found.touches++;
-
-  }
-
-
-  return groups
-
-    .filter(
-      x =>
-        x.touches >=
-        2
-    )
-
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        b.touches -
-        a.touches
-    )
-
-    .slice(
-      0,
-      6
-    )
-
-    .map(
-      x => ({
-
-        price:
-          round(
-            x.price,
-            3
-          ),
-
-        touches:
-          x.touches
-
-      })
-    );
-
-}
-
-
-/* ============================================================
-   FLOW ENGINE
-============================================================ */
-
-function buildFlowEngine(
-  bars
-) {
-
-
-  const recent =
-    bars.slice(
-      -240
-    );
-
-
-  const ranges =
-    recent.map(
-
-      bar =>
-        Math.max(
-
-          bar.high -
-          bar.low,
-
-          .000001
-
-        )
-
-    );
-
-
-  const medianRange =
-    median(
-      ranges
-    ) ||
-    1;
-
-
-  const hasVolume =
-
-    recent.filter(
-      bar =>
-        bar.volume >
-        0
-    ).length
-
-    >=
-
-    recent.length *
-    .5;
-
-
-  const rows =
-    recent.map(
-      bar => {
-
-
-        const range =
-          Math.max(
-
-            bar.high -
-            bar.low,
-
-            .000001
-
-          );
-
-
-        const body =
-
-          (
-            bar.close -
-            bar.open
-          )
-
-          /
-
-          range;
-
-
-        const closeLocation =
-
-          (
-
-            (
-              bar.close -
-              bar.low
-            )
-
-            -
-
-            (
-              bar.high -
-              bar.close
-            )
-
-          )
-
-          /
-
-          range;
-
-
-        const activity =
-
-          hasVolume
-
-            ?
-
-            Math.max(
-              bar.volume,
-              1
-            )
-
-            :
-
-            clamp(
-
-              range /
-              medianRange,
-
-              .25,
-
-              5
-
-            )
-
-            *
-            100;
-
-
-        const buyShare =
-          clamp(
-
-            .5
-
-            +
-
-            closeLocation *
-            .30
-
-            +
-
-            body *
-            .20,
-
-            .05,
-
-            .95
-
-          );
-
-
-        const buy =
-          activity *
-          buyShare;
-
-
-        const sell =
-          activity -
-          buy;
-
-
-        return {
-
-          time:
-            bar.time,
-
-          close:
-            bar.close,
-
-          activity,
-
-          buy,
-
-          sell,
-
-          delta:
-            buy -
-            sell
-
-        };
-
-      }
-    );
-
-
-  let cvd =
-    0;
-
-
-  for (
-    const row of rows
-  ) {
-
-    cvd +=
-      row.delta;
-
-    row.cvd =
-      cvd;
-
-  }
-
-
-  const activityMedian =
-    median(
-
-      rows.map(
-        x =>
-          x.activity
-      )
-
-    ) ||
-    1;
-
-
-  let upperAbsorption =
-    0;
-
-  let lowerAbsorption =
-    0;
-
-
-  const recentBars =
-    recent.slice(
-      -30
-    );
-
-
-  const recentRows =
-    rows.slice(
-      -30
-    );
+  const highs = [];
+  const lows = [];
 
 
   for (
     let i = 0;
     i <
-      recentBars.length;
+      swingData.highs.length;
     i++
   ) {
 
+    for (
+      let j =
+        i + 1;
 
-    const bar =
-      recentBars[i];
+      j <
+        swingData.highs.length;
 
-
-    const row =
-      recentRows[i];
-
-
-    const range =
-      Math.max(
-
-        bar.high -
-        bar.low,
-
-        .000001
-
-      );
-
-
-    const upperWick =
-
-      bar.high
-
-      -
-
-      Math.max(
-        bar.open,
-        bar.close
-      );
-
-
-    const lowerWick =
-
-      Math.min(
-        bar.open,
-        bar.close
-      )
-
-      -
-
-      bar.low;
-
-
-    if (
-
-      row.activity >
-      activityMedian *
-      1.35
-
-      &&
-
-      row.delta >
-      0
-
-      &&
-
-      upperWick /
-      range >
-      .4
-
+      j++
     ) {
 
-      upperAbsorption++;
+      const first =
+        swingData.highs[i];
 
+      const second =
+        swingData.highs[j];
+
+
+      if (
+        Math.abs(
+          first.price -
+          second.price
+        ) <=
+        tolerance
+      ) {
+
+        highs.push({
+
+          level:
+            (
+              first.price +
+              second.price
+            ) /
+            2,
+
+          firstTime:
+            first.time,
+
+          secondTime:
+            second.time
+        });
+      }
     }
-
-
-    if (
-
-      row.activity >
-      activityMedian *
-      1.35
-
-      &&
-
-      row.delta <
-      0
-
-      &&
-
-      lowerWick /
-      range >
-      .4
-
-    ) {
-
-      lowerAbsorption++;
-
-    }
-
   }
 
 
-  let absorption =
-    "NONE";
-
-
-  if (
-    upperAbsorption >=
-    2
+  for (
+    let i = 0;
+    i <
+      swingData.lows.length;
+    i++
   ) {
 
-    absorption =
-      "BUYING ABSORBED";
+    for (
+      let j =
+        i + 1;
 
-  }
+      j <
+        swingData.lows.length;
+
+      j++
+    ) {
+
+      const first =
+        swingData.lows[i];
+
+      const second =
+        swingData.lows[j];
 
 
-  else if (
-    lowerAbsorption >=
-    2
-  ) {
+      if (
+        Math.abs(
+          first.price -
+          second.price
+        ) <=
+        tolerance
+      ) {
 
-    absorption =
-      "SELLING ABSORBED";
+        lows.push({
 
+          level:
+            (
+              first.price +
+              second.price
+            ) /
+            2,
+
+          firstTime:
+            first.time,
+
+          secondTime:
+            second.time
+        });
+      }
+    }
   }
 
 
   return {
 
-    mode:
+    highs:
+      highs
+        .slice(
+          -8
+        )
+        .map(
+          item => ({
+            ...item,
 
-      hasVolume
+            level:
+              round(
+                item.level,
+                2
+              )
+          })
+        ),
 
-        ?
+    lows:
+      lows
+        .slice(
+          -8
+        )
+        .map(
+          item => ({
+            ...item,
 
-        "OHLCV directional-volume proxy"
+            level:
+              round(
+                item.level,
+                2
+              )
+          })
+        )
+  };
+}
 
-        :
 
-        "Price-activity proxy",
+/* ================================================================
+   FAIR VALUE GAPS
+================================================================ */
 
-    hasProviderVolume:
-      hasVolume,
+function fairValueGaps(
+  candles,
+  maxResults = 14
+) {
 
-    m5:
-      aggregateFlow(
-        rows.slice(-5)
-      ),
+  const gaps = [];
 
-    m15:
-      aggregateFlow(
-        rows.slice(-15)
-      ),
 
-    m30:
-      aggregateFlow(
-        rows.slice(-30)
-      ),
+  for (
+    let i = 2;
+    i <
+      candles.length;
+    i++
+  ) {
 
-    h1:
-      aggregateFlow(
-        rows.slice(-60)
+    const first =
+      candles[
+        i - 2
+      ];
+
+    const third =
+      candles[i];
+
+
+    if (
+      third.low >
+      first.high
+    ) {
+
+      gaps.push({
+
+        direction:
+          "BULLISH",
+
+        low:
+          first.high,
+
+        high:
+          third.low,
+
+        midpoint:
+          (
+            first.high +
+            third.low
+          ) /
+          2,
+
+        time:
+          third.time
+      });
+    }
+
+
+    if (
+      third.high <
+      first.low
+    ) {
+
+      gaps.push({
+
+        direction:
+          "BEARISH",
+
+        low:
+          third.high,
+
+        high:
+          first.low,
+
+        midpoint:
+          (
+            third.high +
+            first.low
+          ) /
+          2,
+
+        time:
+          third.time
+      });
+    }
+  }
+
+
+  return (
+    gaps
+      .slice(
+        -maxResults
+      )
+      .map(
+        gap => ({
+
+          direction:
+            gap.direction,
+
+          low:
+            round(
+              gap.low,
+              2
+            ),
+
+          high:
+            round(
+              gap.high,
+              2
+            ),
+
+          midpoint:
+            round(
+              gap.midpoint,
+              2
+            ),
+
+          time:
+            gap.time
+        })
+      )
+  );
+}
+
+
+/* ================================================================
+   DELTA / CVD / ABSORPTION PROXY
+================================================================ */
+
+function deltaEngine(
+  candles
+) {
+
+  if (!candles.length) {
+
+    return {
+
+      delta:
+        0,
+
+      cvd:
+        0,
+
+      bias:
+        "BALANCED",
+
+      absorption:
+        null,
+
+      divergence:
+        null
+    };
+  }
+
+
+  const data =
+    candles.slice(
+      -120
+    );
+
+
+  let cvd = 0;
+
+  const rows = [];
+
+
+  for (
+    const candle
+    of data
+  ) {
+
+    const range =
+      Math.max(
+        candle.high -
+        candle.low,
+        0.00001
+      );
+
+
+    const body =
+      candle.close -
+      candle.open;
+
+
+    const location =
+      (
+        (
+          candle.close -
+          candle.low
+        ) /
+        range
+      ) *
+      2 -
+      1;
+
+
+    const activity =
+      candle.volume > 0
+        ? candle.volume
+        : range;
+
+
+    const delta =
+      activity *
+      clamp(
+        (
+          body /
+          range
+        ) *
+        0.65 +
+        location *
+        0.35,
+        -1,
+        1
+      );
+
+
+    cvd +=
+      delta;
+
+
+    rows.push({
+
+      time:
+        candle.time,
+
+      price:
+        candle.close,
+
+      delta,
+
+      cvd,
+
+      range,
+
+      bodyRatio:
+        Math.abs(
+          body
+        ) /
+        range
+    });
+  }
+
+
+  const recent =
+    rows.slice(
+      -12
+    );
+
+
+  const recentDelta =
+    recent.reduce(
+      (
+        sum,
+        row
+      ) =>
+        sum +
+        row.delta,
+      0
+    );
+
+
+  const latest =
+    last(
+      rows
+    );
+
+
+  const averageRange =
+    mean(
+      rows
+        .slice(
+          -20,
+          -1
+        )
+        .map(
+          row =>
+            row.range
+        )
+    );
+
+
+  let absorption =
+    null;
+
+
+  if (
+    latest &&
+    averageRange > 0
+  ) {
+
+    const expansion =
+      latest.range /
+      averageRange;
+
+
+    if (
+      expansion >= 1.25 &&
+      latest.bodyRatio <= 0.35
+    ) {
+
+      absorption =
+        latest.delta > 0
+          ? "BUYING ABSORBED"
+          : latest.delta < 0
+            ? "SELLING ABSORBED"
+            : "TWO-WAY ABSORPTION";
+    }
+  }
+
+
+  let divergence =
+    null;
+
+
+  if (
+    rows.length >= 20
+  ) {
+
+    const older =
+      rows[
+        rows.length -
+        15
+      ];
+
+
+    const newer =
+      last(
+        rows
+      );
+
+
+    const priceMove =
+      newer.price -
+      older.price;
+
+
+    const cvdMove =
+      newer.cvd -
+      older.cvd;
+
+
+    if (
+      priceMove > 0 &&
+      cvdMove < 0
+    ) {
+
+      divergence =
+        "BEARISH DELTA DIVERGENCE";
+    }
+
+
+    if (
+      priceMove < 0 &&
+      cvdMove > 0
+    ) {
+
+      divergence =
+        "BULLISH DELTA DIVERGENCE";
+    }
+  }
+
+
+  return {
+
+    delta:
+      round(
+        recentDelta,
+        2
       ),
 
     cvd:
@@ -4248,1488 +2659,484 @@ function buildFlowEngine(
         2
       ),
 
-    divergence:
-      detectFlowDivergence(
-        rows
-      ),
+    bias:
+      recentDelta > 0
+        ? "BUYING PRESSURE"
+        : recentDelta < 0
+          ? "SELLING PRESSURE"
+          : "BALANCED",
 
-    absorption
+    absorption,
 
+    divergence,
+
+    note:
+      "Candle/activity proxy, not centralized bid/ask order flow."
   };
-
 }
 
 
-function aggregateFlow(
-  rows
+/* ================================================================
+   HISTORICAL SESSION SWEEP STATS
+================================================================ */
+
+function historicalSessionStats(
+  candles,
+  sessionName
 ) {
 
-
-  const activity =
-    sum(
-
-      rows.map(
-        x =>
-          x.activity
-      )
-
-    );
-
-
-  const delta =
-    sum(
-
-      rows.map(
-        x =>
-          x.delta
-      )
-
-    );
-
-
-  return {
-
-    activity:
-      round(
-        activity,
-        2
-      ),
-
-    delta:
-      round(
-        delta,
-        2
-      ),
-
-    deltaPct:
-      round(
-
-        activity
-
-          ?
-
-          delta /
-          activity *
-          100
-
-          :
-
-          0,
-
-        1
-
-      )
-
-  };
-
-}
-
-
-function detectFlowDivergence(
-  rows
-) {
-
-
-  if (
-    rows.length <
-    50
-  ) {
-
-    return "NONE";
-
-  }
-
-
-  const older =
-    rows.slice(
-      -50,
-      -25
-    );
-
-
-  const newer =
-    rows.slice(
-      -25
-    );
-
-
-  const priceChange =
-
-    newer.at(-1).close
-
-    -
-
-    older.at(-1).close;
-
-
-  const delta =
-    sum(
-
-      newer.map(
-        x =>
-          x.delta
-      )
-
-    );
-
-
-  if (
-
-    priceChange >
-    0
-
-    &&
-
-    delta <
-    0
-
-  ) {
-
-    return "BEARISH DELTA DIVERGENCE";
-
-  }
-
-
-  if (
-
-    priceChange <
-    0
-
-    &&
-
-    delta >
-    0
-
-  ) {
-
-    return "BULLISH DELTA DIVERGENCE";
-
-  }
-
-
-  return "NONE";
-
-}
-
-
-/* ============================================================
-   VWAP
-============================================================ */
-
-function buildVWAP(
-  bars
-) {
-
-
-  const recent =
-    bars.slice(
-      -500
-    );
-
-
-  const hasVolume =
-
-    recent.filter(
-      x =>
-        x.volume >
-        0
-    ).length
-
-    >=
-
-    recent.length *
-    .5;
-
-
-  const medRange =
-    median(
-
-      recent.map(
-        x =>
-          x.high -
-          x.low
-      )
-
-    ) ||
-    1;
-
-
-  let numerator =
-    0;
-
-  let denominator =
-    0;
-
-
-  for (
-    const bar of recent
-  ) {
-
-
-    const typical =
-
-      (
-        bar.high +
-        bar.low +
-        bar.close
-      )
-
-      /
-      3;
-
-
-    const weight =
-
-      hasVolume
-
-        ?
-
-        Math.max(
-          bar.volume,
-          1
-        )
-
-        :
-
-        Math.max(
-
-          .2,
-
-          (
-            bar.high -
-            bar.low
-          )
-
-          /
-          medRange
-
-        );
-
-
-    numerator +=
-      typical *
-      weight;
-
-
-    denominator +=
-      weight;
-
-  }
-
-
-  return {
-
-    value:
-
-      denominator
-
-        ?
-
-        numerator /
-        denominator
-
-        :
-
-        recent.at(-1)
-          ?.close,
-
-    mode:
-
-      hasVolume
-
-        ?
-
-        "VOLUME WEIGHTED"
-
-        :
-
-        "ACTIVITY WEIGHTED"
-
-  };
-
-}
-
-
-/* ============================================================
-   PROFILE
-============================================================ */
-
-function buildActivityProfile(
-  bars,
-  bins = 40
-) {
-
-
-  const low =
-    Math.min(
-
-      ...bars.map(
-        x =>
-          x.low
-      )
-
-    );
-
-
-  const high =
-    Math.max(
-
-      ...bars.map(
-        x =>
-          x.high
-      )
-
-    );
-
-
-  const step =
-
-    (
-      high -
-      low
-    )
-
-    /
-    bins
-
-    ||
-    1;
-
-
-  const data =
-    Array.from(
-
-      {
-        length:
-          bins
-      },
-
-      (
-        _,
-        index
-      ) => ({
-
-        price:
-
-          low
-
-          +
-
-          (
-            index +
-            .5
-          )
-
-          *
-          step,
-
-        activity:
-          0
-
-      })
-
-    );
-
-
-  for (
-    const bar of bars
-  ) {
-
-
-    const typical =
-
-      (
-        bar.high +
-        bar.low +
-        bar.close
-      )
-
-      /
-      3;
-
-
-    const index =
-      clamp(
-
-        Math.floor(
-
-          (
-            typical -
-            low
-          )
-
-          /
-          step
-
-        ),
-
-        0,
-
-        bins -
-        1
-
-      );
-
-
-    data[
-      index
-    ].activity +=
-
-      bar.volume >
-      0
-
-        ?
-
-        bar.volume
-
-        :
-
-        1;
-
-  }
-
-
-  const highNodes =
-
-    [
-      ...data
-    ]
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          b.activity -
-          a.activity
-      );
-
-
-  const lowNodes =
-
-    [
-      ...data
-    ]
-
-      .filter(
-        x =>
-          x.activity >
-          0
-      )
-
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.activity -
-          b.activity
-      );
-
-
-  return {
-
-    poc:
-      round(
-        highNodes[0]
-          ?.price,
-        3
-      ),
-
-    hvn:
-      highNodes
-
-        .slice(
-          0,
-          3
-        )
-
-        .map(
-          x =>
-            round(
-              x.price,
-              3
-            )
-        ),
-
-    lvn:
-      lowNodes
-
-        .slice(
-          0,
-          3
-        )
-
-        .map(
-          x =>
-            round(
-              x.price,
-              3
-            )
-        )
-
-  };
-
-}
-
-
-/* ============================================================
-   MARKET REGIME
-============================================================ */
-
-function buildMarketRegime({
-
-  structure,
-
-  m5,
-
-  atr5,
-
-  flow
-
-}) {
-
-
-  const biasList = [
-
-    structure.m5.bias,
-
-    structure.m15.bias,
-
-    structure.h1.bias,
-
-    structure.h4.bias
-
-  ];
-
-
-  const bullish =
-    biasList.filter(
-      x =>
-        x ===
-        "BULLISH"
-    ).length;
-
-
-  const bearish =
-    biasList.filter(
-      x =>
-        x ===
-        "BEARISH"
-    ).length;
-
-
-  const trend =
-
-    bullish >=
-    3
-
-      ?
-
-      "BULLISH"
-
-      :
-
-      bearish >=
-      3
-
-        ?
-
-        "BEARISH"
-
-        :
-
-        "MIXED";
-
-
-  const atrHistory =
-    atrSeries(
-      m5,
-      14
-    );
-
-
-  const baseline =
-    median(
-      atrHistory
-    ) ||
-    atr5;
-
-
-  const expansion =
-
-    atr5
-
-    /
-
-    Math.max(
-      baseline,
-      .000001
-    );
-
-
-  const volatility =
-
-    expansion >=
-    1.30
-
-      ?
-
-      "EXPANDING"
-
-      :
-
-      expansion <=
-      .75
-
-        ?
-
-        "COMPRESSED"
-
-        :
-
-        "NORMAL";
-
-
-  const delta =
-    flow.m15
-      ?.deltaPct ||
-    0;
-
-
-  const orderFlow =
-
-    delta >=
-    18
-
-      ?
-
-      "BUY DOMINANT"
-
-      :
-
-      delta <=
-      -18
-
-        ?
-
-        "SELL DOMINANT"
-
-        :
-
-        "BALANCED";
-
-
-  return {
-
-    trend,
-
-    volatility,
-
-    orderFlow,
-
-    atrExpansion:
-      round(
-        expansion,
-        2
-      ),
-
-    label:
-
-      `${trend} · ` +
-
-      `${volatility} · ` +
-
-      `${orderFlow}`
-
-  };
-
-}
-
-
-/* ============================================================
-   HISTORICAL STATISTICS
-============================================================ */
-
-function buildHistoricalStatistics(
-  bars
-) {
-
-
-  const stats = {
-
-    samples:
-      0,
-
-    asiaHigh:
-      [],
-
-    asiaLow:
-      [],
-
-    londonHigh:
-      [],
-
-    londonLow:
-      [],
-
-    nyHigh:
-      [],
-
-    nyLow:
-      []
-
-  };
+  const definition =
+    SESSION_DEFS[
+      sessionName
+    ];
 
 
   const days =
-    splitDaysUTC(
-      bars
+    unique(
+      candles.map(
+        candle =>
+          isoDay(
+            candle.time
+          )
+      )
     );
 
 
+  let samples = 0;
+
+  let highSweeps = 0;
+  let highReturns = 0;
+
+  let lowSweeps = 0;
+  let lowReturns = 0;
+
+
+  const highRaids = [];
+  const lowRaids = [];
+
+
   for (
-    const dayBars of
-    days.values()
+    const day
+    of days
   ) {
+
+    const session =
+      sessionRange(
+        candles,
+        day,
+        definition
+      );
+
+
+    if (!session) {
+      continue;
+    }
+
+
+    const future =
+      candles.filter(
+        candle =>
+
+          candle.time >
+            session.endTime &&
+
+          candle.time <=
+            session.endTime +
+            16 *
+            60 *
+            60 *
+            1000
+      );
 
 
     if (
-      dayBars.length <
-      100
+      future.length < 3
     ) {
 
       continue;
-
     }
 
 
-    stats.samples++;
+    const past =
+      candles.filter(
+        candle =>
+          candle.time <=
+          session.endTime
+      );
 
 
-    studySessionSweep({
-
-      bars:
-        dayBars,
-
-      definition:
-        SESSION_DEFS[0],
-
-      highOutput:
-        stats.asiaHigh,
-
-      lowOutput:
-        stats.asiaLow
-
-    });
+    const localATR =
+      atr(
+        past.slice(
+          -100
+        ),
+        14
+      );
 
 
-    studySessionSweep({
+    if (
+      !localATR ||
+      localATR <= 0
+    ) {
 
-      bars:
-        dayBars,
-
-      definition:
-        SESSION_DEFS[1],
-
-      highOutput:
-        stats.londonHigh,
-
-      lowOutput:
-        stats.londonLow
-
-    });
+      continue;
+    }
 
 
-    studySessionSweep({
-
-      bars:
-        dayBars,
-
-      definition:
-        SESSION_DEFS[2],
-
-      highOutput:
-        stats.nyHigh,
-
-      lowOutput:
-        stats.nyLow
-
-    });
-
-  }
+    samples++;
 
 
-  return {
-
-    samples:
-      stats.samples,
-
-    asiaHigh:
-      summarizeSweepEvents(
-
-        stats.asiaHigh,
-
-        stats.samples
-
-      ),
-
-    asiaLow:
-      summarizeSweepEvents(
-
-        stats.asiaLow,
-
-        stats.samples
-
-      ),
-
-    londonHigh:
-      summarizeSweepEvents(
-
-        stats.londonHigh,
-
-        stats.samples
-
-      ),
-
-    londonLow:
-      summarizeSweepEvents(
-
-        stats.londonLow,
-
-        stats.samples
-
-      ),
-
-    nyHigh:
-      summarizeSweepEvents(
-
-        stats.nyHigh,
-
-        stats.samples
-
-      ),
-
-    nyLow:
-      summarizeSweepEvents(
-
-        stats.nyLow,
-
-        stats.samples
-
-      )
-
-  };
-
-}
+    const futureHigh =
+      Math.max(
+        ...future.map(
+          candle =>
+            candle.high
+        )
+      );
 
 
-function splitDaysUTC(
-  bars
-) {
+    const futureLow =
+      Math.min(
+        ...future.map(
+          candle =>
+            candle.low
+        )
+      );
 
 
-  const map =
-    new Map();
+    if (
+      futureHigh >
+      session.high
+    ) {
+
+      highSweeps++;
 
 
-  for (
-    const bar of bars
-  ) {
-
-
-    const key =
-      bar.time
-        .toISOString()
-        .slice(
+      highRaids.push(
+        clamp(
+          (
+            futureHigh -
+            session.high
+          ) /
+          localATR,
           0,
-          10
+          8
+        )
+      );
+
+
+      const firstSweep =
+        future.findIndex(
+          candle =>
+            candle.high >
+            session.high
         );
 
 
-    if (
-      !map.has(
-        key
-      )
-    ) {
+      if (
+        firstSweep >= 0
+      ) {
 
-      map.set(
-        key,
-        []
-      );
-
-    }
+        const after =
+          future.slice(
+            firstSweep,
+            firstSweep + 18
+          );
 
 
-    map
-      .get(
-        key
-      )
-      .push(
-        bar
-      );
+        if (
+          after.some(
+            candle =>
+              candle.close <
+              session.high
+          )
+        ) {
 
-  }
-
-
-  return map;
-
-}
-
-
-function studySessionSweep({
-
-  bars,
-
-  definition,
-
-  highOutput,
-
-  lowOutput
-
-}) {
-
-
-  const sessionBars =
-    [];
-
-  const afterBars =
-    [];
-
-
-  for (
-    const bar of bars
-  ) {
-
-
-    const p =
-      zoneParts(
-
-        bar.time,
-
-        definition.zone
-
-      );
-
-
-    const minute =
-
-      p.hour *
-      60
-
-      +
-
-      p.minute;
-
-
-    if (
-
-      minute >=
-      definition.open
-
-      &&
-
-      minute <
-      definition.close
-
-    ) {
-
-      sessionBars.push(
-        bar
-      );
-
+          highReturns++;
+        }
+      }
     }
 
 
     if (
-
-      minute >=
-      definition.close
-
-      &&
-
-      minute <
-      Math.min(
-        1440,
-        definition.close +
-        6 * 60
-      )
-
+      futureLow <
+      session.low
     ) {
 
-      afterBars.push(
-        bar
-      );
-
-    }
-
-  }
-
-
-  if (
-
-    sessionBars.length <
-    20
-
-    ||
-
-    afterBars.length <
-    5
-
-  ) {
-
-    return;
-
-  }
-
-
-  const sessionHigh =
-    Math.max(
-
-      ...sessionBars.map(
-        x =>
-          x.high
-      )
-
-    );
-
-
-  const sessionLow =
-    Math.min(
-
-      ...sessionBars.map(
-        x =>
-          x.low
-      )
-
-    );
-
-
-  const atr =
-    lastFinite(
-
-      atrSeries(
-        sessionBars,
-        14
-      )
-
-    ) ||
-    1;
-
-
-  const highSweep =
-    measureSweep({
-
-      bars:
-        afterBars,
-
-      level:
-        sessionHigh,
-
-      side:
-        "HIGH",
-
-      atr
-
-    });
-
-
-  const lowSweep =
-    measureSweep({
-
-      bars:
-        afterBars,
-
-      level:
-        sessionLow,
-
-      side:
-        "LOW",
-
-      atr
-
-    });
-
-
-  if (
-    highSweep
-  ) {
-
-    highOutput.push(
-      highSweep
-    );
-
-  }
-
-
-  if (
-    lowSweep
-  ) {
-
-    lowOutput.push(
-      lowSweep
-    );
-
-  }
-
-}
-
-
-function measureSweep({
-
-  bars,
-
-  level,
-
-  side,
-
-  atr
-
-}) {
-
-
-  const first =
-    bars.findIndex(
-
-      bar =>
-
-        side ===
-        "HIGH"
-
-          ?
-
-          bar.high >
-          level
-
-          :
-
-          bar.low <
-          level
-
-    );
-
-
-  if (
-    first ===
-    -1
-  ) {
-
-    return null;
-
-  }
-
-
-  const sample =
-    bars.slice(
-
-      first,
-
-      first +
-      24
-
-    );
-
-
-  let extension =
-    0;
-
-  let returned =
-    false;
-
-  let returnBars =
-    null;
-
-
-  for (
-    let i = 0;
-    i <
-      sample.length;
-    i++
-  ) {
-
-
-    const bar =
-      sample[i];
-
-
-    const overshoot =
-
-      side ===
-      "HIGH"
-
-        ?
-
-        bar.high -
-        level
-
-        :
-
-        level -
-        bar.low;
-
-
-    extension =
-      Math.max(
-
-        extension,
-
-        overshoot
-
+      lowSweeps++;
+
+
+      lowRaids.push(
+        clamp(
+          (
+            session.low -
+            futureLow
+          ) /
+          localATR,
+          0,
+          8
+        )
       );
 
 
-    if (
-      i >
-      0
-    ) {
-
-
-      const inside =
-
-        side ===
-        "HIGH"
-
-          ?
-
-          bar.close <
-          level
-
-          :
-
-          bar.close >
-          level;
+      const firstSweep =
+        future.findIndex(
+          candle =>
+            candle.low <
+            session.low
+        );
 
 
       if (
-        inside
+        firstSweep >= 0
       ) {
 
-        returned =
-          true;
+        const after =
+          future.slice(
+            firstSweep,
+            firstSweep + 18
+          );
 
-        returnBars =
-          i;
 
-        break;
+        if (
+          after.some(
+            candle =>
+              candle.close >
+              session.low
+          )
+        ) {
 
+          lowReturns++;
+        }
       }
+    }
+  }
 
+
+  function pack(
+    swept,
+    returned,
+    raids
+  ) {
+
+    const sweepRate =
+      samples > 0
+        ? swept /
+          samples *
+          100
+        : 0;
+
+
+    const returnRate =
+      swept > 0
+        ? returned /
+          swept *
+          100
+        : 0;
+
+
+    let confidence =
+      "LOW";
+
+
+    if (
+      samples >= 40
+    ) {
+
+      confidence =
+        "HIGH";
+
+    } else if (
+      samples >= 20
+    ) {
+
+      confidence =
+        "MEDIUM";
     }
 
+
+    return {
+
+      samples,
+
+      swept,
+
+      returned,
+
+      sweepRate:
+        round(
+          sweepRate,
+          1
+        ),
+
+      returnRate:
+        round(
+          returnRate,
+          1
+        ),
+
+      medianRaidATR:
+        round(
+          median(
+            raids
+          ),
+          2
+        ),
+
+      p75RaidATR:
+        round(
+          percentile(
+            raids,
+            0.75
+          ),
+          2
+        ),
+
+      p90RaidATR:
+        round(
+          percentile(
+            raids,
+            0.90
+          ),
+          2
+        ),
+
+      confidence
+    };
   }
 
 
   return {
 
-    overshootAtr:
-
-      extension
-
-      /
-
-      Math.max(
-        atr,
-        .000001
+    high:
+      pack(
+        highSweeps,
+        highReturns,
+        highRaids
       ),
 
-    returned,
-
-    returnBars
-
+    low:
+      pack(
+        lowSweeps,
+        lowReturns,
+        lowRaids
+      )
   };
-
 }
 
 
-function summarizeSweepEvents(
-  events,
-  samples
-) {
-
-
-  const overshoots =
-    events
-
-      .map(
-        x =>
-          x.overshootAtr
-      )
-
-      .filter(
-        Number.isFinite
-      );
-
-
-  const returns =
-    events.filter(
-      x =>
-        x.returned
-    );
-
-
-  const returnBars =
-    returns
-
-      .map(
-        x =>
-          x.returnBars
-      )
-
-      .filter(
-        Number.isFinite
-      );
-
-
-  return {
-
-    sweeps:
-      events.length,
-
-    sweepRatePct:
-      round(
-
-        samples
-
-          ?
-
-          events.length /
-          samples *
-          100
-
-          :
-
-          0,
-
-        1
-
-      ),
-
-    returnRatePct:
-      round(
-
-        events.length
-
-          ?
-
-          returns.length /
-          events.length *
-          100
-
-          :
-
-          0,
-
-        1
-
-      ),
-
-    p25OvershootAtr:
-      round(
-
-        percentile(
-          overshoots,
-          .25
-        ) ??
-        .08,
-
-        3
-
-      ),
-
-    medianOvershootAtr:
-      round(
-
-        percentile(
-          overshoots,
-          .50
-        ) ??
-        .18,
-
-        3
-
-      ),
-
-    p75OvershootAtr:
-      round(
-
-        percentile(
-          overshoots,
-          .75
-        ) ??
-        .35,
-
-        3
-
-      ),
-
-    p90OvershootAtr:
-      round(
-
-        percentile(
-          overshoots,
-          .90
-        ) ??
-        .55,
-
-        3
-
-      ),
-
-    medianReturnBars:
-      round(
-
-        median(
-          returnBars
-        ) ??
-        0,
-
-        1
-
-      )
-
-  };
-
-}
-
-
-/* ============================================================
-   LIQUIDITY POOLS
-============================================================ */
-
-function buildLiquidityPools({
-
-  price,
-
-  sessions,
-
-  reference,
-
-  equalLevels,
-
-  h1Swings,
-
-  atrH1
-
-}) {
-
-
-  const pools =
-    [];
-
-
-  function add(
-
-    name,
-
-    level,
-
-    side,
-
-    type,
-
-    importance
-
+/* ================================================================
+   HISTORICAL LOADER
+================================================================ */
+
+async function loadHistory() {
+
+  if (
+    historyCache.value &&
+    Date.now() -
+      historyCache.time <
+      HISTORY_CACHE_MS
   ) {
 
+    return historyCache.value;
+  }
+
+
+  const candles =
+    await tdSeries({
+
+      symbol:
+        SYMBOL,
+
+      interval:
+        "5min",
+
+      outputsize:
+        MAX_HISTORY,
+
+      apiKey:
+        KEY_3
+    });
+
+
+  const result = {
+
+    candleCount:
+      candles.length,
+
+    firstTimestamp:
+      candles.length
+        ? candles[0].time
+        : null,
+
+    lastTimestamp:
+      candles.length
+        ? last(
+            candles
+          ).time
+        : null,
+
+    statistics: {
+
+      ASIA:
+        historicalSessionStats(
+          candles,
+          "ASIA"
+        ),
+
+      LONDON:
+        historicalSessionStats(
+          candles,
+          "LONDON"
+        ),
+
+      NEW_YORK:
+        historicalSessionStats(
+          candles,
+          "NEW_YORK"
+        )
+    }
+  };
+
+
+  historyCache = {
+
+    time:
+      Date.now(),
+
+    value:
+      result
+  };
+
+
+  return result;
+}
+
+
+/* ================================================================
+   RAW LIQUIDITY LEVELS
+================================================================ */
+
+function buildRawLiquidityLevels({
+  sessions,
+  previousDay,
+  previousWeek,
+  h1,
+  equalLevels,
+  historicalStats
+}) {
+
+  const levels = [];
+
+
+  function add({
+    name,
+    level,
+    side,
+    type,
+    strength,
+    historical = null
+  }) {
 
     if (
       !Number.isFinite(
@@ -5740,11 +3147,10 @@ function buildLiquidityPools({
     ) {
 
       return;
-
     }
 
 
-    pools.push({
+    levels.push({
 
       name,
 
@@ -5757,1896 +3163,859 @@ function buildLiquidityPools({
 
       type,
 
-      importance,
+      baseStrength:
+        strength,
 
-      aliases:
-        []
+      historical
+    });
+  }
 
+
+  if (
+    sessions.ASIA
+  ) {
+
+    add({
+      name:
+        "ASIA HIGH",
+
+      level:
+        sessions.ASIA.high,
+
+      side:
+        "BUY_SIDE",
+
+      type:
+        "SESSION",
+
+      strength:
+        68,
+
+      historical:
+        historicalStats
+          ?.ASIA
+          ?.high
     });
 
-  }
 
+    add({
+      name:
+        "ASIA LOW",
 
-  for (
-    const session of sessions
-  ) {
+      level:
+        sessions.ASIA.low,
 
+      side:
+        "SELL_SIDE",
 
-    if (
-      !session.range
-    ) {
+      type:
+        "SESSION",
 
-      continue;
+      strength:
+        68,
 
-    }
-
-
-    add(
-
-      `${session.short} High`,
-
-      session.range.high,
-
-      "HIGH",
-
-      `${session.id.toUpperCase()}_HIGH`,
-
-      session.id ===
-      "asia"
-        ?
-        1.40
-        :
-        1.28
-
-    );
-
-
-    add(
-
-      `${session.short} Low`,
-
-      session.range.low,
-
-      "LOW",
-
-      `${session.id.toUpperCase()}_LOW`,
-
-      session.id ===
-      "asia"
-        ?
-        1.40
-        :
-        1.28
-
-    );
-
+      historical:
+        historicalStats
+          ?.ASIA
+          ?.low
+    });
   }
 
 
   if (
-    reference.previousDay
+    sessions.LONDON
   ) {
 
+    add({
+      name:
+        "LONDON HIGH",
 
-    add(
+      level:
+        sessions.LONDON.high,
 
-      "Previous Day High",
+      side:
+        "BUY_SIDE",
 
-      reference.previousDay.high,
+      type:
+        "SESSION",
 
-      "HIGH",
+      strength:
+        80,
 
-      "PDH",
+      historical:
+        historicalStats
+          ?.LONDON
+          ?.high
+    });
 
-      1.55
 
-    );
+    add({
+      name:
+        "LONDON LOW",
 
+      level:
+        sessions.LONDON.low,
 
-    add(
+      side:
+        "SELL_SIDE",
 
-      "Previous Day Low",
+      type:
+        "SESSION",
 
-      reference.previousDay.low,
+      strength:
+        80,
 
-      "LOW",
-
-      "PDL",
-
-      1.55
-
-    );
-
+      historical:
+        historicalStats
+          ?.LONDON
+          ?.low
+    });
   }
 
 
   if (
-    reference.previousWeek
+    sessions.NEW_YORK
   ) {
 
+    add({
+      name:
+        "NEW YORK HIGH",
 
-    add(
+      level:
+        sessions.NEW_YORK.high,
 
-      "Previous Week High",
+      side:
+        "BUY_SIDE",
 
-      reference.previousWeek.high,
+      type:
+        "SESSION",
 
-      "HIGH",
+      strength:
+        84,
 
-      "PWH",
+      historical:
+        historicalStats
+          ?.NEW_YORK
+          ?.high
+    });
 
-      1.65
 
+    add({
+      name:
+        "NEW YORK LOW",
+
+      level:
+        sessions.NEW_YORK.low,
+
+      side:
+        "SELL_SIDE",
+
+      type:
+        "SESSION",
+
+      strength:
+        84,
+
+      historical:
+        historicalStats
+          ?.NEW_YORK
+          ?.low
+    });
+  }
+
+
+  if (
+    previousDay
+  ) {
+
+    add({
+      name:
+        "PREVIOUS DAY HIGH",
+
+      level:
+        previousDay.high,
+
+      side:
+        "BUY_SIDE",
+
+      type:
+        "DAILY",
+
+      strength:
+        90
+    });
+
+
+    add({
+      name:
+        "PREVIOUS DAY LOW",
+
+      level:
+        previousDay.low,
+
+      side:
+        "SELL_SIDE",
+
+      type:
+        "DAILY",
+
+      strength:
+        90
+    });
+  }
+
+
+  if (
+    previousWeek
+  ) {
+
+    add({
+      name:
+        "PREVIOUS WEEK HIGH",
+
+      level:
+        previousWeek.high,
+
+      side:
+        "BUY_SIDE",
+
+      type:
+        "WEEKLY",
+
+      strength:
+        96
+    });
+
+
+    add({
+      name:
+        "PREVIOUS WEEK LOW",
+
+      level:
+        previousWeek.low,
+
+      side:
+        "SELL_SIDE",
+
+      type:
+        "WEEKLY",
+
+      strength:
+        96
+    });
+  }
+
+
+  const h1Swings =
+    swings(
+      h1,
+      200
     );
 
 
-    add(
+  for (
+    const swing
+    of
+    h1Swings.highs.slice(
+      -5
+    )
+  ) {
 
-      "Previous Week Low",
+    add({
+      name:
+        "H1 SWING HIGH",
 
-      reference.previousWeek.low,
+      level:
+        swing.price,
 
-      "LOW",
+      side:
+        "BUY_SIDE",
 
-      "PWL",
+      type:
+        "H1_SWING",
 
-      1.65
-
-    );
-
+      strength:
+        76
+    });
   }
 
 
   for (
-    const eq of
+    const swing
+    of
+    h1Swings.lows.slice(
+      -5
+    )
+  ) {
+
+    add({
+      name:
+        "H1 SWING LOW",
+
+      level:
+        swing.price,
+
+      side:
+        "SELL_SIDE",
+
+      type:
+        "H1_SWING",
+
+      strength:
+        76
+    });
+  }
+
+
+  for (
+    const item
+    of
     equalLevels.highs
   ) {
 
+    add({
+      name:
+        "EQUAL HIGHS",
 
-    add(
+      level:
+        item.level,
 
-      `Equal Highs ${eq.touches}x`,
+      side:
+        "BUY_SIDE",
 
-      eq.price,
+      type:
+        "EQUAL_LEVEL",
 
-      "HIGH",
-
-      "EQH",
-
-      1.45
-
-    );
-
+      strength:
+        88
+    });
   }
 
 
   for (
-    const eq of
+    const item
+    of
     equalLevels.lows
   ) {
 
+    add({
+      name:
+        "EQUAL LOWS",
 
-    add(
+      level:
+        item.level,
 
-      `Equal Lows ${eq.touches}x`,
+      side:
+        "SELL_SIDE",
 
-      eq.price,
+      type:
+        "EQUAL_LEVEL",
 
-      "LOW",
-
-      "EQL",
-
-      1.45
-
-    );
-
-  }
-
-
-  for (
-    const swing of
-    h1Swings.highs
-      .slice(-4)
-  ) {
-
-
-    add(
-
-      "H1 Swing High",
-
-      swing.price,
-
-      "HIGH",
-
-      "H1_HIGH",
-
-      1.10
-
-    );
-
-  }
-
-
-  for (
-    const swing of
-    h1Swings.lows
-      .slice(-4)
-  ) {
-
-
-    add(
-
-      "H1 Swing Low",
-
-      swing.price,
-
-      "LOW",
-
-      "H1_LOW",
-
-      1.10
-
-    );
-
-  }
-
-
-  const maxDistance =
-
-    (
-      atrH1 ||
-      10
-    )
-
-    *
-    7;
-
-
-  const filtered =
-    pools.filter(
-
-      pool =>
-
-        Math.abs(
-
-          pool.level -
-          price
-
-        )
-
-        <=
-        maxDistance
-
-    );
-
-
-  return mergeNearbyPools(
-
-    filtered,
-
-    Math.max(
-
-      (
-        atrH1 ||
-        1
-      )
-
-      *
-      .035,
-
-      .08
-
-    )
-
-  );
-
-}
-
-
-function mergeNearbyPools(
-  pools,
-  tolerance
-) {
-
-
-  const result =
-    [];
-
-
-  for (
-    const pool of
-
-    [
-      ...pools
-    ]
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.level -
-          b.level
-      )
-  ) {
-
-
-    const existing =
-      result.find(
-
-        item =>
-
-          item.side ===
-          pool.side
-
-          &&
-
-          Math.abs(
-
-            item.level -
-            pool.level
-
-          )
-
-          <=
-          tolerance
-
-      );
-
-
-    if (
-      !existing
-    ) {
-
-      result.push({
-
-        ...pool
-
-      });
-
-      continue;
-
-    }
-
-
-    existing.aliases.push(
-      pool.name
-    );
-
-
-    existing.level =
-
-      (
-        existing.level +
-        pool.level
-      )
-
-      /
-      2;
-
-
-    existing.importance =
-      Math.max(
-
-        existing.importance,
-
-        pool.importance
-
-      );
-
-
-    if (
-      pool.importance >
-      existing.importance
-    ) {
-
-      existing.name =
-        pool.name;
-
-      existing.type =
-        pool.type;
-
-    }
-
-  }
-
-
-  return result;
-
-}
-
-
-/* ============================================================
-   HISTORICAL MATCH FOR POOL
-============================================================ */
-
-function historyForPool(
-  pool,
-  historical
-) {
-
-
-  const map = {
-
-    ASIA_HIGH:
-      historical.asiaHigh,
-
-    ASIA_LOW:
-      historical.asiaLow,
-
-    LONDON_HIGH:
-      historical.londonHigh,
-
-    LONDON_LOW:
-      historical.londonLow,
-
-    NEWYORK_HIGH:
-      historical.nyHigh,
-
-    NEWYORK_LOW:
-      historical.nyLow
-
-  };
-
-
-  return (
-    map[
-      pool.type
-    ] ||
-    null
-  );
-
-}
-
-
-/* ============================================================
-   SCORE LIQUIDITY POOL
-============================================================ */
-
-function scoreLiquidityPool({
-
-  pool,
-
-  price,
-
-  atr5,
-
-  atr15,
-
-  structure,
-
-  sessions,
-
-  flow,
-
-  regime,
-
-  historical,
-
-  macro,
-
-  profile
-
-}) {
-
-
-  const direction =
-
-    pool.side ===
-    "HIGH"
-
-      ?
-
-      1
-
-      :
-
-      -1;
-
-
-  const distance =
-    Math.abs(
-
-      pool.level -
-      price
-
-    );
-
-
-  const distanceAtr =
-
-    distance
-
-    /
-
-    Math.max(
-      atr15,
-      .000001
-    );
-
-
-  const correctSide =
-
-    pool.side ===
-    "HIGH"
-
-      ?
-
-      pool.level >=
-      price
-
-      :
-
-      pool.level <=
-      price;
-
-
-  /* ========================================================
-     LIQUIDITY STRENGTH
-  ======================================================== */
-
-  let liquidityStrength =
-
-    30
-
-    +
-
-    pool.importance *
-    30;
-
-
-  if (
-    pool.type ===
-    "PDH" ||
-    pool.type ===
-    "PDL"
-  ) {
-
-    liquidityStrength +=
-      8;
-
-  }
-
-
-  if (
-    pool.type ===
-    "PWH" ||
-    pool.type ===
-    "PWL"
-  ) {
-
-    liquidityStrength +=
-      12;
-
-  }
-
-
-  if (
-    pool.type ===
-    "EQH" ||
-    pool.type ===
-    "EQL"
-  ) {
-
-    liquidityStrength +=
-      10;
-
-  }
-
-
-  if (
-    pool.aliases.length
-  ) {
-
-    liquidityStrength +=
-      Math.min(
-
-        12,
-
-        pool.aliases.length *
-        4
-
-      );
-
-  }
-
-
-  const profileNodes = [
-
-    profile.poc,
-
-    ...profile.hvn
-
-  ].filter(
-    Number.isFinite
-  );
-
-
-  if (
-    profileNodes.some(
-
-      node =>
-
-        Math.abs(
-          node -
-          pool.level
-        )
-
-        <=
-        atr5 *
-        .25
-
-    )
-  ) {
-
-    liquidityStrength +=
-      8;
-
-  }
-
-
-  liquidityStrength =
-    clamp(
-
-      liquidityStrength,
-
-      0,
-
-      100
-
-    );
-
-
-  /* ========================================================
-     RAID STRENGTH
-  ======================================================== */
-
-  const mtfPressure =
-
-    structure.m1.score *
-    .10
-
-    +
-
-    structure.m5.score *
-    .25
-
-    +
-
-    structure.m15.score *
-    .35
-
-    +
-
-    structure.h1.score *
-    .20
-
-    +
-
-    structure.h4.score *
-    .10;
-
-
-  const directionalTrend =
-    direction *
-    mtfPressure;
-
-
-  const delta =
-    flow.m15
-      ?.deltaPct ||
-    0;
-
-
-  let raidStrength =
-
-    50 *
-    Math.exp(
-
-      -distanceAtr /
-      1.25
-
-    )
-
-    +
-
-    20;
-
-
-  raidStrength +=
-    clamp(
-
-      directionalTrend /
-      6,
-
-      -15,
-
-      15
-
-    );
-
-
-  raidStrength +=
-    clamp(
-
-      direction *
-      delta /
-      2.8,
-
-      -12,
-
-      12
-
-    );
-
-
-  if (
-    regime.volatility ===
-    "EXPANDING"
-  ) {
-
-    raidStrength +=
-      8;
-
-  }
-
-
-  const activeOpening =
-    sessions.find(
-
-      session =>
-
-        session.phase ===
-        "OPENING LIQUIDITY WINDOW"
-
-    );
-
-
-  if (
-    activeOpening
-  ) {
-
-    raidStrength +=
-
-      activeOpening.id ===
-      "asia"
-
-        ?
-
-        5
-
-        :
-
-        10;
-
-  }
-
-
-  if (
-    !correctSide
-  ) {
-
-    raidStrength -=
-      35;
-
-  }
-
-
-  raidStrength =
-    clamp(
-
-      raidStrength,
-
-      0,
-
-      100
-
-    );
-
-
-  /* ========================================================
-     HISTORICAL MATCH
-  ======================================================== */
-
-  const history =
-    historyForPool(
-
-      pool,
-
-      historical
-
-    );
-
-
-  let historicalMatch =
-    50;
-
-
-  if (
-    history
-  ) {
-
-
-    historicalMatch =
-
-      history.sweepRatePct *
-      .50
-
-      +
-
-      history.returnRatePct *
-      .30
-
-      +
-
-      Math.min(
-
-        20,
-
-        history.sweeps *
-        .7
-
-      );
-
-  }
-
-
-  if (
-    pool.type ===
-    "PDH" ||
-    pool.type ===
-    "PDL" ||
-    pool.type ===
-    "PWH" ||
-    pool.type ===
-    "PWL"
-  ) {
-
-    historicalMatch +=
-      5;
-
-  }
-
-
-  historicalMatch =
-    clamp(
-
-      historicalMatch,
-
-      0,
-
-      100
-
-    );
-
-
-  /* ========================================================
-     MACRO ALIGNMENT
-  ======================================================== */
-
-  const macroScore =
-    Number(
-      macro.score
-    ) ||
-    0;
-
-
-  const macroAlignment =
-
-    clamp(
-
-      50
-
-      +
-
-      direction *
-      macroScore *
-      .35,
-
-      0,
-
-      100
-
-    );
-
-
-  /* ========================================================
-     COMBINED QUALITY
-  ======================================================== */
-
-  const combinedQuality =
-
-    liquidityStrength *
-    .32
-
-    +
-
-    raidStrength *
-    .36
-
-    +
-
-    historicalMatch *
-    .22
-
-    +
-
-    macroAlignment *
-    .10;
-
-
-  /* ========================================================
-     SWEEP DEPTH
-  ======================================================== */
-
-  const p25 =
-    history
-      ?.p25OvershootAtr ??
-    .08;
-
-
-  let medianOvershoot =
-    history
-      ?.medianOvershootAtr ??
-    .20;
-
-
-  let p75 =
-    history
-      ?.p75OvershootAtr ??
-    .40;
-
-
-  let p90 =
-    history
-      ?.p90OvershootAtr ??
-    .60;
-
-
-  if (
-    raidStrength >=
-    80
-  ) {
-
-    medianOvershoot *=
-      1.15;
-
-    p75 *=
-      1.15;
-
-    p90 *=
-      1.10;
-
-  }
-
-
-  if (
-    regime.volatility ===
-    "EXPANDING"
-  ) {
-
-    medianOvershoot *=
-      1.12;
-
-    p75 *=
-      1.15;
-
-  }
-
-
-  const likelyEnd =
-
-    pool.level
-
-    +
-
-    direction *
-    medianOvershoot *
-    atr5;
-
-
-  const zoneA =
-
-    pool.level
-
-    +
-
-    direction *
-    p25 *
-    atr5;
-
-
-  const zoneB =
-
-    pool.level
-
-    +
-
-    direction *
-    p75 *
-    atr5;
-
-
-  const acceptance =
-
-    pool.level
-
-    +
-
-    direction *
-    p90 *
-    atr5;
-
-
-  const zoneLow =
-    Math.min(
-      zoneA,
-      zoneB
-    );
-
-
-  const zoneHigh =
-    Math.max(
-      zoneA,
-      zoneB
-    );
-
-
-  /* ========================================================
-     RAID STAGE
-  ======================================================== */
-
-  const stage =
-    determineRaidStage({
-
-      pool,
-
-      price,
-
-      distanceAtr,
-
-      likelyEnd,
-
-      zoneLow,
-
-      zoneHigh,
-
-      raidStrength
-
+      strength:
+        88
     });
+  }
+
+
+  return levels;
+}
+
+
+/* ================================================================
+   DEALING RANGE / INTERNAL VS EXTERNAL
+================================================================ */
+
+function dealingRange(
+  h1
+) {
+
+  const data =
+    h1.slice(
+      -48
+    );
+
+
+  if (!data.length) {
+
+    return null;
+  }
+
+
+  const high =
+    Math.max(
+      ...data.map(
+        candle =>
+          candle.high
+      )
+    );
+
+
+  const low =
+    Math.min(
+      ...data.map(
+        candle =>
+          candle.low
+      )
+    );
 
 
   return {
 
-    ...pool,
-
-
-    level:
+    high:
       round(
-        pool.level,
-        3
-      ),
-
-
-    distance:
-      round(
-        distance,
-        3
-      ),
-
-
-    distanceAtr:
-      round(
-        distanceAtr,
+        high,
         2
       ),
 
-
-    liquidityStrength:
+    low:
       round(
-        liquidityStrength,
-        0
-      ),
-
-
-    raidStrength:
-      round(
-        raidStrength,
-        0
-      ),
-
-
-    historicalMatch:
-      round(
-        historicalMatch,
-        0
-      ),
-
-
-    macroAlignment:
-      round(
-        macroAlignment,
-        0
-      ),
-
-
-    combinedQuality:
-      round(
-        combinedQuality,
-        0
-      ),
-
-
-    stage,
-
-
-    projectedSweep: {
-
-      likelyEnd:
-        round(
-          likelyEnd,
-          3
-        ),
-
-      zoneLow:
-        round(
-          zoneLow,
-          3
-        ),
-
-      zoneHigh:
-        round(
-          zoneHigh,
-          3
-        ),
-
-      acceptanceThreshold:
-        round(
-          acceptance,
-          3
-        ),
-
-      medianOvershootAtr:
-        round(
-          medianOvershoot,
-          3
-        ),
-
-      p75OvershootAtr:
-        round(
-          p75,
-          3
-        ),
-
-      p90OvershootAtr:
-        round(
-          p90,
-          3
-        )
-
-    },
-
-
-    historicalStats:
-      history,
-
-
-    reasons: [
-
-      `${round(
-        distanceAtr,
+        low,
         2
-      )}× M15 ATR from current price`,
+      ),
 
-      `Liquidity importance ${round(
-        pool.importance,
+    midpoint:
+      round(
+        (
+          high +
+          low
+        ) /
+        2,
         2
-      )}`,
+      ),
 
-      `M15 directional flow ${round(
-        delta,
-        1
-      )}%`,
-
-      `MTF directional pressure ${round(
-        directionalTrend,
-        1
-      )}`,
-
-      regime.volatility ===
-      "EXPANDING"
-        ?
-        "Volatility is expanding"
-        :
-        `Volatility ${regime.volatility.toLowerCase()}`,
-
-      activeOpening
-        ?
-        `${activeOpening.name} opening window active`
-        :
-        null,
-
-      history
-        ?
-        `${history.sweepRatePct}% historical sweep rate`
-        :
-        null,
-
-      history
-        ?
-        `${history.returnRatePct}% historical return rate after sweep`
-        :
-        null,
-
-      pool.aliases.length
-        ?
-        `Confluence: ${pool.aliases.join(", ")}`
-        :
-        null
-
-    ].filter(Boolean)
-
+    range:
+      round(
+        high -
+        low,
+        2
+      )
   };
-
 }
 
 
-/* ============================================================
-   RAID STAGE
-============================================================ */
+/* ================================================================
+   ZONE TOUCH HISTORY
+================================================================ */
 
-function determineRaidStage({
-
-  pool,
-
-  price,
-
-  distanceAtr,
-
+function zoneTouchHistory({
+  candles,
   zoneLow,
-
   zoneHigh,
-
-  raidStrength
-
+  side,
+  atrValue
 }) {
 
+  const data =
+    candles.slice(
+      -500
+    );
 
-  const swept =
 
-    pool.side ===
-    "HIGH"
+  let approaches = 0;
+  let touches = 0;
+  let sweeps = 0;
+  let rejections = 0;
+  let acceptances = 0;
 
-      ?
+  let lastTouchIndex =
+    null;
 
-      price >=
-      pool.level
 
-      :
-
-      price <=
-      pool.level;
-
-
-  const beyondZone =
-
-    pool.side ===
-    "HIGH"
-
-      ?
-
-      price >
-      zoneHigh
-
-      :
-
-      price <
-      zoneLow;
-
-
-  if (
-    beyondZone
-  ) {
-
-    return "ACCEPTANCE BEYOND LIQUIDITY";
-
-  }
-
-
-  if (
-    swept
-  ) {
-
-    return "RAID IN PROGRESS";
-
-  }
-
-
-  if (
-
-    distanceAtr <=
-    .20
-
-    &&
-
-    raidStrength >=
-    75
-
-  ) {
-
-    return "RAID IMMINENT";
-
-  }
-
-
-  if (
-    distanceAtr <=
-    .50
-  ) {
-
-    return "APPROACHING";
-
-  }
-
-
-  if (
-    distanceAtr <=
-    1.25
-  ) {
-
-    return "TRACKING";
-
-  }
-
-
-  return "DORMANT";
-
-}
-
-
-/* ============================================================
-   TRAP RADAR
-============================================================ */
-
-function buildTrapRadar({
-
-  pools,
-
-  sessions,
-
-  flow,
-
-  regime,
-
-  atr15
-
-}) {
-
-
-  const rows =
-    [];
-
-
-  const primary =
-    pools[0];
-
-
-  if (
-    primary
-  ) {
-
-
-    let score =
-      primary.raidStrength;
-
-
-    if (
-      primary.distanceAtr <=
-      .50
-    ) {
-
-      score +=
-        8;
-
-    }
-
-
-    if (
-      regime.volatility ===
-      "EXPANDING"
-    ) {
-
-      score +=
-        6;
-
-    }
-
-
-    if (
-      flow.absorption !==
-      "NONE"
-    ) {
-
-      score +=
-        6;
-
-    }
-
-
-    score =
-      clamp(
-        score,
-        0,
-        100
-      );
-
-
-    rows.push({
-
-      name:
-        primary.name,
-
-      stage:
-        primary.stage,
-
-      score:
-        round(
-          score,
-          0
-        ),
-
-      risk:
-
-        score >=
-        80
-
-          ?
-
-          "EXTREME"
-
-          :
-
-          score >=
-          65
-
-            ?
-
-            "ELEVATED"
-
-            :
-
-            "WATCH"
-
-    });
-
-  }
+  const approachDistance =
+    atrValue *
+    0.20;
 
 
   for (
-    const session of sessions
+    let i = 0;
+    i < data.length;
+    i++
   ) {
 
+    const candle =
+      data[i];
 
-    let score =
-      0;
+
+    const approached =
+      side === "BUY_SIDE"
+        ? (
+            candle.high >=
+            zoneLow -
+            approachDistance
+          )
+        : (
+            candle.low <=
+            zoneHigh +
+            approachDistance
+          );
 
 
     if (
-      session.phase ===
-      "PRE-OPEN"
+      approached
     ) {
 
-      score +=
-        45;
+      approaches++;
+    }
 
+
+    const touched =
+      candle.high >=
+        zoneLow &&
+      candle.low <=
+        zoneHigh;
+
+
+    if (
+      touched
+    ) {
+
+      touches++;
+
+      lastTouchIndex =
+        i;
     }
 
 
     if (
-      session.phase ===
-      "OPENING LIQUIDITY WINDOW"
+      side === "BUY_SIDE"
     ) {
 
-      score +=
-        75;
+      if (
+        candle.high >
+        zoneHigh
+      ) {
 
+        sweeps++;
+
+
+        if (
+          candle.close <
+          zoneHigh
+        ) {
+
+          rejections++;
+
+        } else {
+
+          acceptances++;
+        }
+      }
+
+    } else {
+
+      if (
+        candle.low <
+        zoneLow
+      ) {
+
+        sweeps++;
+
+
+        if (
+          candle.close >
+          zoneLow
+        ) {
+
+          rejections++;
+
+        } else {
+
+          acceptances++;
+        }
+      }
     }
-
-
-    if (
-      session.phase ===
-      "CLOSING LIQUIDITY WINDOW"
-    ) {
-
-      score +=
-        45;
-
-    }
-
-
-    if (
-      score >
-      0
-    ) {
-
-      rows.push({
-
-        name:
-          session.name,
-
-        stage:
-          session.phase,
-
-        score,
-
-        risk:
-
-          score >=
-          70
-
-            ?
-
-            "ELEVATED"
-
-            :
-
-            "WATCH"
-
-      });
-
-    }
-
   }
 
 
-  return rows
+  const barsSinceTouch =
+    lastTouchIndex === null
+      ? null
+      : data.length -
+        1 -
+        lastTouchIndex;
 
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        b.score -
-        a.score
-    )
 
-    .slice(
-      0,
-      6
-    );
+  const freshnessScore =
+    lastTouchIndex === null
+      ? 100
+      : clamp(
+          100 -
+          touches *
+          13 +
+          (
+            barsSinceTouch || 0
+          ) *
+          0.25,
+          10,
+          100
+        );
 
+
+  return {
+
+    approaches,
+
+    touches,
+
+    sweeps,
+
+    rejections,
+
+    acceptances,
+
+    barsSinceTouch,
+
+    freshnessScore:
+      round(
+        freshnessScore,
+        1
+      ),
+
+    state:
+      touches === 0
+        ? "FRESH"
+        : touches <= 2
+          ? "LIGHTLY TESTED"
+          : touches <= 5
+            ? "TESTED"
+            : "HEAVILY TESTED"
+  };
 }
 
 
-/* ============================================================
-   FRED MACRO
-============================================================ */
+/* ================================================================
+   APPROACH / COMPRESSION ENGINE
+================================================================ */
 
-const FRED_SERIES = [
+function analyzeApproach({
+  candles,
+  zone,
+  atrValue
+}) {
 
-  {
-
-    id:
-      "DGS2",
-
-    name:
-      "US 2Y Yield",
-
-    direction:
-      -1,
-
-    weight:
-      1.2
-
-  },
-
-  {
-
-    id:
-      "DGS10",
-
-    name:
-      "US 10Y Yield",
-
-    direction:
-      -1,
-
-    weight:
-      1.0
-
-  },
-
-  {
-
-    id:
-      "DFII10",
-
-    name:
-      "US 10Y Real Yield",
-
-    direction:
-      -1,
-
-    weight:
-      1.4
-
-  },
-
-  {
-
-    id:
-      "DTWEXBGS",
-
-    name:
-      "Broad USD Index",
-
-    direction:
-      -1,
-
-    weight:
-      1.4
-
-  },
-
-  {
-
-    id:
-      "FEDFUNDS",
-
-    name:
-      "Fed Funds Rate",
-
-    direction:
-      -1,
-
-    weight:
-      .7
-
-  },
-
-  {
-
-    id:
-      "CPIAUCSL",
-
-    name:
-      "US CPI",
-
-    direction:
-      1,
-
-    weight:
-      .7
-
-  },
-
-  {
-
-    id:
-      "PCEPILFE",
-
-    name:
-      "Core PCE",
-
-    direction:
-      1,
-
-    weight:
-      .8
-
-  },
-
-  {
-
-    id:
-      "UNRATE",
-
-    name:
-      "Unemployment",
-
-    direction:
-      1,
-
-    weight:
-      .6
-
-  },
-
-  {
-
-    id:
-      "PAYEMS",
-
-    name:
-      "Nonfarm Payrolls",
-
-    direction:
-      -1,
-
-    weight:
-      .7
-
-  }
-
-];
-
-
-async function getMacroEngine() {
+  const data =
+    candles.slice(
+      -16
+    );
 
 
   if (
-    !FRED_KEY
+    data.length < 8
   ) {
 
     return {
 
-      enabled:
-        false,
+      label:
+        "UNKNOWN",
 
       score:
         0,
 
-      bias:
-        "FRED DISABLED",
+      compression:
+        0,
 
-      drivers:
-        []
-
+      directionality:
+        0
     };
-
   }
 
 
-  if (
-
-    MACRO_CACHE.data
-
-    &&
-
-    Date.now() -
-    MACRO_CACHE.time <
-    MACRO_CACHE_MS
-
-  ) {
-
-    return MACRO_CACHE.data;
-
-  }
-
-
-  const results =
-    await Promise.allSettled(
-
-      FRED_SERIES.map(
-        getFredSeries
-      )
-
+  const closes =
+    data.map(
+      candle =>
+        candle.close
     );
 
 
-  const drivers =
-    results
+  const first =
+    closes[0];
 
-      .filter(
-        x =>
-          x.status ===
-          "fulfilled"
+  const current =
+    last(
+      closes
+    );
+
+
+  const netMove =
+    current -
+    first;
+
+
+  const requiredDirection =
+    zone.side ===
+    "BUY_SIDE"
+      ? 1
+      : -1;
+
+
+  const directionalMove =
+    netMove *
+    requiredDirection;
+
+
+  const directionality =
+    atrValue > 0
+      ? clamp(
+          directionalMove /
+          atrValue *
+          40,
+          -100,
+          100
+        )
+      : 0;
+
+
+  const olderRanges =
+    data
+      .slice(
+        0,
+        8
       )
-
       .map(
-        x =>
-          x.value
+        candle =>
+          candle.high -
+          candle.low
       );
 
 
-  if (
-    !drivers.length
-  ) {
-
-    return {
-
-      enabled:
-        false,
-
-      score:
-        0,
-
-      bias:
-        "FRED UNAVAILABLE",
-
-      drivers:
-        []
-
-    };
-
-  }
+  const recentRanges =
+    data
+      .slice(
+        -8
+      )
+      .map(
+        candle =>
+          candle.high -
+          candle.low
+      );
 
 
-  let weighted =
-    0;
+  const olderRange =
+    mean(
+      olderRanges
+    );
 
-  let totalWeight =
+
+  const recentRange =
+    mean(
+      recentRanges
+    );
+
+
+  const compression =
+    olderRange > 0
+      ? clamp(
+          (
+            1 -
+            recentRange /
+            olderRange
+          ) *
+          100,
+          -100,
+          100
+        )
+      : 0;
+
+
+  let directionalStructure =
     0;
 
 
   for (
-    const driver of drivers
+    let i = 1;
+    i < data.length;
+    i++
   ) {
 
-    weighted +=
+    if (
+      zone.side ===
+      "BUY_SIDE"
+    ) {
 
-      driver.goldPressure
+      if (
+        data[i].low >
+        data[i - 1].low
+      ) {
 
-      *
-      driver.weight;
+        directionalStructure++;
+      }
 
+    } else {
 
-    totalWeight +=
-      driver.weight;
+      if (
+        data[i].high <
+        data[i - 1].high
+      ) {
 
+        directionalStructure++;
+      }
+    }
   }
+
+
+  const structureScore =
+    directionalStructure /
+    (
+      data.length -
+      1
+    ) *
+    100;
 
 
   const score =
     clamp(
-
-      weighted /
+      directionality *
+      0.45 +
       Math.max(
-        totalWeight,
-        .000001
-      ),
-
-      -100,
-
+        compression,
+        0
+      ) *
+      0.25 +
+      structureScore *
+      0.30,
+      0,
       100
-
     );
 
 
-  const bias =
-
-    score >=
-    35
-
-      ?
-
-      "STRONGLY GOLD SUPPORTIVE"
-
-      :
-
-      score >=
-      15
-
-        ?
-
-        "GOLD SUPPORTIVE"
-
-        :
-
-        score <=
-        -35
-
-          ?
-
-          "STRONG GOLD HEADWIND"
-
-          :
-
-          score <=
-          -15
-
-            ?
-
-            "GOLD HEADWIND"
-
-            :
-
-            "MIXED / NEUTRAL";
+  let label =
+    "DRIFTING";
 
 
-  const output = {
+  if (
+    score >= 70 &&
+    compression > 10
+  ) {
 
-    enabled:
-      true,
+    label =
+      "COMPRESSING";
+
+  } else if (
+    score >= 55
+  ) {
+
+    label =
+      "ATTACKING";
+
+  } else if (
+    score >= 35
+  ) {
+
+    label =
+      "APPROACHING";
+
+  } else if (
+    directionality < 0
+  ) {
+
+    label =
+      "MOVING AWAY";
+  }
+
+
+  return {
+
+    label,
 
     score:
       round(
@@ -7654,50 +4023,1934 @@ async function getMacroEngine() {
         1
       ),
 
-    bias,
-
-    coverage:
+    compression:
       round(
-
-        drivers.length /
-        FRED_SERIES.length *
-        100,
-
-        0
-
+        compression,
+        1
       ),
 
-    drivers
+    directionality:
+      round(
+        directionality,
+        1
+      ),
 
+    structure:
+      round(
+        structureScore,
+        1
+      )
+  };
+}
+
+
+/* ================================================================
+   LIQUIDITY LIFECYCLE
+================================================================ */
+
+function liquidityLifecycle({
+  zone,
+  m5,
+  price,
+  atrValue,
+  approach
+}) {
+
+  const recent =
+    m5.slice(
+      -4
+    );
+
+
+  const current =
+    last(
+      m5
+    );
+
+
+  const distance =
+
+    zone.side ===
+    "BUY_SIDE"
+      ? zone.low -
+        price
+      : price -
+        zone.high;
+
+
+  const distanceATR =
+    atrValue > 0
+      ? Math.max(
+          distance,
+          0
+        ) /
+        atrValue
+      : 0;
+
+
+  let beyondCount =
+    0;
+
+
+  for (
+    const candle
+    of recent
+  ) {
+
+    if (
+      zone.side ===
+      "BUY_SIDE"
+    ) {
+
+      if (
+        candle.close >
+        zone.high
+      ) {
+
+        beyondCount++;
+      }
+
+    } else {
+
+      if (
+        candle.close <
+        zone.low
+      ) {
+
+        beyondCount++;
+      }
+    }
+  }
+
+
+  const penetrated =
+    zone.side ===
+    "BUY_SIDE"
+      ? current.high >
+        zone.high
+      : current.low <
+        zone.low;
+
+
+  const rejected =
+    zone.side ===
+    "BUY_SIDE"
+      ? (
+          penetrated &&
+          current.close <
+          zone.high
+        )
+      : (
+          penetrated &&
+          current.close >
+          zone.low
+        );
+
+
+  if (
+    beyondCount >= 2
+  ) {
+
+    return {
+
+      stage:
+        "ACCEPTING",
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      penetrated,
+
+      rejected
+    };
+  }
+
+
+  if (
+    rejected
+  ) {
+
+    return {
+
+      stage:
+        "REJECTING",
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      penetrated,
+
+      rejected
+    };
+  }
+
+
+  if (
+    penetrated
+  ) {
+
+    return {
+
+      stage:
+        "RAIDING",
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      penetrated,
+
+      rejected
+    };
+  }
+
+
+  if (
+    distanceATR <= 0.20
+  ) {
+
+    return {
+
+      stage:
+        "ATTACKING",
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      penetrated:
+        false,
+
+      rejected:
+        false
+    };
+  }
+
+
+  if (
+    approach.label ===
+    "COMPRESSING" &&
+    distanceATR <= 0.75
+  ) {
+
+    return {
+
+      stage:
+        "COMPRESSING",
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      penetrated:
+        false,
+
+      rejected:
+        false
+    };
+  }
+
+
+  if (
+    distanceATR <= 1.25
+  ) {
+
+    return {
+
+      stage:
+        "APPROACHING",
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      penetrated:
+        false,
+
+      rejected:
+        false
+    };
+  }
+
+
+  return {
+
+    stage:
+      "TRACKING",
+
+    distanceATR:
+      round(
+        distanceATR,
+        2
+      ),
+
+    penetrated:
+      false,
+
+    rejected:
+      false
+  };
+}
+
+
+/* ================================================================
+   CLUSTER RAW LIQUIDITY LEVELS
+================================================================ */
+
+function clusterLiquidityLevels({
+  levels,
+  price,
+  atrValue,
+  m5,
+  m1,
+  h1,
+  fvgs
+}) {
+
+  if (!levels.length) {
+    return [];
+  }
+
+
+  const clusterDistance =
+    Math.max(
+      atrValue *
+      0.22,
+      0.25
+    );
+
+
+  const grouped = [];
+
+
+  for (
+    const side
+    of
+    [
+      "BUY_SIDE",
+      "SELL_SIDE"
+    ]
+  ) {
+
+    const sideLevels =
+      levels
+        .filter(
+          level =>
+            level.side ===
+            side
+        )
+        .sort(
+          (
+            a,
+            b
+          ) =>
+            a.level -
+            b.level
+        );
+
+
+    let currentCluster = [];
+
+
+    for (
+      const level
+      of
+      sideLevels
+    ) {
+
+      if (
+        !currentCluster.length
+      ) {
+
+        currentCluster = [
+          level
+        ];
+
+        continue;
+      }
+
+
+      const clusterAverage =
+        mean(
+          currentCluster.map(
+            item =>
+              item.level
+          )
+        );
+
+
+      if (
+        Math.abs(
+          level.level -
+          clusterAverage
+        ) <=
+        clusterDistance
+      ) {
+
+        currentCluster.push(
+          level
+        );
+
+      } else {
+
+        grouped.push(
+          currentCluster
+        );
+
+        currentCluster = [
+          level
+        ];
+      }
+    }
+
+
+    if (
+      currentCluster.length
+    ) {
+
+      grouped.push(
+        currentCluster
+      );
+    }
+  }
+
+
+  const range =
+    dealingRange(
+      h1
+    );
+
+
+  const zones = [];
+
+
+  for (
+    let index = 0;
+    index <
+      grouped.length;
+    index++
+  ) {
+
+    const cluster =
+      grouped[index];
+
+
+    const side =
+      cluster[0].side;
+
+
+    const levelPrices =
+      cluster.map(
+        item =>
+          item.level
+      );
+
+
+    const rawLow =
+      Math.min(
+        ...levelPrices
+      );
+
+
+    const rawHigh =
+      Math.max(
+        ...levelPrices
+      );
+
+
+    const buffer =
+      atrValue *
+      0.05;
+
+
+    const zoneLow =
+      rawLow -
+      buffer;
+
+
+    const zoneHigh =
+      rawHigh +
+      buffer;
+
+
+    const center =
+      (
+        zoneLow +
+        zoneHigh
+      ) /
+      2;
+
+
+    const distance =
+      side ===
+      "BUY_SIDE"
+        ? Math.max(
+            center -
+            price,
+            0
+          )
+        : Math.max(
+            price -
+            center,
+            0
+          );
+
+
+    const distanceATR =
+      atrValue > 0
+        ? distance /
+          atrValue
+        : 0;
+
+
+    const proximity =
+      clamp(
+        100 -
+        distanceATR *
+        24,
+        0,
+        100
+      );
+
+
+    const componentCount =
+      cluster.length;
+
+
+    const density =
+      clamp(
+        componentCount *
+        18 +
+        (
+          componentCount >= 3
+            ? 15
+            : 0
+        ),
+        0,
+        100
+      );
+
+
+    const structuralStrength =
+      mean(
+        cluster.map(
+          item =>
+            item.baseStrength
+        )
+      );
+
+
+    const historicalItems =
+      cluster
+        .map(
+          item =>
+            item.historical
+        )
+        .filter(
+          Boolean
+        );
+
+
+    const historicalSweepRate =
+      historicalItems.length
+        ? mean(
+            historicalItems.map(
+              item =>
+                item.sweepRate
+            )
+          )
+        : null;
+
+
+    const historicalReturnRate =
+      historicalItems.length
+        ? mean(
+            historicalItems.map(
+              item =>
+                item.returnRate
+            )
+          )
+        : null;
+
+
+    const historicalMedianRaidATR =
+      historicalItems.length
+        ? mean(
+            historicalItems.map(
+              item =>
+                item.medianRaidATR
+            )
+          )
+        : 0.25;
+
+
+    const historicalConfidence =
+      historicalItems.some(
+        item =>
+          item.confidence ===
+          "HIGH"
+      )
+        ? "HIGH"
+        : historicalItems.some(
+            item =>
+              item.confidence ===
+              "MEDIUM"
+          )
+          ? "MEDIUM"
+          : historicalItems.length
+            ? "LOW"
+            : "MODEL";
+
+
+    const touchHistory =
+      zoneTouchHistory({
+
+        candles:
+          m5,
+
+        zoneLow,
+
+        zoneHigh,
+
+        side,
+
+        atrValue
+      });
+
+
+    const fvgOverlap =
+      fvgs.filter(
+        gap =>
+          gap.high >=
+            zoneLow -
+            atrValue *
+            0.25 &&
+          gap.low <=
+            zoneHigh +
+            atrValue *
+            0.25
+      );
+
+
+    const temporaryZone = {
+
+      side,
+
+      low:
+        zoneLow,
+
+      high:
+        zoneHigh,
+
+      center
+    };
+
+
+    const approach =
+      analyzeApproach({
+
+        candles:
+          m5,
+
+        zone:
+          temporaryZone,
+
+        atrValue
+      });
+
+
+    const lifecycle =
+      liquidityLifecycle({
+
+        zone:
+          temporaryZone,
+
+        m5,
+
+        price,
+
+        atrValue,
+
+        approach
+      });
+
+
+    let liquidityClass =
+      "INTERNAL";
+
+
+    if (
+      range &&
+      range.range > 0
+    ) {
+
+      const upperExternal =
+        range.high -
+        range.range *
+        0.15;
+
+
+      const lowerExternal =
+        range.low +
+        range.range *
+        0.15;
+
+
+      if (
+        side === "BUY_SIDE" &&
+        center >=
+          upperExternal
+      ) {
+
+        liquidityClass =
+          "EXTERNAL";
+      }
+
+
+      if (
+        side === "SELL_SIDE" &&
+        center <=
+          lowerExternal
+      ) {
+
+        liquidityClass =
+          "EXTERNAL";
+      }
+    }
+
+
+    const sessionCount =
+      cluster.filter(
+        item =>
+          item.type ===
+          "SESSION"
+      ).length;
+
+
+    const majorCount =
+      cluster.filter(
+        item =>
+          [
+            "DAILY",
+            "WEEKLY",
+            "EQUAL_LEVEL"
+          ].includes(
+            item.type
+          )
+      ).length;
+
+
+    const sessionRelevance =
+      clamp(
+        sessionCount *
+        24 +
+        majorCount *
+        18,
+        0,
+        100
+      );
+
+
+    const historicalScore =
+      historicalSweepRate === null
+        ? 45
+        : historicalSweepRate;
+
+
+    const heat =
+      clamp(
+
+        structuralStrength *
+          0.25 +
+
+        density *
+          0.20 +
+
+        touchHistory.freshnessScore *
+          0.15 +
+
+        historicalScore *
+          0.15 +
+
+        proximity *
+          0.10 +
+
+        sessionRelevance *
+          0.05 +
+
+        approach.score *
+          0.10,
+
+        0,
+        100
+      );
+
+
+    let raidLikelihood =
+      clamp(
+
+        heat *
+          0.45 +
+
+        proximity *
+          0.20 +
+
+        approach.score *
+          0.20 +
+
+        historicalScore *
+          0.15,
+
+        0,
+        100
+      );
+
+
+    if (
+      lifecycle.stage ===
+      "ATTACKING"
+    ) {
+
+      raidLikelihood +=
+        6;
+    }
+
+
+    if (
+      lifecycle.stage ===
+      "RAIDING"
+    ) {
+
+      raidLikelihood =
+        Math.max(
+          raidLikelihood,
+          92
+        );
+    }
+
+
+    raidLikelihood =
+      clamp(
+        raidLikelihood,
+        0,
+        100
+      );
+
+
+    let reversalLikelihood =
+      clamp(
+
+        (
+          historicalReturnRate ??
+          50
+        ) *
+          0.35 +
+
+        touchHistory.freshnessScore *
+          0.18 +
+
+        (
+          fvgOverlap.length
+            ? 80
+            : 45
+        ) *
+          0.12 +
+
+        structuralStrength *
+          0.15 +
+
+        (
+          lifecycle.stage ===
+          "REJECTING"
+            ? 100
+            : lifecycle.stage ===
+              "RAIDING"
+              ? 60
+              : 45
+        ) *
+          0.20,
+
+        0,
+        100
+      );
+
+
+    if (
+      lifecycle.stage ===
+      "ACCEPTING"
+    ) {
+
+      reversalLikelihood *=
+        0.55;
+    }
+
+
+    const continuationLikelihood =
+      clamp(
+        100 -
+        reversalLikelihood +
+        (
+          lifecycle.stage ===
+          "ACCEPTING"
+            ? 25
+            : 0
+        ),
+        0,
+        100
+      );
+
+
+    const stopExtensionATR =
+      clamp(
+        0.10 +
+        density /
+        100 *
+        0.18,
+        0.10,
+        0.30
+      );
+
+
+    const estimatedStopPool =
+
+      side ===
+      "BUY_SIDE"
+        ? {
+
+            low:
+              round(
+                zoneHigh,
+                2
+              ),
+
+            high:
+              round(
+                zoneHigh +
+                atrValue *
+                stopExtensionATR,
+                2
+              )
+          }
+
+        : {
+
+            low:
+              round(
+                zoneLow -
+                atrValue *
+                stopExtensionATR,
+                2
+              ),
+
+            high:
+              round(
+                zoneLow,
+                2
+              )
+          };
+
+
+    const raidDepthATR =
+      clamp(
+        historicalMedianRaidATR ||
+        0.25,
+        0.08,
+        2
+      );
+
+
+    const projectedRaidZone =
+
+      side ===
+      "BUY_SIDE"
+        ? {
+
+            low:
+              round(
+                zoneHigh,
+                2
+              ),
+
+            high:
+              round(
+                zoneHigh +
+                atrValue *
+                raidDepthATR,
+                2
+              )
+          }
+
+        : {
+
+            low:
+              round(
+                zoneLow -
+                atrValue *
+                raidDepthATR,
+                2
+              ),
+
+            high:
+              round(
+                zoneLow,
+                2
+              )
+          };
+
+
+    const names =
+      unique(
+        cluster.map(
+          item =>
+            item.name
+        )
+      );
+
+
+    const types =
+      unique(
+        cluster.map(
+          item =>
+            item.type
+        )
+      );
+
+
+    zones.push({
+
+      id:
+        `LZ-${side}-${index + 1}`,
+
+      name:
+        componentCount >= 3
+          ? (
+              side === "BUY_SIDE"
+                ? "MAJOR BUY-SIDE CLUSTER"
+                : "MAJOR SELL-SIDE CLUSTER"
+            )
+          : componentCount === 2
+            ? (
+                side === "BUY_SIDE"
+                  ? "BUY-SIDE CLUSTER"
+                  : "SELL-SIDE CLUSTER"
+              )
+            : names[0],
+
+      side,
+
+      liquidityClass,
+
+      low:
+        round(
+          zoneLow,
+          2
+        ),
+
+      high:
+        round(
+          zoneHigh,
+          2
+        ),
+
+      center:
+        round(
+          center,
+          2
+        ),
+
+      distance:
+        round(
+          distance,
+          2
+        ),
+
+      distanceATR:
+        round(
+          distanceATR,
+          2
+        ),
+
+      componentCount,
+
+      components:
+        cluster.map(
+          item => ({
+
+            name:
+              item.name,
+
+            level:
+              round(
+                item.level,
+                2
+              ),
+
+            type:
+              item.type,
+
+            strength:
+              item.baseStrength
+          })
+        ),
+
+      componentNames:
+        names,
+
+      componentTypes:
+        types,
+
+      density:
+        round(
+          density,
+          1
+        ),
+
+      structuralStrength:
+        round(
+          structuralStrength,
+          1
+        ),
+
+      freshness:
+        touchHistory.freshnessScore,
+
+      freshnessState:
+        touchHistory.state,
+
+      touchHistory,
+
+      historical: {
+
+        available:
+          historicalItems.length > 0,
+
+        sweepRate:
+          historicalSweepRate === null
+            ? null
+            : round(
+                historicalSweepRate,
+                1
+              ),
+
+        returnRate:
+          historicalReturnRate === null
+            ? null
+            : round(
+                historicalReturnRate,
+                1
+              ),
+
+        medianRaidATR:
+          round(
+            historicalMedianRaidATR,
+            2
+          ),
+
+        confidence:
+          historicalConfidence
+      },
+
+      fvgOverlap:
+        fvgOverlap.length > 0,
+
+      overlappingFVGs:
+        fvgOverlap,
+
+      sessionRelevance:
+        round(
+          sessionRelevance,
+          1
+        ),
+
+      approach,
+
+      lifecycle,
+
+      heat:
+        round(
+          heat,
+          1
+        ),
+
+      raidLikelihood:
+        round(
+          raidLikelihood,
+          1
+        ),
+
+      reversalLikelihood:
+        round(
+          reversalLikelihood,
+          1
+        ),
+
+      continuationLikelihood:
+        round(
+          continuationLikelihood,
+          1
+        ),
+
+      estimatedStopPool,
+
+      projectedRaidZone,
+
+      projectedRaidATR:
+        round(
+          raidDepthATR,
+          2
+        )
+    });
+  }
+
+
+  return (
+    zones
+      .filter(
+        zone => {
+
+          /*
+             Remove zones far beyond the useful local market map.
+          */
+
+          return (
+            zone.distanceATR <= 8 ||
+            zone.liquidityClass ===
+              "EXTERNAL"
+          );
+        }
+      )
+  );
+}
+
+
+/* ================================================================
+   SWEEP QUALITY
+================================================================ */
+
+function evaluateSweepQuality({
+  zone,
+  m1,
+  m5,
+  delta,
+  displacementM1
+}) {
+
+  const checks = {
+
+    zonePenetrated:
+      false,
+
+    closeBackInside:
+      false,
+
+    m1ReversalStructure:
+      false,
+
+    displacementAway:
+      false,
+
+    deltaDivergence:
+      false,
+
+    absorption:
+      false
   };
 
 
-  MACRO_CACHE = {
+  const latestM5 =
+    last(
+      m5
+    );
+
+
+  const m1Structure =
+    structure(
+      m1
+    );
+
+
+  if (
+    zone.side ===
+    "BUY_SIDE"
+  ) {
+
+    checks.zonePenetrated =
+      latestM5.high >
+      zone.high;
+
+
+    checks.closeBackInside =
+      latestM5.close <
+      zone.high;
+
+
+    checks.m1ReversalStructure =
+      (
+        m1Structure.bias ===
+        "BEARISH"
+      ) ||
+      (
+        m1Structure.choch ===
+        "BEARISH CHOCH"
+      );
+
+
+    checks.displacementAway =
+      displacementM1.active &&
+      displacementM1.direction ===
+        "BEARISH";
+
+
+    checks.deltaDivergence =
+      delta.divergence ===
+      "BEARISH DELTA DIVERGENCE";
+
+
+    checks.absorption =
+      delta.absorption ===
+      "BUYING ABSORBED";
+
+  } else {
+
+    checks.zonePenetrated =
+      latestM5.low <
+      zone.low;
+
+
+    checks.closeBackInside =
+      latestM5.close >
+      zone.low;
+
+
+    checks.m1ReversalStructure =
+      (
+        m1Structure.bias ===
+        "BULLISH"
+      ) ||
+      (
+        m1Structure.choch ===
+        "BULLISH CHOCH"
+      );
+
+
+    checks.displacementAway =
+      displacementM1.active &&
+      displacementM1.direction ===
+        "BULLISH";
+
+
+    checks.deltaDivergence =
+      delta.divergence ===
+      "BULLISH DELTA DIVERGENCE";
+
+
+    checks.absorption =
+      delta.absorption ===
+      "SELLING ABSORBED";
+  }
+
+
+  const weights = {
+
+    zonePenetrated:
+      20,
+
+    closeBackInside:
+      20,
+
+    m1ReversalStructure:
+      20,
+
+    displacementAway:
+      20,
+
+    deltaDivergence:
+      10,
+
+    absorption:
+      10
+  };
+
+
+  let score = 0;
+
+
+  for (
+    const [
+      name,
+      passed
+    ]
+    of
+    Object.entries(
+      checks
+    )
+  ) {
+
+    if (
+      passed
+    ) {
+
+      score +=
+        weights[name];
+    }
+  }
+
+
+  return {
+
+    score:
+      round(
+        score,
+        1
+      ),
+
+    quality:
+      score >= 80
+        ? "ELITE"
+        : score >= 65
+          ? "STRONG"
+          : score >= 45
+            ? "MODERATE"
+            : score > 0
+              ? "WEAK"
+              : "NONE",
+
+    checks
+  };
+}
+
+
+/* ================================================================
+   LIQUIDITY PATH
+================================================================ */
+
+function buildLiquidityPath(
+  zones
+) {
+
+  return (
+    zones
+
+      .map(
+        zone => {
+
+          const proximity =
+            clamp(
+              100 -
+              zone.distanceATR *
+              22,
+              0,
+              100
+            );
+
+
+          let stageBonus =
+            0;
+
+
+          if (
+            zone.lifecycle.stage ===
+            "COMPRESSING"
+          ) {
+
+            stageBonus =
+              8;
+          }
+
+
+          if (
+            zone.lifecycle.stage ===
+            "ATTACKING"
+          ) {
+
+            stageBonus =
+              12;
+          }
+
+
+          if (
+            zone.lifecycle.stage ===
+            "RAIDING"
+          ) {
+
+            stageBonus =
+              15;
+          }
+
+
+          const nextTargetScore =
+            clamp(
+
+              zone.raidLikelihood *
+                0.50 +
+
+              zone.heat *
+                0.25 +
+
+              proximity *
+                0.20 +
+
+              stageBonus,
+
+              0,
+              100
+            );
+
+
+          return {
+
+            ...zone,
+
+            nextTargetScore:
+              round(
+                nextTargetScore,
+                1
+              )
+          };
+        }
+      )
+
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.nextTargetScore -
+          a.nextTargetScore
+      )
+  );
+}
+
+
+/* ================================================================
+   INTERMARKET
+================================================================ */
+
+function percentageMove(
+  candles,
+  bars
+) {
+
+  if (
+    !candles ||
+    candles.length <=
+      bars
+  ) {
+
+    return 0;
+  }
+
+
+  const current =
+    last(
+      candles
+    ).close;
+
+
+  const previous =
+    candles[
+      candles.length -
+      bars -
+      1
+    ].close;
+
+
+  if (!previous) {
+    return 0;
+  }
+
+
+  return (
+    (
+      current -
+      previous
+    ) /
+    previous *
+    100
+  );
+}
+
+
+async function loadIntermarket() {
+
+  if (
+    intermarketCache.value &&
+    Date.now() -
+      intermarketCache.time <
+      INTERMARKET_CACHE_MS
+  ) {
+
+    return intermarketCache.value;
+  }
+
+
+  const symbols = [
+
+    "XAG/USD",
+    "EUR/USD",
+    "GBP/USD",
+    "USD/JPY",
+    "BTC/USD"
+  ];
+
+
+  const results =
+    await Promise.all(
+
+      symbols.map(
+        symbol =>
+
+          tdSeries({
+
+            symbol,
+
+            interval:
+              "1h",
+
+            outputsize:
+              80,
+
+            apiKey:
+              KEY_4
+          })
+          .catch(
+            () => []
+          )
+      )
+    );
+
+
+  const data = {};
+
+
+  symbols.forEach(
+    (
+      symbol,
+      index
+    ) => {
+
+      data[symbol] =
+        results[index];
+    }
+  );
+
+
+  const configs = {
+
+    "XAG/USD": {
+
+      label:
+        "SILVER",
+
+      weight:
+        0.36,
+
+      direction:
+        1
+    },
+
+    "EUR/USD": {
+
+      label:
+        "EUR/USD",
+
+      weight:
+        0.20,
+
+      direction:
+        1
+    },
+
+    "GBP/USD": {
+
+      label:
+        "GBP/USD",
+
+      weight:
+        0.12,
+
+      direction:
+        1
+    },
+
+    "USD/JPY": {
+
+      label:
+        "USD/JPY",
+
+      weight:
+        0.22,
+
+      direction:
+        -1
+    },
+
+    "BTC/USD": {
+
+      label:
+        "BITCOIN",
+
+      weight:
+        0.10,
+
+      direction:
+        1
+    }
+  };
+
+
+  const markets = [];
+
+
+  let weightedTotal = 0;
+  let activeWeight = 0;
+
+
+  for (
+    const [
+      symbol,
+      config
+    ]
+    of
+    Object.entries(
+      configs
+    )
+  ) {
+
+    const candles =
+      data[symbol];
+
+
+    if (
+      !candles ||
+      candles.length < 15
+    ) {
+
+      continue;
+    }
+
+
+    const move1 =
+      percentageMove(
+        candles,
+        1
+      );
+
+
+    const move3 =
+      percentageMove(
+        candles,
+        3
+      );
+
+
+    const move6 =
+      percentageMove(
+        candles,
+        6
+      );
+
+
+    const move12 =
+      percentageMove(
+        candles,
+        12
+      );
+
+
+    const combinedMove =
+
+      move1 *
+        0.15 +
+
+      move3 *
+        0.25 +
+
+      move6 *
+        0.25 +
+
+      move12 *
+        0.35;
+
+
+    const normalized =
+      clamp(
+        combinedMove *
+        80,
+        -100,
+        100
+      );
+
+
+    const contribution =
+      normalized *
+      config.direction;
+
+
+    weightedTotal +=
+      contribution *
+      config.weight;
+
+
+    activeWeight +=
+      config.weight;
+
+
+    markets.push({
+
+      symbol,
+
+      label:
+        config.label,
+
+      price:
+        round(
+          last(
+            candles
+          ).close,
+          symbol ===
+          "BTC/USD"
+            ? 1
+            : 5
+        ),
+
+      move1h:
+        round(
+          move1,
+          3
+        ),
+
+      move3h:
+        round(
+          move3,
+          3
+        ),
+
+      move6h:
+        round(
+          move6,
+          3
+        ),
+
+      move12h:
+        round(
+          move12,
+          3
+        ),
+
+      goldContribution:
+        round(
+          contribution,
+          1
+        ),
+
+      goldBias:
+        contribution >= 15
+          ? "BULLISH GOLD"
+          : contribution <= -15
+            ? "BEARISH GOLD"
+            : "NEUTRAL"
+    });
+  }
+
+
+  const score =
+    activeWeight > 0
+      ? weightedTotal /
+        activeWeight
+      : 0;
+
+
+  const result = {
+
+    score:
+      round(
+        score,
+        1
+      ),
+
+    bias:
+      score >= 15
+        ? "BULLISH"
+        : score <= -15
+          ? "BEARISH"
+          : "NEUTRAL",
+
+    strength:
+      Math.abs(
+        score
+      ) >= 60
+        ? "STRONG"
+        : Math.abs(
+            score
+          ) >= 30
+          ? "MODERATE"
+          : "WEAK",
+
+    markets:
+      markets.sort(
+        (
+          a,
+          b
+        ) =>
+          Math.abs(
+            b.goldContribution
+          ) -
+          Math.abs(
+            a.goldContribution
+          )
+      )
+  };
+
+
+  intermarketCache = {
 
     time:
       Date.now(),
 
-    data:
-      output
-
+    value:
+      result
   };
 
 
-  return output;
-
+  return result;
 }
 
 
-async function getFredSeries(
-  config
+/* ================================================================
+   FRED
+================================================================ */
+
+async function fredSeries(
+  seriesId
 ) {
+
+  if (!FRED_KEY) {
+    return [];
+  }
 
 
   const url =
 
-    `${FRED_BASE}` +
+    `${FRED_BASE}/series/observations` +
 
-    `?series_id=${config.id}` +
+    `?series_id=${encodeURIComponent(
+      seriesId
+    )}` +
 
     `&api_key=${encodeURIComponent(
       FRED_KEY
@@ -7707,30 +5960,18 @@ async function getFredSeries(
 
     `&sort_order=desc` +
 
-    `&limit=8`;
+    `&limit=20`;
 
 
   const response =
-    await fetch(
-
-      url,
-
-      {
-        cache:
-          "no-store"
-      }
-
-    );
+    await fetch(url);
 
 
-  if (
-    !response.ok
-  ) {
+  if (!response.ok) {
 
     throw new Error(
-      `FRED ${config.id} unavailable`
+      `FRED ${seriesId} HTTP ${response.status}`
     );
-
   }
 
 
@@ -7738,792 +5979,1850 @@ async function getFredSeries(
     await response.json();
 
 
-  const observations =
-
+  return (
     (
       json.observations ||
       []
     )
-
       .filter(
-        x =>
-
-          x.value !==
-          "."
-
-          &&
-
+        row =>
+          row.value !== "." &&
           Number.isFinite(
             Number(
-              x.value
+              row.value
             )
           )
-      );
+      )
+      .map(
+        row => ({
 
+          date:
+            row.date,
+
+          value:
+            Number(
+              row.value
+            )
+        })
+      )
+  );
+}
+
+
+function fredChange(
+  series
+) {
 
   if (
-    observations.length <
-    2
+    !series ||
+    series.length < 2
   ) {
 
-    throw new Error(
-      `Not enough ${config.id} observations`
-    );
-
+    return 0;
   }
-
-
-  const latest =
-    observations[0];
-
-
-  const previous =
-    observations[1];
-
-
-  const current =
-    Number(
-      latest.value
-    );
-
-
-  const old =
-    Number(
-      previous.value
-    );
-
-
-  const change =
-    current -
-    old;
-
-
-  const pct =
-
-    old
-
-      ?
-
-      change /
-      Math.abs(
-        old
-      ) *
-      100
-
-      :
-
-      0;
-
-
-  const normalized =
-    normalizeMacroChange(
-
-      config.id,
-
-      change,
-
-      pct
-
-    );
-
-
-  const pressure =
-    clamp(
-
-      normalized *
-      config.direction,
-
-      -100,
-
-      100
-
-    );
-
-
-  return {
-
-    id:
-      config.id,
-
-    name:
-      config.name,
-
-    date:
-      latest.date,
-
-    value:
-      current,
-
-    change:
-      round(
-        change,
-        4
-      ),
-
-    goldPressure:
-      round(
-        pressure,
-        1
-      ),
-
-    weight:
-      config.weight
-
-  };
-
-}
-
-
-function normalizeMacroChange(
-  id,
-  raw,
-  pct
-) {
-
-
-  switch (
-    id
-  ) {
-
-
-    case "DGS2":
-    case "DGS10":
-
-      return clamp(
-
-        raw /
-        .05 *
-        30,
-
-        -100,
-
-        100
-
-      );
-
-
-    case "DFII10":
-
-      return clamp(
-
-        raw /
-        .04 *
-        35,
-
-        -100,
-
-        100
-
-      );
-
-
-    case "DTWEXBGS":
-
-      return clamp(
-
-        pct /
-        .25 *
-        30,
-
-        -100,
-
-        100
-
-      );
-
-
-    case "FEDFUNDS":
-
-      return clamp(
-
-        raw /
-        .25 *
-        30,
-
-        -100,
-
-        100
-
-      );
-
-
-    default:
-
-      return clamp(
-
-        pct *
-        25,
-
-        -100,
-
-        100
-
-      );
-
-  }
-
-}
-
-
-/* ============================================================
-   CHART PAYLOAD
-============================================================ */
-
-function buildChartPayload({
-
-  m1,
-
-  m5,
-
-  m15,
-
-  h1,
-
-  pools,
-
-  sessions,
-
-  reference,
-
-  equalLevels,
-
-  profile,
-
-  vwap,
-
-  price
-
-}) {
-
-
-  const formatBars =
-    bars =>
-      bars.map(
-        bar => ({
-
-          time:
-            Math.floor(
-
-              bar.time.getTime()
-
-              /
-              1000
-
-            ),
-
-          open:
-            round(
-              bar.open,
-              3
-            ),
-
-          high:
-            round(
-              bar.high,
-              3
-            ),
-
-          low:
-            round(
-              bar.low,
-              3
-            ),
-
-          close:
-            round(
-              bar.close,
-              3
-            )
-
-        })
-      );
-
-
-  const levels =
-    pools.map(
-      pool => ({
-
-        name:
-          pool.name,
-
-        type:
-          pool.type,
-
-        side:
-          pool.side,
-
-        price:
-          pool.level,
-
-        liquidityStrength:
-          pool.liquidityStrength,
-
-        raidStrength:
-          pool.raidStrength,
-
-        combinedQuality:
-          pool.combinedQuality,
-
-        stage:
-          pool.stage,
-
-        likelyEnd:
-          pool.projectedSweep
-            ?.likelyEnd,
-
-        zoneLow:
-          pool.projectedSweep
-            ?.zoneLow,
-
-        zoneHigh:
-          pool.projectedSweep
-            ?.zoneHigh,
-
-        acceptanceThreshold:
-          pool.projectedSweep
-            ?.acceptanceThreshold
-
-      })
-    );
-
-
-  return {
-
-    currentPrice:
-      round(
-        price,
-        3
-      ),
-
-    candles: {
-
-      m1:
-        formatBars(
-          m1.slice(-180)
-        ),
-
-      m5:
-        formatBars(
-          m5.slice(-240)
-        ),
-
-      m15:
-        formatBars(
-          m15.slice(-240)
-        ),
-
-      h1:
-        formatBars(
-          h1.slice(-200)
-        )
-
-    },
-
-    levels,
-
-    vwap:
-      round(
-        vwap.value,
-        3
-      ),
-
-    poc:
-      profile.poc,
-
-    hvn:
-      profile.hvn,
-
-    lvn:
-      profile.lvn,
-
-    reference,
-
-    equalLevels,
-
-    sessions
-
-  };
-
-}
-
-
-/* ============================================================
-   WEEK KEY
-============================================================ */
-
-function weekKey(
-  date
-) {
-
-
-  const copy =
-    new Date(
-
-      Date.UTC(
-
-        date.getUTCFullYear(),
-
-        date.getUTCMonth(),
-
-        date.getUTCDate()
-
-      )
-
-    );
-
-
-  const day =
-    copy.getUTCDay() ||
-    7;
-
-
-  copy.setUTCDate(
-
-    copy.getUTCDate()
-
-    +
-    4
-
-    -
-    day
-
-  );
-
-
-  const yearStart =
-    new Date(
-
-      Date.UTC(
-
-        copy.getUTCFullYear(),
-
-        0,
-
-        1
-
-      )
-
-    );
-
-
-  const week =
-    Math.ceil(
-
-      (
-
-        (
-          copy -
-          yearStart
-        )
-
-        /
-        86_400_000
-
-        +
-        1
-
-      )
-
-      /
-      7
-
-    );
 
 
   return (
-
-    `${copy.getUTCFullYear()}-W` +
-
-    `${pad(week)}`
-
+    series[0].value -
+    series[1].value
   );
-
 }
 
 
-/* ============================================================
-   HELPERS
-============================================================ */
+async function loadMacro() {
 
-function sum(
-  values
+  if (
+    macroCache.value &&
+    Date.now() -
+      macroCache.time <
+      MACRO_CACHE_MS
+  ) {
+
+    return macroCache.value;
+  }
+
+
+  if (!FRED_KEY) {
+
+    return {
+
+      enabled:
+        false,
+
+      score:
+        0,
+
+      bias:
+        "NEUTRAL",
+
+      reason:
+        "FRED_API_KEY missing."
+    };
+  }
+
+
+  try {
+
+    const [
+      twoYear,
+      tenYear,
+      fedFunds
+    ] =
+      await Promise.all([
+
+        fredSeries(
+          "DGS2"
+        ),
+
+        fredSeries(
+          "DGS10"
+        ),
+
+        fredSeries(
+          "FEDFUNDS"
+        )
+      ]);
+
+
+    const change2 =
+      fredChange(
+        twoYear
+      );
+
+
+    const change10 =
+      fredChange(
+        tenYear
+      );
+
+
+    const score =
+      clamp(
+
+        (
+          -change2 *
+          320
+        ) +
+
+        (
+          -change10 *
+          260
+        ),
+
+        -100,
+        100
+      );
+
+
+    const result = {
+
+      enabled:
+        true,
+
+      score:
+        round(
+          score,
+          1
+        ),
+
+      bias:
+        score >= 15
+          ? "BULLISH GOLD"
+          : score <= -15
+            ? "BEARISH GOLD"
+            : "NEUTRAL",
+
+      twoYear:
+        twoYear.length
+          ? {
+
+              value:
+                round(
+                  twoYear[0].value,
+                  3
+                ),
+
+              change:
+                round(
+                  change2,
+                  3
+                ),
+
+              date:
+                twoYear[0].date
+            }
+          : null,
+
+      tenYear:
+        tenYear.length
+          ? {
+
+              value:
+                round(
+                  tenYear[0].value,
+                  3
+                ),
+
+              change:
+                round(
+                  change10,
+                  3
+                ),
+
+              date:
+                tenYear[0].date
+            }
+          : null,
+
+      fedFunds:
+        fedFunds.length
+          ? {
+
+              value:
+                round(
+                  fedFunds[0].value,
+                  3
+                ),
+
+              date:
+                fedFunds[0].date
+            }
+          : null
+    };
+
+
+    macroCache = {
+
+      time:
+        Date.now(),
+
+      value:
+        result
+    };
+
+
+    return result;
+
+  } catch (
+    error
+  ) {
+
+    return {
+
+      enabled:
+        false,
+
+      score:
+        0,
+
+      bias:
+        "UNAVAILABLE",
+
+      error:
+        error.message
+    };
+  }
+}
+
+
+/* ================================================================
+   DATA FEED QUALITY
+================================================================ */
+
+function feedValidation(
+  primary,
+  secondary,
+  atrValue
 ) {
 
-  return values.reduce(
+  if (
+    !primary ||
+    !secondary
+  ) {
 
-    (
-      total,
-      value
-    ) =>
+    return {
 
-      total
+      available:
+        false,
 
-      +
+      status:
+        "SECONDARY UNAVAILABLE"
+    };
+  }
 
-      (
-        Number.isFinite(
-          value
-        )
-          ?
-          value
-          :
-          0
+
+  const difference =
+    Math.abs(
+      primary -
+      secondary
+    );
+
+
+  const differenceATR =
+    atrValue > 0
+      ? difference /
+        atrValue
+      : 0;
+
+
+  let status =
+    "GOOD";
+
+
+  if (
+    differenceATR >
+    0.25
+  ) {
+
+    status =
+      "DISAGREEMENT";
+
+  } else if (
+    differenceATR >
+    0.10
+  ) {
+
+    status =
+      "CAUTION";
+  }
+
+
+  return {
+
+    available:
+      true,
+
+    status,
+
+    primary:
+      round(
+        primary,
+        2
       ),
 
-    0
+    secondary:
+      round(
+        secondary,
+        2
+      ),
 
-  );
+    difference:
+      round(
+        difference,
+        2
+      ),
 
+    differenceATR:
+      round(
+        differenceATR,
+        3
+      )
+  };
 }
 
 
-function percentile(
-  values,
-  q
+/* ================================================================
+   MARKET REGIME
+================================================================ */
+
+function marketRegime(
+  candles
 ) {
 
+  if (
+    candles.length < 50
+  ) {
 
-  const sorted =
-    values
+    return {
 
-      .filter(
-        Number.isFinite
+      regime:
+        "UNKNOWN",
+
+      volatility:
+        "UNKNOWN",
+
+      trendStrength:
+        0
+    };
+  }
+
+
+  const ranges =
+    candles
+      .slice(
+        -40
       )
+      .map(
+        candle =>
+          candle.high -
+          candle.low
+      );
 
-      .slice()
 
+  const recent =
+    mean(
+      ranges.slice(
+        -10
+      )
+    );
+
+
+  const previous =
+    mean(
+      ranges.slice(
+        -30,
+        -10
+      )
+    );
+
+
+  let volatility =
+    "NORMAL";
+
+
+  if (
+    recent >
+    previous *
+    1.35
+  ) {
+
+    volatility =
+      "EXPANDING";
+
+  } else if (
+    recent <
+    previous *
+    0.72
+  ) {
+
+    volatility =
+      "CONTRACTING";
+  }
+
+
+  const closes =
+    candles.map(
+      candle =>
+        candle.close
+    );
+
+
+  const e20 =
+    last(
+      ema(
+        closes,
+        20
+      )
+    );
+
+
+  const e50 =
+    last(
+      ema(
+        closes,
+        50
+      )
+    );
+
+
+  const localATR =
+    atr(
+      candles,
+      14
+    );
+
+
+  const trendStrength =
+    localATR > 0
+      ? Math.abs(
+          e20 -
+          e50
+        ) /
+        localATR
+      : 0;
+
+
+  const bias =
+    structure(
+      candles
+    ).bias;
+
+
+  let regime =
+    "RANGING";
+
+
+  if (
+    trendStrength >= 0.7
+  ) {
+
+    regime =
+      bias === "BULLISH"
+        ? "TRENDING UP"
+        : bias === "BEARISH"
+          ? "TRENDING DOWN"
+          : "TRANSITION";
+  }
+
+
+  return {
+
+    regime,
+
+    volatility,
+
+    trendStrength:
+      round(
+        trendStrength,
+        2
+      )
+  };
+}
+
+
+/* ================================================================
+   CONSENSUS MODEL
+================================================================ */
+
+function buildConsensus({
+  m5,
+  m15,
+  h1,
+  h4,
+  liquidityPath,
+  intermarket,
+  macro,
+  delta,
+  dominantSweepQuality,
+  feedQuality
+}) {
+
+  const s5 =
+    structure(
+      m5
+    );
+
+  const s15 =
+    structure(
+      m15
+    );
+
+  const s1 =
+    structure(
+      h1
+    );
+
+  const s4 =
+    structure(
+      h4
+    );
+
+
+  let technicalScore =
+
+    s5.score *
+      9 +
+
+    s15.score *
+      14 +
+
+    s1.score *
+      18 +
+
+    s4.score *
+      21;
+
+
+  technicalScore =
+    clamp(
+      technicalScore,
+      -100,
+      100
+    );
+
+
+  const dominant =
+    liquidityPath[0] ||
+    null;
+
+
+  let liquidityDraw =
+    0;
+
+
+  if (
+    dominant
+  ) {
+
+    let direction =
+      dominant.side ===
+      "BUY_SIDE"
+        ? 1
+        : -1;
+
+
+    /*
+       Once a zone is rejecting, the draw contribution flips because
+       the raid may have completed.
+    */
+
+    if (
+      dominant.lifecycle.stage ===
+      "REJECTING"
+    ) {
+
+      direction *=
+        -1;
+    }
+
+
+    liquidityDraw =
+      dominant.nextTargetScore *
+      direction;
+  }
+
+
+  let flowScore =
+    0;
+
+
+  if (
+    delta.bias ===
+    "BUYING PRESSURE"
+  ) {
+
+    flowScore =
+      clamp(
+        Math.abs(
+          delta.delta
+        ) /
+        8,
+        0,
+        100
+      );
+
+  } else if (
+    delta.bias ===
+    "SELLING PRESSURE"
+  ) {
+
+    flowScore =
+      -clamp(
+        Math.abs(
+          delta.delta
+        ) /
+        8,
+        0,
+        100
+      );
+  }
+
+
+  let sweepReversalScore =
+    0;
+
+
+  if (
+    dominant &&
+    dominant.lifecycle.stage ===
+    "REJECTING"
+  ) {
+
+    sweepReversalScore =
+
+      dominant.side ===
+      "BUY_SIDE"
+        ? -dominantSweepQuality.score
+        : dominantSweepQuality.score;
+  }
+
+
+  const score =
+    clamp(
+
+      technicalScore *
+        0.27 +
+
+      liquidityDraw *
+        0.27 +
+
+      intermarket.score *
+        0.19 +
+
+      (
+        macro.score ||
+        0
+      ) *
+        0.10 +
+
+      flowScore *
+        0.07 +
+
+      sweepReversalScore *
+        0.10,
+
+      -100,
+      100
+    );
+
+
+  let confidence =
+    Math.abs(
+      score
+    );
+
+
+  if (
+    dominant
+  ) {
+
+    confidence =
+      confidence *
+      0.70 +
+      dominant.heat *
+      0.30;
+  }
+
+
+  if (
+    feedQuality.status ===
+    "DISAGREEMENT"
+  ) {
+
+    confidence -=
+      20;
+  }
+
+
+  confidence =
+    clamp(
+      confidence,
+      0,
+      100
+    );
+
+
+  const direction =
+    score >= 20
+      ? "BULLISH"
+      : score <= -20
+        ? "BEARISH"
+        : "NEUTRAL";
+
+
+  const liquidityDrawDirection =
+    !dominant
+      ? "NONE"
+      : dominant.lifecycle.stage ===
+        "REJECTING"
+        ? (
+            dominant.side ===
+            "BUY_SIDE"
+              ? "DOWN AFTER BUY-SIDE RAID"
+              : "UP AFTER SELL-SIDE RAID"
+          )
+        : (
+            dominant.side ===
+            "BUY_SIDE"
+              ? "UP TOWARD BUY-SIDE LIQUIDITY"
+              : "DOWN TOWARD SELL-SIDE LIQUIDITY"
+          );
+
+
+  const reasons = [
+
+    `M5 structure: ${s5.bias}`,
+
+    `M15 structure: ${s15.bias}`,
+
+    `H1 structure: ${s1.bias}`,
+
+    `H4 structure: ${s4.bias}`,
+
+    `Intermarket: ${intermarket.bias} ${intermarket.score}`
+
+  ];
+
+
+  if (
+    dominant
+  ) {
+
+    reasons.push(
+      `Dominant liquidity: ${dominant.name}`
+    );
+
+    reasons.push(
+      `Zone heat: ${dominant.heat}/100`
+    );
+
+    reasons.push(
+      `Raid likelihood: ${dominant.raidLikelihood}/100`
+    );
+
+    reasons.push(
+      `Lifecycle: ${dominant.lifecycle.stage}`
+    );
+
+    reasons.push(
+      `Approach: ${dominant.approach.label} ${dominant.approach.score}/100`
+    );
+  }
+
+
+  if (
+    macro.enabled
+  ) {
+
+    reasons.push(
+      `Macro: ${macro.bias} ${macro.score}`
+    );
+  }
+
+
+  if (
+    delta.divergence
+  ) {
+
+    reasons.push(
+      delta.divergence
+    );
+  }
+
+
+  if (
+    delta.absorption
+  ) {
+
+    reasons.push(
+      delta.absorption
+    );
+  }
+
+
+  if (
+    dominantSweepQuality.score > 0
+  ) {
+
+    reasons.push(
+      `Sweep quality: ${dominantSweepQuality.quality} ${dominantSweepQuality.score}/100`
+    );
+  }
+
+
+  return {
+
+    direction,
+
+    score:
+      round(
+        score,
+        1
+      ),
+
+    confidence:
+      round(
+        confidence,
+        1
+      ),
+
+    liquidityDrawDirection,
+
+    components: {
+
+      technical:
+        round(
+          technicalScore,
+          1
+        ),
+
+      liquidityDraw:
+        round(
+          liquidityDraw,
+          1
+        ),
+
+      intermarket:
+        round(
+          intermarket.score,
+          1
+        ),
+
+      macro:
+        round(
+          macro.score || 0,
+          1
+        ),
+
+      flow:
+        round(
+          flowScore,
+          1
+        ),
+
+      sweepReversal:
+        round(
+          sweepReversalScore,
+          1
+        )
+    },
+
+    reasons
+  };
+}
+
+
+/* ================================================================
+   MAIN INTELLIGENCE ENGINE
+================================================================ */
+
+async function buildIntelligence() {
+
+  if (
+    liveCache.value &&
+    Date.now() -
+      liveCache.time <
+      LIVE_CACHE_MS
+  ) {
+
+    return {
+
+      ...liveCache.value,
+
+      cached:
+        true
+    };
+  }
+
+
+  if (!KEY_1) {
+
+    throw new Error(
+      "TWELVE_DATA_API_KEY is missing."
+    );
+  }
+
+
+  const [
+
+    m1,
+    m5,
+    m15,
+    h1,
+    h4,
+
+    primaryQuote,
+
+    history,
+
+    intermarket,
+
+    macro,
+
+    secondaryQuote
+
+  ] =
+    await Promise.all([
+
+      tdSeries({
+
+        symbol:
+          SYMBOL,
+
+        interval:
+          "1min",
+
+        outputsize:
+          500,
+
+        apiKey:
+          KEY_1
+      }),
+
+
+      tdSeries({
+
+        symbol:
+          SYMBOL,
+
+        interval:
+          "5min",
+
+        outputsize:
+          1200,
+
+        apiKey:
+          KEY_1
+      }),
+
+
+      tdSeries({
+
+        symbol:
+          SYMBOL,
+
+        interval:
+          "15min",
+
+        outputsize:
+          700,
+
+        apiKey:
+          KEY_2
+      }),
+
+
+      tdSeries({
+
+        symbol:
+          SYMBOL,
+
+        interval:
+          "1h",
+
+        outputsize:
+          700,
+
+        apiKey:
+          KEY_2
+      }),
+
+
+      tdSeries({
+
+        symbol:
+          SYMBOL,
+
+        interval:
+          "4h",
+
+        outputsize:
+          400,
+
+        apiKey:
+          KEY_2
+      }),
+
+
+      tdQuote({
+
+        symbol:
+          SYMBOL,
+
+        apiKey:
+          KEY_1
+      })
+      .catch(
+        () => null
+      ),
+
+
+      loadHistory(),
+
+
+      loadIntermarket(),
+
+
+      loadMacro(),
+
+
+      tdQuote({
+
+        symbol:
+          SYMBOL,
+
+        apiKey:
+          KEY_4
+      })
+      .catch(
+        () => null
+      )
+    ]);
+
+
+  const fallbackPrice =
+    last(
+      m1
+    )?.close ||
+    last(
+      m5
+    )?.close ||
+    0;
+
+
+  const price =
+    primaryQuote?.price ||
+    fallbackPrice;
+
+
+  const atrM1 =
+    atr(
+      m1,
+      14
+    );
+
+
+  const atrM5 =
+    atr(
+      m5,
+      14
+    );
+
+
+  const atrM15 =
+    atr(
+      m15,
+      14
+    );
+
+
+  const sessions =
+    currentSessions(
+      m5
+    );
+
+
+  const previousDay =
+    previousDayLevels(
+      m5
+    );
+
+
+  const previousWeek =
+    previousWeekLevels(
+      h1
+    );
+
+
+  const equalLevels =
+    detectEqualLevels(
+      m5,
+      atrM5
+    );
+
+
+  const fvgs =
+    fairValueGaps(
+      m15,
+      14
+    );
+
+
+  const rawLiquidityLevels =
+    buildRawLiquidityLevels({
+
+      sessions,
+
+      previousDay,
+
+      previousWeek,
+
+      h1,
+
+      equalLevels,
+
+      historicalStats:
+        history.statistics
+    });
+
+
+  const zones =
+    clusterLiquidityLevels({
+
+      levels:
+        rawLiquidityLevels,
+
+      price,
+
+      atrValue:
+        atrM5,
+
+      m5,
+
+      m1,
+
+      h1,
+
+      fvgs
+    });
+
+
+  const liquidityPath =
+    buildLiquidityPath(
+      zones
+    );
+
+
+  const dominantZone =
+    liquidityPath[0] ||
+    null;
+
+
+  const delta =
+    deltaEngine(
+      m1
+    );
+
+
+  const displacementM1 =
+    displacement(
+      m1
+    );
+
+
+  const displacementM5 =
+    displacement(
+      m5
+    );
+
+
+  const dominantSweepQuality =
+    dominantZone
+      ? evaluateSweepQuality({
+
+          zone:
+            dominantZone,
+
+          m1,
+
+          m5,
+
+          delta,
+
+          displacementM1
+        })
+      : {
+
+          score:
+            0,
+
+          quality:
+            "NONE",
+
+          checks: {}
+        };
+
+
+  const feedQuality =
+    feedValidation(
+
+      price,
+
+      secondaryQuote?.price,
+
+      atrM5
+    );
+
+
+  const structures = {
+
+    M1:
+      structure(
+        m1
+      ),
+
+    M5:
+      structure(
+        m5
+      ),
+
+    M15:
+      structure(
+        m15
+      ),
+
+    H1:
+      structure(
+        h1
+      ),
+
+    H4:
+      structure(
+        h4
+      )
+  };
+
+
+  const marketRegimeData =
+    marketRegime(
+      m5
+    );
+
+
+  const vwap =
+    vwapProxy(
+      m5,
+      150
+    );
+
+
+  const macdM5 =
+    macd(
+      m5
+    );
+
+
+  const macdM15 =
+    macd(
+      m15
+    );
+
+
+  const consensus =
+    buildConsensus({
+
+      m5,
+
+      m15,
+
+      h1,
+
+      h4,
+
+      liquidityPath,
+
+      intermarket,
+
+      macro,
+
+      delta,
+
+      dominantSweepQuality,
+
+      feedQuality
+    });
+
+
+  const buyZones =
+    liquidityPath
+      .filter(
+        zone =>
+          zone.side ===
+          "BUY_SIDE"
+      );
+
+
+  const sellZones =
+    liquidityPath
+      .filter(
+        zone =>
+          zone.side ===
+          "SELL_SIDE"
+      );
+
+
+  const nearestBuyZone =
+    buyZones
       .sort(
         (
           a,
           b
         ) =>
-          a -
+          a.distance -
+          b.distance
+      )[0] ||
+      null;
+
+
+  const nearestSellZone =
+    sellZones
+      .sort(
+        (
+          a,
           b
-      );
+        ) =>
+          a.distance -
+          b.distance
+      )[0] ||
+      null;
 
 
-  if (
-    !sorted.length
-  ) {
+  const result = {
 
-    return null;
+    ok:
+      true,
 
-  }
+    engine:
+      "MKAYFX GOLD INTELLIGENCE V8",
 
+    symbol:
+      SYMBOL,
 
-  const position =
+    generatedAt:
+      new Date()
+        .toISOString(),
 
-    (
-      sorted.length -
-      1
-    )
-
-    *
-    q;
-
-
-  const low =
-    Math.floor(
-      position
-    );
+    cached:
+      false,
 
 
-  const high =
-    Math.ceil(
-      position
-    );
+    market: {
+
+      price:
+        round(
+          price,
+          2
+        ),
+
+      previousClose:
+        round(
+          primaryQuote?.previousClose,
+          2
+        ),
+
+      change:
+        round(
+          primaryQuote?.change,
+          2
+        ),
+
+      percentChange:
+        round(
+          primaryQuote?.percentChange,
+          3
+        ),
+
+      atr: {
+
+        M1:
+          round(
+            atrM1,
+            2
+          ),
+
+        M5:
+          round(
+            atrM5,
+            2
+          ),
+
+        M15:
+          round(
+            atrM15,
+            2
+          )
+      },
+
+      rsi: {
+
+        M1:
+          round(
+            rsi(
+              m1,
+              14
+            ),
+            1
+          ),
+
+        M5:
+          round(
+            rsi(
+              m5,
+              14
+            ),
+            1
+          ),
+
+        M15:
+          round(
+            rsi(
+              m15,
+              14
+            ),
+            1
+          )
+      },
+
+      macd: {
+
+        M5: {
+
+          macd:
+            round(
+              macdM5.macd,
+              3
+            ),
+
+          signal:
+            round(
+              macdM5.signal,
+              3
+            ),
+
+          histogram:
+            round(
+              macdM5.histogram,
+              3
+            )
+        },
+
+        M15: {
+
+          macd:
+            round(
+              macdM15.macd,
+              3
+            ),
+
+          signal:
+            round(
+              macdM15.signal,
+              3
+            ),
+
+          histogram:
+            round(
+              macdM15.histogram,
+              3
+            )
+        }
+      },
+
+      rocM5:
+        round(
+          roc(
+            m5,
+            10
+          ),
+          3
+        ),
+
+      vwap:
+        round(
+          vwap,
+          2
+        ),
+
+      vwapPosition:
+        price >
+        vwap
+          ? "ABOVE VWAP"
+          : price <
+            vwap
+            ? "BELOW VWAP"
+            : "AT VWAP",
+
+      regime:
+        marketRegimeData
+    },
 
 
-  if (
-    low ===
-    high
-  ) {
-
-    return sorted[
-      low
-    ];
-
-  }
+    sessions,
 
 
-  const weight =
-    position -
-    low;
+    previousDay,
 
 
-  return (
-
-    sorted[
-      low
-    ]
-
-    *
-    (
-      1 -
-      weight
-    )
-
-    +
-
-    sorted[
-      high
-    ]
-
-    *
-    weight
-
-  );
-
-}
+    previousWeek,
 
 
-function median(
-  values
-) {
-
-  return percentile(
-    values,
-    .5
-  );
-
-}
+    dealingRange:
+      dealingRange(
+        h1
+      ),
 
 
-function lastFinite(
-  values
-) {
+    structure:
+      structures,
 
 
-  for (
-    let i =
-      values.length -
-      1;
+    displacement: {
 
-    i >=
-      0;
+      M1:
+        displacementM1,
 
-    i--
-  ) {
+      M5:
+        displacementM5
+    },
 
 
-    if (
-      Number.isFinite(
-        values[i]
-      )
-    ) {
+    flow:
+      delta,
 
-      return values[i];
 
+    equalLevels,
+
+
+    fairValueGaps:
+      fvgs,
+
+
+    deepLiquidity: {
+
+      rawLevelCount:
+        rawLiquidityLevels.length,
+
+      zoneCount:
+        zones.length,
+
+      dominantZone,
+
+      nearestBuyZone,
+
+      nearestSellZone,
+
+      zones:
+        liquidityPath,
+
+      path:
+        liquidityPath
+          .slice(
+            0,
+            8
+          )
+          .map(
+            (
+              zone,
+              index
+            ) => ({
+
+              rank:
+                index + 1,
+
+              id:
+                zone.id,
+
+              name:
+                zone.name,
+
+              side:
+                zone.side,
+
+              range: {
+
+                low:
+                  zone.low,
+
+                high:
+                  zone.high
+              },
+
+              stage:
+                zone.lifecycle.stage,
+
+              heat:
+                zone.heat,
+
+              raidLikelihood:
+                zone.raidLikelihood,
+
+              nextTargetScore:
+                zone.nextTargetScore,
+
+              distanceATR:
+                zone.distanceATR
+            })
+          ),
+
+      dominantSweepQuality
+    },
+
+
+    historicalLiquidity: {
+
+      candleCount:
+        history.candleCount,
+
+      firstTimestamp:
+        history.firstTimestamp,
+
+      lastTimestamp:
+        history.lastTimestamp,
+
+      sessions:
+        history.statistics
+    },
+
+
+    intermarket,
+
+
+    macro,
+
+
+    dataQuality:
+      feedQuality,
+
+
+    consensus,
+
+
+    health: {
+
+      api1:
+        Boolean(
+          KEY_1
+        ),
+
+      api2:
+        Boolean(
+          KEY_2
+        ),
+
+      api3:
+        Boolean(
+          KEY_3
+        ),
+
+      api4:
+        Boolean(
+          KEY_4
+        ),
+
+      fred:
+        Boolean(
+          FRED_KEY
+        )
+    },
+
+
+    apiArchitecture: {
+
+      api1:
+        "XAU M1 + M5 execution intelligence",
+
+      api2:
+        "XAU M15 + H1 + H4 structure",
+
+      api3:
+        "Historical XAU liquidity behaviour",
+
+      api4:
+        "XAG + EURUSD + GBPUSD + USDJPY + BTCUSD + XAU validation",
+
+      fred:
+        "US yield and macro pressure"
+    },
+
+
+    modelNotes: {
+
+      liquidityLikelihood:
+        "Raid/reversal/continuation scores are heuristic model likelihoods, not guaranteed probabilities.",
+
+      orderFlow:
+        "Delta/CVD/absorption are candle/activity proxies, not centralized exchange footprint data."
     }
+  };
 
-  }
+
+  liveCache = {
+
+    time:
+      Date.now(),
+
+    value:
+      result
+  };
 
 
-  return null;
-
+  return result;
 }
 
 
-function clamp(
-  value,
-  minimum,
-  maximum
+/* ================================================================
+   VERCEL HANDLER
+================================================================ */
+
+export default async function handler(
+  req,
+  res
 ) {
 
-  return Math.max(
-
-    minimum,
-
-    Math.min(
-      maximum,
-      value
-    )
-
+  res.setHeader(
+    "Cache-Control",
+    "no-store, max-age=0"
   );
 
-}
+
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
+  );
 
 
-function round(
-  value,
-  decimals = 2
-) {
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, OPTIONS"
+  );
 
 
   if (
-    !Number.isFinite(
-      Number(
-        value
-      )
-    )
+    req.method ===
+    "OPTIONS"
   ) {
 
-    return null;
-
+    return (
+      res
+        .status(204)
+        .end()
+    );
   }
 
 
-  const multiplier =
-    10 **
-    decimals;
+  if (
+    req.method !==
+    "GET"
+  ) {
+
+    return (
+      res
+        .status(405)
+        .json({
+
+          ok:
+            false,
+
+          error:
+            "Method not allowed."
+        })
+    );
+  }
 
 
-  return (
+  try {
 
-    Math.round(
-
-      Number(
-        value
-      )
-
-      *
-      multiplier
-
-    )
-
-    /
-    multiplier
-
-  );
-
-}
+    const result =
+      await buildIntelligence();
 
 
-function pad(
-  value
-) {
-
-  return String(
-    value
-  )
-    .padStart(
-      2,
-      "0"
+    return (
+      res
+        .status(200)
+        .json(
+          result
+        )
     );
 
-}
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "MKAYFX V8 ERROR:",
+      error
+    );
 
 
-function minuteLabel(
-  minute
-) {
+    return (
+      res
+        .status(500)
+        .json({
 
-  return (
+          ok:
+            false,
 
-    `${pad(
-      Math.floor(
-        minute /
-        60
-      )
-    )}:`
+          engine:
+            "MKAYFX GOLD INTELLIGENCE V8",
 
-    +
+          error:
+            error?.message ||
+            "Unknown server error.",
 
-    `${pad(
-      minute %
-      60
-    )}`
-
-  );
-
+          generatedAt:
+            new Date()
+              .toISOString()
+        })
+    );
+  }
 }
