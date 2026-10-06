@@ -1,18 +1,15 @@
-/* ============================================================
-   MKAYFX XAU/USD CHART FEED V2
+/* ================================================================
+   MKAYFX XAU CHART ENGINE V3
+   ---------------------------------------------------------------
+   FILE:
    /api/chart.js
 
-   PURPOSE
-   ------------------------------------------------------------
-   Dedicated chart endpoint.
+   M1 / M5
+   TWELVE_DATA_API_KEY
 
-   M1  -> TWELVE_DATA_API_KEY
-   M5  -> TWELVE_DATA_API_KEY
-   M15 -> TWELVE_DATA_API_KEY_2
-   H1  -> TWELVE_DATA_API_KEY_2
-
-   This endpoint returns ONLY validated OHLC candles.
-============================================================ */
+   M15 / H1
+   TWELVE_DATA_API_KEY_2
+================================================================ */
 
 
 const TD_BASE =
@@ -34,353 +31,273 @@ const SYMBOL =
 
 
 const CACHE_MS =
-  15000;
+  20000;
 
 
-const cache =
+const CACHE =
   new Map();
 
 
-/* ============================================================
+/* ================================================================
    HELPERS
-============================================================ */
+================================================================ */
 
 function finite(
   value
-){
+) {
 
-  if(
+  if (
     value === null ||
     value === undefined ||
     value === ""
-  ){
+  ) {
+
     return null;
+
   }
+
 
   const n =
-    Number(value);
+    Number(
+      value
+    );
 
-  return Number.isFinite(n)
+
+  return Number.isFinite(
+    n
+  )
     ? n
     : null;
+
 }
 
 
-function clamp(
-  value,
-  min,
-  max
-){
-
-  return Math.max(
-    min,
-    Math.min(
-      max,
-      Number(value) || 0
-    )
-  );
-}
-
-
-/* ============================================================
-   TIMEFRAME CONFIG
-============================================================ */
-
-function timeframeConfig(tf){
-
-  const value =
-    String(
-      tf || "m5"
-    )
-    .toLowerCase();
-
-  if(value === "m1"){
-
-    return {
-      tf:"m1",
-      interval:"1min",
-      apiKey:KEY_1
-    };
-  }
-
-  if(value === "m5"){
-
-    return {
-      tf:"m5",
-      interval:"5min",
-      apiKey:KEY_1
-    };
-  }
-
-  if(value === "m15"){
-
-    return {
-      tf:"m15",
-      interval:"15min",
-      apiKey:KEY_2
-    };
-  }
-
-  if(value === "h1"){
-
-    return {
-      tf:"h1",
-      interval:"1h",
-      apiKey:KEY_2
-    };
-  }
-
-  throw new Error(
-    `Unsupported timeframe: ${value}`
-  );
-}
-
-
-/* ============================================================
-   PARSE DATETIME
-============================================================ */
-
-function parseTimestamp(
+function parseTime(
   value
-){
+) {
 
-  if(
+  if (
     value === null ||
     value === undefined
-  ){
+  ) {
+
     return null;
+
   }
 
-  if(
-    typeof value === "number"
-  ){
 
-    return value < 100000000000
-      ? value * 1000
+  if (
+    typeof value ===
+    "number"
+  ) {
+
+    return value <
+      100000000000
+      ? value *
+        1000
       : value;
+
   }
+
 
   let text =
-    String(value);
+    String(
+      value
+    );
 
-  if(
-    !text.includes("T") &&
-    text.includes(" ")
-  ){
+
+  if (
+    !text.includes(
+      "T"
+    ) &&
+    text.includes(
+      " "
+    )
+  ) {
 
     text =
       text.replace(
         " ",
         "T"
       );
+
   }
 
-  if(
-    !/[zZ]|[+-]\d\d:\d\d$/.test(text)
-  ){
 
-    text += "Z";
+  if (
+    !/[zZ]|[+-]\d\d:\d\d$/.test(
+      text
+    )
+  ) {
+
+    text +=
+      "Z";
+
   }
+
 
   const timestamp =
-    Date.parse(text);
+    Date.parse(
+      text
+    );
 
-  return Number.isFinite(timestamp)
+
+  return Number.isFinite(
+    timestamp
+  )
     ? timestamp
     : null;
+
 }
 
 
-/* ============================================================
-   PARSE CANDLES
-============================================================ */
+/* ================================================================
+   TIMEFRAME
+================================================================ */
 
-function parseCandles(
-  json
-){
+function timeframeConfig(
+  tf
+) {
 
-  if(
-    !json ||
-    !Array.isArray(
-      json.values
-    )
-  ){
+  switch (
+    String(
+      tf ||
+      "m5"
+    ).toLowerCase()
+  ) {
 
-    throw new Error(
-      json?.message ||
-      "Twelve Data returned no chart candle values."
-    );
-  }
+    case "m1":
 
-  const parsed =
-    json.values
-      .map(
-        row => {
+      return {
 
-          const time =
-            parseTimestamp(
-              row.datetime
-            );
+        name:
+          "m1",
 
-          const open =
-            finite(row.open);
+        interval:
+          "1min",
 
-          const high =
-            finite(row.high);
+        key:
+          KEY_1
 
-          const low =
-            finite(row.low);
+      };
 
-          const close =
-            finite(row.close);
 
-          const volume =
-            finite(row.volume) ??
-            0;
+    case "m5":
 
-          if(
-            time === null ||
-            open === null ||
-            high === null ||
-            low === null ||
-            close === null
-          ){
-            return null;
-          }
+      return {
 
-          if(
-            open <= 0 ||
-            high <= 0 ||
-            low <= 0 ||
-            close <= 0
-          ){
-            return null;
-          }
+        name:
+          "m5",
 
-          if(
-            high <
-            Math.max(
-              open,
-              close,
-              low
-            )
-          ){
-            return null;
-          }
+        interval:
+          "5min",
 
-          if(
-            low >
-            Math.min(
-              open,
-              close,
-              high
-            )
-          ){
-            return null;
-          }
+        key:
+          KEY_1
 
-          return {
-            timestamp:time,
-            time,
-            open,
-            high,
-            low,
-            close,
-            volume
-          };
-        }
-      )
-      .filter(Boolean)
-      .sort(
-        (a,b) =>
-          a.time -
-          b.time
+      };
+
+
+    case "m15":
+
+      return {
+
+        name:
+          "m15",
+
+        interval:
+          "15min",
+
+        key:
+          KEY_2
+
+      };
+
+
+    case "h1":
+
+      return {
+
+        name:
+          "h1",
+
+        interval:
+          "1h",
+
+        key:
+          KEY_2
+
+      };
+
+
+    default:
+
+      throw new Error(
+        "Unsupported timeframe."
       );
 
-  /*
-    Remove duplicate timestamps.
-  */
-
-  const unique =
-    [];
-
-  const seen =
-    new Set();
-
-  for(const candle of parsed){
-
-    if(
-      seen.has(
-        candle.time
-      )
-    ){
-      continue;
-    }
-
-    seen.add(
-      candle.time
-    );
-
-    unique.push(
-      candle
-    );
   }
 
-  return unique;
 }
 
 
-/* ============================================================
-   FETCH SERIES
-============================================================ */
+/* ================================================================
+   FETCH
+================================================================ */
 
-async function fetchSeries({
-  interval,
-  apiKey,
-  outputsize
-}){
+async function fetchCandles(
+  config,
+  limit
+) {
 
-  if(!apiKey){
+  if (
+    !config.key
+  ) {
 
     throw new Error(
       "Missing Twelve Data API key."
     );
+
   }
+
 
   const url =
 
     `${TD_BASE}/time_series` +
 
-    `?symbol=${encodeURIComponent(SYMBOL)}` +
+    `?symbol=${encodeURIComponent(
+      SYMBOL
+    )}` +
 
-    `&interval=${encodeURIComponent(interval)}` +
+    `&interval=${encodeURIComponent(
+      config.interval
+    )}` +
 
-    `&outputsize=${outputsize}` +
+    `&outputsize=${limit}` +
 
     `&order=asc` +
 
     `&timezone=UTC` +
 
-    `&apikey=${encodeURIComponent(apiKey)}`;
+    `&apikey=${encodeURIComponent(
+      config.key
+    )}`;
 
 
   const response =
     await fetch(
-      url,
-      {
-        headers:{
-          "User-Agent":
-            "MKAYFX-CHART-V2"
-        }
-      }
+      url
     );
 
 
-  if(!response.ok){
+  if (
+    !response.ok
+  ) {
 
     throw new Error(
       `Twelve Data HTTP ${response.status}`
     );
+
   }
 
 
@@ -388,74 +305,168 @@ async function fetchSeries({
     await response.json();
 
 
-  if(
-    json.status === "error"
-  ){
+  if (
+    json.status ===
+    "error"
+  ) {
 
     throw new Error(
       json.message ||
-      "Twelve Data chart error."
+      "Twelve Data error."
     );
+
   }
 
 
-  return parseCandles(
-    json
-  );
+  if (
+    !Array.isArray(
+      json.values
+    )
+  ) {
+
+    throw new Error(
+      "No chart candles returned."
+    );
+
+  }
+
+
+  return json.values
+
+    .map(
+      row => {
+
+        const time =
+          parseTime(
+            row.datetime
+          );
+
+
+        const open =
+          finite(
+            row.open
+          );
+
+
+        const high =
+          finite(
+            row.high
+          );
+
+
+        const low =
+          finite(
+            row.low
+          );
+
+
+        const close =
+          finite(
+            row.close
+          );
+
+
+        if (
+          time === null ||
+          open === null ||
+          high === null ||
+          low === null ||
+          close === null ||
+          open <= 0 ||
+          high <= 0 ||
+          low <= 0 ||
+          close <= 0
+        ) {
+
+          return null;
+
+        }
+
+
+        return {
+
+          time,
+
+          timestamp:
+            time,
+
+          open,
+
+          high,
+
+          low,
+
+          close,
+
+          volume:
+            finite(
+              row.volume
+            ) ??
+            0
+
+        };
+
+      }
+    )
+
+    .filter(
+      Boolean
+    )
+
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.time -
+        b.time
+    );
+
 }
 
 
-/* ============================================================
+/* ================================================================
    HANDLER
-============================================================ */
+================================================================ */
 
 export default async function handler(
   req,
   res
-){
+) {
 
   res.setHeader(
     "Cache-Control",
     "no-store, max-age=0"
   );
 
+
   res.setHeader(
     "Access-Control-Allow-Origin",
     "*"
   );
 
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, OPTIONS"
-  );
 
-
-  if(
-    req.method ===
-    "OPTIONS"
-  ){
-
-    return res
-      .status(204)
-      .end();
-  }
-
-
-  if(
+  if (
     req.method !==
     "GET"
-  ){
+  ) {
 
     return res
       .status(405)
       .json({
-        ok:false,
-        error:"Method not allowed."
+
+        ok:
+          false,
+
+        error:
+          "Method not allowed."
+
       });
+
   }
 
 
-  try{
+  try {
 
     const config =
       timeframeConfig(
@@ -463,93 +474,70 @@ export default async function handler(
       );
 
 
-    const requestedLimit =
-      clamp(
-        req.query?.limit,
-        50,
-        500
-      ) || 260;
-
-
-    const outputsize =
+    const limit =
       Math.max(
-        requestedLimit,
-        260
+        50,
+        Math.min(
+          500,
+          Number(
+            req.query?.limit
+          ) ||
+          260
+        )
       );
 
 
-    const force =
-      String(
-        req.query?.force ||
-        ""
-      ) === "1";
-
-
     const cacheKey =
-      `${config.tf}:${outputsize}`;
+      `${config.name}-${limit}`;
 
 
     const cached =
-      cache.get(
+      CACHE.get(
         cacheKey
       );
 
 
-    if(
-      !force &&
+    if (
       cached &&
       Date.now() -
       cached.time <
       CACHE_MS
-    ){
+    ) {
 
       return res
         .status(200)
         .json({
+
           ...cached.value,
-          cached:true
+
+          cached:
+            true
+
         });
+
     }
 
 
     const candles =
-      await fetchSeries({
-        interval:
-          config.interval,
-        apiKey:
-          config.apiKey,
-        outputsize
-      });
-
-
-    if(
-      candles.length < 3
-    ){
-
-      throw new Error(
-        `Only ${candles.length} valid candles were returned.`
-      );
-    }
-
-
-    const trimmed =
-      candles.slice(
-        -requestedLimit
+      await fetchCandles(
+        config,
+        limit
       );
 
 
     const result = {
 
-      ok:true,
+      ok:
+        true,
 
       engine:
-        "MKAYFX CHART FEED V2",
+        "MKAYFX CHART V3",
 
       symbol:
         SYMBOL,
 
       timeframe:
-        config.tf,
+        config.name,
 
       interval:
         config.interval,
@@ -559,40 +547,42 @@ export default async function handler(
           .toISOString(),
 
       count:
-        trimmed.length,
+        candles.length,
 
-      firstTimestamp:
-        trimmed[0]?.time ??
-        null,
+      candles,
 
-      lastTimestamp:
-        trimmed.at(-1)?.time ??
-        null,
+      cached:
+        false
 
-      candles:
-        trimmed,
-
-      cached:false
     };
 
 
-    cache.set(
+    CACHE.set(
       cacheKey,
       {
-        time:Date.now(),
-        value:result
+
+        time:
+          Date.now(),
+
+        value:
+          result
+
       }
     );
 
 
     return res
       .status(200)
-      .json(result);
+      .json(
+        result
+      );
 
-  }catch(error){
+  } catch (
+    error
+  ) {
 
     console.error(
-      "MKAYFX CHART ERROR:",
+      "CHART ERROR:",
       error
     );
 
@@ -601,19 +591,18 @@ export default async function handler(
       .status(500)
       .json({
 
-        ok:false,
+        ok:
+          false,
 
         engine:
-          "MKAYFX CHART FEED V2",
+          "MKAYFX CHART V3",
 
         error:
           error?.message ||
-          "Unknown chart error.",
-
-        generatedAt:
-          new Date()
-            .toISOString()
+          "Chart error."
 
       });
+
   }
+
 }
