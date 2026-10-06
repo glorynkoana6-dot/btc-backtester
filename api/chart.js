@@ -1,61 +1,61 @@
 /* ============================================================
-   MKAYFX XAU/USD CHART FEED V1
+   MKAYFX XAU/USD CHART FEED V2
    /api/chart.js
 
    PURPOSE
-   -------
-   Dedicated lightweight chart feed for the MKAYFX UI.
+   ------------------------------------------------------------
+   Dedicated chart endpoint.
 
-   PRIMARY API
-   -----------
-   TWELVE_DATA_API_KEY_4
+   M1  -> TWELVE_DATA_API_KEY
+   M5  -> TWELVE_DATA_API_KEY
+   M15 -> TWELVE_DATA_API_KEY_2
+   H1  -> TWELVE_DATA_API_KEY_2
 
-   FALLBACK
-   --------
-   TWELVE_DATA_API_KEY
-
-   SUPPORTED TIMEFRAMES
-   --------------------
-   M1
-   M5
-   M15
-   H1
+   This endpoint returns ONLY validated OHLC candles.
 ============================================================ */
 
 
-const API_KEY =
-  process.env.TWELVE_DATA_API_KEY_4 ||
-  process.env.TWELVE_DATA_API_KEY;
+const TD_BASE =
+  "https://api.twelvedata.com";
 
 
-const BASE =
-  "https://api.twelvedata.com/time_series";
+const KEY_1 =
+  process.env.TWELVE_DATA_API_KEY ||
+  "";
+
+
+const KEY_2 =
+  process.env.TWELVE_DATA_API_KEY_2 ||
+  KEY_1;
 
 
 const SYMBOL =
   "XAU/USD";
 
 
-const TF_MAP = {
+const CACHE_MS =
+  15000;
 
-  m1: "1min",
 
-  m5: "5min",
-
-  m15: "15min",
-
-  h1: "1h"
-
-};
+const cache =
+  new Map();
 
 
 /* ============================================================
    HELPERS
 ============================================================ */
 
-function number(
+function finite(
   value
-) {
+){
+
+  if(
+    value === null ||
+    value === undefined ||
+    value === ""
+  ){
+    return null;
+  }
 
   const n =
     Number(value);
@@ -63,7 +63,6 @@ function number(
   return Number.isFinite(n)
     ? n
     : null;
-
 }
 
 
@@ -71,140 +70,338 @@ function clamp(
   value,
   min,
   max
-) {
+){
 
   return Math.max(
     min,
     Math.min(
       max,
-      value
+      Number(value) || 0
     )
   );
-
 }
 
 
-function parseTime(
-  value
-) {
+/* ============================================================
+   TIMEFRAME CONFIG
+============================================================ */
 
-  if (!value) {
-    return NaN;
+function timeframeConfig(tf){
+
+  const value =
+    String(
+      tf || "m5"
+    )
+    .toLowerCase();
+
+  if(value === "m1"){
+
+    return {
+      tf:"m1",
+      interval:"1min",
+      apiKey:KEY_1
+    };
   }
 
+  if(value === "m5"){
 
-  const text =
-    String(value)
-      .trim()
-      .replace(
+    return {
+      tf:"m5",
+      interval:"5min",
+      apiKey:KEY_1
+    };
+  }
+
+  if(value === "m15"){
+
+    return {
+      tf:"m15",
+      interval:"15min",
+      apiKey:KEY_2
+    };
+  }
+
+  if(value === "h1"){
+
+    return {
+      tf:"h1",
+      interval:"1h",
+      apiKey:KEY_2
+    };
+  }
+
+  throw new Error(
+    `Unsupported timeframe: ${value}`
+  );
+}
+
+
+/* ============================================================
+   PARSE DATETIME
+============================================================ */
+
+function parseTimestamp(
+  value
+){
+
+  if(
+    value === null ||
+    value === undefined
+  ){
+    return null;
+  }
+
+  if(
+    typeof value === "number"
+  ){
+
+    return value < 100000000000
+      ? value * 1000
+      : value;
+  }
+
+  let text =
+    String(value);
+
+  if(
+    !text.includes("T") &&
+    text.includes(" ")
+  ){
+
+    text =
+      text.replace(
         " ",
         "T"
       );
+  }
 
+  if(
+    !/[zZ]|[+-]\d\d:\d\d$/.test(text)
+  ){
 
-  const zoned =
-    /Z$|[+-]\d\d:\d\d$/.test(text)
-      ? text
-      : `${text}Z`;
+    text += "Z";
+  }
 
+  const timestamp =
+    Date.parse(text);
 
-  return new Date(
-    zoned
-  ).getTime();
-
+  return Number.isFinite(timestamp)
+    ? timestamp
+    : null;
 }
 
 
-async function fetchJSON(
-  url,
-  timeout = 16000
-) {
+/* ============================================================
+   PARSE CANDLES
+============================================================ */
 
-  const controller =
-    new AbortController();
+function parseCandles(
+  json
+){
 
+  if(
+    !json ||
+    !Array.isArray(
+      json.values
+    )
+  ){
 
-  const timer =
-    setTimeout(
-      () =>
-        controller.abort(),
-      timeout
+    throw new Error(
+      json?.message ||
+      "Twelve Data returned no chart candle values."
     );
+  }
 
+  const parsed =
+    json.values
+      .map(
+        row => {
 
-  try {
+          const time =
+            parseTimestamp(
+              row.datetime
+            );
 
-    const response =
-      await fetch(
-        url,
-        {
+          const open =
+            finite(row.open);
 
-          cache: "no-store",
+          const high =
+            finite(row.high);
 
-          headers: {
-            Accept: "application/json"
-          },
+          const low =
+            finite(row.low);
 
-          signal:
-            controller.signal
+          const close =
+            finite(row.close);
 
+          const volume =
+            finite(row.volume) ??
+            0;
+
+          if(
+            time === null ||
+            open === null ||
+            high === null ||
+            low === null ||
+            close === null
+          ){
+            return null;
+          }
+
+          if(
+            open <= 0 ||
+            high <= 0 ||
+            low <= 0 ||
+            close <= 0
+          ){
+            return null;
+          }
+
+          if(
+            high <
+            Math.max(
+              open,
+              close,
+              low
+            )
+          ){
+            return null;
+          }
+
+          if(
+            low >
+            Math.min(
+              open,
+              close,
+              high
+            )
+          ){
+            return null;
+          }
+
+          return {
+            timestamp:time,
+            time,
+            open,
+            high,
+            low,
+            close,
+            volume
+          };
         }
+      )
+      .filter(Boolean)
+      .sort(
+        (a,b) =>
+          a.time -
+          b.time
       );
 
+  /*
+    Remove duplicate timestamps.
+  */
 
-    const raw =
-      await response.text();
+  const unique =
+    [];
 
+  const seen =
+    new Set();
 
-    let data = {};
+  for(const candle of parsed){
 
-
-    try {
-
-      data =
-        raw
-          ? JSON.parse(raw)
-          : {};
-
-    }
-    catch {
-
-      throw new Error(
-        `Twelve Data returned invalid JSON (${response.status}).`
-      );
-
+    if(
+      seen.has(
+        candle.time
+      )
+    ){
+      continue;
     }
 
-
-    if (
-      !response.ok ||
-      data.status === "error"
-    ) {
-
-      throw new Error(
-
-        data.message ||
-
-        data.code ||
-
-        `Twelve Data HTTP ${response.status}`
-
-      );
-
-    }
-
-
-    return data;
-
-  }
-  finally {
-
-    clearTimeout(
-      timer
+    seen.add(
+      candle.time
     );
 
+    unique.push(
+      candle
+    );
   }
 
+  return unique;
+}
+
+
+/* ============================================================
+   FETCH SERIES
+============================================================ */
+
+async function fetchSeries({
+  interval,
+  apiKey,
+  outputsize
+}){
+
+  if(!apiKey){
+
+    throw new Error(
+      "Missing Twelve Data API key."
+    );
+  }
+
+  const url =
+
+    `${TD_BASE}/time_series` +
+
+    `?symbol=${encodeURIComponent(SYMBOL)}` +
+
+    `&interval=${encodeURIComponent(interval)}` +
+
+    `&outputsize=${outputsize}` +
+
+    `&order=asc` +
+
+    `&timezone=UTC` +
+
+    `&apikey=${encodeURIComponent(apiKey)}`;
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        headers:{
+          "User-Agent":
+            "MKAYFX-CHART-V2"
+        }
+      }
+    );
+
+
+  if(!response.ok){
+
+    throw new Error(
+      `Twelve Data HTTP ${response.status}`
+    );
+  }
+
+
+  const json =
+    await response.json();
+
+
+  if(
+    json.status === "error"
+  ){
+
+    throw new Error(
+      json.message ||
+      "Twelve Data chart error."
+    );
+  }
+
+
+  return parseCandles(
+    json
+  );
 }
 
 
@@ -215,286 +412,208 @@ async function fetchJSON(
 export default async function handler(
   req,
   res
-) {
+){
+
+  res.setHeader(
+    "Cache-Control",
+    "no-store, max-age=0"
+  );
 
   res.setHeader(
     "Access-Control-Allow-Origin",
     "*"
   );
 
-
   res.setHeader(
-    "Cache-Control",
-    "s-maxage=20, stale-while-revalidate=40"
+    "Access-Control-Allow-Methods",
+    "GET, OPTIONS"
   );
 
 
-  if (
-    req.method === "OPTIONS"
-  ) {
+  if(
+    req.method ===
+    "OPTIONS"
+  ){
 
     return res
       .status(204)
       .end();
-
   }
 
 
-  if (
-    req.method !== "GET"
-  ) {
+  if(
+    req.method !==
+    "GET"
+  ){
 
     return res
       .status(405)
       .json({
-        ok: false,
-        error: "GET only."
+        ok:false,
+        error:"Method not allowed."
       });
-
   }
 
 
-  try {
+  try{
 
-    if (!API_KEY) {
-
-      throw new Error(
-        "Missing TWELVE_DATA_API_KEY_4 or TWELVE_DATA_API_KEY."
+    const config =
+      timeframeConfig(
+        req.query?.tf
       );
-
-    }
-
-
-    const tfRaw =
-      String(
-        req.query?.tf ||
-        "m5"
-      )
-      .toLowerCase();
-
-
-    const tf =
-      TF_MAP[tfRaw]
-        ? tfRaw
-        : "m5";
-
-
-    const interval =
-      TF_MAP[tf];
 
 
     const requestedLimit =
-      Number(
-        req.query?.limit ||
-        240
-      );
-
-
-    const limit =
       clamp(
-        Number.isFinite(requestedLimit)
-          ? Math.round(requestedLimit)
-          : 240,
-        60,
-        400
+        req.query?.limit,
+        50,
+        500
+      ) || 260;
+
+
+    const outputsize =
+      Math.max(
+        requestedLimit,
+        260
       );
 
 
-    const query =
-      new URLSearchParams({
-
-        symbol:
-          SYMBOL,
-
-        interval,
-
-        outputsize:
-          String(limit),
-
-        timezone:
-          "UTC",
-
-        format:
-          "JSON",
-
-        order:
-          "ASC",
-
-        apikey:
-          API_KEY
-
-      });
+    const force =
+      String(
+        req.query?.force ||
+        ""
+      ) === "1";
 
 
-    const data =
-      await fetchJSON(
-        `${BASE}?${query.toString()}`
+    const cacheKey =
+      `${config.tf}:${outputsize}`;
+
+
+    const cached =
+      cache.get(
+        cacheKey
       );
 
 
-    if (
-      !Array.isArray(
-        data.values
-      )
-    ) {
+    if(
+      !force &&
+      cached &&
+      Date.now() -
+      cached.time <
+      CACHE_MS
+    ){
 
-      throw new Error(
-        `No ${interval} candle data returned.`
-      );
-
+      return res
+        .status(200)
+        .json({
+          ...cached.value,
+          cached:true
+        });
     }
 
 
     const candles =
-      data.values
-
-        .map(
-          item => {
-
-            const candle = {
-
-              time:
-                item.datetime,
-
-              timestamp:
-                parseTime(
-                  item.datetime
-                ),
-
-              open:
-                number(
-                  item.open
-                ),
-
-              high:
-                number(
-                  item.high
-                ),
-
-              low:
-                number(
-                  item.low
-                ),
-
-              close:
-                number(
-                  item.close
-                ),
-
-              volume:
-                number(
-                  item.volume
-                ) || 0
-
-            };
+      await fetchSeries({
+        interval:
+          config.interval,
+        apiKey:
+          config.apiKey,
+        outputsize
+      });
 
 
-            return candle;
-
-          }
-        )
-
-        .filter(
-          candle =>
-
-            Number.isFinite(
-              candle.timestamp
-            ) &&
-
-            Number.isFinite(
-              candle.open
-            ) &&
-
-            Number.isFinite(
-              candle.high
-            ) &&
-
-            Number.isFinite(
-              candle.low
-            ) &&
-
-            Number.isFinite(
-              candle.close
-            )
-
-        )
-
-        .sort(
-          (
-            a,
-            b
-          ) =>
-            a.timestamp -
-            b.timestamp
-        );
-
-
-    if (
-      candles.length < 2
-    ) {
+    if(
+      candles.length < 3
+    ){
 
       throw new Error(
-        "Insufficient chart candles returned."
+        `Only ${candles.length} valid candles were returned.`
       );
-
     }
 
 
-    const latest =
-      candles[
-        candles.length - 1
-      ];
+    const trimmed =
+      candles.slice(
+        -requestedLimit
+      );
+
+
+    const result = {
+
+      ok:true,
+
+      engine:
+        "MKAYFX CHART FEED V2",
+
+      symbol:
+        SYMBOL,
+
+      timeframe:
+        config.tf,
+
+      interval:
+        config.interval,
+
+      generatedAt:
+        new Date()
+          .toISOString(),
+
+      count:
+        trimmed.length,
+
+      firstTimestamp:
+        trimmed[0]?.time ??
+        null,
+
+      lastTimestamp:
+        trimmed.at(-1)?.time ??
+        null,
+
+      candles:
+        trimmed,
+
+      cached:false
+    };
+
+
+    cache.set(
+      cacheKey,
+      {
+        time:Date.now(),
+        value:result
+      }
+    );
 
 
     return res
       .status(200)
-      .json({
+      .json(result);
 
-        ok: true,
+  }catch(error){
 
-        engine:
-          "MKAYFX CHART FEED V1",
+    console.error(
+      "MKAYFX CHART ERROR:",
+      error
+    );
 
-        symbol:
-          SYMBOL,
-
-        timeframe:
-          tf,
-
-        interval,
-
-        generatedAt:
-          new Date()
-            .toISOString(),
-
-        candleCount:
-          candles.length,
-
-        latestPrice:
-          latest.close,
-
-        candles
-
-      });
-
-  }
-  catch (
-    error
-  ) {
 
     return res
       .status(500)
       .json({
 
-        ok: false,
+        ok:false,
+
+        engine:
+          "MKAYFX CHART FEED V2",
 
         error:
-          error instanceof Error
-            ? error.message
-            : String(error)
+          error?.message ||
+          "Unknown chart error.",
+
+        generatedAt:
+          new Date()
+            .toISOString()
 
       });
-
   }
-
 }
