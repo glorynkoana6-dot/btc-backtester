@@ -1,6 +1,9 @@
 {
-  "name": "mkayfx-xau-intelligence-v4",
-  "version": "4.0.0",
+  "name": "mkayfx-gold-deep-liquidity",
+  "version": "8.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  }
 }
