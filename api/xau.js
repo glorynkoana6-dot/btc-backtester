@@ -1,160 +1,2295 @@
-/* ============================================================
-   MKAYFX XAUUSD LIQUIDITY INTELLIGENCE
+/* =========================================================
+   MKAYFX XAU/USD LIQUIDITY INTELLIGENCE
+   TWELVE DATA EDITION V1
    /api/xau.js
-
-   PROVIDER
-   --------
-   Massive / Polygon
 
    SYMBOL
    ------
-   C:XAUUSD
+   XAU/USD
 
-   ENVIRONMENT VARIABLE
-   --------------------
-   MASSIVE_API_KEY
+   DATA SOURCE
+   -----------
+   Twelve Data
 
    FEATURES
    --------
-   - XAU/USD price
-   - M1 base data
-   - M5 / M15 / H1 resampling
-   - Asia high / low
-   - London high / low
-   - NY high / low
-   - Previous day high / low
-   - Intraday VWAP approximation
-   - ATR
+   - Live XAU/USD price
+   - Asia / London / New York sessions
+   - Session open / close countdown
+   - Asia High / Low
+   - London High / Low
+   - New York High / Low
+   - Previous Day High / Low
+   - Previous Week High / Low
+   - Equal Highs / Equal Lows
+   - H1 swing liquidity
+   - M1 / M5 / M15 / H1 / H4 structure
+   - EMA 20 / 50 / 200
    - RSI
-   - EMA structure
-   - Liquidity pools
-   - Equal highs / lows
-   - Sweep projection
-   - Raid scoring
-   - Overshoot estimation
-   - Reversal watch zone
-   - Delta / footprint proxy
+   - ATR
+   - BOS / CHOCH
+   - Footprint-style activity proxy
+   - Delta proxy
+   - CVD proxy
+   - Absorption
+   - Delta divergence
+   - Volume / activity profile
+   - Historical Asia sweep behavior
+   - Estimated sweep depth
+   - Liquidity ranking
+   - Trap-window radar
 
-   NOTE
-   ----
-   Massive forex aggregates are quote-derived, not centralized
-   exchange trade prints. Volume/delta calculations are proxies.
-============================================================ */
+   ENVIRONMENT
+   -----------
+   TWELVE_DATA_API_KEY
+========================================================= */
 
-
-/* ============================================================
-   CONFIG
-============================================================ */
-
-const SYMBOL = "C:XAUUSD";
-
-const API_BASE =
-  "https://api.massive.com";
 
 const API_KEY =
-  process.env.MASSIVE_API_KEY;
+  String(
+    process.env.TWELVE_DATA_API_KEY ||
+    ""
+  ).trim();
 
-const CACHE_MS =
-  15_000;
 
-let cache = {
-  time: 0,
+const BASE =
+  "https://api.twelvedata.com/time_series";
+
+
+const SYMBOL =
+  "XAU/USD";
+
+
+/* =========================================================
+   CACHE
+========================================================= */
+
+
+let CACHE = {
+
+  timestamp: 0,
+
   data: null
+
 };
 
 
-/* ============================================================
-   HELPERS
-============================================================ */
-
-function num(value, fallback = 0) {
-
-  const n =
-    Number(value);
-
-  return Number.isFinite(n)
-    ? n
-    : fallback;
-}
+const CACHE_MS =
+  60_000;
 
 
-function round(value, decimals = 2) {
+let IN_FLIGHT =
+  null;
 
-  if (!Number.isFinite(value)) {
-    return null;
+
+/* =========================================================
+   SESSION DEFINITIONS
+========================================================= */
+
+
+const SESSION_DEFS = [
+
+  {
+
+    id:
+      "asia",
+
+    name:
+      "Asia / Tokyo",
+
+    short:
+      "ASIA",
+
+    zone:
+      "Asia/Tokyo",
+
+    open:
+      9 * 60,
+
+    close:
+      18 * 60,
+
+    importance:
+      1.15
+
+  },
+
+
+  {
+
+    id:
+      "london",
+
+    name:
+      "London",
+
+    short:
+      "LONDON",
+
+    zone:
+      "Europe/London",
+
+    open:
+      8 * 60,
+
+    close:
+      17 * 60,
+
+    importance:
+      1.40
+
+  },
+
+
+  {
+
+    id:
+      "newyork",
+
+    name:
+      "New York",
+
+    short:
+      "NEW YORK",
+
+    zone:
+      "America/New_York",
+
+    open:
+      8 * 60,
+
+    close:
+      17 * 60,
+
+    importance:
+      1.45
+
   }
 
-  const p =
-    Math.pow(10, decimals);
+];
 
-  return (
-    Math.round(value * p) / p
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+
+export default async function handler(
+  req,
+  res
+) {
+
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    "*"
   );
-}
 
 
-function avg(values) {
+  res.setHeader(
+    "Cache-Control",
+    "no-store, max-age=0"
+  );
 
-  if (!values.length) {
-    return 0;
+
+  if (
+    req.method === "OPTIONS"
+  ) {
+
+    return res
+      .status(204)
+      .end();
+
   }
 
-  return (
-    values.reduce(
-      (a, b) => a + b,
-      0
-    ) / values.length
-  );
+
+  if (
+    req.method !== "GET"
+  ) {
+
+    return res
+      .status(405)
+      .json({
+
+        ok: false,
+
+        error:
+          "GET only"
+
+      });
+
+  }
+
+
+  if (
+    !API_KEY
+  ) {
+
+    return res
+      .status(500)
+      .json({
+
+        ok: false,
+
+        error:
+          "Missing TWELVE_DATA_API_KEY"
+
+      });
+
+  }
+
+
+  try {
+
+
+    /* =====================================================
+       CACHE
+    ===================================================== */
+
+
+    if (
+
+      CACHE.data
+
+      &&
+
+      Date.now() -
+      CACHE.timestamp <
+      CACHE_MS
+
+    ) {
+
+      return res
+        .status(200)
+        .json({
+
+          ...CACHE.data,
+
+          cached:
+            true,
+
+          servedAt:
+            new Date()
+              .toISOString()
+
+        });
+
+    }
+
+
+    if (
+      IN_FLIGHT
+    ) {
+
+      const result =
+        await IN_FLIGHT;
+
+
+      return res
+        .status(200)
+        .json({
+
+          ...result,
+
+          cached:
+            true,
+
+          sharedRequest:
+            true
+
+        });
+
+    }
+
+
+    IN_FLIGHT =
+      buildAnalysis();
+
+
+    const output =
+      await IN_FLIGHT;
+
+
+    CACHE = {
+
+      timestamp:
+        Date.now(),
+
+      data:
+        output
+
+    };
+
+
+    IN_FLIGHT =
+      null;
+
+
+    return res
+      .status(200)
+      .json(
+        output
+      );
+
+
+  } catch (
+    error
+  ) {
+
+    IN_FLIGHT =
+      null;
+
+
+    console.error(
+      "XAU API ERROR:",
+      error
+    );
+
+
+    return res
+      .status(500)
+      .json({
+
+        ok:
+          false,
+
+        provider:
+          "Twelve Data",
+
+        symbol:
+          SYMBOL,
+
+        error:
+          error?.message ||
+          "Unknown XAU/USD engine error"
+
+      });
+
+  }
+
 }
 
 
-function sum(values) {
+/* =========================================================
+   BUILD ANALYSIS
+========================================================= */
 
-  return values.reduce(
-    (a, b) => a + b,
-    0
-  );
+
+async function buildAnalysis() {
+
+
+  /*
+     Three requests.
+
+     M1:
+     microstructure + current price
+
+     M5:
+     sessions + sweep history
+
+     H1:
+     longer-term liquidity
+  */
+
+
+  const [
+    m1,
+    m5,
+    h1
+  ] =
+    await Promise.all([
+
+      fetchSeries(
+        "1min",
+        1000
+      ),
+
+      fetchSeries(
+        "5min",
+        3000
+      ),
+
+      fetchSeries(
+        "1h",
+        1000
+      )
+
+    ]);
+
+
+  if (
+    m1.length <
+    100
+  ) {
+
+    throw new Error(
+
+      `Not enough M1 data: ${m1.length}`
+
+    );
+
+  }
+
+
+  if (
+    m5.length <
+    150
+  ) {
+
+    throw new Error(
+
+      `Not enough M5 data: ${m5.length}`
+
+    );
+
+  }
+
+
+  if (
+    h1.length <
+    80
+  ) {
+
+    throw new Error(
+
+      `Not enough H1 data: ${h1.length}`
+
+    );
+
+  }
+
+
+  /* =====================================================
+     DERIVED TIMEFRAMES
+  ===================================================== */
+
+
+  const m15 =
+    resample(
+      m5,
+      15
+    );
+
+
+  const h4 =
+    resample(
+      h1,
+      240
+    );
+
+
+  const now =
+    new Date();
+
+
+  const latest =
+    m1.at(-1);
+
+
+  const price =
+    latest.close;
+
+
+  /* =====================================================
+     ATR
+  ===================================================== */
+
+
+  const atr1 =
+    lastFinite(
+      atrSeries(
+        m1,
+        14
+      )
+    );
+
+
+  const atr5 =
+    lastFinite(
+      atrSeries(
+        m5,
+        14
+      )
+    );
+
+
+  const atr15 =
+    lastFinite(
+      atrSeries(
+        m15,
+        14
+      )
+    );
+
+
+  const atrH1 =
+    lastFinite(
+      atrSeries(
+        h1,
+        14
+      )
+    );
+
+
+  /* =====================================================
+     MTF STRUCTURE
+  ===================================================== */
+
+
+  const structure = {
+
+    m1:
+      timeframeState(
+        m1
+      ),
+
+    m5:
+      timeframeState(
+        m5
+      ),
+
+    m15:
+      timeframeState(
+        m15
+      ),
+
+    h1:
+      timeframeState(
+        h1
+      ),
+
+    h4:
+      timeframeState(
+        h4
+      )
+
+  };
+
+
+  /* =====================================================
+     SESSION ENGINE
+  ===================================================== */
+
+
+  const sessions =
+    buildSessions(
+      m5,
+      now
+    );
+
+
+  /* =====================================================
+     DAY / WEEK LEVELS
+  ===================================================== */
+
+
+  const reference =
+    referenceLevels(
+      h1
+    );
+
+
+  /* =====================================================
+     EQUAL H/L
+  ===================================================== */
+
+
+  const equalLevels =
+    detectEqualLevels(
+
+      m15,
+
+      atr15
+
+    );
+
+
+  /* =====================================================
+     H1 SWINGS
+  ===================================================== */
+
+
+  const h1Swings =
+    pivots(
+
+      h1,
+
+      3,
+
+      180
+
+    );
+
+
+  /* =====================================================
+     FLOW
+  ===================================================== */
+
+
+  const footprint =
+    buildFootprint(
+
+      m1,
+
+      atr1 ||
+      atr5 / 5
+
+    );
+
+
+  /* =====================================================
+     VWAP
+  ===================================================== */
+
+
+  const vwap =
+    buildVwap(
+      m1
+    );
+
+
+  /* =====================================================
+     PROFILE
+  ===================================================== */
+
+
+  const profile =
+    buildVolumeProfile(
+
+      m1.slice(
+        -500
+      ),
+
+      34
+
+    );
+
+
+  /* =====================================================
+     HISTORICAL ASIA SWEEPS
+  ===================================================== */
+
+
+  const asiaHistory =
+    buildAsiaHistory(
+      m5
+    );
+
+
+  /* =====================================================
+     LIQUIDITY POOLS
+  ===================================================== */
+
+
+  const rawPools =
+    buildPools({
+
+      price,
+
+      sessions,
+
+      reference,
+
+      equalLevels,
+
+      h1Swings,
+
+      atrH1
+
+    });
+
+
+  const pools =
+    rawPools
+
+      .map(
+        pool =>
+          enrichPool({
+
+            pool,
+
+            price,
+
+            atr5,
+
+            atr15,
+
+            structure,
+
+            sessions,
+
+            footprint,
+
+            asiaHistory,
+
+            profile
+
+          })
+      )
+
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.likelihoodScore -
+          a.likelihoodScore
+      )
+
+      .slice(
+        0,
+        14
+      );
+
+
+  /* =====================================================
+     TRAP WINDOWS
+  ===================================================== */
+
+
+  const traps =
+    buildTrapWindows({
+
+      sessions,
+
+      pools,
+
+      footprint,
+
+      atr15
+
+    });
+
+
+  /* =====================================================
+     REGIME
+  ===================================================== */
+
+
+  const regime =
+    buildRegime({
+
+      structure,
+
+      m5,
+
+      atr5,
+
+      footprint
+
+    });
+
+
+  /* =====================================================
+     RESPONSE
+  ===================================================== */
+
+
+  return {
+
+    ok:
+      true,
+
+
+    symbol:
+      "XAU/USD",
+
+
+    providerSymbol:
+      SYMBOL,
+
+
+    generatedAt:
+      now.toISOString(),
+
+
+    latestBarTime:
+      latest.time
+        .toISOString(),
+
+
+    dataAgeSeconds:
+      Math.max(
+
+        0,
+
+        Math.floor(
+
+          (
+            Date.now()
+
+            -
+
+            latest.time
+              .getTime()
+          )
+
+          /
+
+          1000
+
+        )
+
+      ),
+
+
+    price:
+      round(
+        price,
+        3
+      ),
+
+
+    source: {
+
+      provider:
+        "Twelve Data",
+
+      symbol:
+        SYMBOL,
+
+      timezone:
+        "UTC",
+
+      m1Bars:
+        m1.length,
+
+      m5Bars:
+        m5.length,
+
+      m15Bars:
+        m15.length,
+
+      h1Bars:
+        h1.length,
+
+      h4Bars:
+        h4.length,
+
+      trueBidAskFootprint:
+        false
+
+    },
+
+
+    sessions,
+
+
+    market: {
+
+      atr1:
+        round(
+          atr1,
+          3
+        ),
+
+      atr5:
+        round(
+          atr5,
+          3
+        ),
+
+      atr15:
+        round(
+          atr15,
+          3
+        ),
+
+      atrH1:
+        round(
+          atrH1,
+          3
+        ),
+
+      vwap:
+        round(
+          vwap.value,
+          3
+        ),
+
+      vwapMode:
+        vwap.mode,
+
+      vwapDistance:
+        round(
+
+          price -
+          vwap.value,
+
+          3
+
+        ),
+
+      regime
+
+    },
+
+
+    structure,
+
+
+    referenceLevels:
+      reference,
+
+
+    equalLevels,
+
+
+    footprint,
+
+
+    volumeProfile:
+      profile,
+
+
+    historicalSweeps:
+      asiaHistory,
+
+
+    liquidityPools:
+      pools,
+
+
+    trapWindows:
+      traps,
+
+
+    warnings: [
+
+      "Liquidity scores are heuristic rankings, not guaranteed probabilities.",
+
+      "Projected sweep-end zones are estimates based on ATR, historical behavior and current structure.",
+
+      "Spot XAU/USD does not provide a centralized exchange footprint through ordinary OHLC data.",
+
+      "Delta, CVD and footprint values shown here are activity/order-flow proxies."
+
+    ]
+
+  };
+
 }
 
 
-function clamp(
-  value,
-  min,
-  max
+/* =========================================================
+   TWELVE DATA FETCH
+========================================================= */
+
+
+async function fetchSeries(
+  interval,
+  outputsize
 ) {
 
-  return Math.max(
-    min,
-    Math.min(
-      max,
-      value
-    )
-  );
-}
+  const url =
+
+    `${BASE}` +
+
+    `?symbol=${encodeURIComponent(
+      SYMBOL
+    )}` +
+
+    `&interval=${encodeURIComponent(
+      interval
+    )}` +
+
+    `&outputsize=${outputsize}` +
+
+    `&timezone=UTC` +
+
+    `&format=JSON` +
+
+    `&apikey=${encodeURIComponent(
+      API_KEY
+    )}`;
 
 
-/* ============================================================
-   DATE HELPERS
-============================================================ */
+  const response =
+    await fetch(
 
-function isoDate(date) {
+      url,
 
-  return date
-    .toISOString()
-    .slice(0, 10);
-}
-
-
-function saParts(
-  date = new Date()
-) {
-
-  const formatter =
-    new Intl.DateTimeFormat(
-      "en-GB",
       {
+
+        headers: {
+
+          Accept:
+            "application/json"
+
+        },
+
+        cache:
+          "no-store"
+
+      }
+
+    );
+
+
+  const raw =
+    await response.text();
+
+
+  let json;
+
+
+  try {
+
+    json =
+      JSON.parse(
+        raw
+      );
+
+  } catch {
+
+    throw new Error(
+
+      `Twelve Data returned invalid JSON: ${raw.slice(0,200)}`
+
+    );
+
+  }
+
+
+  if (
+    !response.ok
+  ) {
+
+    throw new Error(
+
+      `Twelve Data HTTP ${response.status}: ` +
+
+      `${raw.slice(0,200)}`
+
+    );
+
+  }
+
+
+  if (
+
+    json.status ===
+    "error"
+
+    ||
+
+    !Array.isArray(
+      json.values
+    )
+
+  ) {
+
+    throw new Error(
+
+      `Twelve Data: ${
+
+        json.message ||
+        "time_series request failed"
+
+      }`
+
+    );
+
+  }
+
+
+  const bars =
+    json.values
+
+      .map(
+        row => ({
+
+          time:
+            parseTdTime(
+              row.datetime
+            ),
+
+          open:
+            Number(
+              row.open
+            ),
+
+          high:
+            Number(
+              row.high
+            ),
+
+          low:
+            Number(
+              row.low
+            ),
+
+          close:
+            Number(
+              row.close
+            ),
+
+          volume:
+            Number(
+              row.volume
+            ) ||
+            0
+
+        })
+      )
+
+      .filter(
+        bar =>
+
+          Number.isFinite(
+            bar.time.getTime()
+          )
+
+          &&
+
+          [
+            bar.open,
+            bar.high,
+            bar.low,
+            bar.close
+          ]
+            .every(
+              Number.isFinite
+            )
+      )
+
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a.time -
+          b.time
+      );
+
+
+  return bars;
+
+}
+
+
+/* =========================================================
+   PARSE TWELVE DATA UTC
+========================================================= */
+
+
+function parseTdTime(
+  value
+) {
+
+  if (
+    !value
+  ) {
+
+    return new Date(
+      NaN
+    );
+
+  }
+
+
+  if (
+    value.includes(
+      "T"
+    )
+  ) {
+
+    return new Date(
+      value.endsWith("Z")
+        ?
+          value
+        :
+          `${value}Z`
+    );
+
+  }
+
+
+  return new Date(
+
+    `${value.replace(
+      " ",
+      "T"
+    )}Z`
+
+  );
+
+}
+
+
+/* =========================================================
+   RESAMPLE
+========================================================= */
+
+
+function resample(
+  bars,
+  minutes
+) {
+
+  const milliseconds =
+    minutes *
+    60_000;
+
+
+  const groups =
+    new Map();
+
+
+  for (
+    const bar of bars
+  ) {
+
+    const key =
+
+      Math.floor(
+
+        bar.time.getTime()
+
+        /
+
+        milliseconds
+
+      )
+
+      *
+
+      milliseconds;
+
+
+    if (
+      !groups.has(
+        key
+      )
+    ) {
+
+      groups.set(
+        key,
+        {
+
+          time:
+            new Date(
+              key
+            ),
+
+          open:
+            bar.open,
+
+          high:
+            bar.high,
+
+          low:
+            bar.low,
+
+          close:
+            bar.close,
+
+          volume:
+            bar.volume
+
+        }
+      );
+
+
+    } else {
+
+      const current =
+        groups.get(
+          key
+        );
+
+
+      current.high =
+        Math.max(
+
+          current.high,
+
+          bar.high
+
+        );
+
+
+      current.low =
+        Math.min(
+
+          current.low,
+
+          bar.low
+
+        );
+
+
+      current.close =
+        bar.close;
+
+
+      current.volume +=
+        bar.volume;
+
+    }
+
+  }
+
+
+  return [
+
+    ...groups.values()
+
+  ]
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.time -
+        b.time
+    );
+
+}
+
+
+/* =========================================================
+   EMA
+========================================================= */
+
+
+function emaSeries(
+  values,
+  period
+) {
+
+  if (
+    !values.length
+  ) {
+
+    return [];
+
+  }
+
+
+  const alpha =
+    2 /
+    (
+      period +
+      1
+    );
+
+
+  const output = [
+    values[0]
+  ];
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    output.push(
+
+      values[i] *
+      alpha
+
+      +
+
+      output[
+        i - 1
+      ]
+
+      *
+
+      (
+        1 -
+        alpha
+      )
+
+    );
+
+  }
+
+
+  return output;
+
+}
+
+
+/* =========================================================
+   RSI
+========================================================= */
+
+
+function rsiValue(
+  values,
+  period = 14
+) {
+
+  if (
+    values.length <=
+    period
+  ) {
+
+    return 50;
+
+  }
+
+
+  let gains =
+    0;
+
+
+  let losses =
+    0;
+
+
+  for (
+    let i = 1;
+    i <= period;
+    i++
+  ) {
+
+    const change =
+
+      values[i]
+
+      -
+
+      values[
+        i - 1
+      ];
+
+
+    gains +=
+      Math.max(
+        change,
+        0
+      );
+
+
+    losses +=
+      Math.max(
+        -change,
+        0
+      );
+
+  }
+
+
+  let averageGain =
+    gains /
+    period;
+
+
+  let averageLoss =
+    losses /
+    period;
+
+
+  for (
+    let i =
+      period + 1;
+
+    i <
+      values.length;
+
+    i++
+  ) {
+
+    const change =
+
+      values[i]
+
+      -
+
+      values[
+        i - 1
+      ];
+
+
+    averageGain =
+
+      (
+        averageGain *
+        (
+          period -
+          1
+        )
+
+        +
+
+        Math.max(
+          change,
+          0
+        )
+
+      )
+
+      /
+
+      period;
+
+
+    averageLoss =
+
+      (
+        averageLoss *
+        (
+          period -
+          1
+        )
+
+        +
+
+        Math.max(
+          -change,
+          0
+        )
+
+      )
+
+      /
+
+      period;
+
+  }
+
+
+  if (
+    averageLoss ===
+    0
+  ) {
+
+    return 100;
+
+  }
+
+
+  return (
+
+    100
+
+    -
+
+    100 /
+    (
+      1 +
+      averageGain /
+      averageLoss
+    )
+
+  );
+
+}
+
+
+/* =========================================================
+   ATR
+========================================================= */
+
+
+function atrSeries(
+  bars,
+  period = 14
+) {
+
+  if (
+    !bars.length
+  ) {
+
+    return [];
+
+  }
+
+
+  const tr =
+    [];
+
+
+  for (
+    let i = 0;
+    i <
+      bars.length;
+    i++
+  ) {
+
+    if (
+      i === 0
+    ) {
+
+      tr.push(
+
+        bars[i].high -
+        bars[i].low
+
+      );
+
+
+      continue;
+
+    }
+
+
+    tr.push(
+
+      Math.max(
+
+        bars[i].high -
+        bars[i].low,
+
+        Math.abs(
+
+          bars[i].high -
+          bars[
+            i - 1
+          ].close
+
+        ),
+
+        Math.abs(
+
+          bars[i].low -
+          bars[
+            i - 1
+          ].close
+
+        )
+
+      )
+
+    );
+
+  }
+
+
+  return emaSeries(
+    tr,
+    period
+  );
+
+}
+
+
+/* =========================================================
+   PIVOTS
+========================================================= */
+
+
+function pivots(
+  bars,
+  radius = 3,
+  lookback = 180
+) {
+
+  const highs =
+    [];
+
+
+  const lows =
+    [];
+
+
+  const start =
+    Math.max(
+
+      radius,
+
+      bars.length -
+      lookback
+
+    );
+
+
+  for (
+    let i =
+      start;
+
+    i <
+      bars.length -
+      radius;
+
+    i++
+  ) {
+
+    let highPivot =
+      true;
+
+
+    let lowPivot =
+      true;
+
+
+    for (
+      let j = 1;
+      j <= radius;
+      j++
+    ) {
+
+      if (
+
+        bars[i].high <=
+        bars[
+          i - j
+        ].high
+
+        ||
+
+        bars[i].high <
+        bars[
+          i + j
+        ].high
+
+      ) {
+
+        highPivot =
+          false;
+
+      }
+
+
+      if (
+
+        bars[i].low >=
+        bars[
+          i - j
+        ].low
+
+        ||
+
+        bars[i].low >
+        bars[
+          i + j
+        ].low
+
+      ) {
+
+        lowPivot =
+          false;
+
+      }
+
+    }
+
+
+    if (
+      highPivot
+    ) {
+
+      highs.push({
+
+        price:
+          bars[i].high,
+
+        time:
+          bars[i].time
+
+      });
+
+    }
+
+
+    if (
+      lowPivot
+    ) {
+
+      lows.push({
+
+        price:
+          bars[i].low,
+
+        time:
+          bars[i].time
+
+      });
+
+    }
+
+  }
+
+
+  return {
+
+    highs,
+
+    lows
+
+  };
+
+}
+
+
+/* =========================================================
+   STRUCTURE
+========================================================= */
+
+
+function marketStructure(
+  bars
+) {
+
+  const swing =
+    pivots(
+      bars
+    );
+
+
+  const latestHigh =
+    swing.highs.at(-1);
+
+
+  const previousHigh =
+    swing.highs.at(-2);
+
+
+  const latestLow =
+    swing.lows.at(-1);
+
+
+  const previousLow =
+    swing.lows.at(-2);
+
+
+  let bias =
+    "NEUTRAL";
+
+
+  if (
+
+    latestHigh &&
+    previousHigh &&
+    latestLow &&
+    previousLow
+
+  ) {
+
+    if (
+
+      latestHigh.price >
+      previousHigh.price
+
+      &&
+
+      latestLow.price >
+      previousLow.price
+
+    ) {
+
+      bias =
+        "BULLISH";
+
+    }
+
+
+    if (
+
+      latestHigh.price <
+      previousHigh.price
+
+      &&
+
+      latestLow.price <
+      previousLow.price
+
+    ) {
+
+      bias =
+        "BEARISH";
+
+    }
+
+  }
+
+
+  const close =
+    bars.at(-1).close;
+
+
+  let event =
+    "NONE";
+
+
+  if (
+
+    latestHigh
+
+    &&
+
+    close >
+    latestHigh.price
+
+  ) {
+
+    event =
+
+      bias ===
+      "BEARISH"
+
+        ?
+
+        "CHOCH_UP"
+
+        :
+
+        "BOS_UP";
+
+  }
+
+
+  if (
+
+    latestLow
+
+    &&
+
+    close <
+    latestLow.price
+
+  ) {
+
+    event =
+
+      bias ===
+      "BULLISH"
+
+        ?
+
+        "CHOCH_DOWN"
+
+        :
+
+        "BOS_DOWN";
+
+  }
+
+
+  return {
+
+    bias,
+
+    event,
+
+
+    swingHigh:
+
+      latestHigh
+
+        ?
+
+        round(
+          latestHigh.price,
+          3
+        )
+
+        :
+
+        null,
+
+
+    swingLow:
+
+      latestLow
+
+        ?
+
+        round(
+          latestLow.price,
+          3
+        )
+
+        :
+
+        null
+
+  };
+
+}
+
+
+/* =========================================================
+   TIMEFRAME STATE
+========================================================= */
+
+
+function timeframeState(
+  bars
+) {
+
+  const closes =
+    bars.map(
+      bar =>
+        bar.close
+    );
+
+
+  const ema20 =
+    emaSeries(
+      closes,
+      20
+    );
+
+
+  const ema50 =
+    emaSeries(
+      closes,
+      50
+    );
+
+
+  const ema200 =
+    emaSeries(
+
+      closes,
+
+      Math.min(
+
+        200,
+
+        Math.max(
+          20,
+          closes.length - 1
+        )
+
+      )
+
+    );
+
+
+  const structure =
+    marketStructure(
+      bars
+    );
+
+
+  const rsi =
+    rsiValue(
+      closes,
+      14
+    );
+
+
+  let score =
+    0;
+
+
+  score +=
+
+    closes.at(-1) >
+    lastFinite(
+      ema20
+    )
+
+      ?
+
+      18
+
+      :
+
+      -18;
+
+
+  score +=
+
+    lastFinite(
+      ema20
+    )
+
+    >
+
+    lastFinite(
+      ema50
+    )
+
+      ?
+
+      22
+
+      :
+
+      -22;
+
+
+  score +=
+
+    lastFinite(
+      ema50
+    )
+
+    >
+
+    lastFinite(
+      ema200
+    )
+
+      ?
+
+      18
+
+      :
+
+      -18;
+
+
+  if (
+    rsi >
+    55
+  ) {
+
+    score +=
+      12;
+
+  }
+
+
+  if (
+    rsi <
+    45
+  ) {
+
+    score -=
+      12;
+
+  }
+
+
+  if (
+    structure.bias ===
+    "BULLISH"
+  ) {
+
+    score +=
+      22;
+
+  }
+
+
+  if (
+    structure.bias ===
+    "BEARISH"
+  ) {
+
+    score -=
+      22;
+
+  }
+
+
+  score =
+    clamp(
+
+      score,
+
+      -100,
+
+      100
+
+    );
+
+
+  return {
+
+    bias:
+
+      score >=
+      25
+
+        ?
+
+        "BULLISH"
+
+        :
+
+        score <=
+        -25
+
+          ?
+
+          "BEARISH"
+
+          :
+
+          "NEUTRAL",
+
+
+    score:
+      round(
+        score,
+        1
+      ),
+
+
+    rsi14:
+      round(
+        rsi,
+        1
+      ),
+
+
+    ema20:
+      round(
+        lastFinite(
+          ema20
+        ),
+        3
+      ),
+
+
+    ema50:
+      round(
+        lastFinite(
+          ema50
+        ),
+        3
+      ),
+
+
+    ema200:
+      round(
+        lastFinite(
+          ema200
+        ),
+        3
+      ),
+
+
+    atr14:
+      round(
+
+        lastFinite(
+          atrSeries(
+            bars,
+            14
+          )
+        ),
+
+        3
+
+      ),
+
+
+    structure
+
+  };
+
+}
+
+
+/* =========================================================
+   TIMEZONE PARTS
+========================================================= */
+
+
+function zoneParts(
+  date,
+  timezone
+) {
+
+  const parts =
+    new Intl.DateTimeFormat(
+
+      "en-CA",
+
+      {
+
         timeZone:
-          "Africa/Johannesburg",
+          timezone,
 
         year:
           "numeric",
@@ -171,21 +2306,21 @@ function saParts(
         minute:
           "2-digit",
 
-        second:
-          "2-digit",
+        weekday:
+          "short",
 
-        hour12:
-          false
+        hourCycle:
+          "h23"
+
       }
-    );
+
+    )
+      .formatToParts(
+        date
+      );
 
 
-  const parts =
-    formatter
-      .formatToParts(date);
-
-
-  const map = {};
+  const object = {};
 
 
   for (
@@ -197,2448 +2332,4610 @@ function saParts(
       "literal"
     ) {
 
-      map[
+      object[
         part.type
       ] =
         part.value;
+
     }
+
   }
+
+
+  const weekdays = {
+
+    Sun: 0,
+
+    Mon: 1,
+
+    Tue: 2,
+
+    Wed: 3,
+
+    Thu: 4,
+
+    Fri: 5,
+
+    Sat: 6
+
+  };
 
 
   return {
 
     year:
-      Number(map.year),
+      Number(
+        object.year
+      ),
 
     month:
-      Number(map.month),
+      Number(
+        object.month
+      ),
 
     day:
-      Number(map.day),
+      Number(
+        object.day
+      ),
 
     hour:
-      Number(map.hour),
+      Number(
+        object.hour
+      ),
 
     minute:
-      Number(map.minute),
+      Number(
+        object.minute
+      ),
 
-    second:
-      Number(map.second)
+    weekday:
+      weekdays[
+        object.weekday
+      ]
+
   };
+
 }
 
 
-function dayKey(
-  timestamp
+function timeInZone(
+  date,
+  timezone
 ) {
 
-  const date =
-    new Date(timestamp);
+  return new Intl.DateTimeFormat(
+
+    "en-ZA",
+
+    {
+
+      timeZone:
+        timezone,
+
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+
+      second:
+        "2-digit",
+
+      hourCycle:
+        "h23"
+
+    }
+
+  )
+    .format(
+      date
+    );
+
+}
 
 
-  const p =
-    saParts(date);
-
+function dateKey(
+  parts
+) {
 
   return (
-    `${p.year}-` +
-    `${String(p.month).padStart(2, "0")}-` +
-    `${String(p.day).padStart(2, "0")}`
+
+    `${parts.year}-` +
+
+    `${pad(parts.month)}-` +
+
+    `${pad(parts.day)}`
+
   );
+
 }
 
 
-function minuteOfDay(
-  timestamp
+/* =========================================================
+   SESSION RANGE
+========================================================= */
+
+
+function sessionRange(
+  bars,
+  definition
 ) {
-
-  const p =
-    saParts(
-      new Date(timestamp)
-    );
-
-
-  return (
-    p.hour * 60 +
-    p.minute
-  );
-}
-
-
-/* ============================================================
-   FETCH XAUUSD DATA
-============================================================ */
-
-async function fetchXAU() {
-
-  if (!API_KEY) {
-
-    throw new Error(
-      "Missing MASSIVE_API_KEY environment variable."
-    );
-  }
-
-
-  const now =
-    new Date();
-
-
-  /*
-    Pull multiple calendar days so we have enough
-    M1 data for PDH/PDL and session calculations.
-  */
-
-  const fromDate =
-    new Date(
-      now.getTime() -
-      4 * 24 * 60 * 60 * 1000
-    );
-
-
-  const from =
-    isoDate(fromDate);
-
-  const to =
-    isoDate(now);
-
-
-  const url =
-    `${API_BASE}` +
-    `/v2/aggs/ticker/` +
-    `${encodeURIComponent(SYMBOL)}` +
-    `/range/1/minute/` +
-    `${from}/${to}` +
-    `?adjusted=true` +
-    `&sort=asc` +
-    `&limit=50000` +
-    `&apiKey=${encodeURIComponent(API_KEY)}`;
-
-
-  const response =
-    await fetch(
-      url,
-      {
-        method: "GET",
-
-        headers: {
-          Accept:
-            "application/json"
-        },
-
-        cache:
-          "no-store"
-      }
-    );
-
-
-  const text =
-    await response.text();
-
-
-  let payload;
-
-
-  try {
-
-    payload =
-      JSON.parse(text);
-
-  } catch {
-
-    throw new Error(
-      `Massive returned invalid JSON: ${text.slice(0, 200)}`
-    );
-  }
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      payload?.error ||
-      payload?.message ||
-      `Massive HTTP ${response.status}`
-    );
-  }
-
-
-  if (
-    payload?.status &&
-    payload.status !== "OK" &&
-    payload.status !== "DELAYED"
-  ) {
-
-    throw new Error(
-      payload?.error ||
-      payload?.message ||
-      `Massive status: ${payload.status}`
-    );
-  }
-
-
-  const results =
-    payload?.results;
-
-
-  if (
-    !Array.isArray(results) ||
-    !results.length
-  ) {
-
-    throw new Error(
-      "Massive returned no XAUUSD candles. Your plan may not include forex minute aggregates."
-    );
-  }
-
-
-  const candles =
-    results
-      .map(item => ({
-
-        timestamp:
-          num(item.t),
-
-        time:
-          new Date(
-            num(item.t)
-          ).toISOString(),
-
-        open:
-          num(item.o),
-
-        high:
-          num(item.h),
-
-        low:
-          num(item.l),
-
-        close:
-          num(item.c),
-
-        volume:
-          num(item.v),
-
-        vwap:
-          num(item.vw),
-
-        quotes:
-          num(item.n)
-      }))
-      .filter(c =>
-        c.timestamp &&
-        c.open &&
-        c.high &&
-        c.low &&
-        c.close
-      );
-
-
-  return candles;
-}
-
-
-/* ============================================================
-   RESAMPLE
-============================================================ */
-
-function resample(
-  candles,
-  minutes
-) {
-
-  const bucketMs =
-    minutes *
-    60 *
-    1000;
-
 
   const groups =
     new Map();
 
 
   for (
-    const candle of candles
+    const bar of bars
   ) {
 
-    const bucket =
-      Math.floor(
-        candle.timestamp /
-        bucketMs
-      ) *
-      bucketMs;
+    const parts =
+      zoneParts(
+
+        bar.time,
+
+        definition.zone
+
+      );
+
+
+    const minute =
+
+      parts.hour *
+      60
+
+      +
+
+      parts.minute;
 
 
     if (
-      !groups.has(bucket)
+
+      minute <
+      definition.open
+
+      ||
+
+      minute >=
+      definition.close
+
+    ) {
+
+      continue;
+
+    }
+
+
+    const key =
+      dateKey(
+        parts
+      );
+
+
+    if (
+      !groups.has(
+        key
+      )
     ) {
 
       groups.set(
-        bucket,
-        {
-
-          timestamp:
-            bucket,
-
-          open:
-            candle.open,
-
-          high:
-            candle.high,
-
-          low:
-            candle.low,
-
-          close:
-            candle.close,
-
-          volume:
-            candle.volume,
-
-          quotes:
-            candle.quotes
-        }
+        key,
+        []
       );
 
-    } else {
-
-      const bar =
-        groups.get(bucket);
-
-
-      bar.high =
-        Math.max(
-          bar.high,
-          candle.high
-        );
-
-
-      bar.low =
-        Math.min(
-          bar.low,
-          candle.low
-        );
-
-
-      bar.close =
-        candle.close;
-
-
-      bar.volume +=
-        candle.volume;
-
-
-      bar.quotes +=
-        candle.quotes;
     }
+
+
+    groups
+      .get(
+        key
+      )
+      .push(
+        bar
+      );
+
   }
 
 
-  return Array
-    .from(
-      groups.values()
-    )
-    .sort(
-      (a, b) =>
-        a.timestamp -
-        b.timestamp
+  const keys =
+    [
+      ...groups.keys()
+    ]
+      .sort();
+
+
+  const key =
+    keys.at(-1);
+
+
+  if (
+    !key
+  ) {
+
+    return null;
+
+  }
+
+
+  const rows =
+    groups.get(
+      key
     );
-}
 
 
-/* ============================================================
-   ATR
-============================================================ */
+  const high =
+    Math.max(
 
-function atr(
-  candles,
-  period = 14
-) {
+      ...rows.map(
+        row =>
+          row.high
+      )
 
-  if (
-    candles.length <
-    period + 1
-  ) {
-
-    return 0;
-  }
+    );
 
 
-  const values =
-    [];
+  const low =
+    Math.min(
+
+      ...rows.map(
+        row =>
+          row.low
+      )
+
+    );
 
 
-  for (
-    let i = 1;
-    i < candles.length;
-    i++
-  ) {
+  return {
 
-    const current =
-      candles[i];
+    date:
+      key,
 
-    const previous =
-      candles[i - 1];
+    high:
+      round(
+        high,
+        3
+      ),
 
+    low:
+      round(
+        low,
+        3
+      ),
 
-    const tr =
-      Math.max(
+    midpoint:
+      round(
 
-        current.high -
-        current.low,
-
-        Math.abs(
-          current.high -
-          previous.close
-        ),
-
-        Math.abs(
-          current.low -
-          previous.close
+        (
+          high +
+          low
         )
-      );
+
+        /
+
+        2,
+
+        3
+
+      ),
+
+    range:
+      round(
+        high -
+        low,
+        3
+      )
+
+  };
+
+}
 
 
-    values.push(tr);
-  }
+/* =========================================================
+   SESSION STATE
+========================================================= */
 
 
-  return avg(
-    values.slice(
-      -period
-    )
+function sessionOpen(
+  date,
+  definition
+) {
+
+  const parts =
+    zoneParts(
+
+      date,
+
+      definition.zone
+
+    );
+
+
+  const minute =
+
+    parts.hour *
+    60
+
+    +
+
+    parts.minute;
+
+
+  return (
+
+    parts.weekday >=
+    1
+
+    &&
+
+    parts.weekday <=
+    5
+
+    &&
+
+    minute >=
+    definition.open
+
+    &&
+
+    minute <
+    definition.close
+
   );
+
 }
 
 
-/* ============================================================
-   EMA
-============================================================ */
+/* =========================================================
+   SESSION PHASE
+========================================================= */
 
-function ema(
-  values,
-  period
+
+function sessionPhase(
+  date,
+  definition
 ) {
 
-  if (!values.length) {
-    return 0;
-  }
+  const parts =
+    zoneParts(
+
+      date,
+
+      definition.zone
+
+    );
 
 
-  const k =
-    2 /
-    (period + 1);
+  const minute =
 
+    parts.hour *
+    60
 
-  let value =
-    values[0];
+    +
 
+    parts.minute;
 
-  for (
-    let i = 1;
-    i < values.length;
-    i++
-  ) {
-
-    value =
-      values[i] * k +
-      value * (1 - k);
-  }
-
-
-  return value;
-}
-
-
-/* ============================================================
-   RSI
-============================================================ */
-
-function rsi(
-  candles,
-  period = 14
-) {
 
   if (
-    candles.length <=
-    period
+    sessionOpen(
+      date,
+      definition
+    )
   ) {
 
-    return 50;
-  }
-
-
-  let gains = 0;
-  let losses = 0;
-
-
-  for (
-    let i =
-      candles.length -
-      period;
-
-    i <
-      candles.length;
-
-    i++
-  ) {
-
-    if (i <= 0) {
-      continue;
-    }
-
-
-    const change =
-      candles[i].close -
-      candles[i - 1].close;
+    const elapsed =
+      minute -
+      definition.open;
 
 
     if (
-      change > 0
+      elapsed <=
+      90
     ) {
 
-      gains +=
-        change;
+      return "OPENING LIQUIDITY WINDOW";
 
-    } else {
-
-      losses +=
-        Math.abs(change);
     }
+
+
+    if (
+
+      definition.close -
+      minute <=
+      60
+
+    ) {
+
+      return "CLOSING WINDOW";
+
+    }
+
+
+    return "MID SESSION";
+
   }
 
 
   if (
-    losses === 0
+
+    minute <
+    definition.open
+
+    &&
+
+    definition.open -
+    minute <=
+    60
+
   ) {
 
-    return 100;
+    return "PRE-OPEN WINDOW";
+
   }
 
 
-  const rs =
-    gains /
-    losses;
+  return "CLOSED";
 
-
-  return (
-    100 -
-    100 /
-    (1 + rs)
-  );
 }
 
 
-/* ============================================================
-   VWAP
-============================================================ */
+/* =========================================================
+   NEXT SESSION TRANSITION
+========================================================= */
 
-function vwap(
-  candles
+
+function nextSessionTransition(
+  now,
+  definition
 ) {
 
-  let pv = 0;
-  let weight = 0;
+  let previous =
+    sessionOpen(
+      now,
+      definition
+    );
 
 
   for (
-    const c of candles
+    let offset = 1;
+    offset <= 10080;
+    offset++
   ) {
 
-    const typical =
-      (
-        c.high +
-        c.low +
-        c.close
-      ) / 3;
+    const future =
+      new Date(
+
+        now.getTime()
+
+        +
+
+        offset *
+        60_000
+
+      );
 
 
-    /*
-      Forex aggregates are quote-derived.
+    const current =
+      sessionOpen(
 
-      n = number of quote/events where available.
-      v can also be used when supplied.
-    */
+        future,
 
-    const w =
-      c.quotes > 0
-        ? c.quotes
-        : (
-            c.volume > 0
-              ? c.volume
-              : 1
-          );
+        definition
+
+      );
 
 
-    pv +=
-      typical *
-      w;
+    if (
+      current !==
+      previous
+    ) {
+
+      return {
+
+        type:
+
+          current
+
+            ?
+
+            "OPEN"
+
+            :
+
+            "CLOSE",
+
+        time:
+          future
+
+      };
+
+    }
 
 
-    weight +=
-      w;
-  }
+    previous =
+      current;
 
-
-  return (
-    weight > 0
-      ? pv / weight
-      : 0
-  );
-}
-
-
-/* ============================================================
-   RANGE
-============================================================ */
-
-function rangeOf(
-  candles
-) {
-
-  if (!candles.length) {
-
-    return {
-      high: null,
-      low: null,
-      open: null,
-      close: null
-    };
   }
 
 
   return {
 
-    high:
-      Math.max(
-        ...candles.map(
-          c => c.high
-        )
-      ),
+    type:
+      "UNKNOWN",
 
-    low:
-      Math.min(
-        ...candles.map(
-          c => c.low
-        )
-      ),
+    time:
+      new Date(
 
-    open:
-      candles[0].open,
+        now.getTime() +
+        86_400_000
 
-    close:
-      candles[
-        candles.length - 1
-      ].close
+      )
+
   };
+
 }
 
 
-/* ============================================================
-   SESSION FILTER
-============================================================ */
+/* =========================================================
+   BUILD SESSIONS
+========================================================= */
 
-function filterSession(
-  candles,
-  startMinute,
-  endMinute
+
+function buildSessions(
+  m5,
+  now
 ) {
 
-  return candles.filter(
-    candle => {
+  return SESSION_DEFS.map(
+    definition => {
 
-      const minute =
-        minuteOfDay(
-          candle.timestamp
+      const transition =
+        nextSessionTransition(
+
+          now,
+
+          definition
+
         );
 
 
-      if (
-        startMinute <
-        endMinute
-      ) {
+      return {
 
-        return (
-          minute >= startMinute &&
-          minute < endMinute
-        );
-      }
+        id:
+          definition.id,
 
+        name:
+          definition.name,
 
-      return (
-        minute >= startMinute ||
-        minute < endMinute
-      );
+        short:
+          definition.short,
+
+        zone:
+          definition.zone,
+
+        active:
+          sessionOpen(
+
+            now,
+
+            definition
+
+          ),
+
+        phase:
+          sessionPhase(
+
+            now,
+
+            definition
+
+          ),
+
+        localTime:
+          timeInZone(
+
+            now,
+
+            definition.zone
+
+          ),
+
+        openLocal:
+          minuteLabel(
+            definition.open
+          ),
+
+        closeLocal:
+          minuteLabel(
+            definition.close
+          ),
+
+        nextEvent:
+          transition.type,
+
+        nextEventAt:
+          transition.time
+            .toISOString(),
+
+        range:
+          sessionRange(
+
+            m5,
+
+            definition
+
+          )
+
+      };
+
     }
   );
+
 }
 
 
-/* ============================================================
-   GROUP DAYS
-============================================================ */
+/* =========================================================
+   REFERENCE LEVELS
+========================================================= */
 
-function groupDays(
-  candles
+
+function referenceLevels(
+  h1
 ) {
 
-  const map =
+  const days =
     new Map();
 
 
   for (
-    const candle of candles
+    const bar of h1
   ) {
 
     const key =
-      dayKey(
-        candle.timestamp
+      bar.time
+        .toISOString()
+        .slice(
+          0,
+          10
+        );
+
+
+    if (
+      !days.has(
+        key
+      )
+    ) {
+
+      days.set(
+        key,
+        []
+      );
+
+    }
+
+
+    days
+      .get(
+        key
+      )
+      .push(
+        bar
+      );
+
+  }
+
+
+  const today =
+    new Date()
+      .toISOString()
+      .slice(
+        0,
+        10
+      );
+
+
+  const completedDays =
+    [
+      ...days.keys()
+    ]
+
+      .filter(
+        key =>
+          key <
+          today
+      )
+
+      .sort();
+
+
+  const previousDayKey =
+    completedDays.at(-1);
+
+
+  let previousDay =
+    null;
+
+
+  if (
+    previousDayKey
+  ) {
+
+    const rows =
+      days.get(
+        previousDayKey
+      );
+
+
+    const high =
+      Math.max(
+        ...rows.map(
+          row =>
+            row.high
+        )
+      );
+
+
+    const low =
+      Math.min(
+        ...rows.map(
+          row =>
+            row.low
+        )
+      );
+
+
+    previousDay = {
+
+      date:
+        previousDayKey,
+
+      high:
+        round(
+          high,
+          3
+        ),
+
+      low:
+        round(
+          low,
+          3
+        ),
+
+      midpoint:
+        round(
+
+          (
+            high +
+            low
+          )
+
+          /
+
+          2,
+
+          3
+
+        )
+
+    };
+
+  }
+
+
+  const weeks =
+    new Map();
+
+
+  for (
+    const bar of h1
+  ) {
+
+    const key =
+      weekKey(
+        bar.time
       );
 
 
     if (
-      !map.has(key)
+      !weeks.has(
+        key
+      )
     ) {
 
-      map.set(
+      weeks.set(
         key,
         []
       );
+
     }
 
 
-    map
-      .get(key)
-      .push(candle);
+    weeks
+      .get(
+        key
+      )
+      .push(
+        bar
+      );
+
   }
 
 
-  return map;
-}
+  const currentWeek =
+    weekKey(
+      new Date()
+    );
 
 
-/* ============================================================
-   SWINGS
-============================================================ */
+  const completedWeeks =
+    [
+      ...weeks.keys()
+    ]
 
-function detectSwings(
-  candles,
-  left = 3,
-  right = 3
-) {
+      .filter(
+        key =>
+          key <
+          currentWeek
+      )
 
-  const highs = [];
-  const lows = [];
+      .sort();
 
 
-  for (
-    let i = left;
-    i <
-      candles.length -
-      right;
-    i++
+  const previousWeekKey =
+    completedWeeks.at(-1);
+
+
+  let previousWeek =
+    null;
+
+
+  if (
+    previousWeekKey
   ) {
 
-    const current =
-      candles[i];
+    const rows =
+      weeks.get(
+        previousWeekKey
+      );
 
 
-    let high =
-      true;
-
-    let low =
-      true;
-
-
-    for (
-      let j =
-        i - left;
-
-      j <=
-        i + right;
-
-      j++
-    ) {
-
-      if (
-        j === i
-      ) {
-        continue;
-      }
+    const high =
+      Math.max(
+        ...rows.map(
+          row =>
+            row.high
+        )
+      );
 
 
-      if (
-        candles[j].high >=
-        current.high
-      ) {
-
-        high =
-          false;
-      }
-
-
-      if (
-        candles[j].low <=
-        current.low
-      ) {
-
-        low =
-          false;
-      }
-    }
+    const low =
+      Math.min(
+        ...rows.map(
+          row =>
+            row.low
+        )
+      );
 
 
-    if (high) {
+    previousWeek = {
 
-      highs.push({
+      week:
+        previousWeekKey,
 
-        price:
-          current.high,
+      high:
+        round(
+          high,
+          3
+        ),
 
-        timestamp:
-          current.timestamp
-      });
-    }
+      low:
+        round(
+          low,
+          3
+        ),
 
+      midpoint:
+        round(
 
-    if (low) {
+          (
+            high +
+            low
+          )
 
-      lows.push({
+          /
 
-        price:
-          current.low,
+          2,
 
-        timestamp:
-          current.timestamp
-      });
-    }
+          3
+
+        )
+
+    };
+
   }
 
 
   return {
-    highs,
-    lows
+
+    previousDay,
+
+    previousWeek
+
   };
+
 }
 
 
-/* ============================================================
-   EQUAL LEVELS
-============================================================ */
+/* =========================================================
+   EQUAL HIGHS / LOWS
+========================================================= */
 
-function equalLevels(
-  swings,
+
+function detectEqualLevels(
+  bars,
+  atrValue
+) {
+
+  const swing =
+    pivots(
+
+      bars,
+
+      2,
+
+      180
+
+    );
+
+
+  const tolerance =
+    Math.max(
+
+      (
+        atrValue ||
+        1
+      )
+
+      *
+
+      0.12,
+
+      0.10
+
+    );
+
+
+  return {
+
+    highs:
+      clusterLevels(
+
+        swing.highs.map(
+          item =>
+            item.price
+        ),
+
+        tolerance
+
+      ),
+
+
+    lows:
+      clusterLevels(
+
+        swing.lows.map(
+          item =>
+            item.price
+        ),
+
+        tolerance
+
+      )
+
+  };
+
+}
+
+
+function clusterLevels(
+  values,
   tolerance
 ) {
 
-  const levels = [];
+  const groups =
+    [];
 
 
-  function scan(
-    list,
-    type
+  for (
+    const value of values
   ) {
 
-    for (
-      let i = 0;
-      i < list.length;
-      i++
+    const existing =
+      groups.find(
+
+        group =>
+
+          Math.abs(
+
+            group.price -
+            value
+
+          )
+
+          <=
+
+          tolerance
+
+      );
+
+
+    if (
+      !existing
     ) {
 
-      for (
-        let j =
-          i + 1;
-        j < list.length;
-        j++
-      ) {
+      groups.push({
 
-        const difference =
-          Math.abs(
-            list[i].price -
-            list[j].price
-          );
+        price:
+          value,
+
+        touches:
+          1
+
+      });
 
 
-        if (
-          difference <=
-          tolerance
-        ) {
+      continue;
 
-          levels.push({
-
-            type,
-
-            price:
-              (
-                list[i].price +
-                list[j].price
-              ) / 2
-          });
-
-
-          break;
-        }
-      }
     }
+
+
+    existing.price =
+
+      (
+        existing.price *
+        existing.touches
+
+        +
+
+        value
+
+      )
+
+      /
+
+      (
+        existing.touches +
+        1
+      );
+
+
+    existing.touches++;
+
   }
 
 
-  scan(
-    swings.highs.slice(-20),
-    "EQUAL_HIGHS"
-  );
+  return groups
 
+    .filter(
+      group =>
+        group.touches >=
+        2
+    )
 
-  scan(
-    swings.lows.slice(-20),
-    "EQUAL_LOWS"
-  );
-
-
-  return levels;
-}
-
-
-/* ============================================================
-   FOOTPRINT / DELTA PROXY
-============================================================ */
-
-function deltaProxy(
-  candle
-) {
-
-  const range =
-    Math.max(
-      candle.high -
-      candle.low,
-      0.00001
-    );
-
-
-  const body =
-    candle.close -
-    candle.open;
-
-
-  const closeLocation =
-    (
-      candle.close -
-      candle.low
-    ) /
-    range;
-
-
-  const directional =
-    body /
-    range;
-
-
-  const pressure =
-    clamp(
-      directional * 0.7 +
+    .sort(
       (
-        closeLocation -
-        0.5
-      ) * 0.6,
-      -1,
-      1
+        a,
+        b
+      ) =>
+        b.touches -
+        a.touches
+    )
+
+    .slice(
+      0,
+      5
+    )
+
+    .map(
+      group => ({
+
+        price:
+          round(
+            group.price,
+            3
+          ),
+
+        touches:
+          group.touches
+
+      })
     );
 
-
-  const activity =
-    candle.quotes > 0
-      ? candle.quotes
-      : (
-          candle.volume > 0
-            ? candle.volume
-            : 1
-        );
-
-
-  return (
-    activity *
-    pressure
-  );
 }
 
 
-function footprint(
-  candles
+/* =========================================================
+   FOOTPRINT-STYLE FLOW
+========================================================= */
+
+
+function buildFootprint(
+  bars,
+  atrValue
 ) {
 
   const recent =
-    candles.slice(-60);
+    bars.slice(
+      -180
+    );
 
 
-  let cvd = 0;
+  const usableVolume =
+
+    recent.filter(
+
+      bar =>
+        bar.volume >
+        0
+
+    ).length
+
+    >=
+
+    recent.length *
+    0.5;
 
 
-  const bars =
+  const medianRange =
+    median(
+
+      recent.map(
+
+        bar =>
+          Math.max(
+
+            bar.high -
+            bar.low,
+
+            0.000001
+
+          )
+
+      )
+
+    )
+
+    ||
+
+    atrValue
+
+    ||
+
+    1;
+
+
+  const rows =
     recent.map(
-      candle => {
+      bar => {
 
-        const delta =
-          deltaProxy(
-            candle
+        const range =
+          Math.max(
+
+            bar.high -
+            bar.low,
+
+            0.000001
+
           );
 
 
-        cvd +=
-          delta;
+        const body =
+
+          (
+            bar.close -
+            bar.open
+          )
+
+          /
+
+          range;
+
+
+        const closeLocation =
+
+          (
+
+            (
+              bar.close -
+              bar.low
+            )
+
+            -
+
+            (
+              bar.high -
+              bar.close
+            )
+
+          )
+
+          /
+
+          range;
+
+
+        const activity =
+
+          usableVolume
+
+            ?
+
+            Math.max(
+              bar.volume,
+              1
+            )
+
+            :
+
+            clamp(
+
+              range /
+              medianRange,
+
+              0.2,
+
+              5
+
+            )
+
+            *
+
+            100;
+
+
+        const buyShare =
+          clamp(
+
+            0.5
+
+            +
+
+            closeLocation *
+            0.30
+
+            +
+
+            body *
+            0.20,
+
+            0.05,
+
+            0.95
+
+          );
+
+
+        const buy =
+          activity *
+          buyShare;
+
+
+        const sell =
+          activity -
+          buy;
 
 
         return {
 
-          timestamp:
-            candle.timestamp,
+          price:
+            bar.close,
+
+          activity,
+
+          buy,
+
+          sell,
 
           delta:
-            round(
-              delta,
-              2
-            ),
+            buy -
+            sell
 
-          cvd:
-            round(
-              cvd,
-              2
-            )
         };
+
       }
     );
 
 
-  const last20 =
-    bars.slice(-20);
+  let cvd =
+    0;
 
 
-  const totalDelta =
-    sum(
-      last20.map(
-        b =>
-          b.delta
-      )
-    );
+  for (
+    const row of rows
+  ) {
+
+    cvd +=
+      row.delta;
 
 
-  const bias =
-    totalDelta > 0
-      ? "BUYING_PRESSURE"
-      : totalDelta < 0
-        ? "SELLING_PRESSURE"
-        : "BALANCED";
+    row.cvd =
+      cvd;
+
+  }
 
 
   return {
 
-    delta:
-      round(
-        totalDelta,
-        2
+    mode:
+
+      usableVolume
+
+        ?
+
+        "Twelve Data OHLCV Delta Proxy"
+
+        :
+
+        "Price-Action Activity Proxy",
+
+    hasProviderVolume:
+      usableVolume,
+
+    trueBidAskFootprint:
+      false,
+
+    last5:
+      aggregateFlow(
+        rows.slice(-5)
+      ),
+
+    last15:
+      aggregateFlow(
+        rows.slice(-15)
+      ),
+
+    last30:
+      aggregateFlow(
+        rows.slice(-30)
+      ),
+
+    last60:
+      aggregateFlow(
+        rows.slice(-60)
       ),
 
     cvd:
       round(
         cvd,
-        2
+        1
       ),
 
-    bias,
-
-    latestBars:
-      bars.slice(-10)
-  };
-}
-
-
-/* ============================================================
-   STRUCTURE
-============================================================ */
-
-function structure(
-  m5,
-  m15,
-  h1
-) {
-
-  const price =
-    m5[
-      m5.length - 1
-    ].close;
-
-
-  const emaM5 =
-    ema(
-      m5.map(
-        c => c.close
-      ),
-      20
-    );
-
-
-  const emaM15 =
-    ema(
-      m15.map(
-        c => c.close
-      ),
-      20
-    );
-
-
-  const emaH1 =
-    ema(
-      h1.map(
-        c => c.close
-      ),
-      20
-    );
-
-
-  let bias =
-    "NEUTRAL";
-
-
-  if (
-    price > emaM5 &&
-    price > emaM15 &&
-    price > emaH1
-  ) {
-
-    bias =
-      "BULLISH";
-  }
-
-
-  if (
-    price < emaM5 &&
-    price < emaM15 &&
-    price < emaH1
-  ) {
-
-    bias =
-      "BEARISH";
-  }
-
-
-  return {
-
-    bias,
-
-    m5:
-      price > emaM5
-        ? "BULLISH"
-        : "BEARISH",
-
-    m15:
-      price > emaM15
-        ? "BULLISH"
-        : "BEARISH",
-
-    h1:
-      price > emaH1
-        ? "BULLISH"
-        : "BEARISH",
-
-    emaM5:
-      round(
-        emaM5
+    divergence:
+      flowDivergence(
+        rows
       ),
 
-    emaM15:
-      round(
-        emaM15
-      ),
-
-    emaH1:
-      round(
-        emaH1
+    absorption:
+      detectAbsorption(
+        recent,
+        rows
       )
+
   };
+
 }
 
 
-/* ============================================================
-   REGIME
-============================================================ */
-
-function regime(
-  m5,
-  atrM5
+function aggregateFlow(
+  rows
 ) {
 
-  const closes =
-    m5.map(
-      c => c.close
+  const activity =
+    sum(
+      rows.map(
+        row =>
+          row.activity
+      )
     );
 
 
-  const fast =
-    ema(
-      closes,
-      20
+  const delta =
+    sum(
+      rows.map(
+        row =>
+          row.delta
+      )
     );
 
-
-  const slow =
-    ema(
-      closes,
-      50
-    );
-
-
-  const separation =
-    Math.abs(
-      fast -
-      slow
-    );
-
-
-  if (
-    separation >
-    atrM5 *
-    0.7
-  ) {
-
-    return (
-      fast > slow
-        ? "TRENDING_BULLISH"
-        : "TRENDING_BEARISH"
-    );
-  }
-
-
-  if (
-    separation <
-    atrM5 *
-    0.25
-  ) {
-
-    return "COMPRESSION";
-  }
-
-
-  return "RANGING";
-}
-
-
-/* ============================================================
-   LIQUIDITY LEVEL
-============================================================ */
-
-function level(
-  label,
-  type,
-  side,
-  price,
-  strength
-) {
 
   return {
 
-    label,
-    type,
-    side,
-    price,
-    strength
+    activity:
+      round(
+        activity,
+        1
+      ),
+
+    delta:
+      round(
+        delta,
+        1
+      ),
+
+    deltaPct:
+      round(
+
+        activity
+
+          ?
+
+          delta /
+          activity *
+          100
+
+          :
+
+          0,
+
+        1
+
+      )
+
   };
+
 }
 
 
-/* ============================================================
-   SCORE LIQUIDITY
-============================================================ */
-
-function scorePool(
-  pool,
-  price,
-  atrM5,
-  fp,
-  struct
+function flowDivergence(
+  rows
 ) {
 
-  const distance =
-    Math.abs(
-      price -
-      pool.price
+  if (
+    rows.length <
+    40
+  ) {
+
+    return "NONE";
+
+  }
+
+
+  const older =
+    rows.slice(
+      -40,
+      -20
     );
 
 
-  const distanceATR =
-    atrM5 > 0
-      ? distance /
-        atrM5
-      : 100;
+  const newer =
+    rows.slice(
+      -20
+    );
 
 
-  let score =
-    pool.strength;
+  const priceMove =
+
+    newer.at(-1).price
+
+    -
+
+    older.at(-1).price;
+
+
+  const delta =
+    sum(
+      newer.map(
+        row =>
+          row.delta
+      )
+    );
 
 
   if (
-    distanceATR <=
-    0.5
+
+    priceMove >
+    0
+
+    &&
+
+    delta <
+    0
+
   ) {
 
-    score +=
-      22;
+    return "PRICE UP / DELTA DOWN";
 
-  } else if (
-    distanceATR <=
-    1
+  }
+
+
+  if (
+
+    priceMove <
+    0
+
+    &&
+
+    delta >
+    0
+
   ) {
 
-    score +=
-      15;
+    return "PRICE DOWN / DELTA UP";
 
-  } else if (
-    distanceATR <=
+  }
+
+
+  return "NONE";
+
+}
+
+
+function detectAbsorption(
+  bars,
+  rows
+) {
+
+  const recentBars =
+    bars.slice(
+      -30
+    );
+
+
+  const recentRows =
+    rows.slice(
+      -30
+    );
+
+
+  const activityMedian =
+    median(
+
+      recentRows.map(
+        row =>
+          row.activity
+      )
+
+    )
+
+    ||
+
+    1;
+
+
+  let upper =
+    0;
+
+
+  let lower =
+    0;
+
+
+  for (
+    let i = 0;
+    i <
+      recentBars.length;
+    i++
+  ) {
+
+    const bar =
+      recentBars[i];
+
+
+    const flow =
+      recentRows[i];
+
+
+    const range =
+      Math.max(
+
+        bar.high -
+        bar.low,
+
+        0.000001
+
+      );
+
+
+    const upperWick =
+
+      bar.high
+
+      -
+
+      Math.max(
+        bar.open,
+        bar.close
+      );
+
+
+    const lowerWick =
+
+      Math.min(
+        bar.open,
+        bar.close
+      )
+
+      -
+
+      bar.low;
+
+
+    if (
+
+      flow.activity >
+      activityMedian *
+      1.35
+
+      &&
+
+      flow.delta >
+      0
+
+      &&
+
+      upperWick /
+      range >
+      0.45
+
+    ) {
+
+      upper++;
+
+    }
+
+
+    if (
+
+      flow.activity >
+      activityMedian *
+      1.35
+
+      &&
+
+      flow.delta <
+      0
+
+      &&
+
+      lowerWick /
+      range >
+      0.45
+
+    ) {
+
+      lower++;
+
+    }
+
+  }
+
+
+  if (
+    upper >=
     2
   ) {
 
-    score +=
-      9;
+    return "BUYING ABSORBED / BULL-TRAP RISK";
+
   }
 
 
   if (
-    pool.side ===
-      "BUY_SIDE" &&
-    fp.bias ===
-      "BUYING_PRESSURE"
+    lower >=
+    2
   ) {
 
-    score +=
-      7;
+    return "SELLING ABSORBED / BEAR-TRAP RISK";
+
+  }
+
+
+  return "NONE";
+
+}
+
+
+/* =========================================================
+   VWAP
+========================================================= */
+
+
+function buildVwap(
+  bars
+) {
+
+  const recent =
+    bars.slice(
+      -500
+    );
+
+
+  const hasVolume =
+
+    recent.filter(
+      bar =>
+        bar.volume >
+        0
+    ).length
+
+    >=
+
+    recent.length *
+    0.5;
+
+
+  let numerator =
+    0;
+
+
+  let denominator =
+    0;
+
+
+  const ranges =
+    recent.map(
+      bar =>
+        Math.max(
+          bar.high -
+          bar.low,
+          0.000001
+        )
+    );
+
+
+  const medianRange =
+    median(
+      ranges
+    )
+
+    ||
+
+    1;
+
+
+  for (
+    const bar of recent
+  ) {
+
+    const typical =
+
+      (
+        bar.high +
+        bar.low +
+        bar.close
+      )
+
+      /
+
+      3;
+
+
+    const weight =
+
+      hasVolume
+
+        ?
+
+        Math.max(
+          bar.volume,
+          1
+        )
+
+        :
+
+        Math.max(
+
+          0.2,
+
+          (
+            bar.high -
+            bar.low
+          )
+
+          /
+
+          medianRange
+
+        );
+
+
+    numerator +=
+      typical *
+      weight;
+
+
+    denominator +=
+      weight;
+
+  }
+
+
+  return {
+
+    value:
+
+      denominator
+
+        ?
+
+        numerator /
+        denominator
+
+        :
+
+        recent.at(-1).close,
+
+    mode:
+
+      hasVolume
+
+        ?
+
+        "Volume weighted"
+
+        :
+
+        "Activity weighted"
+
+  };
+
+}
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+
+function buildVolumeProfile(
+  bars,
+  bins
+) {
+
+  if (
+    !bars.length
+  ) {
+
+    return {
+
+      mode:
+        "Unavailable",
+
+      poc:
+        null,
+
+      hvn:
+        [],
+
+      lvn:
+        []
+
+    };
+
+  }
+
+
+  const low =
+    Math.min(
+      ...bars.map(
+        bar =>
+          bar.low
+      )
+    );
+
+
+  const high =
+    Math.max(
+      ...bars.map(
+        bar =>
+          bar.high
+      )
+    );
+
+
+  const step =
+
+    (
+      high -
+      low
+    )
+
+    /
+
+    bins
+
+    ||
+
+    1;
+
+
+  const hasVolume =
+
+    bars.filter(
+      bar =>
+        bar.volume >
+        0
+    ).length
+
+    >=
+
+    bars.length *
+    0.5;
+
+
+  const profile =
+    Array.from(
+
+      {
+        length:
+          bins
+      },
+
+      (
+        _,
+        index
+      ) => ({
+
+        price:
+
+          low
+
+          +
+
+          (
+            index +
+            0.5
+          )
+
+          *
+
+          step,
+
+        activity:
+          0
+
+      })
+
+    );
+
+
+  for (
+    const bar of bars
+  ) {
+
+    const typical =
+
+      (
+        bar.high +
+        bar.low +
+        bar.close
+      )
+
+      /
+
+      3;
+
+
+    const index =
+      clamp(
+
+        Math.floor(
+
+          (
+            typical -
+            low
+          )
+
+          /
+
+          step
+
+        ),
+
+        0,
+
+        bins -
+        1
+
+      );
+
+
+    profile[
+      index
+    ].activity +=
+
+      hasVolume
+
+        ?
+
+        Math.max(
+          bar.volume,
+          1
+        )
+
+        :
+
+        1;
+
+  }
+
+
+  const highest =
+    [
+      ...profile
+    ]
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.activity -
+          a.activity
+      );
+
+
+  const lowest =
+    [
+      ...profile
+    ]
+      .filter(
+        row =>
+          row.activity >
+          0
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a.activity -
+          b.activity
+      );
+
+
+  return {
+
+    mode:
+
+      hasVolume
+
+        ?
+
+        "Volume Profile Proxy"
+
+        :
+
+        "Price Activity Profile",
+
+    poc:
+      round(
+        highest[0]
+          ?.price,
+        3
+      ),
+
+    hvn:
+      highest
+
+        .slice(
+          0,
+          3
+        )
+
+        .map(
+          row =>
+            round(
+              row.price,
+              3
+            )
+        ),
+
+    lvn:
+      lowest
+
+        .slice(
+          0,
+          3
+        )
+
+        .map(
+          row =>
+            round(
+              row.price,
+              3
+            )
+        )
+
+  };
+
+}
+
+
+/* =========================================================
+   ASIA SWEEP HISTORY
+========================================================= */
+
+
+function buildAsiaHistory(
+  m5
+) {
+
+  const grouped =
+    new Map();
+
+
+  for (
+    const bar of m5
+  ) {
+
+    const parts =
+      zoneParts(
+
+        bar.time,
+
+        "Asia/Tokyo"
+
+      );
+
+
+    const key =
+      dateKey(
+        parts
+      );
+
+
+    if (
+      !grouped.has(
+        key
+      )
+    ) {
+
+      grouped.set(
+        key,
+        []
+      );
+
+    }
+
+
+    grouped
+      .get(
+        key
+      )
+      .push(
+        bar
+      );
+
+  }
+
+
+  const highs =
+    [];
+
+
+  const lows =
+    [];
+
+
+  let eligible =
+    0;
+
+
+  for (
+    const [
+      key,
+      bars
+    ] of grouped
+  ) {
+
+    const asia =
+      [];
+
+
+    const after =
+      [];
+
+
+    for (
+      const bar of bars
+    ) {
+
+      const parts =
+        zoneParts(
+
+          bar.time,
+
+          "Asia/Tokyo"
+
+        );
+
+
+      const minute =
+
+        parts.hour *
+        60
+
+        +
+
+        parts.minute;
+
+
+      if (
+
+        minute >=
+        9 * 60
+
+        &&
+
+        minute <
+        18 * 60
+
+      ) {
+
+        asia.push(
+          bar
+        );
+
+      }
+
+
+      if (
+
+        minute >=
+        18 * 60
+
+      ) {
+
+        after.push(
+          bar
+        );
+
+      }
+
+    }
+
+
+    if (
+
+      asia.length <
+      40
+
+      ||
+
+      after.length <
+      8
+
+    ) {
+
+      continue;
+
+    }
+
+
+    eligible++;
+
+
+    const high =
+      Math.max(
+        ...asia.map(
+          bar =>
+            bar.high
+        )
+      );
+
+
+    const low =
+      Math.min(
+        ...asia.map(
+          bar =>
+            bar.low
+        )
+      );
+
+
+    const localAtr =
+
+      lastFinite(
+        atrSeries(
+          asia,
+          14
+        )
+      )
+
+      ||
+
+      mean(
+
+        asia.map(
+          bar =>
+            bar.high -
+            bar.low
+        )
+
+      );
+
+
+    const highSweep =
+      analyzeSweep(
+
+        after,
+
+        high,
+
+        "HIGH",
+
+        localAtr
+
+      );
+
+
+    const lowSweep =
+      analyzeSweep(
+
+        after,
+
+        low,
+
+        "LOW",
+
+        localAtr
+
+      );
+
+
+    if (
+      highSweep
+    ) {
+
+      highs.push(
+        highSweep
+      );
+
+    }
+
+
+    if (
+      lowSweep
+    ) {
+
+      lows.push(
+        lowSweep
+      );
+
+    }
+
+  }
+
+
+  return {
+
+    lookbackDays:
+      eligible,
+
+    asiaHigh:
+      summarizeSweepData(
+
+        highs,
+
+        eligible
+
+      ),
+
+    asiaLow:
+      summarizeSweepData(
+
+        lows,
+
+        eligible
+
+      )
+
+  };
+
+}
+
+
+function analyzeSweep(
+  bars,
+  level,
+  side,
+  atrValue
+) {
+
+  const index =
+    bars.findIndex(
+
+      bar =>
+
+        side ===
+        "HIGH"
+
+          ?
+
+          bar.high >
+          level
+
+          :
+
+          bar.low <
+          level
+
+    );
+
+
+  if (
+    index <
+    0
+  ) {
+
+    return null;
+
+  }
+
+
+  const sample =
+    bars.slice(
+
+      index,
+
+      index +
+      20
+
+    );
+
+
+  let maximumExtension =
+    0;
+
+
+  let reversed =
+    false;
+
+
+  let reversalBars =
+    null;
+
+
+  for (
+    let i = 0;
+    i <
+      sample.length;
+    i++
+  ) {
+
+    const extension =
+
+      side ===
+      "HIGH"
+
+        ?
+
+        sample[i].high -
+        level
+
+        :
+
+        level -
+        sample[i].low;
+
+
+    maximumExtension =
+      Math.max(
+
+        maximumExtension,
+
+        extension
+
+      );
+
+
+    if (
+      i >
+      0
+    ) {
+
+      const inside =
+
+        side ===
+        "HIGH"
+
+          ?
+
+          sample[i].close <
+          level
+
+          :
+
+          sample[i].close >
+          level;
+
+
+      if (
+        inside
+      ) {
+
+        reversed =
+          true;
+
+
+        reversalBars =
+          i;
+
+
+        break;
+
+      }
+
+    }
+
+  }
+
+
+  return {
+
+    overshoot:
+      maximumExtension,
+
+    overshootAtr:
+
+      maximumExtension
+
+      /
+
+      Math.max(
+        atrValue,
+        0.000001
+      ),
+
+    reversed,
+
+    reversalBars
+
+  };
+
+}
+
+
+function summarizeSweepData(
+  events,
+  eligible
+) {
+
+  const overshoots =
+    events
+
+      .map(
+        event =>
+          event.overshootAtr
+      )
+
+      .filter(
+        Number.isFinite
+      );
+
+
+  const reversals =
+    events.filter(
+      event =>
+        event.reversed
+    ).length;
+
+
+  return {
+
+    sweeps:
+      events.length,
+
+    sweepRatePct:
+      round(
+
+        eligible
+
+          ?
+
+          events.length /
+          eligible *
+          100
+
+          :
+
+          0,
+
+        1
+
+      ),
+
+    reversalRatePct:
+      round(
+
+        events.length
+
+          ?
+
+          reversals /
+          events.length *
+          100
+
+          :
+
+          0,
+
+        1
+
+      ),
+
+    p25OvershootAtr:
+      round(
+
+        percentile(
+          overshoots,
+          0.25
+        )
+
+        ??
+
+        0.08,
+
+        3
+
+      ),
+
+    medianOvershootAtr:
+      round(
+
+        percentile(
+          overshoots,
+          0.50
+        )
+
+        ??
+
+        0.18,
+
+        3
+
+      ),
+
+    p75OvershootAtr:
+      round(
+
+        percentile(
+          overshoots,
+          0.75
+        )
+
+        ??
+
+        0.35,
+
+        3
+
+      )
+
+  };
+
+}
+
+
+/* =========================================================
+   BUILD LIQUIDITY POOLS
+========================================================= */
+
+
+function buildPools({
+
+  price,
+
+  sessions,
+
+  reference,
+
+  equalLevels,
+
+  h1Swings,
+
+  atrH1
+
+}) {
+
+  const pools =
+    [];
+
+
+  const add = (
+
+    name,
+
+    level,
+
+    side,
+
+    type,
+
+    importance
+
+  ) => {
+
+    if (
+      !Number.isFinite(
+        level
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    pools.push({
+
+      name,
+
+      level,
+
+      side,
+
+      type,
+
+      importance
+
+    });
+
+  };
+
+
+  for (
+    const session of sessions
+  ) {
+
+    if (
+      !session.range
+    ) {
+
+      continue;
+
+    }
+
+
+    const importance =
+
+      session.id ===
+      "asia"
+
+        ?
+
+        1.35
+
+        :
+
+        session.id ===
+        "london"
+
+          ?
+
+          1.25
+
+          :
+
+          1.20;
+
+
+    add(
+
+      `${session.short} High`,
+
+      session.range.high,
+
+      "HIGH",
+
+      `${session.id.toUpperCase()}_HIGH`,
+
+      importance
+
+    );
+
+
+    add(
+
+      `${session.short} Low`,
+
+      session.range.low,
+
+      "LOW",
+
+      `${session.id.toUpperCase()}_LOW`,
+
+      importance
+
+    );
+
   }
 
 
   if (
-    pool.side ===
-      "SELL_SIDE" &&
-    fp.bias ===
-      "SELLING_PRESSURE"
+    reference.previousDay
   ) {
 
-    score +=
-      7;
+    add(
+
+      "Previous Day High",
+
+      reference.previousDay.high,
+
+      "HIGH",
+
+      "PDH",
+
+      1.45
+
+    );
+
+
+    add(
+
+      "Previous Day Low",
+
+      reference.previousDay.low,
+
+      "LOW",
+
+      "PDL",
+
+      1.45
+
+    );
+
   }
 
 
   if (
-    pool.side ===
-      "BUY_SIDE" &&
-    struct.bias ===
-      "BULLISH"
+    reference.previousWeek
   ) {
 
-    score +=
-      6;
+    add(
+
+      "Previous Week High",
+
+      reference.previousWeek.high,
+
+      "HIGH",
+
+      "PWH",
+
+      1.55
+
+    );
+
+
+    add(
+
+      "Previous Week Low",
+
+      reference.previousWeek.low,
+
+      "LOW",
+
+      "PWL",
+
+      1.55
+
+    );
+
   }
 
 
-  if (
+  for (
+    const level of
+    equalLevels.highs
+  ) {
+
+    add(
+
+      `Equal Highs (${level.touches}x)`,
+
+      level.price,
+
+      "HIGH",
+
+      "EQH",
+
+      1.30
+
+    );
+
+  }
+
+
+  for (
+    const level of
+    equalLevels.lows
+  ) {
+
+    add(
+
+      `Equal Lows (${level.touches}x)`,
+
+      level.price,
+
+      "LOW",
+
+      "EQL",
+
+      1.30
+
+    );
+
+  }
+
+
+  for (
+    const swing of
+    h1Swings.highs
+      .slice(-3)
+  ) {
+
+    add(
+
+      "H1 Swing High",
+
+      swing.price,
+
+      "HIGH",
+
+      "H1_HIGH",
+
+      1
+
+    );
+
+  }
+
+
+  for (
+    const swing of
+    h1Swings.lows
+      .slice(-3)
+  ) {
+
+    add(
+
+      "H1 Swing Low",
+
+      swing.price,
+
+      "LOW",
+
+      "H1_LOW",
+
+      1
+
+    );
+
+  }
+
+
+  const maxDistance =
+
+    (
+      atrH1 ||
+      10
+    )
+
+    *
+
+    6;
+
+
+  return mergePools(
+
+    pools.filter(
+
+      pool =>
+        Math.abs(
+          pool.level -
+          price
+        )
+
+        <=
+        maxDistance
+
+    ),
+
+    Math.max(
+
+      (
+        atrH1 ||
+        1
+      )
+
+      *
+
+      0.05,
+
+      0.10
+
+    )
+
+  );
+
+}
+
+
+/* =========================================================
+   MERGE NEARBY POOLS
+========================================================= */
+
+
+function mergePools(
+  pools,
+  tolerance
+) {
+
+  const output =
+    [];
+
+
+  for (
+    const pool of
+    [
+      ...pools
+    ]
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a.level -
+          b.level
+      )
+  ) {
+
+    const existing =
+      output.find(
+
+        candidate =>
+
+          candidate.side ===
+          pool.side
+
+          &&
+
+          Math.abs(
+
+            candidate.level -
+            pool.level
+
+          )
+
+          <=
+          tolerance
+
+      );
+
+
+    if (
+      !existing
+    ) {
+
+      output.push({
+
+        ...pool,
+
+        aliases:
+          []
+
+      });
+
+
+      continue;
+
+    }
+
+
+    existing.aliases.push(
+      pool.name
+    );
+
+
+    if (
+      pool.importance >
+      existing.importance
+    ) {
+
+      existing.name =
+        pool.name;
+
+
+      existing.type =
+        pool.type;
+
+
+      existing.importance =
+        pool.importance;
+
+    }
+
+
+    existing.level =
+
+      (
+        existing.level +
+        pool.level
+      )
+
+      /
+
+      2;
+
+  }
+
+
+  return output;
+
+}
+
+
+/* =========================================================
+   ENRICH LIQUIDITY POOL
+========================================================= */
+
+
+function enrichPool({
+
+  pool,
+
+  price,
+
+  atr5,
+
+  atr15,
+
+  structure,
+
+  sessions,
+
+  footprint,
+
+  asiaHistory,
+
+  profile
+
+}) {
+
+  const direction =
+
     pool.side ===
-      "SELL_SIDE" &&
-    struct.bias ===
-      "BEARISH"
+    "HIGH"
+
+      ?
+
+      1
+
+      :
+
+      -1;
+
+
+  const distance =
+    Math.abs(
+
+      pool.level -
+      price
+
+    );
+
+
+  const distanceAtr =
+
+    distance
+
+    /
+
+    Math.max(
+      atr15,
+      0.000001
+    );
+
+
+  const trend =
+
+    structure.m5.score *
+    0.20
+
+    +
+
+    structure.m15.score *
+    0.35
+
+    +
+
+    structure.h1.score *
+    0.30
+
+    +
+
+    structure.h4.score *
+    0.15;
+
+
+  const delta =
+    footprint.last15
+      ?.deltaPct
+
+    ||
+
+    0;
+
+
+  const openingSession =
+    sessions.find(
+
+      session =>
+        session.phase ===
+        "OPENING LIQUIDITY WINDOW"
+
+    );
+
+
+  let score =
+
+    16
+
+    +
+
+    36 *
+    Math.exp(
+
+      -distanceAtr /
+      1.3
+
+    )
+
+    +
+
+    18 *
+    pool.importance
+
+    +
+
+    clamp(
+
+      direction *
+      trend /
+      6,
+
+      -14,
+
+      14
+
+    )
+
+    +
+
+    clamp(
+
+      direction *
+      delta /
+      3,
+
+      -10,
+
+      10
+
+    );
+
+
+  if (
+    openingSession
   ) {
 
     score +=
-      6;
+
+      openingSession.id ===
+      "asia"
+
+        ?
+
+        6
+
+        :
+
+        12;
+
+  }
+
+
+  const validDirection =
+
+    pool.side ===
+    "HIGH"
+
+      ?
+
+      pool.level >=
+      price
+
+      :
+
+      pool.level <=
+      price;
+
+
+  if (
+    !validDirection
+  ) {
+
+    score -=
+      24;
+
   }
 
 
   score =
     clamp(
       score,
-      0,
+      5,
       95
     );
 
 
+  /* =====================================================
+     SWEEP DEPTH
+  ===================================================== */
+
+
+  let history =
+    null;
+
+
+  if (
+    pool.type ===
+    "ASIA_HIGH"
+  ) {
+
+    history =
+      asiaHistory.asiaHigh;
+
+  }
+
+
+  if (
+    pool.type ===
+    "ASIA_LOW"
+  ) {
+
+    history =
+      asiaHistory.asiaLow;
+
+  }
+
+
+  let p25 =
+
+    history
+      ?.p25OvershootAtr
+
+    ??
+
+    0.08;
+
+
+  let medianOvershoot =
+
+    history
+      ?.medianOvershootAtr
+
+    ??
+
+    0.18;
+
+
+  let p75 =
+
+    history
+      ?.p75OvershootAtr
+
+    ??
+
+    0.35;
+
+
+  if (
+
+    direction *
+    delta >
+    18
+
+  ) {
+
+    medianOvershoot *=
+      1.20;
+
+
+    p75 *=
+      1.30;
+
+  }
+
+
+  if (
+
+    pool.side ===
+    "HIGH"
+
+    &&
+
+    footprint.absorption.includes(
+      "BUYING"
+    )
+
+  ) {
+
+    medianOvershoot *=
+      0.72;
+
+
+    p75 *=
+      0.82;
+
+  }
+
+
+  if (
+
+    pool.side ===
+    "LOW"
+
+    &&
+
+    footprint.absorption.includes(
+      "SELLING"
+    )
+
+  ) {
+
+    medianOvershoot *=
+      0.72;
+
+
+    p75 *=
+      0.82;
+
+  }
+
+
+  const firstZone =
+
+    pool.level
+
+    +
+
+    direction *
+    p25 *
+    atr5;
+
+
+  const likelyEnd =
+
+    pool.level
+
+    +
+
+    direction *
+    medianOvershoot *
+    atr5;
+
+
+  const lastZone =
+
+    pool.level
+
+    +
+
+    direction *
+    p75 *
+    atr5;
+
+
+  const zoneLow =
+    Math.min(
+
+      firstZone,
+
+      lastZone
+
+    );
+
+
+  const zoneHigh =
+    Math.max(
+
+      firstZone,
+
+      lastZone
+
+    );
+
+
+  let raidStyle =
+    "SHALLOW RAID";
+
+
+  if (
+    medianOvershoot <
+    0.10
+  ) {
+
+    raidStyle =
+      "LEVEL TAG / VERY SHALLOW";
+
+  }
+
+
+  if (
+    medianOvershoot >
+    0.30
+  ) {
+
+    raidStyle =
+      "DEEP RAID POSSIBLE";
+
+  }
+
+
+  const nodes = [
+
+    profile.poc,
+
+    ...(
+      profile.hvn ||
+      []
+    ),
+
+    ...(
+      profile.lvn ||
+      []
+    )
+
+  ];
+
+
+  const confluence =
+    nodes
+
+      .filter(
+
+        node =>
+
+          Number.isFinite(
+            node
+          )
+
+          &&
+
+          node >=
+          zoneLow -
+          atr5 *
+          0.10
+
+          &&
+
+          node <=
+          zoneHigh +
+          atr5 *
+          0.10
+
+      )
+
+      .map(
+
+        node =>
+          `Profile node ${round(
+            node,
+            2
+          )}`
+
+      );
+
+
   return {
 
-    score:
+    ...pool,
+
+
+    level:
+      round(
+        pool.level,
+        3
+      ),
+
+
+    distance:
+      round(
+        distance,
+        3
+      ),
+
+
+    distanceAtr:
+      round(
+        distanceAtr,
+        2
+      ),
+
+
+    likelihoodScore:
       round(
         score,
         1
       ),
 
-    distance:
-      round(
-        distance
-      ),
 
-    distanceATR:
-      round(
-        distanceATR,
-        2
-      )
-  };
-}
+    likelihood:
 
+      score >=
+      75
 
-/* ============================================================
-   SWEEP PROJECTION
-============================================================ */
+        ?
 
-function projectSweep(
-  pool,
-  atrM5,
-  score
-) {
+        "HIGH"
 
-  let mult =
-    0.12;
+        :
+
+        score >=
+        58
+
+          ?
+
+          "MEDIUM"
+
+          :
+
+          "LOW",
 
 
-  if (
-    score >= 80
-  ) {
-
-    mult =
-      0.28;
-
-  } else if (
-    score >= 70
-  ) {
-
-    mult =
-      0.20;
-
-  } else if (
-    score >= 60
-  ) {
-
-    mult =
-      0.15;
-  }
+    raidStyle,
 
 
-  const overshoot =
-    Math.max(
-      atrM5 *
-      mult,
-      0.5
-    );
+    projectedSweep: {
 
-
-  if (
-    pool.side ===
-    "BUY_SIDE"
-  ) {
-
-    return {
-
-      sweepZone: {
-
-        low:
-          round(
-            pool.price
-          ),
-
-        high:
-          round(
-            pool.price +
-            overshoot
-          )
-      },
-
-      likelyRaidEnd:
+      target:
         round(
-          pool.price +
-          overshoot
+          pool.level,
+          3
         ),
 
-      reversalWatchZone: {
+      likelyEnd:
+        round(
+          likelyEnd,
+          3
+        ),
 
-        low:
-          round(
-            pool.price +
-            overshoot *
-            0.35
-          ),
+      zoneLow:
+        round(
+          zoneLow,
+          3
+        ),
 
-        high:
-          round(
-            pool.price +
-            overshoot *
-            1.25
-          )
-      },
+      zoneHigh:
+        round(
+          zoneHigh,
+          3
+        ),
 
       overshoot:
         round(
-          overshoot
-        )
-    };
-  }
 
-
-  return {
-
-    sweepZone: {
-
-      low:
-        round(
-          pool.price -
-          overshoot
-        ),
-
-      high:
-        round(
-          pool.price
-        )
-    },
-
-    likelyRaidEnd:
-      round(
-        pool.price -
-        overshoot
-      ),
-
-    reversalWatchZone: {
-
-      low:
-        round(
-          pool.price -
-          overshoot *
-          1.25
-        ),
-
-      high:
-        round(
-          pool.price -
-          overshoot *
-          0.35
-        )
-    },
-
-    overshoot:
-      round(
-        overshoot
-      )
-  };
-}
-
-
-/* ============================================================
-   MAIN ANALYSIS
-============================================================ */
-
-function analyse(
-  candles
-) {
-
-  const latest =
-    candles[
-      candles.length - 1
-    ];
-
-
-  const price =
-    latest.close;
-
-
-  const m5 =
-    resample(
-      candles,
-      5
-    );
-
-
-  const m15 =
-    resample(
-      candles,
-      15
-    );
-
-
-  const h1 =
-    resample(
-      candles,
-      60
-    );
-
-
-  const atrM5 =
-    atr(
-      m5,
-      14
-    );
-
-
-  const atrM15 =
-    atr(
-      m15,
-      14
-    );
-
-
-  const rsiM5 =
-    rsi(
-      m5,
-      14
-    );
-
-
-  const struct =
-    structure(
-      m5,
-      m15,
-      h1
-    );
-
-
-  const marketRegime =
-    regime(
-      m5,
-      atrM5
-    );
-
-
-  const fp =
-    footprint(
-      candles
-    );
-
-
-  const groups =
-    groupDays(
-      candles
-    );
-
-
-  const keys =
-    Array.from(
-      groups.keys()
-    );
-
-
-  const todayKey =
-    dayKey(
-      latest.timestamp
-    );
-
-
-  const today =
-    groups.get(
-      todayKey
-    ) || [];
-
-
-  const previousKeys =
-    keys.filter(
-      key =>
-        key !==
-        todayKey
-    );
-
-
-  const previousKey =
-    previousKeys[
-      previousKeys.length - 1
-    ];
-
-
-  const previous =
-    previousKey
-      ? groups.get(
-          previousKey
-        )
-      : [];
-
-
-  const previousRange =
-    rangeOf(
-      previous
-    );
-
-
-  /*
-    SAST session approximations.
-
-    Asia:
-    01:00 - 09:00
-
-    London:
-    09:00 - 17:00
-
-    New York:
-    14:00 - 23:00
-
-    Exact UTC alignment changes with DST,
-    so these are operational dashboard windows.
-  */
-
-  const asia =
-    filterSession(
-      today,
-      60,
-      9 * 60
-    );
-
-
-  const london =
-    filterSession(
-      today,
-      9 * 60,
-      17 * 60
-    );
-
-
-  const ny =
-    filterSession(
-      today,
-      14 * 60,
-      23 * 60
-    );
-
-
-  const asiaRange =
-    rangeOf(
-      asia
-    );
-
-
-  const londonRange =
-    rangeOf(
-      london
-    );
-
-
-  const nyRange =
-    rangeOf(
-      ny
-    );
-
-
-  const sessionVWAP =
-    vwap(
-      today.length
-        ? today
-        : candles.slice(
-            -300
-          )
-    );
-
-
-  const swings =
-    detectSwings(
-      m5,
-      3,
-      3
-    );
-
-
-  const equals =
-    equalLevels(
-      swings,
-      Math.max(
-        atrM5 *
-        0.12,
-        0.4
-      )
-    );
-
-
-  const levels =
-    [];
-
-
-  if (
-    previousRange.high
-  ) {
-
-    levels.push(
-      level(
-        "Previous Day High",
-        "PDH",
-        "BUY_SIDE",
-        previousRange.high,
-        68
-      )
-    );
-  }
-
-
-  if (
-    previousRange.low
-  ) {
-
-    levels.push(
-      level(
-        "Previous Day Low",
-        "PDL",
-        "SELL_SIDE",
-        previousRange.low,
-        68
-      )
-    );
-  }
-
-
-  if (
-    asiaRange.high
-  ) {
-
-    levels.push(
-      level(
-        "Asia High",
-        "ASIA_HIGH",
-        "BUY_SIDE",
-        asiaRange.high,
-        72
-      )
-    );
-  }
-
-
-  if (
-    asiaRange.low
-  ) {
-
-    levels.push(
-      level(
-        "Asia Low",
-        "ASIA_LOW",
-        "SELL_SIDE",
-        asiaRange.low,
-        72
-      )
-    );
-  }
-
-
-  if (
-    londonRange.high
-  ) {
-
-    levels.push(
-      level(
-        "London High",
-        "LONDON_HIGH",
-        "BUY_SIDE",
-        londonRange.high,
-        67
-      )
-    );
-  }
-
-
-  if (
-    londonRange.low
-  ) {
-
-    levels.push(
-      level(
-        "London Low",
-        "LONDON_LOW",
-        "SELL_SIDE",
-        londonRange.low,
-        67
-      )
-    );
-  }
-
-
-  if (
-    nyRange.high
-  ) {
-
-    levels.push(
-      level(
-        "New York High",
-        "NY_HIGH",
-        "BUY_SIDE",
-        nyRange.high,
-        63
-      )
-    );
-  }
-
-
-  if (
-    nyRange.low
-  ) {
-
-    levels.push(
-      level(
-        "New York Low",
-        "NY_LOW",
-        "SELL_SIDE",
-        nyRange.low,
-        63
-      )
-    );
-  }
-
-
-  for (
-    const swing of
-    swings.highs.slice(-4)
-  ) {
-
-    levels.push(
-      level(
-        "M5 Swing High",
-        "M5_SWING_HIGH",
-        "BUY_SIDE",
-        swing.price,
-        48
-      )
-    );
-  }
-
-
-  for (
-    const swing of
-    swings.lows.slice(-4)
-  ) {
-
-    levels.push(
-      level(
-        "M5 Swing Low",
-        "M5_SWING_LOW",
-        "SELL_SIDE",
-        swing.price,
-        48
-      )
-    );
-  }
-
-
-  for (
-    const item of
-    equals.slice(-6)
-  ) {
-
-    levels.push(
-      level(
-
-        item.type ===
-        "EQUAL_HIGHS"
-          ? "Equal Highs"
-          : "Equal Lows",
-
-        item.type,
-
-        item.type ===
-        "EQUAL_HIGHS"
-          ? "BUY_SIDE"
-          : "SELL_SIDE",
-
-        item.price,
-
-        75
-      )
-    );
-  }
-
-
-  /*
-    Deduplicate similar liquidity prices.
-  */
-
-  const unique =
-    [];
-
-
-  for (
-    const candidate of levels
-  ) {
-
-    const existing =
-      unique.find(
-        item =>
-          item.side ===
-          candidate.side &&
           Math.abs(
-            item.price -
-            candidate.price
-          ) <=
-          Math.max(
-            atrM5 *
-            0.05,
-            0.25
-          )
-      );
 
+            likelyEnd -
+            pool.level
 
-    if (!existing) {
-
-      unique.push(
-        candidate
-      );
-
-    } else if (
-      candidate.strength >
-      existing.strength
-    ) {
-
-      Object.assign(
-        existing,
-        candidate
-      );
-    }
-  }
-
-
-  const liquidityPools =
-    unique
-      .map(pool => {
-
-        const scored =
-          scorePool(
-            pool,
-            price,
-            atrM5,
-            fp,
-            struct
-          );
-
-
-        const projection =
-          projectSweep(
-            pool,
-            atrM5,
-            scored.score
-          );
-
-
-        let stage =
-          "DISTANT";
-
-
-        if (
-          scored.distanceATR <=
-          2
-        ) {
-
-          stage =
-            "TRACKING";
-        }
-
-
-        if (
-          scored.distanceATR <=
-          0.75
-        ) {
-
-          stage =
-            "APPROACHING";
-        }
-
-
-        if (
-          scored.distanceATR <=
-          0.2
-        ) {
-
-          stage =
-            "RAID_ZONE";
-        }
-
-
-        return {
-
-          ...pool,
-
-          ...scored,
-
-          ...projection,
-
-          stage,
-
-          raidScore:
-            scored.score
-        };
-      })
-      .sort(
-        (a, b) =>
-          b.raidScore -
-          a.raidScore
-      );
-
-
-  const highest =
-    liquidityPools[0] ||
-    null;
-
-
-  return {
-
-    ok:
-      true,
-
-    symbol:
-      "XAUUSD",
-
-    providerSymbol:
-      SYMBOL,
-
-    provider:
-      "Massive / Polygon",
-
-    generatedAt:
-      new Date()
-        .toISOString(),
-
-    latestBarTime:
-      latest.time,
-
-    price:
-      round(
-        price
-      ),
-
-
-    market: {
-
-      regime:
-        marketRegime,
-
-      atrM5:
-        round(
-          atrM5
-        ),
-
-      atrM15:
-        round(
-          atrM15
-        ),
-
-      rsiM5:
-        round(
-          rsiM5,
-          1
-        ),
-
-      vwap:
-        round(
-          sessionVWAP
-        ),
-
-      priceVsVWAP:
-        price >
-        sessionVWAP
-          ? "ABOVE"
-          : "BELOW"
-    },
-
-
-    structure:
-      struct,
-
-
-    footprint:
-      fp,
-
-
-    sessions: {
-
-      timezone:
-        "SAST",
-
-      asia: {
-
-        high:
-          round(
-            asiaRange.high
           ),
 
-        low:
-          round(
-            asiaRange.low
-          )
-      },
+          3
 
-      london: {
-
-        high:
-          round(
-            londonRange.high
-          ),
-
-        low:
-          round(
-            londonRange.low
-          )
-      },
-
-      newYork: {
-
-        high:
-          round(
-            nyRange.high
-          ),
-
-        low:
-          round(
-            nyRange.low
-          )
-      }
-    },
-
-
-    previousDay: {
-
-      high:
-        round(
-          previousRange.high
         ),
 
-      low:
+      overshootAtr:
         round(
-          previousRange.low
-        )
+          medianOvershoot,
+          3
+        ),
+
+      historicalBasis:
+
+        history
+
+          ?
+
+          `${history.sweeps} observed Asia sweeps`
+
+          :
+
+          "ATR + structure + flow model"
+
     },
 
 
-    highestRankedLiquidity:
-      highest,
+    reasons: [
 
+      `${round(
+        distanceAtr,
+        2
+      )}× M15 ATR from price`,
 
-    liquidityPools:
-      liquidityPools.slice(
-        0,
-        12
-      ),
+      `Liquidity importance ${round(
+        pool.importance,
+        2
+      )}×`,
 
+      `15m Delta proxy ${round(
+        delta,
+        1
+      )}%`,
 
-    trapWindows: [
+      openingSession
 
-      {
-        name:
-          "LONDON OPEN",
+        ?
 
-        startSAST:
-          "09:00",
+        `${openingSession.name} opening window active`
 
-        endSAST:
-          "10:30",
+        :
 
-        risk:
-          "HIGH"
-      },
+        null,
 
-      {
-        name:
-          "LONDON / NY OVERLAP",
+      ...confluence
 
-        startSAST:
-          "14:00",
-
-        endSAST:
-          "17:00",
-
-        risk:
-          "VERY_HIGH"
-      },
-
-      {
-        name:
-          "NY OPEN",
-
-        startSAST:
-          "15:30",
-
-        endSAST:
-          "17:00",
-
-        risk:
-          "VERY_HIGH"
-      }
-    ],
-
-
-    source: {
-
-      api:
-        "Massive / Polygon",
-
-      ticker:
-        SYMBOL,
-
-      endpoint:
-        "/v2/aggs/ticker/C:XAUUSD/range/1/minute",
-
-      timeframe:
-        "1m",
-
-      candles:
-        candles.length,
-
-      delayedPossible:
-        true
-    },
-
-
-    warnings: [
-
-      "Massive forex aggregates are generated from quoted bid/ask prices rather than a centralized exchange trade tape.",
-
-      "Footprint and delta values are analytical proxies rather than true order-flow bid/ask delta.",
-
-      "Liquidity raid and sweep projections are estimates, not guaranteed reversal levels."
     ]
+      .filter(
+        Boolean
+      )
+
   };
+
 }
 
 
-/* ============================================================
-   VERCEL HANDLER
-============================================================ */
-
-export default async function handler(
-  req,
-  res
-) {
-
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "*"
-  );
+/* =========================================================
+   TRAP WINDOWS
+========================================================= */
 
 
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET,OPTIONS"
-  );
+function buildTrapWindows({
+
+  sessions,
+
+  pools,
+
+  footprint,
+
+  atr15
+
+}) {
+
+  const result =
+    [];
 
 
-  res.setHeader(
-    "Cache-Control",
-    "no-store, max-age=0"
-  );
-
-
-  if (
-    req.method ===
-    "OPTIONS"
+  for (
+    const session of sessions
   ) {
 
-    return res
-      .status(200)
-      .end();
-  }
+    let score =
+      0;
 
 
-  if (
-    req.method !==
-    "GET"
-  ) {
-
-    return res
-      .status(405)
-      .json({
-
-        ok:
-          false,
-
-        error:
-          "GET only"
-      });
-  }
-
-
-  try {
-
-    const now =
-      Date.now();
+    const reasons =
+      [];
 
 
     if (
-      cache.data &&
-      now -
-      cache.time <
-      CACHE_MS
+      session.phase ===
+      "PRE-OPEN WINDOW"
     ) {
 
-      return res
-        .status(200)
-        .json({
+      score +=
 
-          ...cache.data,
+        session.id ===
+        "asia"
 
-          cached:
-            true
-        });
+          ?
+
+          40
+
+          :
+
+          62;
+
+
+      reasons.push(
+
+        `${session.name} approaching open`
+
+      );
+
     }
 
 
-    const candles =
-      await fetchXAU();
+    if (
+      session.phase ===
+      "OPENING LIQUIDITY WINDOW"
+    ) {
+
+      score +=
+
+        session.id ===
+        "asia"
+
+          ?
+
+          55
+
+          :
+
+          78;
 
 
-    const data =
-      analyse(
-        candles
+      reasons.push(
+
+        `${session.name} opening liquidity window`
+
+      );
+
+    }
+
+
+    if (
+      session.phase ===
+      "CLOSING WINDOW"
+    ) {
+
+      score +=
+        35;
+
+
+      reasons.push(
+
+        `${session.name} closing window`
+
+      );
+
+    }
+
+
+    const nearby =
+      pools.filter(
+
+        pool =>
+          pool.distance <=
+          atr15 *
+          0.75
+
       );
 
 
-    cache = {
+    if (
+      nearby.length
+    ) {
 
-      time:
-        Date.now(),
+      score +=
+        Math.min(
 
-      data
-    };
+          20,
+
+          nearby.length *
+          5
+
+        );
 
 
-    return res
-      .status(200)
-      .json({
+      reasons.push(
 
-        ...data,
+        `${nearby.length} liquidity pools near price`
 
-        cached:
-          false
+      );
+
+    }
+
+
+    if (
+      footprint.absorption !==
+      "NONE"
+    ) {
+
+      score +=
+        8;
+
+
+      reasons.push(
+        footprint.absorption
+      );
+
+    }
+
+
+    if (
+      score >
+      0
+    ) {
+
+      result.push({
+
+        session:
+          session.name,
+
+        phase:
+          session.phase,
+
+        score:
+          round(
+
+            clamp(
+              score,
+              0,
+              95
+            ),
+
+            1
+
+          ),
+
+        risk:
+
+          score >=
+          75
+
+            ?
+
+            "ELEVATED"
+
+            :
+
+            score >=
+            55
+
+              ?
+
+              "WATCH"
+
+              :
+
+              "NORMAL",
+
+        reasons
+
       });
 
+    }
 
-  } catch (
-    error
+  }
+
+
+  if (
+    pools[0]
   ) {
 
-    console.error(
-      "[XAU MASSIVE ERROR]",
-      error
+    result.push({
+
+      session:
+        "Primary liquidity magnet",
+
+      phase:
+        pools[0].name,
+
+      score:
+        pools[0].likelihoodScore,
+
+      risk:
+        pools[0].likelihood,
+
+      reasons: [
+
+        `Projected sweep end ${pools[0].projectedSweep.likelyEnd}`,
+
+        `Target level ${pools[0].level}`
+
+      ]
+
+    });
+
+  }
+
+
+  return result
+
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        b.score -
+        a.score
+    )
+
+    .slice(
+      0,
+      7
+    );
+
+}
+
+
+/* =========================================================
+   REGIME
+========================================================= */
+
+
+function buildRegime({
+
+  structure,
+
+  m5,
+
+  atr5,
+
+  footprint
+
+}) {
+
+  const biases = [
+
+    structure.m5.bias,
+
+    structure.m15.bias,
+
+    structure.h1.bias,
+
+    structure.h4.bias
+
+  ];
+
+
+  const bullish =
+    biases.filter(
+      value =>
+        value ===
+        "BULLISH"
+    ).length;
+
+
+  const bearish =
+    biases.filter(
+      value =>
+        value ===
+        "BEARISH"
+    ).length;
+
+
+  const trend =
+
+    bullish >=
+    3
+
+      ?
+
+      "BULLISH"
+
+      :
+
+      bearish >=
+      3
+
+        ?
+
+        "BEARISH"
+
+        :
+
+        "MIXED";
+
+
+  const atrValues =
+    atrSeries(
+      m5,
+      14
     );
 
 
-    return res
-      .status(500)
-      .json({
+  const baseline =
+    median(
+      atrValues
+    )
 
-        ok:
-          false,
+    ||
 
-        symbol:
-          "XAUUSD",
+    atr5;
 
-        provider:
-          "Massive / Polygon",
 
-        providerSymbol:
-          SYMBOL,
+  const expansion =
 
-        error:
-          error?.message ||
-          "XAUUSD analysis failed.",
+    atr5
 
-        troubleshooting: {
+    /
 
-          environmentVariable:
-            "MASSIVE_API_KEY",
+    Math.max(
+      baseline,
+      0.000001
+    );
 
-          ticker:
-            "C:XAUUSD",
 
-          endpoint:
-            "https://api.massive.com/v2/aggs/ticker/C:XAUUSD/range/1/minute/{from}/{to}",
+  const volatility =
 
-          note:
-            "If you receive NOT_AUTHORIZED, your Massive plan does not include the required forex/currencies endpoint."
-        }
-      });
+    expansion >
+    1.30
+
+      ?
+
+      "EXPANDING"
+
+      :
+
+      expansion <
+      0.75
+
+        ?
+
+        "COMPRESSED"
+
+        :
+
+        "NORMAL";
+
+
+  const delta =
+    footprint.last15
+      ?.deltaPct
+
+    ||
+
+    0;
+
+
+  const orderFlow =
+
+    delta >
+    18
+
+      ?
+
+      "BUY DOMINANT"
+
+      :
+
+      delta <
+      -18
+
+        ?
+
+        "SELL DOMINANT"
+
+        :
+
+        "BALANCED";
+
+
+  return {
+
+    trend,
+
+    volatility,
+
+    orderFlow,
+
+    atrExpansion:
+      round(
+        expansion,
+        2
+      ),
+
+    label:
+
+      `${trend} / ` +
+
+      `${volatility} / ` +
+
+      `${orderFlow}`
+
+  };
+
+}
+
+
+/* =========================================================
+   WEEK KEY
+========================================================= */
+
+
+function weekKey(
+  date
+) {
+
+  const copy =
+    new Date(
+
+      Date.UTC(
+
+        date.getUTCFullYear(),
+
+        date.getUTCMonth(),
+
+        date.getUTCDate()
+
+      )
+
+    );
+
+
+  const day =
+    copy.getUTCDay() ||
+    7;
+
+
+  copy.setUTCDate(
+
+    copy.getUTCDate()
+
+    +
+
+    4
+
+    -
+
+    day
+
+  );
+
+
+  const yearStart =
+    new Date(
+
+      Date.UTC(
+
+        copy.getUTCFullYear(),
+
+        0,
+
+        1
+
+      )
+
+    );
+
+
+  const week =
+    Math.ceil(
+
+      (
+
+        (
+          copy -
+          yearStart
+        )
+
+        /
+
+        86_400_000
+
+        +
+
+        1
+
+      )
+
+      /
+
+      7
+
+    );
+
+
+  return (
+
+    `${copy.getUTCFullYear()}-W` +
+
+    `${pad(week)}`
+
+  );
+
+}
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+
+function sum(
+  values
+) {
+
+  return values.reduce(
+
+    (
+      total,
+      value
+    ) =>
+
+      total
+
+      +
+
+      (
+        Number.isFinite(
+          value
+        )
+
+          ?
+
+          value
+
+          :
+
+          0
+      ),
+
+    0
+
+  );
+
+}
+
+
+function mean(
+  values
+) {
+
+  return values.length
+
+    ?
+
+    sum(
+      values
+    ) /
+    values.length
+
+    :
+
+    0;
+
+}
+
+
+function percentile(
+  values,
+  q
+) {
+
+  const sorted =
+    values
+
+      .filter(
+        Number.isFinite
+      )
+
+      .slice()
+
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a -
+          b
+      );
+
+
+  if (
+    !sorted.length
+  ) {
+
+    return null;
+
   }
+
+
+  const position =
+
+    (
+      sorted.length -
+      1
+    )
+
+    *
+
+    q;
+
+
+  const low =
+    Math.floor(
+      position
+    );
+
+
+  const high =
+    Math.ceil(
+      position
+    );
+
+
+  if (
+    low ===
+    high
+  ) {
+
+    return sorted[
+      low
+    ];
+
+  }
+
+
+  const weight =
+    position -
+    low;
+
+
+  return (
+
+    sorted[
+      low
+    ]
+
+    *
+
+    (
+      1 -
+      weight
+    )
+
+    +
+
+    sorted[
+      high
+    ]
+
+    *
+
+    weight
+
+  );
+
+}
+
+
+function median(
+  values
+) {
+
+  return percentile(
+    values,
+    0.50
+  );
+
+}
+
+
+function lastFinite(
+  values
+) {
+
+  for (
+    let i =
+      values.length - 1;
+    i >= 0;
+    i--
+  ) {
+
+    if (
+      Number.isFinite(
+        values[i]
+      )
+    ) {
+
+      return values[i];
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+function clamp(
+  value,
+  minimum,
+  maximum
+) {
+
+  return Math.max(
+
+    minimum,
+
+    Math.min(
+      maximum,
+      value
+    )
+
+  );
+
+}
+
+
+function round(
+  value,
+  decimals = 2
+) {
+
+  if (
+    !Number.isFinite(
+      value
+    )
+  ) {
+
+    return null;
+
+  }
+
+
+  const multiplier =
+    10 **
+    decimals;
+
+
+  return (
+
+    Math.round(
+      value *
+      multiplier
+    )
+
+    /
+
+    multiplier
+
+  );
+
+}
+
+
+function pad(
+  value
+) {
+
+  return String(
+    value
+  )
+    .padStart(
+      2,
+      "0"
+    );
+
+}
+
+
+function minuteLabel(
+  minutes
+) {
+
+  return (
+
+    `${pad(
+      Math.floor(
+        minutes /
+        60
+      )
+    )}:`
+
+    +
+
+    `${pad(
+      minutes %
+      60
+    )}`
+
+  );
+
 }
