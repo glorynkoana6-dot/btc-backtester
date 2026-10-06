@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
 
 <meta
@@ -23,10 +24,20 @@
 
 <meta
   name="apple-mobile-web-app-title"
-  content="MKAYFX V10"
+  content="MKAYFX"
 >
 
-<title>MKAYFX GOLD INTELLIGENCE V10</title>
+<title>MKAYFX GOLD AI V11</title>
+
+
+<!-- ============================================================
+     TRADINGVIEW LIGHTWEIGHT CHARTS
+============================================================ -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"
+></script>
+
 
 <style>
 
@@ -40,31 +51,30 @@
 }
 
 :root{
+
   --bg:#020305;
   --bg2:#05070a;
 
-  --panel:rgba(10,13,18,.84);
-  --panel2:rgba(14,18,24,.92);
-  --panel3:#07090d;
+  --panel:#080b10;
+  --panel2:#0c1017;
+  --panel3:#111722;
 
-  --line:rgba(255,255,255,.07);
-  --line2:rgba(255,255,255,.13);
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.13);
 
-  --text:#f6f7f9;
-  --muted:#78818e;
-  --muted2:#4d5561;
+  --text:#f4f7fa;
+  --muted:#77818f;
+  --muted2:#4e5662;
 
   --gold:#f4c85e;
-  --gold2:#ffe69c;
+  --goldSoft:rgba(244,200,94,.10);
 
-  --green:#32e2a0;
+  --green:#34e3a1;
   --red:#ff5d74;
   --blue:#5daaff;
   --purple:#a77cff;
-  --cyan:#55daf0;
-  --orange:#ff9b55;
-
-  --radius:18px;
+  --cyan:#5adcf0;
+  --orange:#ff9d5d;
 }
 
 html{
@@ -72,7 +82,9 @@ html{
 }
 
 body{
+
   margin:0;
+
   min-height:100vh;
 
   color:var(--text);
@@ -88,18 +100,18 @@ body{
 
   background:
     radial-gradient(
-      circle at 10% -10%,
+      circle at 5% -5%,
       rgba(244,200,94,.13),
       transparent 26%
     ),
     radial-gradient(
-      circle at 98% 17%,
-      rgba(93,170,255,.075),
-      transparent 27%
+      circle at 100% 15%,
+      rgba(93,170,255,.065),
+      transparent 26%
     ),
     radial-gradient(
-      circle at 45% 75%,
-      rgba(167,124,255,.04),
+      circle at 45% 80%,
+      rgba(167,124,255,.035),
       transparent 35%
     ),
     var(--bg);
@@ -107,7 +119,8 @@ body{
   background-attachment:fixed;
 }
 
-body::before{
+body::after{
+
   content:"";
 
   position:fixed;
@@ -115,7 +128,7 @@ body::before{
 
   pointer-events:none;
 
-  opacity:.18;
+  opacity:.14;
 
   background-image:
     linear-gradient(
@@ -129,85 +142,98 @@ body::before{
     );
 
   background-size:
-    48px 48px;
+    54px 54px;
 
   mask-image:
     linear-gradient(
       to bottom,
       black,
-      transparent 80%
+      transparent 88%
     );
-}
-
-button,
-select{
-  font:inherit;
 }
 
 button{
   border:0;
+  font:inherit;
   cursor:pointer;
 }
 
+a{
+  color:inherit;
+}
+
+
+/* ============================================================
+   APP
+============================================================ */
+
 .app{
+
   position:relative;
   z-index:1;
 
   width:min(1500px,100%);
+
   margin:auto;
 
   padding:
     calc(8px + env(safe-area-inset-top))
     10px
-    calc(110px + env(safe-area-inset-bottom));
+    calc(100px + env(safe-area-inset-bottom));
 }
+
 
 /* ============================================================
    TOP BAR
 ============================================================ */
 
 .topbar{
+
   position:sticky;
+
   top:5px;
 
-  z-index:100;
+  z-index:200;
+
+  min-height:60px;
 
   display:flex;
   align-items:center;
   justify-content:space-between;
 
-  min-height:60px;
-
   padding:8px 10px;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:18px;
 
   background:
     linear-gradient(
       135deg,
-      rgba(8,10,14,.94),
-      rgba(5,7,10,.91)
+      rgba(7,9,13,.94),
+      rgba(4,6,9,.91)
     );
 
-  backdrop-filter:blur(26px);
-  -webkit-backdrop-filter:blur(26px);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
 
   box-shadow:
-    0 18px 50px rgba(0,0,0,.42);
+    0 18px 50px rgba(0,0,0,.44);
 }
 
 .brand{
+
   display:flex;
   align-items:center;
+
   gap:10px;
 }
 
-.brandIcon{
-  position:relative;
+.brandLogo{
 
   width:41px;
   height:41px;
+
+  position:relative;
 
   display:grid;
   place-items:center;
@@ -221,73 +247,87 @@ button{
   background:
     linear-gradient(
       135deg,
-      #ffe997,
-      #c98c21
+      #ffe99c,
+      #bd8120
     );
 
   font-size:10px;
   font-weight:1000;
 }
 
-.brandIcon::after{
+.brandLogo::after{
+
   content:"";
 
   position:absolute;
-  inset:-60%;
+
+  inset:-100%;
 
   background:
     linear-gradient(
       115deg,
-      transparent 35%,
+      transparent 40%,
       rgba(255,255,255,.55),
-      transparent 65%
+      transparent 60%
     );
 
   animation:
-    logoSweep 4s linear infinite;
+    sweep 4s linear infinite;
 }
 
-@keyframes logoSweep{
+@keyframes sweep{
+
   from{
-    transform:translateX(-60%) rotate(15deg);
+    transform:
+      translateX(-70%)
+      rotate(18deg);
   }
 
   to{
-    transform:translateX(60%) rotate(15deg);
+    transform:
+      translateX(70%)
+      rotate(18deg);
   }
 }
 
 .brandName{
+
   font-size:12px;
   font-weight:1000;
-  letter-spacing:.13em;
+
+  letter-spacing:.12em;
 }
 
 .brandSub{
+
   margin-top:3px;
 
   color:var(--muted);
 
   font-size:6px;
   font-weight:900;
-  letter-spacing:.12em;
+
+  letter-spacing:.11em;
 }
 
-.liveStatus{
+.feedStatus{
+
   display:flex;
   align-items:center;
+
   gap:6px;
 
   padding:7px 9px;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:999px;
 
   background:
-    rgba(255,255,255,.02);
+    rgba(255,255,255,.018);
 }
 
-.liveDot{
+.feedDot{
+
   width:7px;
   height:7px;
 
@@ -296,30 +336,37 @@ button{
   background:var(--gold);
 }
 
-.liveDot.online{
+.feedDot.live{
+
   background:var(--green);
 
   box-shadow:
-    0 0 14px rgba(50,226,160,.55);
+    0 0 13px
+    rgba(52,227,161,.55);
 }
 
-.liveDot.error{
+.feedDot.dead{
+
   background:var(--red);
 }
 
-.liveStatus span{
+.feedText{
+
   font-size:6px;
   font-weight:950;
 }
+
 
 /* ============================================================
    ERROR
 ============================================================ */
 
 .error{
+
   display:none;
 
   margin-top:8px;
+
   padding:10px 11px;
 
   border:
@@ -328,25 +375,28 @@ button{
 
   border-radius:11px;
 
-  color:#ffa5b2;
+  color:#ffa1b0;
 
   background:
     rgba(255,93,116,.065);
 
   font-size:7px;
-  line-height:1.45;
+  line-height:1.5;
 }
 
 .error.show{
   display:block;
 }
 
+
 /* ============================================================
-   NAVIGATION
+   NAV
 ============================================================ */
 
 .nav{
+
   display:flex;
+
   gap:4px;
 
   overflow-x:auto;
@@ -362,6 +412,7 @@ button{
 }
 
 .nav button{
+
   flex:0 0 auto;
 
   padding:8px 12px;
@@ -375,13 +426,13 @@ button{
 
   font-size:7px;
   font-weight:950;
-  letter-spacing:.03em;
 }
 
 .nav button.active{
+
   color:#fff;
 
-  border-color:var(--line);
+  border-color:var(--border);
 
   background:
     linear-gradient(
@@ -399,11 +450,13 @@ button{
   display:block;
 }
 
+
 /* ============================================================
-   AI HERO
+   HERO
 ============================================================ */
 
-.aiHero{
+.hero{
+
   position:relative;
 
   overflow:hidden;
@@ -412,86 +465,94 @@ button{
 
   padding:18px;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:24px;
 
   background:
     radial-gradient(
-      circle at 86% 13%,
-      rgba(244,200,94,.15),
+      circle at 86% 15%,
+      rgba(244,200,94,.14),
       transparent 26%
     ),
     radial-gradient(
-      circle at 70% 75%,
+      circle at 70% 90%,
       rgba(93,170,255,.07),
       transparent 30%
     ),
     linear-gradient(
       145deg,
-      rgba(15,18,24,.97),
-      rgba(5,7,10,.96)
+      rgba(14,17,23,.97),
+      rgba(5,7,10,.97)
     );
 
   box-shadow:
-    0 30px 90px rgba(0,0,0,.42);
+    0 30px 90px
+    rgba(0,0,0,.42);
 }
 
-.aiHero::after{
+.hero::after{
+
   content:"";
 
   position:absolute;
 
-  right:-60px;
-  top:-80px;
+  width:280px;
+  height:280px;
 
-  width:250px;
-  height:250px;
+  right:-90px;
+  top:-110px;
 
   border:
     1px solid
-    rgba(244,200,94,.08);
+    rgba(244,200,94,.07);
 
   border-radius:50%;
 
   box-shadow:
-    0 0 0 35px rgba(244,200,94,.018),
-    0 0 0 70px rgba(244,200,94,.012);
+    0 0 0 38px rgba(244,200,94,.015),
+    0 0 0 78px rgba(244,200,94,.01);
 }
 
-.heroTop{
+.heroHead{
+
   position:relative;
   z-index:2;
 
   display:flex;
   justify-content:space-between;
+  align-items:flex-start;
 
-  gap:12px;
+  gap:10px;
 }
 
 .heroKicker{
+
   color:var(--gold);
 
   font-size:7px;
   font-weight:1000;
+
   letter-spacing:.17em;
 }
 
-.heroSub{
+.heroDescriptor{
+
   margin-top:6px;
 
-  color:#9099a5;
+  color:#909aa7;
 
   font-size:8px;
 }
 
-.aiCore{
-  min-width:112px;
+.coreBox{
+
+  min-width:115px;
 
   padding:8px 10px;
 
   border:
     1px solid
-    rgba(244,200,94,.13);
+    rgba(244,200,94,.14);
 
   border-radius:12px;
 
@@ -501,24 +562,28 @@ button{
   text-align:right;
 }
 
-.aiCoreLabel{
-  color:#9d8751;
+.coreLabel{
+
+  color:#968149;
 
   font-size:5px;
-  font-weight:950;
-  letter-spacing:.13em;
+  font-weight:1000;
+
+  letter-spacing:.12em;
 }
 
-.aiCoreStatus{
+.coreValue{
+
   margin-top:5px;
 
   color:var(--gold);
 
   font-size:8px;
-  font-weight:950;
+  font-weight:1000;
 }
 
 .priceRow{
+
   position:relative;
   z-index:2;
 
@@ -528,29 +593,40 @@ button{
 
   gap:10px;
 
-  margin-top:12px;
+  margin-top:13px;
 }
 
 .bigPrice{
-  font-size:clamp(42px,10vw,68px);
+
+  font-size:
+    clamp(
+      42px,
+      10vw,
+      68px
+    );
+
   line-height:.9;
 
-  font-weight:850;
   letter-spacing:-.06em;
 
-  font-variant-numeric:tabular-nums;
+  font-weight:850;
+
+  font-variant-numeric:
+    tabular-nums;
 }
 
 .priceMove{
+
   padding-bottom:5px;
+
+  color:var(--muted);
 
   font-size:9px;
   font-weight:950;
-
-  color:var(--muted);
 }
 
-.heroTelemetry{
+.heroChips{
+
   position:relative;
   z-index:2;
 
@@ -559,30 +635,34 @@ button{
 
   gap:5px;
 
-  margin-top:14px;
+  margin-top:15px;
 }
 
-.telemetryChip{
+.heroChip{
+
   padding:6px 8px;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:8px;
 
-  background:rgba(255,255,255,.017);
-
   color:var(--muted);
+
+  background:
+    rgba(255,255,255,.017);
 
   font-size:6px;
   font-weight:900;
 }
 
-.telemetryChip b{
-  margin-left:4px;
+.heroChip b{
 
-  color:#e5e8eb;
+  margin-left:3px;
+
+  color:#e3e7eb;
 }
 
-.deepBtn{
+.scanBtn{
+
   position:absolute;
 
   z-index:3;
@@ -600,111 +680,108 @@ button{
     linear-gradient(
       135deg,
       #ffe790,
-      #c78b22
+      #c98d25
     );
 
   font-size:7px;
   font-weight:1000;
-
-  box-shadow:
-    0 8px 30px rgba(244,200,94,.15);
 }
 
+
 /* ============================================================
-   AI COMMAND STRIP
+   AI COMMAND GRID
 ============================================================ */
 
 .commandGrid{
+
   display:grid;
 
   grid-template-columns:
-    1.4fr .8fr .8fr .8fr;
+    1.45fr
+    repeat(3,1fr);
 
   gap:8px;
 
   margin-top:8px;
 }
 
-.commandCard{
+.command{
+
   position:relative;
 
   overflow:hidden;
 
-  min-height:104px;
+  min-height:108px;
 
   padding:12px;
 
-  border:1px solid var(--line);
-  border-radius:16px;
+  border:1px solid var(--border);
+  border-radius:17px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(14,17,23,.91),
-      rgba(7,9,13,.93)
+      rgba(13,17,23,.93),
+      rgba(6,8,12,.94)
     );
 }
 
-.commandCard::after{
-  content:"";
+.command.primary{
 
-  position:absolute;
-
-  right:-30px;
-  bottom:-35px;
-
-  width:75px;
-  height:75px;
-
-  border-radius:50%;
-
-  filter:blur(25px);
+  border-color:
+    rgba(244,200,94,.16);
 
   background:
-    rgba(244,200,94,.1);
+    linear-gradient(
+      125deg,
+      rgba(244,200,94,.055),
+      rgba(7,9,13,.95)
+    );
 }
 
 .commandLabel{
+
   color:var(--muted);
 
-  font-size:6px;
-  font-weight:950;
+  font-size:5px;
+  font-weight:1000;
+
   letter-spacing:.11em;
 }
 
 .commandValue{
-  position:relative;
-  z-index:2;
+
+  max-width:80%;
 
   margin-top:8px;
 
-  font-size:20px;
-  font-weight:950;
+  font-size:19px;
+  font-weight:1000;
+
   letter-spacing:-.03em;
 }
 
-.commandText{
-  position:relative;
-  z-index:2;
+.commandSub{
 
   margin-top:5px;
 
-  color:#7f8996;
+  color:#7d8794;
 
   font-size:6px;
   line-height:1.45;
 }
 
-.scoreOrb{
+.scoreRing{
+
   --score:0;
 
   position:absolute;
 
   right:10px;
-  top:12px;
+  top:11px;
 
-  width:48px;
-  height:48px;
+  width:50px;
+  height:50px;
 
   display:grid;
   place-items:center;
@@ -714,52 +791,55 @@ button{
   background:
     conic-gradient(
       var(--gold)
-      calc(var(--score) * 1%),
-      rgba(255,255,255,.05)
+      calc(
+        var(--score) *
+        1%
+      ),
+      rgba(255,255,255,.055)
       0
     );
 }
 
-.scoreOrb::before{
+.scoreRing::before{
+
   content:"";
 
   position:absolute;
+
   inset:5px;
 
   border-radius:50%;
 
-  background:#0b0e13;
+  background:#0a0d12;
 }
 
-.scoreOrb strong{
+.scoreRing strong{
+
   position:relative;
 
   font-size:11px;
 }
 
+
 /* ============================================================
-   CARD
+   GENERIC CARD
 ============================================================ */
 
 .card{
-  position:relative;
 
   margin-top:8px;
 
   overflow:hidden;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:19px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(14,17,23,.92),
-      rgba(6,8,11,.94)
+      rgba(13,17,23,.92),
+      rgba(6,8,11,.95)
     );
-
-  box-shadow:
-    inset 0 1px rgba(255,255,255,.018);
 }
 
 .pad{
@@ -767,9 +847,10 @@ button{
 }
 
 .cardHead{
+
   display:flex;
-  align-items:flex-start;
   justify-content:space-between;
+  align-items:flex-start;
 
   gap:10px;
 
@@ -777,12 +858,15 @@ button{
 }
 
 .cardTitle{
+
   font-size:9px;
   font-weight:1000;
+
   letter-spacing:.075em;
 }
 
 .cardSub{
+
   margin-top:3px;
 
   color:var(--muted);
@@ -791,48 +875,76 @@ button{
 }
 
 .badge{
+
   padding:5px 7px;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:999px;
 
-  color:var(--muted);
-
   background:
-    rgba(255,255,255,.02);
+    rgba(255,255,255,.018);
+
+  color:var(--muted);
 
   font-size:5px;
   font-weight:950;
 }
 
+
 /* ============================================================
-   CHART
+   TRADINGVIEW CHART
 ============================================================ */
 
-.chartHeader{
+.tvToolbar{
+
   display:flex;
-  justify-content:space-between;
   align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
 
   gap:8px;
 
   margin-bottom:8px;
 }
 
-.tfGroup{
+.toolbarLeft,
+.toolbarRight{
+
   display:flex;
+  align-items:center;
 
-  padding:3px;
-  gap:4px;
+  gap:5px;
 
-  border:1px solid var(--line);
-  border-radius:10px;
+  overflow-x:auto;
+
+  scrollbar-width:none;
 }
 
-.tf{
-  min-width:35px;
+.toolbarLeft::-webkit-scrollbar,
+.toolbarRight::-webkit-scrollbar{
+  display:none;
+}
 
-  padding:6px 7px;
+.toolGroup{
+
+  display:flex;
+
+  gap:3px;
+
+  padding:3px;
+
+  border:1px solid var(--border);
+  border-radius:10px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+.toolBtn{
+
+  min-width:36px;
+
+  padding:7px 8px;
 
   border-radius:7px;
 
@@ -840,152 +952,24 @@ button{
 
   background:transparent;
 
-  font-size:7px;
+  font-size:6px;
   font-weight:1000;
 }
 
-.tf.active{
+.toolBtn.active{
+
   color:#070707;
 
   background:var(--gold);
 }
 
-.chartState{
-  color:var(--muted);
+.layerBtn{
 
-  font-size:6px;
-  font-weight:950;
-}
-
-.chartWrap{
-  position:relative;
-
-  height:480px;
-
-  overflow:hidden;
-
-  border:
-    1px solid
-    rgba(255,255,255,.04);
-
-  border-radius:14px;
-
-  background:
-    radial-gradient(
-      circle at 40% 0,
-      rgba(244,200,94,.025),
-      transparent 33%
-    ),
-    #05070a;
-}
-
-canvas{
-  display:block;
-
-  width:100%;
-  height:100%;
-}
-
-.chartWatermark{
-  position:absolute;
-
-  left:13px;
-  top:36px;
-
-  color:
-    rgba(255,255,255,.026);
-
-  font-size:34px;
-  font-weight:1000;
-
-  pointer-events:none;
-}
-
-.ohlc{
-  position:absolute;
-
-  left:8px;
-  top:8px;
-
-  z-index:5;
-
-  padding:6px 7px;
-
-  border:1px solid var(--line);
-  border-radius:8px;
-
-  background:
-    rgba(4,6,9,.80);
-
-  color:#8d96a2;
-
-  font-size:6px;
-  line-height:1.5;
-
-  pointer-events:none;
-}
-
-.legendRow{
-  display:flex;
-  flex-wrap:wrap;
-
-  gap:8px;
-
-  margin-top:7px;
-
-  color:var(--muted);
-
-  font-size:6px;
-}
-
-.legend{
-  display:flex;
-  align-items:center;
-  gap:4px;
-}
-
-.legendDot{
-  width:6px;
-  height:6px;
-
-  border-radius:50%;
-}
-
-.goldDot{background:var(--gold);}
-.redDot{background:var(--red);}
-.greenDot{background:var(--green);}
-.blueDot{background:var(--blue);}
-.purpleDot{background:var(--purple);}
-
-/* ============================================================
-   FILTERS
-============================================================ */
-
-.filterBar{
-  display:flex;
-
-  gap:5px;
-
-  overflow-x:auto;
-
-  margin-bottom:9px;
-
-  scrollbar-width:none;
-}
-
-.filterBar::-webkit-scrollbar{
-  display:none;
-}
-
-.filterBtn{
   flex:0 0 auto;
 
-  padding:6px 9px;
+  padding:7px 9px;
 
-  border:
-    1px solid
-    var(--line);
-
+  border:1px solid var(--border);
   border-radius:8px;
 
   color:var(--muted);
@@ -997,378 +981,274 @@ canvas{
   font-weight:950;
 }
 
-.filterBtn.active{
-  color:#080808;
+.layerBtn.active{
+
+  color:#090909;
 
   border-color:transparent;
 
   background:var(--gold);
 }
 
-/* ============================================================
-   LIQUIDITY MATRIX
-============================================================ */
+.chartShell{
 
-.liquidityGrid{
-  display:grid;
-
-  grid-template-columns:
-    repeat(4,minmax(0,1fr));
-
-  gap:6px;
-}
-
-.liqCard{
   position:relative;
 
   overflow:hidden;
 
-  min-height:95px;
+  min-height:525px;
 
-  padding:10px;
+  border:
+    1px solid
+    rgba(255,255,255,.045);
 
-  border:1px solid var(--line);
-  border-radius:12px;
+  border-radius:15px;
 
-  background:
-    rgba(255,255,255,.014);
+  background:#05070a;
 }
 
-.liqCard.buySide{
-  border-color:
-    rgba(255,93,116,.10);
+#tvChart{
+
+  width:100%;
+  height:525px;
 }
 
-.liqCard.sellSide{
-  border-color:
-    rgba(50,226,160,.10);
-}
-
-.liqCard.neutral{
-  border-color:
-    rgba(93,170,255,.10);
-}
-
-.liqType{
-  color:var(--muted);
-
-  font-size:5px;
-  font-weight:950;
-}
-
-.liqName{
-  margin-top:6px;
-
-  min-height:20px;
-
-  font-size:7px;
-  font-weight:950;
-  line-height:1.35;
-}
-
-.liqPrice{
-  margin-top:6px;
-
-  font-size:14px;
-  font-weight:950;
-
-  font-variant-numeric:tabular-nums;
-}
-
-.liqMeta{
-  display:flex;
-  justify-content:space-between;
-
-  gap:5px;
-
-  margin-top:5px;
-
-  color:var(--muted);
-
-  font-size:5px;
-}
-
-.liqState{
-  position:absolute;
-
-  right:7px;
-  top:7px;
-
-  padding:4px 5px;
-
-  border-radius:5px;
-
-  background:
-    rgba(255,255,255,.04);
-
-  font-size:5px;
-  font-weight:950;
-}
 
 /* ============================================================
-   LIQUIDITY LADDER
+   DOMINANT ZONE HUD
 ============================================================ */
 
-.ladder{
-  position:relative;
+.zoneHud{
 
-  min-height:430px;
+  position:absolute;
+
+  z-index:30;
+
+  right:11px;
+  top:11px;
+
+  width:min(
+    245px,
+    calc(100% - 22px)
+  );
 
   overflow:hidden;
 
   border:
     1px solid
-    rgba(255,255,255,.04);
+    rgba(244,200,94,.20);
 
   border-radius:13px;
 
   background:
     linear-gradient(
-      to bottom,
-      rgba(255,93,116,.025),
-      transparent 46%,
-      transparent 54%,
-      rgba(50,226,160,.025)
+      135deg,
+      rgba(7,9,12,.91),
+      rgba(16,13,7,.90)
     );
+
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+
+  box-shadow:
+    0 10px 35px
+    rgba(0,0,0,.30);
+
+  pointer-events:none;
 }
 
-.ladderAxis{
-  position:absolute;
-
-  left:51%;
-  top:10px;
-  bottom:10px;
-
-  width:1px;
-
-  background:
-    linear-gradient(
-      to bottom,
-      transparent,
-      rgba(255,255,255,.15),
-      transparent
-    );
-}
-
-.ladderSpot{
-  position:absolute;
-
-  left:0;
-  right:0;
+.zoneHudHead{
 
   display:flex;
   align-items:center;
+  justify-content:space-between;
 
-  z-index:3;
+  gap:8px;
+
+  padding:8px 9px;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.05);
 }
 
-.ladderSpot::before{
-  content:"";
+.zoneHudTitle{
 
-  flex:1;
+  color:#a98d4d;
 
-  border-top:
-    1px dashed
-    rgba(244,200,94,.5);
+  font-size:5px;
+  font-weight:1000;
+
+  letter-spacing:.12em;
 }
 
-.ladderSpotLabel{
-  margin-left:6px;
+.zoneHudScore{
 
-  padding:5px 7px;
+  padding:4px 6px;
 
   border-radius:6px;
 
   color:#080808;
+
   background:var(--gold);
 
   font-size:6px;
   font-weight:1000;
 }
 
-.ladderLevel{
-  position:absolute;
+.zoneHudBody{
+  padding:9px;
+}
 
-  left:6px;
-  right:6px;
+.zoneHudName{
 
-  display:flex;
-  align-items:center;
+  font-size:9px;
+  font-weight:1000;
+}
+
+.zoneHudPrice{
+
+  margin-top:5px;
+
+  color:var(--gold);
+
+  font-size:17px;
+  font-weight:1000;
+
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.zoneHudMeta{
+
+  margin-top:5px;
+
+  color:var(--muted);
+
+  font-size:6px;
+  line-height:1.55;
+}
+
+.zoneHudStage{
+
+  display:inline-block;
+
+  margin-top:7px;
+
+  padding:5px 6px;
+
+  border:
+    1px solid
+    rgba(244,200,94,.13);
+
+  border-radius:6px;
+
+  color:var(--gold);
+
+  background:
+    rgba(244,200,94,.045);
+
+  font-size:5px;
+  font-weight:1000;
+}
+
+
+/* ============================================================
+   CHART ANALYSIS STRIP
+============================================================ */
+
+.analysisStrip{
+
+  display:grid;
+
+  grid-template-columns:
+    1.3fr
+    repeat(4,1fr);
 
   gap:6px;
+
+  margin-top:7px;
 }
 
-.ladderLine{
-  flex:1;
+.analysisCell{
 
-  border-top:
-    1px solid
-    rgba(255,255,255,.12);
+  min-width:0;
+
+  padding:9px;
+
+  border:1px solid var(--border);
+  border-radius:10px;
+
+  background:
+    rgba(255,255,255,.012);
 }
 
-.ladderLevel.buy .ladderLine{
+.analysisCell:first-child{
+
   border-color:
-    rgba(255,93,116,.38);
+    rgba(244,200,94,.11);
+
+  background:
+    rgba(244,200,94,.025);
 }
 
-.ladderLevel.sell .ladderLine{
-  border-color:
-    rgba(50,226,160,.38);
-}
+.analysisCell label{
 
-.ladderLabel{
-  width:46%;
+  display:block;
 
-  overflow:hidden;
-
-  color:#929ca8;
+  color:var(--muted);
 
   font-size:5px;
   font-weight:900;
+}
+
+.analysisCell strong{
+
+  display:block;
+
+  overflow:hidden;
+
+  margin-top:5px;
+
+  font-size:8px;
 
   white-space:nowrap;
   text-overflow:ellipsis;
 }
 
-.ladderPrice{
-  min-width:50px;
+.tvCredit{
 
-  text-align:right;
+  margin-top:7px;
 
-  font-size:6px;
-  font-weight:950;
-}
-
-/* ============================================================
-   SESSION RADAR
-============================================================ */
-
-.sessionGrid{
-  display:grid;
-
-  grid-template-columns:
-    repeat(3,1fr);
-
-  gap:6px;
-}
-
-.sessionCard{
-  padding:11px;
-
-  border:1px solid var(--line);
-  border-radius:12px;
-
-  background:
-    rgba(255,255,255,.014);
-}
-
-.sessionName{
-  color:var(--muted);
-
-  font-size:6px;
-  font-weight:1000;
-  letter-spacing:.1em;
-}
-
-.sessionRange{
-  margin-top:8px;
-
-  display:grid;
-  grid-template-columns:1fr 1fr;
-
-  gap:5px;
-}
-
-.sessionMetric{
-  padding:7px;
-
-  border-radius:8px;
-
-  background:
-    rgba(255,255,255,.022);
-}
-
-.sessionMetric span{
-  display:block;
-
-  color:var(--muted);
+  color:#4f5864;
 
   font-size:5px;
 }
 
-.sessionMetric strong{
-  display:block;
+.tvCredit a{
 
-  margin-top:4px;
+  color:#737e8c;
 
-  font-size:8px;
+  text-decoration:none;
 }
+
 
 /* ============================================================
-   PRESSURE
+   INTELLIGENCE PANEL
 ============================================================ */
 
-.pressure{
-  display:flex;
-  flex-direction:column;
+.intelPanel{
 
-  gap:9px;
-}
-
-.pressureRow{
   display:grid;
 
   grid-template-columns:
-    85px 1fr 40px;
-
-  align-items:center;
+    1.45fr 1fr;
 
   gap:8px;
 }
 
-.pressureLabel{
-  color:var(--muted);
+.narrative{
 
-  font-size:6px;
-  font-weight:900;
-}
-
-.pressureTrack{
-  height:7px;
-
-  overflow:hidden;
-
-  border-radius:999px;
-
-  background:
-    rgba(255,255,255,.04);
-}
-
-.pressureFill{
-  height:100%;
-
-  border-radius:999px;
-
-  background:
-    linear-gradient(
-      90deg,
-      var(--gold),
-      var(--gold2)
-    );
-}
-
-.pressureValue{
-  text-align:right;
-
-  font-size:7px;
-  font-weight:950;
-}
-
-/* ============================================================
-   AI NARRATIVE
-============================================================ */
-
-.aiNarrative{
   padding:13px;
 
   border:
@@ -1385,28 +1265,243 @@ canvas{
     );
 }
 
-.aiNarrativeLabel{
-  color:#a38a50;
+.narrativeLabel{
+
+  color:#a68a49;
 
   font-size:6px;
   font-weight:1000;
-  letter-spacing:.13em;
+
+  letter-spacing:.12em;
 }
 
-.aiNarrativeText{
+.narrativeText{
+
   margin-top:7px;
 
-  color:#a5aeba;
+  color:#a3adb9;
 
   font-size:8px;
   line-height:1.65;
 }
+
+.scenario{
+
+  display:flex;
+  flex-direction:column;
+
+  gap:6px;
+}
+
+.scenarioRow{
+
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+
+  gap:10px;
+
+  padding:8px;
+
+  border:1px solid var(--border);
+  border-radius:9px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+.scenarioRow span{
+
+  color:var(--muted);
+
+  font-size:6px;
+}
+
+.scenarioRow strong{
+
+  text-align:right;
+
+  font-size:7px;
+}
+
+
+/* ============================================================
+   PATH
+============================================================ */
+
+.path{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(5,1fr);
+
+  gap:5px;
+}
+
+.pathStage{
+
+  position:relative;
+
+  padding:9px 4px;
+
+  border:1px solid var(--border);
+  border-radius:8px;
+
+  color:#505866;
+
+  text-align:center;
+
+  background:
+    rgba(255,255,255,.01);
+
+  font-size:5px;
+  font-weight:1000;
+}
+
+.pathStage.done{
+
+  color:#06110c;
+
+  border-color:transparent;
+
+  background:var(--green);
+}
+
+.pathStage.current{
+
+  color:#080808;
+
+  border-color:transparent;
+
+  background:var(--gold);
+}
+
+
+/* ============================================================
+   LEVEL GRID
+============================================================ */
+
+.levelGrid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(4,minmax(0,1fr));
+
+  gap:6px;
+}
+
+.levelCard{
+
+  position:relative;
+
+  min-width:0;
+  min-height:103px;
+
+  overflow:hidden;
+
+  padding:10px;
+
+  border:1px solid var(--border);
+  border-radius:12px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+.levelCard.buy{
+
+  border-color:
+    rgba(255,93,116,.10);
+}
+
+.levelCard.sell{
+
+  border-color:
+    rgba(52,227,161,.10);
+}
+
+.levelCard.major{
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(244,200,94,.04),
+      rgba(255,255,255,.01)
+    );
+}
+
+.levelType{
+
+  color:var(--muted);
+
+  font-size:5px;
+  font-weight:950;
+}
+
+.levelName{
+
+  margin-top:6px;
+
+  min-height:18px;
+
+  font-size:7px;
+  font-weight:950;
+}
+
+.levelPrice{
+
+  margin-top:6px;
+
+  font-size:13px;
+  font-weight:1000;
+
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.levelFooter{
+
+  display:flex;
+  justify-content:space-between;
+
+  gap:5px;
+
+  margin-top:6px;
+
+  color:var(--muted);
+
+  font-size:5px;
+}
+
+.levelState{
+
+  position:absolute;
+
+  right:7px;
+  top:7px;
+
+  padding:4px 5px;
+
+  border-radius:5px;
+
+  background:
+    rgba(255,255,255,.04);
+
+  color:#8d96a1;
+
+  font-size:5px;
+  font-weight:950;
+}
+
 
 /* ============================================================
    GRID
 ============================================================ */
 
 .grid{
+
   display:grid;
 
   grid-template-columns:
@@ -1415,23 +1510,119 @@ canvas{
   gap:8px;
 }
 
-.s4{grid-column:span 4;}
-.s5{grid-column:span 5;}
-.s6{grid-column:span 6;}
-.s7{grid-column:span 7;}
-.s8{grid-column:span 8;}
-.s12{grid-column:span 12;}
+.s4{
+  grid-column:span 4;
+}
+
+.s5{
+  grid-column:span 5;
+}
+
+.s6{
+  grid-column:span 6;
+}
+
+.s7{
+  grid-column:span 7;
+}
+
+.s8{
+  grid-column:span 8;
+}
+
+.s12{
+  grid-column:span 12;
+}
+
+
+/* ============================================================
+   SESSION
+============================================================ */
+
+.sessionGrid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(3,1fr);
+
+  gap:6px;
+}
+
+.sessionCard{
+
+  padding:11px;
+
+  border:1px solid var(--border);
+  border-radius:12px;
+
+  background:
+    rgba(255,255,255,.012);
+}
+
+.sessionTitle{
+
+  color:var(--muted);
+
+  font-size:6px;
+  font-weight:1000;
+
+  letter-spacing:.1em;
+}
+
+.sessionMetrics{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(2,1fr);
+
+  gap:5px;
+
+  margin-top:8px;
+}
+
+.sessionMetric{
+
+  padding:7px;
+
+  border-radius:8px;
+
+  background:
+    rgba(255,255,255,.02);
+}
+
+.sessionMetric span{
+
+  display:block;
+
+  color:var(--muted);
+
+  font-size:5px;
+}
+
+.sessionMetric strong{
+
+  display:block;
+
+  margin-top:4px;
+
+  font-size:8px;
+}
+
 
 /* ============================================================
    DATA LIST
 ============================================================ */
 
 .dataList{
+
   display:flex;
   flex-direction:column;
 }
 
 .row{
+
   display:flex;
   justify-content:space-between;
 
@@ -1455,31 +1646,35 @@ canvas{
 }
 
 .value{
+
   max-width:68%;
 
   text-align:right;
 
-  color:#d6dbe0;
+  color:#d7dce1;
 
   overflow-wrap:anywhere;
 }
+
 
 /* ============================================================
    RAW
 ============================================================ */
 
 pre{
+
   max-height:600px;
 
   overflow:auto;
 
   margin:0;
+
   padding:12px;
 
-  border:1px solid var(--line);
+  border:1px solid var(--border);
   border-radius:10px;
 
-  color:#929ca7;
+  color:#929aa6;
 
   background:#040609;
 
@@ -1489,23 +1684,28 @@ pre{
   white-space:pre-wrap;
 }
 
+
 /* ============================================================
    LOADER
 ============================================================ */
 
 .loader{
-  position:fixed;
-  inset:0;
-
-  z-index:300;
 
   display:none;
+
+  position:fixed;
+
+  inset:0;
+
+  z-index:500;
+
   place-items:center;
 
   background:
-    rgba(2,3,5,.78);
+    rgba(2,3,5,.76);
 
-  backdrop-filter:blur(14px);
+  backdrop-filter:blur(13px);
+  -webkit-backdrop-filter:blur(13px);
 }
 
 .loader.show{
@@ -1513,17 +1713,20 @@ pre{
 }
 
 .loaderCore{
-  width:86px;
-  height:86px;
 
   position:relative;
+
+  width:90px;
+  height:90px;
 
   display:grid;
   place-items:center;
 }
 
 .loaderRing{
+
   position:absolute;
+
   inset:0;
 
   border:
@@ -1539,8 +1742,9 @@ pre{
     rotate 1s linear infinite;
 }
 
-.loaderRing:nth-child(2){
-  inset:12px;
+.loaderRing.second{
+
+  inset:13px;
 
   border-color:
     rgba(93,170,255,.12);
@@ -1552,30 +1756,54 @@ pre{
 }
 
 .loaderText{
-  font-size:6px;
-  font-weight:1000;
 
   color:var(--gold);
+
+  font-size:6px;
+  font-weight:1000;
 }
 
 @keyframes rotate{
+
   to{
     transform:rotate(360deg);
   }
 }
 
+
 /* ============================================================
-   MOBILE
+   COLORS
 ============================================================ */
 
-@media(max-width:980px){
+.green{
+  color:var(--green)!important;
+}
+
+.red{
+  color:var(--red)!important;
+}
+
+.gold{
+  color:var(--gold)!important;
+}
+
+.blue{
+  color:var(--blue)!important;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media(max-width:1000px){
 
   .commandGrid{
     grid-template-columns:
       repeat(2,1fr);
   }
 
-  .liquidityGrid{
+  .levelGrid{
     grid-template-columns:
       repeat(3,1fr);
   }
@@ -1589,44 +1817,80 @@ pre{
   }
 }
 
-@media(max-width:650px){
+@media(max-width:700px){
 
   .brandSub{
     display:none;
   }
 
-  .aiHero{
-    min-height:220px;
+  .chartShell{
+    min-height:470px;
   }
 
-  .chartWrap{
-    height:440px;
+  #tvChart{
+    height:470px;
   }
 
-  .liquidityGrid{
+  .analysisStrip{
+    grid-template-columns:
+      repeat(2,1fr);
+  }
+
+  .analysisCell:first-child{
+    grid-column:span 2;
+  }
+
+  .intelPanel{
+    grid-template-columns:1fr;
+  }
+
+  .levelGrid{
     grid-template-columns:
       repeat(2,1fr);
   }
 
   .sessionGrid{
-    grid-template-columns:
-      1fr;
+    grid-template-columns:1fr;
   }
 
-  .commandValue{
-    font-size:17px;
+  .zoneHud{
+
+    top:8px;
+    right:8px;
+
+    width:190px;
+  }
+
+  .zoneHudPrice{
+    font-size:14px;
   }
 }
 
-@media(max-width:390px){
+@media(max-width:420px){
 
   .bigPrice{
     font-size:39px;
   }
 
+  .commandValue{
+    font-size:16px;
+  }
+
   .commandGrid{
     grid-template-columns:
-      1fr 1fr;
+      repeat(2,1fr);
+  }
+
+  .chartShell{
+    min-height:445px;
+  }
+
+  #tvChart{
+    height:445px;
+  }
+
+  .zoneHud{
+    width:172px;
   }
 }
 
@@ -1634,31 +1898,46 @@ pre{
 
 </head>
 
+
 <body>
+
+
+<!-- ============================================================
+     LOADER
+============================================================ -->
 
 <div
   class="loader"
   id="loader"
 >
+
   <div class="loaderCore">
 
     <div class="loaderRing"></div>
-    <div class="loaderRing"></div>
+
+    <div class="loaderRing second"></div>
 
     <div class="loaderText">
       MK AI
     </div>
 
   </div>
+
 </div>
 
+
 <div class="app">
+
+
+<!-- ============================================================
+     TOP BAR
+============================================================ -->
 
 <header class="topbar">
 
   <div class="brand">
 
-    <div class="brandIcon">
+    <div class="brandLogo">
       MK
     </div>
 
@@ -1669,21 +1948,25 @@ pre{
       </div>
 
       <div class="brandSub">
-        GOLD INTELLIGENCE V10
+        XAU/USD LIQUIDITY INTELLIGENCE V11
       </div>
 
     </div>
 
   </div>
 
-  <div class="liveStatus">
 
-    <div
-      class="liveDot"
-      id="liveDot"
-    ></div>
+  <div class="feedStatus">
 
-    <span id="liveStatus">
+    <span
+      class="feedDot"
+      id="feedDot"
+    ></span>
+
+    <span
+      class="feedText"
+      id="feedText"
+    >
       CONNECTING
     </span>
 
@@ -1691,10 +1974,16 @@ pre{
 
 </header>
 
+
 <div
   class="error"
   id="error"
 ></div>
+
+
+<!-- ============================================================
+     NAV
+============================================================ -->
 
 <nav class="nav">
 
@@ -1702,11 +1991,11 @@ pre{
     class="active"
     data-view="terminal"
   >
-    AI TERMINAL
+    COMMAND
   </button>
 
-  <button data-view="map">
-    LIQUIDITY MAP
+  <button data-view="liquidity">
+    LIQUIDITY
   </button>
 
   <button data-view="sessions">
@@ -1731,6 +2020,7 @@ pre{
 
 </nav>
 
+
 <!-- ============================================================
      TERMINAL
 ============================================================ -->
@@ -1740,31 +2030,33 @@ pre{
   id="terminal"
 >
 
-<div class="aiHero">
 
-  <div class="heroTop">
+<div class="hero">
+
+  <div class="heroHead">
 
     <div>
 
       <div class="heroKicker">
-        MKAYFX · XAU/USD NEURAL COMMAND CENTER
+        MKAYFX · GOLD AI COMMAND CENTER
       </div>
 
-      <div class="heroSub">
-        Gold / US Dollar · Multi-layer liquidity intelligence
+      <div class="heroDescriptor">
+        XAU/USD institutional liquidity · TradingView chart engine
       </div>
 
     </div>
 
-    <div class="aiCore">
 
-      <div class="aiCoreLabel">
-        INTELLIGENCE CORE
+    <div class="coreBox">
+
+      <div class="coreLabel">
+        ANALYSIS CORE
       </div>
 
       <div
-        class="aiCoreStatus"
-        id="aiCoreStatus"
+        class="coreValue"
+        id="coreStatus"
       >
         INITIALISING
       </div>
@@ -1772,6 +2064,7 @@ pre{
     </div>
 
   </div>
+
 
   <div class="priceRow">
 
@@ -1791,485 +2084,624 @@ pre{
 
   </div>
 
-  <div class="heroTelemetry">
 
-    <div class="telemetryChip">
+  <div class="heroChips">
+
+    <div class="heroChip">
       SESSION
-      <b id="session">—</b>
+      <b id="currentSession">—</b>
     </div>
 
-    <div class="telemetryChip">
+    <div class="heroChip">
       REGIME
       <b id="regime">—</b>
     </div>
 
-    <div class="telemetryChip">
+    <div class="heroChip">
       VWAP
       <b id="vwap">—</b>
     </div>
 
-    <div class="telemetryChip">
+    <div class="heroChip">
+      M15
+      <b id="m15Bias">—</b>
+    </div>
+
+    <div class="heroChip">
+      H1
+      <b id="h1Bias">—</b>
+    </div>
+
+    <div class="heroChip">
       PRICE AGE
       <b id="priceAge">—</b>
     </div>
 
-    <div class="telemetryChip">
-      DEEP CORE
-      <b id="deepAge">—</b>
-    </div>
-
   </div>
 
+
   <button
-    class="deepBtn"
+    class="scanBtn"
     onclick="loadEverything(true)"
   >
-    RUN DEEP SCAN
+    DEEP SCAN
   </button>
 
 </div>
 
+
+<!-- ============================================================
+     COMMAND CARDS
+============================================================ -->
+
 <div class="commandGrid">
 
-  <div class="commandCard">
+
+  <div class="command primary">
 
     <div class="commandLabel">
-      DOMINANT LIQUIDITY
+      PRIMARY LIQUIDITY TARGET
     </div>
 
     <div
       class="commandValue"
-      id="dominantName"
+      id="primaryName"
     >
-      SEARCHING
+      SCANNING
     </div>
 
     <div
-      class="commandText"
-      id="dominantText"
+      class="commandSub"
+      id="primarySub"
     >
-      Mapping institutional liquidity.
+      Building the XAU/USD liquidity map.
     </div>
 
     <div
-      class="scoreOrb"
-      id="raidOrb"
+      class="scoreRing"
+      id="scoreRing"
     >
-      <strong id="raidScore">
+      <strong id="primaryScore">
         0
       </strong>
     </div>
 
   </div>
 
-  <div class="commandCard">
+
+  <div class="command">
 
     <div class="commandLabel">
-      AI BIAS
+      MARKET BIAS
     </div>
 
     <div
       class="commandValue"
-      id="aiBias"
+      id="marketBias"
     >
       —
     </div>
 
     <div
-      class="commandText"
-      id="aiBiasText"
+      class="commandSub"
+      id="biasSub"
     >
-      Multi-timeframe consensus.
+      MTF consensus
     </div>
 
   </div>
 
-  <div class="commandCard">
+
+  <div class="command">
 
     <div class="commandLabel">
-      LIQUIDITY ABOVE
+      NEAREST BUY-SIDE
     </div>
 
     <div
       class="commandValue red"
-      id="liquidityAbove"
+      id="nearestBuy"
     >
       —
     </div>
 
     <div
-      class="commandText"
-      id="liquidityAboveText"
+      class="commandSub"
+      id="nearestBuySub"
     >
-      Buy-side pools
+      —
     </div>
 
   </div>
 
-  <div class="commandCard">
+
+  <div class="command">
 
     <div class="commandLabel">
-      LIQUIDITY BELOW
+      NEAREST SELL-SIDE
     </div>
 
     <div
       class="commandValue green"
-      id="liquidityBelow"
+      id="nearestSell"
     >
       —
     </div>
 
     <div
-      class="commandText"
-      id="liquidityBelowText"
+      class="commandSub"
+      id="nearestSellSub"
     >
-      Sell-side pools
+      —
     </div>
 
   </div>
 
 </div>
 
+
+<!-- ============================================================
+     TRADINGVIEW CHART
+============================================================ -->
+
 <article class="card">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardHead">
 
-      <div>
+<div class="cardHead">
 
-        <div class="cardTitle">
-          INSTITUTIONAL MARKET MAP
-        </div>
+  <div>
 
-        <div class="cardSub">
-          Candles + every major liquidity reference + live REST price
-        </div>
-
-      </div>
-
-      <div class="badge">
-        FULL LIQUIDITY OVERLAY
-      </div>
-
+    <div class="cardTitle">
+      LIVE TRADINGVIEW LIQUIDITY MAP
     </div>
 
-    <div class="chartHeader">
-
-      <div class="tfGroup">
-
-        <button
-          class="tf"
-          data-tf="m1"
-        >
-          M1
-        </button>
-
-        <button
-          class="tf active"
-          data-tf="m5"
-        >
-          M5
-        </button>
-
-        <button
-          class="tf"
-          data-tf="m15"
-        >
-          M15
-        </button>
-
-        <button
-          class="tf"
-          data-tf="h1"
-        >
-          H1
-        </button>
-
-      </div>
-
-      <div
-        class="chartState"
-        id="chartState"
-      >
-        LOADING
-      </div>
-
-    </div>
-
-    <div class="chartWrap">
-
-      <canvas id="chart"></canvas>
-
-      <div class="chartWatermark">
-        XAUUSD
-      </div>
-
-      <div
-        class="ohlc"
-        id="ohlc"
-      >
-        LOADING
-      </div>
-
-    </div>
-
-    <div class="legendRow">
-
-      <div class="legend">
-        <span class="legendDot goldDot"></span>
-        PRICE
-      </div>
-
-      <div class="legend">
-        <span class="legendDot redDot"></span>
-        BUY-SIDE
-      </div>
-
-      <div class="legend">
-        <span class="legendDot greenDot"></span>
-        SELL-SIDE
-      </div>
-
-      <div class="legend">
-        <span class="legendDot blueDot"></span>
-        OPEN / EQ
-      </div>
-
-      <div class="legend">
-        <span class="legendDot purpleDot"></span>
-        FVG
-      </div>
-
+    <div class="cardSub">
+      Fast REST live bar · exact MKAYFX liquidity price lines
     </div>
 
   </div>
 
-</article>
-
-<div class="grid">
-
-<article class="card s7">
-
-  <div class="pad">
-
-    <div class="cardHead">
-
-      <div>
-
-        <div class="cardTitle">
-          AI MARKET NARRATIVE
-        </div>
-
-        <div class="cardSub">
-          Deterministic explanation of current liquidity conditions
-        </div>
-
-      </div>
-
-      <div class="badge">
-        LIVE CONTEXT
-      </div>
-
-    </div>
-
-    <div class="aiNarrative">
-
-      <div class="aiNarrativeLabel">
-        MKAYFX INTELLIGENCE
-      </div>
-
-      <div
-        class="aiNarrativeText"
-        id="aiNarrative"
-      >
-        Waiting for market intelligence.
-      </div>
-
-    </div>
-
+  <div class="badge">
+    TRADINGVIEW ENGINE
   </div>
-
-</article>
-
-<article class="card s5">
-
-  <div class="pad">
-
-    <div class="cardHead">
-
-      <div>
-
-        <div class="cardTitle">
-          MARKET PRESSURE
-        </div>
-
-      </div>
-
-    </div>
-
-    <div
-      class="pressure"
-      id="pressure"
-    ></div>
-
-  </div>
-
-</article>
 
 </div>
 
-<article class="card">
 
-  <div class="pad">
+<div class="tvToolbar">
 
-    <div class="cardHead">
 
-      <div>
+  <div class="toolbarLeft">
 
-        <div class="cardTitle">
-          KEY LIQUIDITY LEVELS
-        </div>
+    <div class="toolGroup">
 
-        <div class="cardSub">
-          Asia · London · New York · Daily · Weekly · Swings · Equal levels
-        </div>
+      <button
+        class="toolBtn"
+        data-tf="m1"
+      >
+        M1
+      </button>
 
+      <button
+        class="toolBtn active"
+        data-tf="m5"
+      >
+        M5
+      </button>
+
+      <button
+        class="toolBtn"
+        data-tf="m15"
+      >
+        M15
+      </button>
+
+      <button
+        class="toolBtn"
+        data-tf="h1"
+      >
+        H1
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <div class="toolbarRight">
+
+    <button
+      class="layerBtn active"
+      data-layer="PRIMARY"
+    >
+      PRIMARY
+    </button>
+
+    <button
+      class="layerBtn"
+      data-layer="MAJOR"
+    >
+      MAJOR
+    </button>
+
+    <button
+      class="layerBtn"
+      data-layer="SESSIONS"
+    >
+      SESSIONS
+    </button>
+
+    <button
+      class="layerBtn"
+      data-layer="ALL"
+    >
+      ALL LEVELS
+    </button>
+
+  </div>
+
+
+</div>
+
+
+<div class="chartShell">
+
+
+  <div
+    id="tvChart"
+  ></div>
+
+
+  <div
+    class="zoneHud"
+    id="zoneHud"
+  >
+
+    <div class="zoneHudHead">
+
+      <div class="zoneHudTitle">
+        PRIMARY LIQUIDITY ZONE
+      </div>
+
+      <div
+        class="zoneHudScore"
+        id="hudScore"
+      >
+        0
       </div>
 
     </div>
 
-    <div
-      class="filterBar"
-      id="terminalFilters"
-    ></div>
 
-    <div
-      class="liquidityGrid"
-      id="keyLiquidity"
-    ></div>
+    <div class="zoneHudBody">
+
+      <div
+        class="zoneHudName"
+        id="hudName"
+      >
+        SEARCHING
+      </div>
+
+      <div
+        class="zoneHudPrice"
+        id="hudPrice"
+      >
+        —
+      </div>
+
+      <div
+        class="zoneHudMeta"
+        id="hudMeta"
+      >
+        Waiting for liquidity map.
+      </div>
+
+      <div
+        class="zoneHudStage"
+        id="hudStage"
+      >
+        TRACKING
+      </div>
+
+    </div>
 
   </div>
 
+
+</div>
+
+
+<div class="analysisStrip">
+
+
+  <div class="analysisCell">
+
+    <label>
+      LIVE SCENARIO
+    </label>
+
+    <strong
+      id="chartScenario"
+      class="gold"
+    >
+      WAIT
+    </strong>
+
+  </div>
+
+
+  <div class="analysisCell">
+
+    <label>
+      DISTANCE
+    </label>
+
+    <strong id="chartDistance">
+      —
+    </strong>
+
+  </div>
+
+
+  <div class="analysisCell">
+
+    <label>
+      DISTANCE ATR
+    </label>
+
+    <strong id="chartDistanceAtr">
+      —
+    </strong>
+
+  </div>
+
+
+  <div class="analysisCell">
+
+    <label>
+      CONFLUENCE
+    </label>
+
+    <strong id="chartConfluence">
+      —
+    </strong>
+
+  </div>
+
+
+  <div class="analysisCell">
+
+    <label>
+      LAYER
+    </label>
+
+    <strong id="chartLayer">
+      PRIMARY
+    </strong>
+
+  </div>
+
+
+</div>
+
+
+<div class="tvCredit">
+
+  Charts powered by
+  <a
+    href="https://www.tradingview.com/"
+    target="_blank"
+    rel="noopener"
+  >
+    TradingView Lightweight Charts™
+  </a>
+
+</div>
+
+
+</div>
+
 </article>
+
+
+<!-- ============================================================
+     AI ANALYSIS
+============================================================ -->
+
+<article class="card">
+
+<div class="pad">
+
+
+<div class="cardHead">
+
+  <div>
+
+    <div class="cardTitle">
+      AI LIQUIDITY ANALYSIS
+    </div>
+
+    <div class="cardSub">
+      Current dominant scenario and confirmation path
+    </div>
+
+  </div>
+
+  <div class="badge">
+    HEURISTIC INTELLIGENCE
+  </div>
+
+</div>
+
+
+<div class="intelPanel">
+
+
+  <div class="narrative">
+
+    <div class="narrativeLabel">
+      MKAYFX MARKET READ
+    </div>
+
+    <div
+      class="narrativeText"
+      id="narrative"
+    >
+      Waiting for market intelligence.
+    </div>
+
+  </div>
+
+
+  <div
+    class="scenario"
+    id="scenarioMetrics"
+  ></div>
+
+
+</div>
+
+
+<div
+  class="path"
+  id="confirmationPath"
+  style="margin-top:8px"
+></div>
+
+
+</div>
+
+</article>
+
+
+<!-- ============================================================
+     IMPORTANT LEVELS
+============================================================ -->
+
+<article class="card">
+
+<div class="pad">
+
+
+<div class="cardHead">
+
+  <div>
+
+    <div class="cardTitle">
+      INSTITUTIONAL LIQUIDITY LEVELS
+    </div>
+
+    <div class="cardSub">
+      Session · daily · weekly · opens · swings · equal highs/lows
+    </div>
+
+  </div>
+
+  <div class="badge">
+    LIVE DISTANCE
+  </div>
+
+</div>
+
+
+<div
+  class="levelGrid"
+  id="topLevels"
+></div>
+
+
+</div>
+
+</article>
+
 
 </section>
 
+
 <!-- ============================================================
-     LIQUIDITY MAP
+     LIQUIDITY TAB
 ============================================================ -->
 
 <section
   class="view"
-  id="map"
+  id="liquidity"
 >
 
-<div class="grid">
+<article class="card">
 
-<article class="card s7">
+<div class="pad">
 
-  <div class="pad">
+<div class="cardHead">
 
-    <div class="cardHead">
+  <div>
 
-      <div>
-
-        <div class="cardTitle">
-          COMPLETE LIQUIDITY MATRIX
-        </div>
-
-        <div class="cardSub">
-          Every mapped XAU/USD reference
-        </div>
-
-      </div>
-
+    <div class="cardTitle">
+      COMPLETE XAU/USD LIQUIDITY MAP
     </div>
 
-    <div
-      class="filterBar"
-      id="mapFilters"
-    ></div>
-
-    <div
-      class="liquidityGrid"
-      id="allLiquidity"
-    ></div>
-
-  </div>
-
-</article>
-
-<article class="card s5">
-
-  <div class="pad">
-
-    <div class="cardHead">
-
-      <div>
-
-        <div class="cardTitle">
-          LIQUIDITY LADDER
-        </div>
-
-        <div class="cardSub">
-          Levels positioned relative to spot
-        </div>
-
-      </div>
-
+    <div class="cardSub">
+      Every level returned by the V10 intelligence engine
     </div>
 
-    <div
-      class="ladder"
-      id="ladder"
-    ></div>
-
   </div>
-
-</article>
 
 </div>
 
+<div
+  class="levelGrid"
+  id="allLevels"
+></div>
+
+</div>
+
+</article>
+
+
 <div class="grid">
 
-<article class="card s6">
-
-  <div class="pad">
-
-    <div class="cardTitle">
-      CLUSTERED LIQUIDITY
-    </div>
-
-    <div
-      class="dataList"
-      id="clusteredLiquidity"
-    ></div>
-
-  </div>
-
-</article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      FAIR VALUE GAPS
-    </div>
-
-    <div
-      class="dataList"
-      id="fvgList"
-    ></div>
-
+  <div class="cardTitle">
+    CLUSTERED LIQUIDITY
   </div>
 
+  <div
+    class="dataList"
+    id="clusters"
+  ></div>
+
+</div>
+
 </article>
+
+
+<article class="card s6">
+
+<div class="pad">
+
+  <div class="cardTitle">
+    FAIR VALUE GAPS
+  </div>
+
+  <div
+    class="dataList"
+    id="fvgs"
+  ></div>
+
+</div>
+
+</article>
+
 
 </div>
 
 </section>
+
 
 <!-- ============================================================
      SESSIONS
@@ -2282,72 +2714,79 @@ pre{
 
 <article class="card">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardHead">
+<div class="cardHead">
 
-      <div>
+  <div>
 
-        <div class="cardTitle">
-          GLOBAL SESSION RADAR
-        </div>
-
-        <div class="cardSub">
-          Asia · London · New York
-        </div>
-
-      </div>
-
+    <div class="cardTitle">
+      GLOBAL SESSION RADAR
     </div>
 
-    <div
-      class="sessionGrid"
-      id="sessionGrid"
-    ></div>
+    <div class="cardSub">
+      Asia · London · New York liquidity
+    </div>
 
   </div>
 
+</div>
+
+
+<div
+  class="sessionGrid"
+  id="sessionGrid"
+></div>
+
+
+</div>
+
 </article>
+
 
 <div class="grid">
 
-<article class="card s6">
-
-  <div class="pad">
-
-    <div class="cardTitle">
-      DAILY REFERENCES
-    </div>
-
-    <div
-      class="dataList"
-      id="dailyRefs"
-    ></div>
-
-  </div>
-
-</article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      WEEKLY REFERENCES
-    </div>
-
-    <div
-      class="dataList"
-      id="weeklyRefs"
-    ></div>
-
+  <div class="cardTitle">
+    DAILY REFERENCES
   </div>
 
+  <div
+    class="dataList"
+    id="dailyRefs"
+  ></div>
+
+</div>
+
 </article>
+
+
+<article class="card s6">
+
+<div class="pad">
+
+  <div class="cardTitle">
+    WEEKLY REFERENCES
+  </div>
+
+  <div
+    class="dataList"
+    id="weeklyRefs"
+  ></div>
+
+</div>
+
+</article>
+
 
 </div>
 
 </section>
+
 
 <!-- ============================================================
      STRUCTURE
@@ -2360,77 +2799,83 @@ pre{
 
 <div class="grid">
 
-<article class="card s8">
 
-  <div class="pad">
+<article class="card s7">
 
-    <div class="cardTitle">
-      MULTI-TIMEFRAME STRUCTURE
-    </div>
+<div class="pad">
 
-    <div
-      class="liquidityGrid"
-      id="structureGrid"
-    ></div>
-
+  <div class="cardTitle">
+    MULTI-TIMEFRAME STRUCTURE
   </div>
+
+  <div
+    class="levelGrid"
+    id="structureGrid"
+  ></div>
+
+</div>
 
 </article>
 
-<article class="card s4">
 
-  <div class="pad">
+<article class="card s5">
 
-    <div class="cardTitle">
-      DEALING RANGE
-    </div>
+<div class="pad">
 
-    <div
-      class="dataList"
-      id="dealingRange"
-    ></div>
-
+  <div class="cardTitle">
+    DEALING RANGE
   </div>
 
+  <div
+    class="dataList"
+    id="dealingRange"
+  ></div>
+
+</div>
+
 </article>
+
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      DISPLACEMENT
-    </div>
-
-    <div
-      class="dataList"
-      id="displacement"
-    ></div>
-
+  <div class="cardTitle">
+    DISPLACEMENT
   </div>
 
+  <div
+    class="dataList"
+    id="displacement"
+  ></div>
+
+</div>
+
 </article>
+
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      EQUAL HIGHS / LOWS
-    </div>
-
-    <div
-      class="dataList"
-      id="equalLevels"
-    ></div>
-
+  <div class="cardTitle">
+    EQUAL HIGHS / LOWS
   </div>
 
+  <div
+    class="dataList"
+    id="equalLevels"
+  ></div>
+
+</div>
+
 </article>
+
 
 </div>
 
 </section>
+
 
 <!-- ============================================================
      FLOW
@@ -2443,43 +2888,47 @@ pre{
 
 <div class="grid">
 
-<article class="card s6">
-
-  <div class="pad">
-
-    <div class="cardTitle">
-      ORDER FLOW PROXY
-    </div>
-
-    <div
-      class="dataList"
-      id="flowData"
-    ></div>
-
-  </div>
-
-</article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      INTERMARKET MATRIX
-    </div>
-
-    <div
-      class="dataList"
-      id="intermarket"
-    ></div>
-
+  <div class="cardTitle">
+    ORDER FLOW PROXY
   </div>
 
+  <div
+    class="dataList"
+    id="flowData"
+  ></div>
+
+</div>
+
 </article>
+
+
+<article class="card s6">
+
+<div class="pad">
+
+  <div class="cardTitle">
+    INTERMARKET
+  </div>
+
+  <div
+    class="dataList"
+    id="intermarket"
+  ></div>
+
+</div>
+
+</article>
+
 
 </div>
 
 </section>
+
 
 <!-- ============================================================
      MACRO
@@ -2492,43 +2941,47 @@ pre{
 
 <div class="grid">
 
+
 <article class="card s7">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      US MACRO PRESSURE
-    </div>
-
-    <div
-      class="dataList"
-      id="macroData"
-    ></div>
-
+  <div class="cardTitle">
+    US MACRO CONTEXT
   </div>
 
+  <div
+    class="dataList"
+    id="macroData"
+  ></div>
+
+</div>
+
 </article>
+
 
 <article class="card s5">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      FEED VALIDATION
-    </div>
-
-    <div
-      class="dataList"
-      id="quality"
-    ></div>
-
+  <div class="cardTitle">
+    FEED VALIDATION
   </div>
 
+  <div
+    class="dataList"
+    id="quality"
+  ></div>
+
+</div>
+
 </article>
+
 
 </div>
 
 </section>
+
 
 <!-- ============================================================
      SYSTEM
@@ -2541,61 +2994,65 @@ pre{
 
 <div class="grid">
 
-<article class="card s6">
-
-  <div class="pad">
-
-    <div class="cardTitle">
-      ENGINE HEALTH
-    </div>
-
-    <div
-      class="dataList"
-      id="health"
-    ></div>
-
-  </div>
-
-</article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      DATA ARCHITECTURE
-    </div>
-
-    <div
-      class="dataList"
-      id="architecture"
-    ></div>
-
+  <div class="cardTitle">
+    ENGINE HEALTH
   </div>
 
+  <div
+    class="dataList"
+    id="health"
+  ></div>
+
+</div>
+
 </article>
+
+
+<article class="card s6">
+
+<div class="pad">
+
+  <div class="cardTitle">
+    ARCHITECTURE
+  </div>
+
+  <div
+    class="dataList"
+    id="architecture"
+  ></div>
+
+</div>
+
+</article>
+
 
 <article class="card s12">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="cardTitle">
-      RAW INTELLIGENCE RESPONSE
-    </div>
-
-    <pre id="raw">
-WAITING
-    </pre>
-
+  <div class="cardTitle">
+    RAW RESPONSE
   </div>
 
+  <pre id="raw">WAITING</pre>
+
+</div>
+
 </article>
+
 
 </div>
 
 </section>
 
+
 </div>
+
 
 <script>
 
@@ -2606,20 +3063,20 @@ WAITING
 let DATA =
   null;
 
-let ACTIVE_TF =
-  "m5";
-
-let CHART_DATA =
-  [];
-
 let LIVE_PRICE =
   null;
 
 let PRICE_TIMESTAMP =
   null;
 
-let LEVEL_FILTER =
-  "ALL";
+let ACTIVE_TF =
+  "m5";
+
+let ACTIVE_LAYER =
+  "PRIMARY";
+
+let CHART_BARS =
+  [];
 
 let LIQUIDITY_LEVELS =
   [];
@@ -2627,21 +3084,26 @@ let LIQUIDITY_LEVELS =
 let CLUSTERS =
   [];
 
-const FILTERS = [
-  "ALL",
-  "SESSION",
-  "DAILY",
-  "WEEKLY",
-  "OPEN",
-  "SWING",
-  "EQUAL",
-  "RANGE",
-  "FVG"
-];
+
+/* ============================================================
+   TRADINGVIEW STATE
+============================================================ */
+
+let TV_CHART =
+  null;
+
+let TV_SERIES =
+  null;
+
+let TV_PRICE_LINES =
+  [];
+
+let CURRENT_BAR =
+  null;
 
 
 /* ============================================================
-   HELPERS
+   DOM
 ============================================================ */
 
 const $ =
@@ -2650,6 +3112,10 @@ const $ =
       id
     );
 
+
+/* ============================================================
+   HELPERS
+============================================================ */
 
 function finite(
   value
@@ -2684,17 +3150,16 @@ function clamp(
 ){
 
   const n =
-    Number(
+    finite(
       value
-    );
+    ) ??
+    0;
 
   return Math.max(
     min,
     Math.min(
       max,
-      Number.isFinite(n)
-        ? n
-        : 0
+      n
     )
   );
 }
@@ -2752,7 +3217,7 @@ function pretty(
 }
 
 
-function textValue(
+function asText(
   value
 ){
 
@@ -2790,15 +3255,21 @@ function textValue(
             key,
             item
           ]
-        ) =>
-          `${pretty(key)}: ${
-            typeof item ===
-            "object"
-              ? "…"
-              : item
-          }`
+        ) => {
+
+          return (
+            `${pretty(key)}: ${
+              typeof item ===
+              "object"
+                ? "…"
+                : item
+            }`
+          );
+        }
       )
-      .join(" · ");
+      .join(
+        " · "
+      );
   }
 
   return String(
@@ -2807,18 +3278,11 @@ function textValue(
 }
 
 
-function spot(){
-
-  const age =
-    PRICE_TIMESTAMP
-      ? Date.now() -
-        PRICE_TIMESTAMP
-      : Infinity;
+function getSpot(){
 
   if(
-    LIVE_PRICE !== null &&
-    age <
-    20000
+    LIVE_PRICE !==
+    null
   ){
     return LIVE_PRICE;
   }
@@ -2830,7 +3294,7 @@ function spot(){
         ?.price
     ) ??
     finite(
-      CHART_DATA
+      CHART_BARS
         ?.at(
           -1
         )
@@ -2855,15 +3319,68 @@ function levelColor(
     side ===
     "SELL_SIDE"
   ){
-    return "#32e2a0";
+    return "#34e3a1";
   }
 
   return "#5daaff";
 }
 
 
+function dominantZone(){
+
+  return (
+    DATA
+      ?.deepLiquidity
+      ?.dominantZone ??
+    CLUSTERS[
+      0
+    ] ??
+    null
+  );
+}
+
+
+function zonePrice(
+  zone
+){
+
+  return (
+    finite(
+      zone?.price
+    ) ??
+    finite(
+      zone?.center
+    ) ??
+    finite(
+      zone?.level
+    )
+  );
+}
+
+
+function scoreOf(
+  zone
+){
+
+  return clamp(
+    finite(
+      zone?.raidScore
+    ) ??
+    finite(
+      zone?.raidLikelihood
+    ) ??
+    finite(
+      zone?.nextTargetScore
+    ) ??
+    0,
+    0,
+    100
+  );
+}
+
+
 /* ============================================================
-   NAV
+   NAVIGATION
 ============================================================ */
 
 document
@@ -2886,9 +3403,11 @@ document
             )
             .forEach(
               view =>
-                view.classList.remove(
-                  "active"
-                )
+                view
+                  .classList
+                  .remove(
+                    "active"
+                  )
             );
 
           document
@@ -2897,11 +3416,13 @@ document
             )
             .forEach(
               item =>
-                item.classList.toggle(
-                  "active",
-                  item.dataset.view ===
-                  target
-                )
+                item
+                  .classList
+                  .toggle(
+                    "active",
+                    item.dataset.view ===
+                    target
+                  )
             );
 
           $(target)
@@ -2916,8 +3437,8 @@ document
           ){
 
             setTimeout(
-              drawChart,
-              80
+              resizeTradingView,
+              100
             );
           }
 
@@ -2925,1266 +3446,375 @@ document
             top:0,
             behavior:"smooth"
           });
-
         }
       );
-
     }
   );
 
 
 /* ============================================================
-   CONNECTION
+   FEED STATUS
 ============================================================ */
 
-function connectionState(
-  state,
+function setFeed(
+  status,
   text
 ){
 
   const dot =
-    $("liveDot");
+    $("feedDot");
 
   dot.className =
-    "liveDot";
+    "feedDot";
 
   if(
-    state ===
-    "online"
+    status ===
+    "live"
   ){
     dot.classList.add(
-      "online"
+      "live"
     );
   }
 
   if(
-    state ===
-    "error"
+    status ===
+    "dead"
   ){
     dot.classList.add(
-      "error"
+      "dead"
     );
   }
 
-  $("liveStatus")
+  $("feedText")
     .textContent =
       text;
 }
 
 
 /* ============================================================
-   PRICE
+   TRADINGVIEW CREATE
 ============================================================ */
 
-async function loadPrice(){
+function createTradingViewChart(){
 
-  try{
+  if(
+    TV_CHART
+  ){
+    return;
+  }
 
-    const response =
-      await fetch(
-        `/api/price?t=${Date.now()}`,
+  if(
+    !window.LightweightCharts
+  ){
+
+    throw new Error(
+      "TradingView chart library failed to load."
+    );
+  }
+
+
+  const host =
+    $("tvChart");
+
+
+  TV_CHART =
+    LightweightCharts
+      .createChart(
+        host,
         {
-          cache:"no-store"
+
+          width:
+            host.clientWidth,
+
+          height:
+            host.clientHeight,
+
+          layout:{
+
+            background:{
+              type:
+                LightweightCharts
+                  .ColorType
+                  .Solid,
+
+              color:
+                "#05070a"
+            },
+
+            textColor:
+              "#707b89",
+
+            fontFamily:
+              "-apple-system,BlinkMacSystemFont,Inter,Arial,sans-serif",
+
+            fontSize:
+              10
+          },
+
+
+          grid:{
+
+            vertLines:{
+              color:
+                "rgba(255,255,255,.025)"
+            },
+
+            horzLines:{
+              color:
+                "rgba(255,255,255,.028)"
+            }
+
+          },
+
+
+          rightPriceScale:{
+
+            visible:
+              true,
+
+            borderVisible:
+              false,
+
+            scaleMargins:{
+              top:.08,
+              bottom:.08
+            }
+          },
+
+
+          timeScale:{
+
+            borderVisible:
+              false,
+
+            timeVisible:
+              true,
+
+            secondsVisible:
+              false,
+
+            rightOffset:
+              5,
+
+            barSpacing:
+              6,
+
+            minBarSpacing:
+              2
+          },
+
+
+          crosshair:{
+
+            mode:
+              LightweightCharts
+                .CrosshairMode
+                .Normal,
+
+            vertLine:{
+              color:
+                "rgba(255,255,255,.18)",
+
+              width:
+                1,
+
+              style:
+                LightweightCharts
+                  .LineStyle
+                  .Dashed,
+
+              labelBackgroundColor:
+                "#151a22"
+            },
+
+            horzLine:{
+              color:
+                "rgba(255,255,255,.18)",
+
+              width:
+                1,
+
+              style:
+                LightweightCharts
+                  .LineStyle
+                  .Dashed,
+
+              labelBackgroundColor:
+                "#151a22"
+            }
+          },
+
+
+          handleScroll:{
+            mouseWheel:true,
+            pressedMouseMove:true,
+            horzTouchDrag:true,
+            vertTouchDrag:false
+          },
+
+
+          handleScale:{
+            mouseWheel:true,
+            pinch:true,
+            axisPressedMouseMove:true
+          }
+
         }
       );
 
-    const json =
-      await response.json();
 
-    if(
-      !response.ok ||
-      json.ok ===
-      false
-    ){
+  TV_SERIES =
+    TV_CHART.addSeries(
+      LightweightCharts
+        .CandlestickSeries,
+      {
 
-      throw new Error(
-        json.error ||
-        "Price request failed."
-      );
-    }
+        upColor:
+          "#34e3a1",
 
-    const value =
-      finite(
-        json.price
-      );
+        downColor:
+          "#ff5d74",
 
-    if(
-      value === null ||
-      value <= 0
-    ){
-      return;
-    }
+        borderVisible:
+          false,
 
-    LIVE_PRICE =
-      value;
+        wickUpColor:
+          "#34e3a1",
 
-    PRICE_TIMESTAMP =
-      finite(
-        json.timestamp
-      ) ??
-      Date.now();
+        wickDownColor:
+          "#ff5d74",
 
-    connectionState(
-      "online",
-      "FAST REST"
-    );
+        priceLineVisible:
+          false,
 
-    renderPrice();
-
-    renderCommandCenter();
-
-    renderLiquidity();
-
-    renderLadder();
-
-    renderNarrative();
-
-    drawChart();
-
-  }catch(error){
-
-    console.error(
-      error
-    );
-
-    connectionState(
-      "error",
-      "PRICE ERROR"
-    );
-  }
-}
-
-
-function renderPrice(){
-
-  const value =
-    spot();
-
-  $("price")
-    .textContent =
-      fmt(
-        value
-      );
-
-  const previous =
-    finite(
-      DATA
-        ?.market
-        ?.previousClose
-    );
-
-  if(
-    value !== null &&
-    previous !== null &&
-    previous > 0
-  ){
-
-    const move =
-      value -
-      previous;
-
-    const percent =
-      move /
-      previous *
-      100;
-
-    const element =
-      $("priceMove");
-
-    element.textContent =
-      `${
-        move >= 0
-          ? "+"
-          : ""
-      }${fmt(move)} · ${
-        percent >= 0
-          ? "+"
-          : ""
-      }${percent.toFixed(2)}%`;
-
-    element.className =
-      "priceMove";
-
-    element.classList.add(
-      move >= 0
-        ? "green"
-        : "red"
-    );
-  }
-}
-
-
-/* ============================================================
-   FILTERS
-============================================================ */
-
-function createFilters(){
-
-  const html =
-    FILTERS
-      .map(
-        filter => `
-          <button
-            class="filterBtn ${
-              LEVEL_FILTER === filter
-                ? "active"
-                : ""
-            }"
-            data-filter="${filter}"
-          >
-            ${filter}
-          </button>
-        `
-      )
-      .join("");
-
-  $("terminalFilters")
-    .innerHTML =
-      html;
-
-  $("mapFilters")
-    .innerHTML =
-      html;
-
-  document
-    .querySelectorAll(
-      "[data-filter]"
-    )
-    .forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            LEVEL_FILTER =
-              button.dataset.filter;
-
-            createFilters();
-
-            renderLiquidity();
-
-            drawChart();
-          }
-        );
+        lastValueVisible:
+          true
 
       }
     );
-}
 
 
-function filteredLevels(){
+  TV_CHART.subscribeCrosshairMove(
+    param => {
 
-  if(
-    LEVEL_FILTER ===
-    "ALL"
-  ){
-    return LIQUIDITY_LEVELS;
-  }
+      if(
+        !param ||
+        !param.time
+      ){
+        return;
+      }
 
-  return LIQUIDITY_LEVELS.filter(
-    level =>
-      level.group ===
-      LEVEL_FILTER
+      const candle =
+        param
+          .seriesData
+          ?.get(
+            TV_SERIES
+          );
+
+      if(
+        !candle
+      ){
+        return;
+      }
+
+      $("chartScenario")
+        .textContent =
+          `O ${fmt(candle.open)}  H ${fmt(candle.high)}  L ${fmt(candle.low)}  C ${fmt(candle.close)}`;
+
+    }
   );
+
 }
 
 
 /* ============================================================
-   COMMAND CENTER
+   TRADINGVIEW RESIZE
 ============================================================ */
 
-function dominantCluster(){
+function resizeTradingView(){
+
+  if(
+    !TV_CHART
+  ){
+    return;
+  }
+
+  const host =
+    $("tvChart");
+
+  TV_CHART.applyOptions({
+    width:
+      host.clientWidth,
+    height:
+      host.clientHeight
+  });
+}
+
+
+/* ============================================================
+   TIMEFRAME
+============================================================ */
+
+function timeframeSeconds(){
+
+  switch(
+    ACTIVE_TF
+  ){
+
+    case "m1":
+      return 60;
+
+    case "m5":
+      return 300;
+
+    case "m15":
+      return 900;
+
+    case "h1":
+      return 3600;
+
+    default:
+      return 300;
+  }
+}
+
+
+function bucketTime(
+  timestampMs
+){
+
+  const seconds =
+    Math.floor(
+      timestampMs /
+      1000
+    );
+
+  const tf =
+    timeframeSeconds();
 
   return (
-    DATA
-      ?.deepLiquidity
-      ?.dominantZone ||
-    CLUSTERS[
-      0
-    ] ||
-    null
+    Math.floor(
+      seconds /
+      tf
+    ) *
+    tf
   );
 }
 
 
-function renderCommandCenter(){
-
-  const current =
-    spot();
-
-  if(
-    current === null
-  ){
-    return;
-  }
-
-  const cluster =
-    dominantCluster();
-
-  if(
-    cluster
-  ){
-
-    const level =
-      finite(
-        cluster.price ??
-        cluster.center
-      );
-
-    const score =
-      clamp(
-        finite(
-          cluster.raidScore ??
-          cluster.nextTargetScore
-        ) ??
-        0,
-        0,
-        100
-      );
-
-    $("dominantName")
-      .textContent =
-        cluster.name ||
-        "LIQUIDITY";
-
-    $("dominantText")
-      .textContent =
-        level !== null
-          ? `${fmt(level)} · ${fmt(Math.abs(current - level))} away · ${
-              cluster.lifecycle?.stage ||
-              "TRACKING"
-            }`
-          : "Tracking liquidity.";
-
-    $("raidScore")
-      .textContent =
-        Math.round(
-          score
-        );
-
-    $("raidOrb")
-      .style
-      .setProperty(
-        "--score",
-        score
-      );
-  }
-
-  const buySide =
-    LIQUIDITY_LEVELS
-      .filter(
-        level =>
-          level.side ===
-          "BUY_SIDE" &&
-          level.price >
-          current
-      )
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.distance -
-          b.distance
-      );
-
-  const sellSide =
-    LIQUIDITY_LEVELS
-      .filter(
-        level =>
-          level.side ===
-          "SELL_SIDE" &&
-          level.price <
-          current
-      )
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.distance -
-          b.distance
-      );
-
-  const nextBuy =
-    buySide[
-      0
-    ];
-
-  const nextSell =
-    sellSide[
-      0
-    ];
-
-  $("liquidityAbove")
-    .textContent =
-      nextBuy
-        ? fmt(
-            nextBuy.price
-          )
-        : "NONE";
-
-  $("liquidityAboveText")
-    .textContent =
-      nextBuy
-        ? `${nextBuy.name} · ${fmt(nextBuy.distance)} away`
-        : "No mapped pool above";
-
-  $("liquidityBelow")
-    .textContent =
-      nextSell
-        ? fmt(
-            nextSell.price
-          )
-        : "NONE";
-
-  $("liquidityBelowText")
-    .textContent =
-      nextSell
-        ? `${nextSell.name} · ${fmt(nextSell.distance)} away`
-        : "No mapped pool below";
-
-  const consensus =
-    DATA
-      ?.consensus;
-
-  const bias =
-    consensus
-      ?.direction ||
-    DATA
-      ?.structure
-      ?.H1
-      ?.bias ||
-    "NEUTRAL";
-
-  $("aiBias")
-    .textContent =
-      bias;
-
-  $("aiBias")
-    .className =
-      "commandValue";
-
-  if(
-    bias.includes(
-      "BULL"
-    )
-  ){
-    $("aiBias")
-      .classList.add(
-        "green"
-      );
-  }
-
-  if(
-    bias.includes(
-      "BEAR"
-    )
-  ){
-    $("aiBias")
-      .classList.add(
-        "red"
-      );
-  }
-
-  $("aiBiasText")
-    .textContent =
-      consensus
-        ? `${fmt(consensus.confidence,1)} confidence · score ${fmt(consensus.score,1)}`
-        : "Multi-timeframe structure consensus.";
-
-  $("aiCoreStatus")
-    .textContent =
-      cluster
-        ? `${
-            cluster.lifecycle?.stage ||
-            "TRACKING"
-          } · ${Math.round(
-            finite(
-              cluster.raidScore
-            ) ??
-            0
-          )}`
-        : "SCANNING";
-
-}
-
-
 /* ============================================================
-   PRESSURE
+   NORMALIZE CHART BARS
 ============================================================ */
 
-function renderPressure(){
-
-  const rows = [
-
-    [
-      "LIQUIDITY DRAW",
-      clamp(
-        Math.abs(
-          finite(
-            DATA
-              ?.consensus
-              ?.liquidity
-          ) ??
-          50
-        ),
-        0,
-        100
-      )
-    ],
-
-    [
-      "STRUCTURE",
-      clamp(
-        Math.abs(
-          finite(
-            DATA
-              ?.consensus
-              ?.technical
-          ) ??
-          (
-            Math.abs(
-              finite(
-                DATA
-                  ?.structure
-                  ?.H1
-                  ?.score
-              ) ??
-              0
-            ) *
-            20
-          )
-        ),
-        0,
-        100
-      )
-    ],
-
-    [
-      "FLOW",
-      clamp(
-        Math.abs(
-          finite(
-            DATA
-              ?.flow
-              ?.pressureScore
-          ) ??
-          50
-        ),
-        0,
-        100
-      )
-    ],
-
-    [
-      "VOLATILITY",
-      clamp(
-        (
-          finite(
-            DATA
-              ?.market
-              ?.atr
-              ?.M5
-          ) ??
-          0
-        ) /
-        Math.max(
-          spot() *
-          .001,
-          .1
-        ) *
-        40,
-        0,
-        100
-      )
-    ]
-
-  ];
-
-  $("pressure")
-    .innerHTML =
-      rows
-        .map(
-          (
-            [
-              name,
-              value
-            ]
-          ) => `
-            <div class="pressureRow">
-
-              <div class="pressureLabel">
-                ${name}
-              </div>
-
-              <div class="pressureTrack">
-
-                <div
-                  class="pressureFill"
-                  style="width:${value}%"
-                ></div>
-
-              </div>
-
-              <div class="pressureValue">
-                ${Math.round(value)}
-              </div>
-
-            </div>
-          `
-        )
-        .join("");
-}
-
-
-/* ============================================================
-   NARRATIVE
-============================================================ */
-
-function renderNarrative(){
-
-  const current =
-    spot();
-
-  if(
-    current === null ||
-    !DATA
-  ){
-    return;
-  }
-
-  const cluster =
-    dominantCluster();
-
-  const h1 =
-    DATA
-      ?.structure
-      ?.H1
-      ?.bias ||
-    "NEUTRAL";
-
-  const m15 =
-    DATA
-      ?.structure
-      ?.M15
-      ?.bias ||
-    "NEUTRAL";
-
-  const vwap =
-    finite(
-      DATA
-        ?.market
-        ?.vwap
-    );
-
-  const buyNearest =
-    LIQUIDITY_LEVELS
-      .filter(
-        level =>
-          level.side ===
-          "BUY_SIDE" &&
-          level.price >=
-          current
-      )
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.distance -
-          b.distance
-      )[
-        0
-      ];
-
-  const sellNearest =
-    LIQUIDITY_LEVELS
-      .filter(
-        level =>
-          level.side ===
-          "SELL_SIDE" &&
-          level.price <=
-          current
-      )
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.distance -
-          b.distance
-      )[
-        0
-      ];
-
-  const parts = [];
-
-  parts.push(
-    `XAU/USD is trading at ${fmt(current)}.`
-  );
-
-  parts.push(
-    `M15 structure is ${m15} while H1 structure is ${h1}.`
-  );
-
-  if(
-    vwap !== null
-  ){
-
-    parts.push(
-      `Price is ${
-        current >= vwap
-          ? "above"
-          : "below"
-      } VWAP at ${fmt(vwap)}.`
-    );
-  }
-
-  if(
-    cluster
-  ){
-
-    parts.push(
-      `The highest-ranked liquidity objective is ${cluster.name} near ${fmt(cluster.price ?? cluster.center)} with a raid score of ${Math.round(cluster.raidScore ?? 0)} and stage ${cluster.lifecycle?.stage || "TRACKING"}.`
-    );
-  }
-
-  if(
-    buyNearest
-  ){
-
-    parts.push(
-      `Nearest mapped buy-side liquidity is ${buyNearest.name} at ${fmt(buyNearest.price)}, ${fmt(buyNearest.distance)} above spot.`
-    );
-  }
-
-  if(
-    sellNearest
-  ){
-
-    parts.push(
-      `Nearest mapped sell-side liquidity is ${sellNearest.name} at ${fmt(sellNearest.price)}, ${fmt(sellNearest.distance)} below spot.`
-    );
-  }
-
-  parts.push(
-    `A liquidity touch or sweep alone is not treated as confirmation; rejection and structure participation are still required.`
-  );
-
-  $("aiNarrative")
-    .textContent =
-      parts.join(
-        " "
-      );
-}
-
-
-/* ============================================================
-   LIQUIDITY CARDS
-============================================================ */
-
-function renderLiquidity(){
-
-  const current =
-    spot();
-
-  const levels =
-    filteredLevels();
-
-  function html(
-    list
-  ){
-
-    if(
-      !list.length
-    ){
-
-      return `
-        <div class="row">
-          <div class="key">
-            Status
-          </div>
-          <div class="value">
-            No levels for this filter
-          </div>
-        </div>
-      `;
-    }
-
-    return list
-      .map(
-        level => {
-
-          const sideClass =
-            level.side ===
-            "BUY_SIDE"
-              ? "buySide"
-              : level.side ===
-                "SELL_SIDE"
-                ? "sellSide"
-                : "neutral";
-
-          return `
-            <div class="liqCard ${sideClass}">
-
-              <div class="liqType">
-                ${level.group} · ${level.timeframe || "REF"}
-              </div>
-
-              <div class="liqName">
-                ${level.name}
-              </div>
-
-              <div
-                class="liqPrice"
-                style="color:${levelColor(level.side)}"
-              >
-                ${fmt(level.price)}
-              </div>
-
-              <div class="liqMeta">
-
-                <span>
-                  ${
-                    current !== null
-                      ? `${fmt(level.distance)} away`
-                      : "—"
-                  }
-                </span>
-
-                <span>
-                  S${Math.round(level.score || 0)}
-                </span>
-
-              </div>
-
-              <div class="liqState">
-                ${level.state || "TRACKING"}
-              </div>
-
-            </div>
-          `;
-        }
-      )
-      .join("");
-  }
-
-  $("allLiquidity")
-    .innerHTML =
-      html(
-        levels
-      );
-
-  $("keyLiquidity")
-    .innerHTML =
-      html(
-        levels.slice(
-          0,
-          12
-        )
-      );
-}
-
-
-/* ============================================================
-   LADDER
-============================================================ */
-
-function renderLadder(){
-
-  const current =
-    spot();
-
-  if(
-    current === null ||
-    !LIQUIDITY_LEVELS.length
-  ){
-    return;
-  }
-
-  const relevant =
-    [
-      ...LIQUIDITY_LEVELS
-    ]
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.distance -
-        b.distance
-    )
-    .slice(
-      0,
-      18
-    );
-
-  const maxDistance =
-    Math.max(
-      ...relevant.map(
-        item =>
-          item.distance
-      ),
-      1
-    );
-
-  const html = [
-    `<div class="ladderAxis"></div>`,
-
-    `
-      <div
-        class="ladderSpot"
-        style="top:50%"
-      >
-        <div class="ladderSpotLabel">
-          SPOT ${fmt(current)}
-        </div>
-      </div>
-    `
-  ];
-
-  relevant.forEach(
-    level => {
-
-      const signed =
-        level.price -
-        current;
-
-      const normalized =
-        signed /
-        maxDistance;
-
-      const y =
-        clamp(
-          50 -
-          normalized *
-          45,
-          4,
-          96
-        );
-
-      const cls =
-        level.side ===
-        "BUY_SIDE"
-          ? "buy"
-          : level.side ===
-            "SELL_SIDE"
-            ? "sell"
-            : "";
-
-      html.push(
-        `
-          <div
-            class="ladderLevel ${cls}"
-            style="top:${y}%"
-          >
-
-            <div class="ladderLabel">
-              ${level.short || level.name}
-            </div>
-
-            <div class="ladderLine"></div>
-
-            <div
-              class="ladderPrice"
-              style="color:${levelColor(level.side)}"
-            >
-              ${fmt(level.price)}
-            </div>
-
-          </div>
-        `
-      );
-    }
-  );
-
-  $("ladder")
-    .innerHTML =
-      html.join("");
-}
-
-
-/* ============================================================
-   SESSIONS
-============================================================ */
-
-function renderSessions(){
-
-  const sessions =
-    DATA
-      ?.sessions ||
-    {};
-
-  const names = [
-    "ASIA",
-    "LONDON",
-    "NEW_YORK"
-  ];
-
-  $("sessionGrid")
-    .innerHTML =
-      names
-        .map(
-          name => {
-
-            const session =
-              sessions[
-                name
-              ];
-
-            return `
-              <div class="sessionCard">
-
-                <div class="sessionName">
-                  ${pretty(name)}
-                </div>
-
-                <div class="sessionRange">
-
-                  <div class="sessionMetric">
-                    <span>HIGH</span>
-                    <strong class="red">
-                      ${fmt(session?.high)}
-                    </strong>
-                  </div>
-
-                  <div class="sessionMetric">
-                    <span>LOW</span>
-                    <strong class="green">
-                      ${fmt(session?.low)}
-                    </strong>
-                  </div>
-
-                  <div class="sessionMetric">
-                    <span>OPEN</span>
-                    <strong>
-                      ${fmt(session?.open)}
-                    </strong>
-                  </div>
-
-                  <div class="sessionMetric">
-                    <span>RANGE</span>
-                    <strong>
-                      ${fmt(session?.range)}
-                    </strong>
-                  </div>
-
-                </div>
-
-              </div>
-            `;
-          }
-        )
-        .join("");
-}
-
-
-/* ============================================================
-   STRUCTURE GRID
-============================================================ */
-
-function renderStructure(){
-
-  const tfs = [
-    "M1",
-    "M5",
-    "M15",
-    "H1",
-    "H4"
-  ];
-
-  $("structureGrid")
-    .innerHTML =
-      tfs
-        .map(
-          tf => {
-
-            const item =
-              DATA
-                ?.structure
-                ?.[tf] ||
-              {};
-
-            let className =
-              "neutral";
-
-            let color =
-              "#f4c85e";
-
-            if(
-              item.bias ===
-              "BULLISH"
-            ){
-              className =
-                "sellSide";
-
-              color =
-                "#32e2a0";
-            }
-
-            if(
-              item.bias ===
-              "BEARISH"
-            ){
-              className =
-                "buySide";
-
-              color =
-                "#ff5d74";
-            }
-
-            return `
-              <div class="liqCard ${className}">
-
-                <div class="liqType">
-                  ${tf} STRUCTURE
-                </div>
-
-                <div
-                  class="liqPrice"
-                  style="color:${color}"
-                >
-                  ${item.bias || "NEUTRAL"}
-                </div>
-
-                <div class="liqMeta">
-                  <span>
-                    SCORE ${item.score ?? 0}
-                  </span>
-                  <span>
-                    EMA20 ${fmt(item.ema20)}
-                  </span>
-                </div>
-
-              </div>
-            `;
-          }
-        )
-        .join("");
-}
-
-
-/* ============================================================
-   GENERIC OBJECT
-============================================================ */
-
-function renderObject(
-  id,
-  data,
-  limit = 30
-){
-
-  const element =
-    $(id);
-
-  if(!element){
-    return;
-  }
-
-  if(
-    data === null ||
-    data === undefined
-  ){
-
-    element.innerHTML = `
-      <div class="row">
-        <div class="key">Status</div>
-        <div class="value">No data</div>
-      </div>
-    `;
-
-    return;
-  }
-
-  if(
-    Array.isArray(
-      data
-    )
-  ){
-
-    element.innerHTML =
-      data
-        .slice(
-          0,
-          limit
-        )
-        .map(
-          (
-            item,
-            index
-          ) => `
-            <div class="row">
-              <div class="key">
-                ${index + 1}
-              </div>
-              <div class="value">
-                ${textValue(item)}
-              </div>
-            </div>
-          `
-        )
-        .join("");
-
-    return;
-  }
-
-  if(
-    typeof data !==
-    "object"
-  ){
-
-    element.innerHTML = `
-      <div class="row">
-        <div class="key">Value</div>
-        <div class="value">${data}</div>
-      </div>
-    `;
-
-    return;
-  }
-
-  element.innerHTML =
-    Object
-      .entries(
-        data
-      )
-      .slice(
-        0,
-        limit
-      )
-      .map(
-        (
-          [
-            key,
-            value
-          ]
-        ) => `
-          <div class="row">
-
-            <div class="key">
-              ${pretty(key)}
-            </div>
-
-            <div class="value">
-              ${textValue(value)}
-            </div>
-
-          </div>
-        `
-      )
-      .join("");
-}
-
-
-/* ============================================================
-   CHART LOAD
-============================================================ */
-
-function normalizeCandle(
+function normalizeChartBar(
   candle
 ){
+
+  let time =
+    finite(
+      candle.time ??
+      candle.timestamp
+    );
 
   const open =
     finite(
@@ -4206,24 +3836,9 @@ function normalizeCandle(
       candle.close
     );
 
-  let time =
-    Number(
-      candle.time ??
-      candle.timestamp
-    );
 
   if(
-    time <
-    100000000000
-  ){
-    time *=
-      1000;
-  }
-
-  if(
-    !Number.isFinite(
-      time
-    ) ||
+    time === null ||
     open === null ||
     high === null ||
     low === null ||
@@ -4232,8 +3847,25 @@ function normalizeCandle(
     return null;
   }
 
+
+  if(
+    time >
+    100000000000
+  ){
+    time =
+      Math.floor(
+        time /
+        1000
+      );
+  }
+
+
   return {
-    time,
+    time:
+      Math.floor(
+        time
+      ),
+
     open,
     high,
     low,
@@ -4242,348 +3874,1286 @@ function normalizeCandle(
 }
 
 
+/* ============================================================
+   LOAD CHART
+============================================================ */
+
 async function loadChart(){
 
-  $("chartState")
-    .textContent =
-      "LOADING";
+  createTradingViewChart();
 
-  try{
 
-    const response =
-      await fetch(
-        `/api/chart?tf=${ACTIVE_TF}&limit=300&t=${Date.now()}`,
-        {
-          cache:"no-store"
-        }
-      );
+  const response =
+    await fetch(
+      `/api/chart?tf=${ACTIVE_TF}&limit=350&t=${Date.now()}`,
+      {
+        cache:"no-store"
+      }
+    );
 
-    const json =
-      await response.json();
 
-    if(
-      !response.ok ||
-      json.ok ===
-      false
-    ){
-      throw new Error(
-        json.error ||
-        "Chart error."
-      );
-    }
+  const json =
+    await response.json();
 
-    CHART_DATA =
+
+  if(
+    !response.ok ||
+    json.ok ===
+    false
+  ){
+
+    throw new Error(
+      json.error ||
+      "Chart request failed."
+    );
+  }
+
+
+  CHART_BARS =
+    (
+      json.candles ||
+      []
+    )
+    .map(
+      normalizeChartBar
+    )
+    .filter(
+      Boolean
+    )
+    .sort(
       (
-        json.candles ||
-        []
-      )
-      .map(
-        normalizeCandle
-      )
+        a,
+        b
+      ) =>
+        a.time -
+        b.time
+    );
+
+
+  if(
+    !CHART_BARS.length
+  ){
+
+    throw new Error(
+      "No valid chart candles."
+    );
+  }
+
+
+  TV_SERIES.setData(
+    CHART_BARS
+  );
+
+
+  CURRENT_BAR = {
+    ...CHART_BARS.at(-1)
+  };
+
+
+  TV_CHART
+    .timeScale()
+    .fitContent();
+
+
+  renderChartLevels();
+
+}
+
+
+/* ============================================================
+   UPDATE CURRENT TRADINGVIEW BAR
+============================================================ */
+
+function updateLiveTradingViewBar(
+  price
+){
+
+  if(
+    !TV_SERIES ||
+    !Number.isFinite(
+      price
+    )
+  ){
+    return;
+  }
+
+
+  const currentBucket =
+    bucketTime(
+      Date.now()
+    );
+
+
+  if(
+    !CURRENT_BAR
+  ){
+
+    CURRENT_BAR = {
+      time:
+        currentBucket,
+      open:
+        price,
+      high:
+        price,
+      low:
+        price,
+      close:
+        price
+    };
+
+  }else if(
+    currentBucket >
+    CURRENT_BAR.time
+  ){
+
+    CURRENT_BAR = {
+      time:
+        currentBucket,
+      open:
+        price,
+      high:
+        price,
+      low:
+        price,
+      close:
+        price
+    };
+
+  }else{
+
+    CURRENT_BAR = {
+
+      ...CURRENT_BAR,
+
+      high:
+        Math.max(
+          CURRENT_BAR.high,
+          price
+        ),
+
+      low:
+        Math.min(
+          CURRENT_BAR.low,
+          price
+        ),
+
+      close:
+        price
+
+    };
+  }
+
+
+  TV_SERIES.update(
+    CURRENT_BAR
+  );
+}
+
+
+/* ============================================================
+   PRICE LINE MANAGEMENT
+============================================================ */
+
+function clearPriceLines(){
+
+  if(
+    !TV_SERIES
+  ){
+    return;
+  }
+
+  for(
+    const line
+    of TV_PRICE_LINES
+  ){
+
+    try{
+
+      TV_SERIES
+        .removePriceLine(
+          line
+        );
+
+    }catch{}
+  }
+
+  TV_PRICE_LINES = [];
+}
+
+
+function addPriceLine(
+  options
+){
+
+  if(
+    !TV_SERIES ||
+    !Number.isFinite(
+      options.price
+    )
+  ){
+    return;
+  }
+
+
+  const line =
+    TV_SERIES.createPriceLine({
+      price:
+        options.price,
+
+      color:
+        options.color,
+
+      lineWidth:
+        options.lineWidth ??
+        1,
+
+      lineStyle:
+        options.lineStyle ??
+        LightweightCharts
+          .LineStyle
+          .Dashed,
+
+      axisLabelVisible:
+        options.axisLabelVisible ??
+        true,
+
+      title:
+        options.title ??
+        ""
+    });
+
+
+  TV_PRICE_LINES.push(
+    line
+  );
+}
+
+
+/* ============================================================
+   WHICH LEVELS SHOULD BE DRAWN
+============================================================ */
+
+function chartLevels(){
+
+  const primary =
+    dominantZone();
+
+
+  if(
+    ACTIVE_LAYER ===
+    "PRIMARY"
+  ){
+
+    return [];
+  }
+
+
+  if(
+    ACTIVE_LAYER ===
+    "SESSIONS"
+  ){
+
+    return LIQUIDITY_LEVELS
       .filter(
-        Boolean
+        level =>
+          level.group ===
+          "SESSION"
+      );
+  }
+
+
+  if(
+    ACTIVE_LAYER ===
+    "MAJOR"
+  ){
+
+    return LIQUIDITY_LEVELS
+      .filter(
+        level =>
+          [
+            "SESSION",
+            "DAILY",
+            "WEEKLY",
+            "OPEN",
+            "RANGE"
+          ].includes(
+            level.group
+          )
       )
       .sort(
         (
           a,
           b
         ) =>
-          a.time -
-          b.time
+          (
+            b.score ??
+            0
+          ) -
+          (
+            a.score ??
+            0
+          )
+      )
+      .slice(
+        0,
+        18
+      );
+  }
+
+
+  if(
+    ACTIVE_LAYER ===
+    "ALL"
+  ){
+
+    return [
+      ...LIQUIDITY_LEVELS
+    ]
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        (
+          b.score ??
+          0
+        ) -
+        (
+          a.score ??
+          0
+        )
+    )
+    .slice(
+      0,
+      36
+    );
+  }
+
+
+  return primary
+    ? []
+    : [];
+}
+
+
+/* ============================================================
+   DRAW LIQUIDITY ON TRADINGVIEW
+============================================================ */
+
+function renderChartLevels(){
+
+  if(
+    !TV_SERIES
+  ){
+    return;
+  }
+
+
+  clearPriceLines();
+
+
+  const primary =
+    dominantZone();
+
+
+  if(
+    primary
+  ){
+
+    const center =
+      zonePrice(
+        primary
       );
 
-    $("chartState")
-      .textContent =
-        `${ACTIVE_TF.toUpperCase()} · ${CHART_DATA.length} BARS`;
+    const low =
+      finite(
+        primary.low
+      ) ??
+      center;
 
-    drawChart();
+    const high =
+      finite(
+        primary.high
+      ) ??
+      center;
+
+
+    if(
+      center !==
+      null
+    ){
+
+      /*
+         PRIMARY LIQUIDITY ZONE CENTER
+      */
+
+      addPriceLine({
+
+        price:
+          center,
+
+        color:
+          "#f4c85e",
+
+        lineWidth:
+          3,
+
+        lineStyle:
+          LightweightCharts
+            .LineStyle
+            .Solid,
+
+        title:
+          `★ PRIMARY ${Math.round(scoreOf(primary))}`
+
+      });
+
+
+      /*
+         ZONE BOUNDARIES
+      */
+
+      if(
+        high !==
+        null &&
+        Math.abs(
+          high -
+          center
+        ) >
+        .001
+      ){
+
+        addPriceLine({
+
+          price:
+            high,
+
+          color:
+            "rgba(244,200,94,.60)",
+
+          lineWidth:
+            1,
+
+          lineStyle:
+            LightweightCharts
+              .LineStyle
+              .Dashed,
+
+          title:
+            "ZONE HIGH"
+
+        });
+      }
+
+
+      if(
+        low !==
+        null &&
+        Math.abs(
+          low -
+          center
+        ) >
+        .001
+      ){
+
+        addPriceLine({
+
+          price:
+            low,
+
+          color:
+            "rgba(244,200,94,.60)",
+
+          lineWidth:
+            1,
+
+          lineStyle:
+            LightweightCharts
+              .LineStyle
+              .Dashed,
+
+          title:
+            "ZONE LOW"
+
+        });
+      }
+    }
+  }
+
+
+  /*
+     OTHER LIQUIDITY REFERENCES
+  */
+
+  const levels =
+    chartLevels();
+
+
+  const primaryCenter =
+    zonePrice(
+      primary
+    );
+
+
+  for(
+    const level
+    of levels
+  ){
+
+    const price =
+      finite(
+        level.price
+      );
+
+
+    if(
+      price ===
+      null
+    ){
+      continue;
+    }
+
+
+    if(
+      primaryCenter !==
+      null &&
+      Math.abs(
+        price -
+        primaryCenter
+      ) <
+      .02
+    ){
+      continue;
+    }
+
+
+    let width =
+      1;
+
+    let style =
+      LightweightCharts
+        .LineStyle
+        .Dashed;
+
+
+    if(
+      level.group ===
+      "DAILY" ||
+      level.group ===
+      "WEEKLY"
+    ){
+
+      width =
+        2;
+
+      style =
+        LightweightCharts
+          .LineStyle
+          .Dashed;
+    }
+
+
+    if(
+      level.group ===
+      "OPEN" ||
+      level.side ===
+      "NEUTRAL"
+    ){
+
+      style =
+        LightweightCharts
+          .LineStyle
+          .Dotted;
+    }
+
+
+    addPriceLine({
+
+      price,
+
+      color:
+        levelColor(
+          level.side
+        ),
+
+      lineWidth:
+        width,
+
+      lineStyle:
+        style,
+
+      axisLabelVisible:
+        true,
+
+      title:
+        level.short ??
+        level.name
+
+    });
+  }
+
+
+  /*
+     CURRENT LIVE PRICE
+  */
+
+  const current =
+    getSpot();
+
+
+  if(
+    current !==
+    null
+  ){
+
+    addPriceLine({
+
+      price:
+        current,
+
+      color:
+        "#ffffff",
+
+      lineWidth:
+        1,
+
+      lineStyle:
+        LightweightCharts
+          .LineStyle
+          .Dotted,
+
+      title:
+        "LIVE"
+
+    });
+  }
+
+
+  $("chartLayer")
+    .textContent =
+      ACTIVE_LAYER;
+}
+
+
+/* ============================================================
+   FAST PRICE
+============================================================ */
+
+async function loadPrice(){
+
+  try{
+
+    const response =
+      await fetch(
+        `/api/price?t=${Date.now()}`,
+        {
+          cache:"no-store"
+        }
+      );
+
+
+    const json =
+      await response.json();
+
+
+    if(
+      !response.ok ||
+      json.ok ===
+      false
+    ){
+
+      throw new Error(
+        json.error ||
+        "Price feed error."
+      );
+    }
+
+
+    const price =
+      finite(
+        json.price
+      );
+
+
+    if(
+      price ===
+      null ||
+      price <= 0
+    ){
+
+      throw new Error(
+        "Invalid live price."
+      );
+    }
+
+
+    LIVE_PRICE =
+      price;
+
+
+    PRICE_TIMESTAMP =
+      finite(
+        json.timestamp
+      ) ??
+      Date.now();
+
+
+    setFeed(
+      "live",
+      "FAST REST"
+    );
+
+
+    updateLiveTradingViewBar(
+      price
+    );
+
+
+    renderPrice();
+
+    renderPrimary();
+
+    renderNarrative();
+
+    renderLevels();
+
+    renderChartLevels();
+
 
   }catch(error){
 
     console.error(
+      "PRICE:",
       error
     );
 
-    $("chartState")
-      .textContent =
-        "CHART ERROR";
+
+    setFeed(
+      "dead",
+      "PRICE ERROR"
+    );
   }
 }
 
 
 /* ============================================================
-   DRAW CHART
+   PRICE UI
 ============================================================ */
 
-function drawChart(){
-
-  const canvas =
-    $("chart");
-
-  if(!canvas){
-    return;
-  }
-
-  const rect =
-    canvas
-      .getBoundingClientRect();
-
-  const dpr =
-    Math.min(
-      window.devicePixelRatio ||
-      1,
-      2
-    );
-
-  canvas.width =
-    Math.floor(
-      rect.width *
-      dpr
-    );
-
-  canvas.height =
-    Math.floor(
-      rect.height *
-      dpr
-    );
-
-  const ctx =
-    canvas.getContext(
-      "2d"
-    );
-
-  ctx.setTransform(
-    dpr,
-    0,
-    0,
-    dpr,
-    0,
-    0
-  );
-
-  const width =
-    rect.width;
-
-  const height =
-    rect.height;
-
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
-
-  if(
-    CHART_DATA.length <
-    3
-  ){
-    return;
-  }
-
-  const candles =
-    CHART_DATA.slice(
-      -170
-    );
-
-  const left =
-    8;
-
-  const right =
-    72;
-
-  const top =
-    12;
-
-  const bottom =
-    24;
-
-  const plotWidth =
-    width -
-    left -
-    right;
-
-  const plotHeight =
-    height -
-    top -
-    bottom;
+function renderPrice(){
 
   const current =
-    spot() ??
-    candles.at(-1).close;
+    getSpot();
 
-  const candleLow =
-    Math.min(
-      ...candles.map(
-        candle =>
-          candle.low
-      )
-    );
 
-  const candleHigh =
-    Math.max(
-      ...candles.map(
-        candle =>
-          candle.high
-      )
-    );
-
-  const candleSpan =
-    Math.max(
-      candleHigh -
-      candleLow,
-      current *
-      .001,
-      2
-    );
-
-  const localBand =
-    Math.max(
-      candleSpan *
-      2.4,
-      current *
-      .008,
-      12
-    );
-
-  const values = [
-    candleLow,
-    candleHigh,
-    current
-  ];
-
-  filteredLevels()
-    .forEach(
-      level => {
-
-        if(
-          level.price >=
-          candleLow -
-          localBand &&
-          level.price <=
-          candleHigh +
-          localBand
-        ){
-
-          values.push(
-            level.price
-          );
-        }
-      }
-    );
-
-  let min =
-    Math.min(
-      ...values
-    );
-
-  let max =
-    Math.max(
-      ...values
-    );
-
-  let span =
-    max -
-    min;
-
-  const padding =
-    Math.max(
-      span *
-      .07,
-      .7
-    );
-
-  min -=
-    padding;
-
-  max +=
-    padding;
-
-  span =
-    max -
-    min;
-
-  function y(
-    price
-  ){
-
-    return (
-      top +
-      (
-        max -
-        price
-      ) /
-      span *
-      plotHeight
-    );
-  }
-
-  /* GRID */
-
-  for(
-    let i = 0;
-    i <= 6;
-    i++
-  ){
-
-    const yy =
-      top +
-      plotHeight *
-      i /
-      6;
-
-    ctx.strokeStyle =
-      "rgba(255,255,255,.032)";
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-    ctx.fillStyle =
-      "#59626f";
-
-    ctx.font =
-      "7px -apple-system";
-
-    ctx.textAlign =
-      "left";
-
-    ctx.fillText(
+  $("price")
+    .textContent =
       fmt(
-        max -
-        span *
-        i /
-        6
-      ),
-      left +
-      plotWidth +
-      5,
-      yy +
-      2
+        current
+      );
+
+
+  const previousClose =
+    finite(
+      DATA
+        ?.market
+        ?.previousClose
+    );
+
+
+  if(
+    current !==
+    null &&
+    previousClose !==
+    null &&
+    previousClose >
+    0
+  ){
+
+    const change =
+      current -
+      previousClose;
+
+
+    const pct =
+      change /
+      previousClose *
+      100;
+
+
+    const element =
+      $("priceMove");
+
+
+    element.textContent =
+      `${
+        change >= 0
+          ? "+"
+          : ""
+      }${fmt(change)} · ${
+        pct >= 0
+          ? "+"
+          : ""
+      }${pct.toFixed(2)}%`;
+
+
+    element.className =
+      "priceMove";
+
+
+    element.classList.add(
+      change >= 0
+        ? "green"
+        : "red"
     );
   }
+}
 
-  /* LEVELS */
 
-  const visibleLevels =
-    filteredLevels()
+/* ============================================================
+   PRIMARY ZONE LIVE STAGE
+============================================================ */
+
+function liveZoneStage(
+  zone
+){
+
+  const current =
+    getSpot();
+
+
+  if(
+    !zone ||
+    current ===
+    null
+  ){
+    return "TRACKING";
+  }
+
+
+  const center =
+    zonePrice(
+      zone
+    );
+
+
+  if(
+    center ===
+    null
+  ){
+    return "TRACKING";
+  }
+
+
+  const low =
+    finite(
+      zone.low
+    ) ??
+    center;
+
+
+  const high =
+    finite(
+      zone.high
+    ) ??
+    center;
+
+
+  const atr =
+    finite(
+      DATA
+        ?.market
+        ?.atr
+        ?.M5
+    ) ??
+    1;
+
+
+  const distanceAtr =
+    Math.abs(
+      current -
+      center
+    ) /
+    Math.max(
+      atr,
+      .001
+    );
+
+
+  const side =
+    zone.side;
+
+
+  if(
+    side ===
+    "BUY_SIDE"
+  ){
+
+    if(
+      current >
+      high
+    ){
+      return "RAIDING / ACCEPTANCE TEST";
+    }
+
+    if(
+      current >=
+      low
+    ){
+      return "ATTACKING";
+    }
+  }
+
+
+  if(
+    side ===
+    "SELL_SIDE"
+  ){
+
+    if(
+      current <
+      low
+    ){
+      return "RAIDING / ACCEPTANCE TEST";
+    }
+
+    if(
+      current <=
+      high
+    ){
+      return "ATTACKING";
+    }
+  }
+
+
+  if(
+    distanceAtr <=
+    .25
+  ){
+    return "ATTACKING";
+  }
+
+
+  if(
+    distanceAtr <=
+    .80
+  ){
+    return "APPROACHING";
+  }
+
+
+  return (
+    zone
+      ?.lifecycle
+      ?.stage ??
+    "TRACKING"
+  );
+}
+
+
+/* ============================================================
+   PRIMARY UI
+============================================================ */
+
+function renderPrimary(){
+
+  const zone =
+    dominantZone();
+
+
+  const current =
+    getSpot();
+
+
+  if(
+    !zone ||
+    current ===
+    null
+  ){
+    return;
+  }
+
+
+  const center =
+    zonePrice(
+      zone
+    );
+
+
+  if(
+    center ===
+    null
+  ){
+    return;
+  }
+
+
+  const score =
+    scoreOf(
+      zone
+    );
+
+
+  const distance =
+    Math.abs(
+      current -
+      center
+    );
+
+
+  const atr =
+    finite(
+      DATA
+        ?.market
+        ?.atr
+        ?.M5
+    ) ??
+    1;
+
+
+  const distanceAtr =
+    distance /
+    Math.max(
+      atr,
+      .001
+    );
+
+
+  const stage =
+    liveZoneStage(
+      zone
+    );
+
+
+  const confluence =
+    Array.isArray(
+      zone.components
+    )
+      ? zone.components.length
+      : finite(
+          zone.componentCount
+        ) ??
+        1;
+
+
+  $("primaryName")
+    .textContent =
+      zone.name ??
+      "PRIMARY LIQUIDITY";
+
+
+  $("primarySub")
+    .textContent =
+      `${fmt(center)} · ${fmt(distance)} away · ${stage}`;
+
+
+  $("primaryScore")
+    .textContent =
+      Math.round(
+        score
+      );
+
+
+  $("scoreRing")
+    .style
+    .setProperty(
+      "--score",
+      score
+    );
+
+
+  $("hudScore")
+    .textContent =
+      Math.round(
+        score
+      );
+
+
+  $("hudName")
+    .textContent =
+      zone.name ??
+      "LIQUIDITY";
+
+
+  $("hudPrice")
+    .textContent =
+      fmt(
+        center
+      );
+
+
+  $("hudMeta")
+    .textContent =
+      `${zone.side} · ${fmt(distance)} away · ${fmt(distanceAtr,2)} ATR · ${confluence} confluences`;
+
+
+  $("hudStage")
+    .textContent =
+      stage;
+
+
+  $("chartDistance")
+    .textContent =
+      fmt(
+        distance
+      );
+
+
+  $("chartDistanceAtr")
+    .textContent =
+      fmt(
+        distanceAtr,
+        2
+      );
+
+
+  $("chartConfluence")
+    .textContent =
+      `${confluence} LEVEL${
+        confluence === 1
+          ? ""
+          : "S"
+      }`;
+
+
+  let scenario =
+    "TRACK TARGET";
+
+
+  if(
+    stage.includes(
+      "APPROACHING"
+    )
+  ){
+    scenario =
+      "PREPARE FOR RAID";
+  }
+
+
+  if(
+    stage.includes(
+      "ATTACKING"
+    )
+  ){
+    scenario =
+      "LIQUIDITY UNDER ATTACK";
+  }
+
+
+  if(
+    stage.includes(
+      "RAIDING"
+    )
+  ){
+    scenario =
+      "RAID ACTIVE";
+  }
+
+
+  if(
+    stage.includes(
+      "REJECT"
+    )
+  ){
+    scenario =
+      zone.side ===
+      "BUY_SIDE"
+        ? "SELL REVERSAL BUILDING"
+        : "BUY REVERSAL BUILDING";
+  }
+
+
+  $("chartScenario")
+    .textContent =
+      scenario;
+
+
+  $("coreStatus")
+    .textContent =
+      `${stage} · ${Math.round(score)}`;
+
+
+  /*
+     CONSENSUS
+  */
+
+  const bias =
+    DATA
+      ?.consensus
+      ?.direction ??
+    DATA
+      ?.structure
+      ?.H1
+      ?.bias ??
+    "NEUTRAL";
+
+
+  $("marketBias")
+    .textContent =
+      bias;
+
+
+  $("marketBias")
+    .className =
+      "commandValue";
+
+
+  if(
+    bias.includes(
+      "BULL"
+    )
+  ){
+
+    $("marketBias")
+      .classList
+      .add(
+        "green"
+      );
+
+  }else if(
+    bias.includes(
+      "BEAR"
+    )
+  ){
+
+    $("marketBias")
+      .classList
+      .add(
+        "red"
+      );
+
+  }else{
+
+    $("marketBias")
+      .classList
+      .add(
+        "gold"
+      );
+  }
+
+
+  $("biasSub")
+    .textContent =
+      DATA
+        ?.consensus
+        ?.confidence !==
+      undefined
+        ? `${fmt(DATA.consensus.confidence,1)} confidence`
+        : "MTF consensus";
+
+
+  /*
+     NEAREST LIQUIDITY
+  */
+
+  const buy =
+    LIQUIDITY_LEVELS
       .filter(
         level =>
+          level.side ===
+          "BUY_SIDE" &&
           level.price >=
-          min &&
-          level.price <=
-          max
+          current
       )
       .sort(
         (
@@ -4598,325 +5168,975 @@ function drawChart(){
             b.price -
             current
           )
-      );
+      )[
+        0
+      ];
 
-  const occupied = [];
 
-  visibleLevels
-    .slice(
-      0,
-      28
-    )
-    .forEach(
-      level => {
-
-        const yy =
-          y(
-            level.price
-          );
-
-        const color =
-          levelColor(
-            level.side
-          );
-
-        ctx.save();
-
-        ctx.setLineDash(
-          level.group ===
-          "SESSION"
-            ? [7,4]
-            : level.group ===
-              "DAILY" ||
-              level.group ===
-              "WEEKLY"
-              ? [10,3]
-              : [3,5]
-        );
-
-        ctx.strokeStyle =
-          color;
-
-        ctx.globalAlpha =
-          .42;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          left,
-          yy
-        );
-
-        ctx.lineTo(
-          left +
-          plotWidth,
-          yy
-        );
-
-        ctx.stroke();
-
-        ctx.restore();
-
-        let textY =
-          yy -
-          3;
-
-        while(
-          occupied.some(
-            item =>
-              Math.abs(
-                item -
-                textY
-              ) <
-              9
-          )
-        ){
-
-          textY +=
-            9;
-        }
-
-        occupied.push(
-          textY
-        );
-
-        ctx.globalAlpha =
-          1;
-
-        ctx.fillStyle =
-          color;
-
-        ctx.font =
-          "bold 6px -apple-system";
-
-        ctx.textAlign =
-          "left";
-
-        ctx.fillText(
-          `${level.short || level.name} ${fmt(level.price)}`,
-          left +
-          4,
-          textY
-        );
-      }
-    );
-
-  /* CANDLES */
-
-  const step =
-    plotWidth /
-    candles.length;
-
-  const bodyWidth =
-    Math.max(
-      1.4,
-      Math.min(
-        5,
-        step *
-        .58
+  const sell =
+    LIQUIDITY_LEVELS
+      .filter(
+        level =>
+          level.side ===
+          "SELL_SIDE" &&
+          level.price <=
+          current
       )
-    );
-
-  candles.forEach(
-    (
-      candle,
-      index
-    ) => {
-
-      const x =
-        left +
-        step *
-        index +
-        step /
-        2;
-
-      const bullish =
-        candle.close >=
-        candle.open;
-
-      const color =
-        bullish
-          ? "#32e2a0"
-          : "#ff5d74";
-
-      ctx.strokeStyle =
-        color;
-
-      ctx.fillStyle =
-        color;
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        x,
-        y(
-          candle.high
-        )
-      );
-
-      ctx.lineTo(
-        x,
-        y(
-          candle.low
-        )
-      );
-
-      ctx.stroke();
-
-      const openY =
-        y(
-          candle.open
-        );
-
-      const closeY =
-        y(
-          candle.close
-        );
-
-      ctx.fillRect(
-        x -
-        bodyWidth /
-        2,
-        Math.min(
-          openY,
-          closeY
-        ),
-        bodyWidth,
-        Math.max(
-          1.2,
+      .sort(
+        (
+          a,
+          b
+        ) =>
           Math.abs(
-            closeY -
-            openY
+            a.price -
+            current
+          ) -
+          Math.abs(
+            b.price -
+            current
           )
-        )
-      );
-    }
-  );
+      )[
+        0
+      ];
 
-  /* CURRENT PRICE */
 
-  if(
-    current >=
-    min &&
-    current <=
-    max
-  ){
-
-    const yy =
-      y(
-        current
-      );
-
-    ctx.save();
-
-    ctx.setLineDash(
-      [2,3]
-    );
-
-    ctx.strokeStyle =
-      "#f4c85e";
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      yy
-    );
-
-    ctx.lineTo(
-      left +
-      plotWidth,
-      yy
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-
-    ctx.fillStyle =
-      "#f4c85e";
-
-    ctx.fillRect(
-      left +
-      plotWidth +
-      3,
-      yy -
-      9,
-      66,
-      18
-    );
-
-    ctx.fillStyle =
-      "#070707";
-
-    ctx.font =
-      "bold 7px -apple-system";
-
-    ctx.fillText(
-      fmt(
-        current
-      ),
-      left +
-      plotWidth +
-      6,
-      yy +
-      2
-    );
-  }
-
-  const latest =
-    candles.at(-1);
-
-  $("ohlc")
+  $("nearestBuy")
     .textContent =
-      `${ACTIVE_TF.toUpperCase()} · O ${fmt(latest.open)} · H ${fmt(latest.high)} · L ${fmt(latest.low)} · C ${fmt(latest.close)}`;
+      buy
+        ? fmt(
+            buy.price
+          )
+        : "NONE";
 
+
+  $("nearestBuySub")
+    .textContent =
+      buy
+        ? `${buy.short ?? buy.name} · ${fmt(Math.abs(buy.price-current))}`
+        : "No pool mapped";
+
+
+  $("nearestSell")
+    .textContent =
+      sell
+        ? fmt(
+            sell.price
+          )
+        : "NONE";
+
+
+  $("nearestSellSub")
+    .textContent =
+      sell
+        ? `${sell.short ?? sell.name} · ${fmt(Math.abs(sell.price-current))}`
+        : "No pool mapped";
+
+
+  renderConfirmationPath(
+    stage
+  );
 }
 
 
 /* ============================================================
-   TIMEFRAME BUTTONS
+   CONFIRMATION PATH
 ============================================================ */
 
-document
-  .querySelectorAll(
-    "[data-tf]"
-  )
-  .forEach(
-    button => {
+function renderConfirmationPath(
+  stage
+){
 
-      button.addEventListener(
-        "click",
-        async () => {
+  const labels = [
+    "TARGET",
+    "APPROACH",
+    "ATTACK",
+    "RAID",
+    "REJECT"
+  ];
 
-          ACTIVE_TF =
-            button.dataset.tf;
 
-          document
-            .querySelectorAll(
-              "[data-tf]"
-            )
-            .forEach(
-              element =>
-                element.classList.remove(
-                  "active"
-                )
-            );
+  let progress =
+    0;
 
-          button.classList.add(
-            "active"
-          );
 
-          await loadChart();
+  if(
+    stage.includes(
+      "APPROACH"
+    )
+  ){
+    progress =
+      1;
+  }
 
-        }
-      );
-    }
-  );
+
+  if(
+    stage.includes(
+      "ATTACK"
+    )
+  ){
+    progress =
+      2;
+  }
+
+
+  if(
+    stage.includes(
+      "RAID"
+    )
+  ){
+    progress =
+      3;
+  }
+
+
+  if(
+    stage.includes(
+      "REJECT"
+    )
+  ){
+    progress =
+      4;
+  }
+
+
+  $("confirmationPath")
+    .innerHTML =
+      labels
+        .map(
+          (
+            label,
+            index
+          ) => {
+
+            let cls =
+              "";
+
+            if(
+              index <
+              progress
+            ){
+              cls =
+                "done";
+            }
+
+            if(
+              index ===
+              progress
+            ){
+              cls =
+                "current";
+            }
+
+            return `
+              <div class="pathStage ${cls}">
+                ${label}
+              </div>
+            `;
+          }
+        )
+        .join("");
+}
 
 
 /* ============================================================
-   DEEP ENGINE
+   NARRATIVE
+============================================================ */
+
+function renderNarrative(){
+
+  if(
+    !DATA
+  ){
+    return;
+  }
+
+
+  const current =
+    getSpot();
+
+
+  const zone =
+    dominantZone();
+
+
+  if(
+    current ===
+    null ||
+    !zone
+  ){
+    return;
+  }
+
+
+  const level =
+    zonePrice(
+      zone
+    );
+
+
+  if(
+    level ===
+    null
+  ){
+    return;
+  }
+
+
+  const stage =
+    liveZoneStage(
+      zone
+    );
+
+
+  const score =
+    scoreOf(
+      zone
+    );
+
+
+  const m15 =
+    DATA
+      ?.structure
+      ?.M15
+      ?.bias ??
+    "NEUTRAL";
+
+
+  const h1 =
+    DATA
+      ?.structure
+      ?.H1
+      ?.bias ??
+    "NEUTRAL";
+
+
+  const vwap =
+    finite(
+      DATA
+        ?.market
+        ?.vwap
+    );
+
+
+  const words = [];
+
+
+  words.push(
+    `Gold is trading at ${fmt(current)}.`
+  );
+
+
+  words.push(
+    `The dominant liquidity objective is ${zone.name} at ${fmt(level)}, with a raid score of ${Math.round(score)}.`
+  );
+
+
+  words.push(
+    `Its current live state is ${stage}.`
+  );
+
+
+  words.push(
+    `M15 structure is ${m15} and H1 structure is ${h1}.`
+  );
+
+
+  if(
+    vwap !==
+    null
+  ){
+
+    words.push(
+      `Price is ${
+        current >= vwap
+          ? "above"
+          : "below"
+      } VWAP at ${fmt(vwap)}.`
+    );
+  }
+
+
+  if(
+    stage.includes(
+      "RAID"
+    )
+  ){
+
+    words.push(
+      `The liquidity pool is being penetrated, but a sweep by itself is not treated as reversal confirmation.`
+    );
+
+  }else if(
+    stage.includes(
+      "ATTACK"
+    )
+  ){
+
+    words.push(
+      `Price is close enough that the pool is now considered under active attack.`
+    );
+
+  }else if(
+    stage.includes(
+      "APPROACH"
+    )
+  ){
+
+    words.push(
+      `The market is entering the approach phase; monitor the zone for acceleration, penetration and reclaim behavior.`
+    );
+  }
+
+
+  $("narrative")
+    .textContent =
+      words.join(
+        " "
+      );
+
+
+  const componentCount =
+    zone
+      ?.components
+      ?.length ??
+    zone
+      ?.componentCount ??
+    1;
+
+
+  $("scenarioMetrics")
+    .innerHTML = `
+
+      <div class="scenarioRow">
+
+        <span>
+          RAID SCORE
+        </span>
+
+        <strong class="gold">
+          ${Math.round(score)}
+        </strong>
+
+      </div>
+
+
+      <div class="scenarioRow">
+
+        <span>
+          ZONE SIDE
+        </span>
+
+        <strong>
+          ${zone.side ?? "—"}
+        </strong>
+
+      </div>
+
+
+      <div class="scenarioRow">
+
+        <span>
+          CONFLUENCES
+        </span>
+
+        <strong>
+          ${componentCount}
+        </strong>
+
+      </div>
+
+
+      <div class="scenarioRow">
+
+        <span>
+          HEAT
+        </span>
+
+        <strong>
+          ${fmt(zone.heat,1)}
+        </strong>
+
+      </div>
+
+    `;
+}
+
+
+/* ============================================================
+   LEVEL STATE
+============================================================ */
+
+function effectiveLevelState(
+  level
+){
+
+  const current =
+    getSpot();
+
+
+  if(
+    current ===
+    null
+  ){
+    return (
+      level.state ??
+      "TRACKING"
+    );
+  }
+
+
+  const atr =
+    finite(
+      DATA
+        ?.market
+        ?.atr
+        ?.M5
+    ) ??
+    1;
+
+
+  const distance =
+    Math.abs(
+      current -
+      level.price
+    );
+
+
+  const dAtr =
+    distance /
+    Math.max(
+      atr,
+      .001
+    );
+
+
+  if(
+    dAtr <=
+    .20
+  ){
+    return "ATTACKING";
+  }
+
+
+  if(
+    dAtr <=
+    .80
+  ){
+    return "APPROACHING";
+  }
+
+
+  return (
+    level.state ??
+    "TRACKING"
+  );
+}
+
+
+/* ============================================================
+   LEVEL CARDS
+============================================================ */
+
+function levelCard(
+  level,
+  index
+){
+
+  const current =
+    getSpot();
+
+
+  const distance =
+    current !==
+    null
+      ? Math.abs(
+          level.price -
+          current
+        )
+      : finite(
+          level.distance
+        ) ??
+        0;
+
+
+  const sideClass =
+    level.side ===
+    "BUY_SIDE"
+      ? "buy"
+      : level.side ===
+        "SELL_SIDE"
+        ? "sell"
+        : "";
+
+
+  const major =
+    [
+      "DAILY",
+      "WEEKLY",
+      "SESSION"
+    ].includes(
+      level.group
+    )
+      ? "major"
+      : "";
+
+
+  return `
+
+    <div class="levelCard ${sideClass} ${major}">
+
+      <div class="levelType">
+        ${level.group ?? "LEVEL"} · ${level.timeframe ?? "REF"}
+      </div>
+
+      <div class="levelName">
+        ${level.name}
+      </div>
+
+      <div
+        class="levelPrice"
+        style="color:${levelColor(level.side)}"
+      >
+        ${fmt(level.price)}
+      </div>
+
+      <div class="levelFooter">
+
+        <span>
+          ${fmt(distance)} away
+        </span>
+
+        <span>
+          S${Math.round(level.score ?? 0)}
+        </span>
+
+      </div>
+
+      <div class="levelState">
+        ${effectiveLevelState(level)}
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+function renderLevels(){
+
+  const current =
+    getSpot();
+
+
+  const sorted =
+    [
+      ...LIQUIDITY_LEVELS
+    ]
+    .sort(
+      (
+        a,
+        b
+      ) => {
+
+        if(
+          current ===
+          null
+        ){
+          return (
+            b.score ??
+            0
+          ) -
+          (
+            a.score ??
+            0
+          );
+        }
+
+        return (
+          Math.abs(
+            a.price -
+            current
+          ) -
+          Math.abs(
+            b.price -
+            current
+          )
+        );
+      }
+    );
+
+
+  $("topLevels")
+    .innerHTML =
+      sorted
+        .slice(
+          0,
+          16
+        )
+        .map(
+          levelCard
+        )
+        .join("");
+
+
+  $("allLevels")
+    .innerHTML =
+      sorted
+        .map(
+          levelCard
+        )
+        .join("");
+}
+
+
+/* ============================================================
+   SESSIONS
+============================================================ */
+
+function renderSessions(){
+
+  const sessions =
+    DATA
+      ?.sessions ??
+    {};
+
+
+  const names = [
+    "ASIA",
+    "LONDON",
+    "NEW_YORK"
+  ];
+
+
+  $("sessionGrid")
+    .innerHTML =
+      names
+        .map(
+          name => {
+
+            const item =
+              sessions[
+                name
+              ];
+
+
+            return `
+
+              <div class="sessionCard">
+
+                <div class="sessionTitle">
+                  ${pretty(name)}
+                </div>
+
+
+                <div class="sessionMetrics">
+
+                  <div class="sessionMetric">
+
+                    <span>
+                      HIGH
+                    </span>
+
+                    <strong class="red">
+                      ${fmt(item?.high)}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="sessionMetric">
+
+                    <span>
+                      LOW
+                    </span>
+
+                    <strong class="green">
+                      ${fmt(item?.low)}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="sessionMetric">
+
+                    <span>
+                      OPEN
+                    </span>
+
+                    <strong class="blue">
+                      ${fmt(item?.open)}
+                    </strong>
+
+                  </div>
+
+
+                  <div class="sessionMetric">
+
+                    <span>
+                      RANGE
+                    </span>
+
+                    <strong>
+                      ${fmt(item?.range)}
+                    </strong>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            `;
+          }
+        )
+        .join("");
+}
+
+
+/* ============================================================
+   STRUCTURE
+============================================================ */
+
+function renderStructure(){
+
+  const tfs = [
+    "M1",
+    "M5",
+    "M15",
+    "H1",
+    "H4"
+  ];
+
+
+  $("structureGrid")
+    .innerHTML =
+      tfs
+        .map(
+          tf => {
+
+            const item =
+              DATA
+                ?.structure
+                ?.[tf] ??
+              {};
+
+
+            let color =
+              "#f4c85e";
+
+
+            let cls =
+              "";
+
+
+            if(
+              item.bias ===
+              "BULLISH"
+            ){
+
+              color =
+                "#34e3a1";
+
+              cls =
+                "sell";
+
+            }else if(
+              item.bias ===
+              "BEARISH"
+            ){
+
+              color =
+                "#ff5d74";
+
+              cls =
+                "buy";
+            }
+
+
+            return `
+
+              <div class="levelCard ${cls}">
+
+                <div class="levelType">
+                  ${tf} STRUCTURE
+                </div>
+
+                <div
+                  class="levelPrice"
+                  style="color:${color}"
+                >
+                  ${item.bias ?? "NEUTRAL"}
+                </div>
+
+                <div class="levelFooter">
+
+                  <span>
+                    SCORE ${item.score ?? 0}
+                  </span>
+
+                  <span>
+                    EMA20 ${fmt(item.ema20)}
+                  </span>
+
+                </div>
+
+              </div>
+
+            `;
+          }
+        )
+        .join("");
+}
+
+
+/* ============================================================
+   GENERIC OBJECT
+============================================================ */
+
+function renderObject(
+  id,
+  object,
+  limit = 30
+){
+
+  const element =
+    $(id);
+
+
+  if(
+    !element
+  ){
+    return;
+  }
+
+
+  if(
+    object ===
+    null ||
+    object ===
+    undefined
+  ){
+
+    element.innerHTML = `
+
+      <div class="row">
+
+        <div class="key">
+          Status
+        </div>
+
+        <div class="value">
+          No data
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+  }
+
+
+  if(
+    Array.isArray(
+      object
+    )
+  ){
+
+    element.innerHTML =
+      object
+        .slice(
+          0,
+          limit
+        )
+        .map(
+          (
+            item,
+            index
+          ) => `
+
+            <div class="row">
+
+              <div class="key">
+                ${index + 1}
+              </div>
+
+              <div class="value">
+                ${asText(item)}
+              </div>
+
+            </div>
+
+          `
+        )
+        .join("");
+
+    return;
+  }
+
+
+  if(
+    typeof object !==
+    "object"
+  ){
+
+    element.innerHTML = `
+
+      <div class="row">
+
+        <div class="key">
+          Value
+        </div>
+
+        <div class="value">
+          ${object}
+        </div>
+
+      </div>
+
+    `;
+
+    return;
+  }
+
+
+  element.innerHTML =
+    Object
+      .entries(
+        object
+      )
+      .slice(
+        0,
+        limit
+      )
+      .map(
+        (
+          [
+            key,
+            value
+          ]
+        ) => `
+
+          <div class="row">
+
+            <div class="key">
+              ${pretty(key)}
+            </div>
+
+            <div class="value">
+              ${asText(value)}
+            </div>
+
+          </div>
+
+        `
+      )
+      .join("");
+}
+
+
+/* ============================================================
+   LOAD DEEP INTELLIGENCE
 ============================================================ */
 
 async function loadXau(
@@ -4935,10 +6155,13 @@ async function loadXau(
       }
     );
 
+
   const text =
     await response.text();
 
+
   let json;
+
 
   try{
 
@@ -4954,6 +6177,7 @@ async function loadXau(
     );
   }
 
+
   if(
     !response.ok ||
     json.ok ===
@@ -4962,12 +6186,14 @@ async function loadXau(
 
     throw new Error(
       json.error ||
-      "XAU intelligence error."
+      "XAU intelligence request failed."
     );
   }
 
+
   DATA =
     json;
+
 
   LIQUIDITY_LEVELS =
     Array.isArray(
@@ -4977,6 +6203,7 @@ async function loadXau(
       ? DATA.liquidityLevels
       : [];
 
+
   CLUSTERS =
     Array.isArray(
       DATA
@@ -4985,6 +6212,7 @@ async function loadXau(
     )
       ? DATA.deepLiquidity.zones
       : [];
+
 
   renderEverything();
 }
@@ -4996,24 +6224,29 @@ async function loadXau(
 
 function renderEverything(){
 
-  if(!DATA){
+  if(
+    !DATA
+  ){
     return;
   }
 
-  $("session")
+
+  $("currentSession")
     .textContent =
       DATA
         ?.market
-        ?.currentSession ||
+        ?.currentSession ??
       "—";
+
 
   $("regime")
     .textContent =
       DATA
         ?.market
         ?.regime
-        ?.regime ||
+        ?.regime ??
       "—";
+
 
   $("vwap")
     .textContent =
@@ -5023,101 +6256,119 @@ function renderEverything(){
           ?.vwap
       );
 
-  $("deepAge")
+
+  $("m15Bias")
     .textContent =
-      new Date(
-        DATA.generatedAt
-      )
-      .toLocaleTimeString(
-        [],
-        {
-          hour:"2-digit",
-          minute:"2-digit"
-        }
-      );
+      DATA
+        ?.structure
+        ?.M15
+        ?.bias ??
+      "—";
+
+
+  $("h1Bias")
+    .textContent =
+      DATA
+        ?.structure
+        ?.H1
+        ?.bias ??
+      "—";
+
 
   renderPrice();
 
-  renderCommandCenter();
-
-  renderPressure();
+  renderPrimary();
 
   renderNarrative();
 
-  renderLiquidity();
+  renderLevels();
 
-  renderLadder();
+  renderChartLevels();
 
   renderSessions();
 
   renderStructure();
 
-  renderObject(
-    "clusteredLiquidity",
-    CLUSTERS,
-    20
-  );
 
   renderObject(
-    "fvgList",
-    DATA.fairValueGaps,
-    20
+    "clusters",
+    CLUSTERS,
+    30
   );
+
+
+  renderObject(
+    "fvgs",
+    DATA.fairValueGaps,
+    30
+  );
+
 
   renderObject(
     "dailyRefs",
     DATA.dailyReferences
   );
 
+
   renderObject(
     "weeklyRefs",
     DATA.weeklyReferences
   );
+
 
   renderObject(
     "dealingRange",
     DATA.dealingRange
   );
 
+
   renderObject(
     "displacement",
     DATA.displacement
   );
+
 
   renderObject(
     "equalLevels",
     DATA.equalLevels
   );
 
+
   renderObject(
     "flowData",
     DATA.flow
   );
+
 
   renderObject(
     "intermarket",
     DATA.intermarket
   );
 
+
   renderObject(
     "macroData",
     DATA.macro
   );
+
 
   renderObject(
     "quality",
     DATA.dataQuality
   );
 
+
   renderObject(
     "health",
     DATA.health
   );
 
+
   renderObject(
     "architecture",
     DATA.apiArchitecture
   );
+
 
   $("raw")
     .textContent =
@@ -5127,15 +6378,110 @@ function renderEverything(){
         2
       );
 
-  createFilters();
-
-  drawChart();
-
 }
 
 
 /* ============================================================
-   LOAD ALL
+   TIMEFRAME CONTROLS
+============================================================ */
+
+document
+  .querySelectorAll(
+    "[data-tf]"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        async () => {
+
+          ACTIVE_TF =
+            button.dataset.tf;
+
+
+          document
+            .querySelectorAll(
+              "[data-tf]"
+            )
+            .forEach(
+              item =>
+                item
+                  .classList
+                  .remove(
+                    "active"
+                  )
+            );
+
+
+          button
+            .classList
+            .add(
+              "active"
+            );
+
+
+          await loadChart();
+
+
+          renderChartLevels();
+
+        }
+      );
+    }
+  );
+
+
+/* ============================================================
+   LAYER CONTROLS
+============================================================ */
+
+document
+  .querySelectorAll(
+    "[data-layer]"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          ACTIVE_LAYER =
+            button.dataset.layer;
+
+
+          document
+            .querySelectorAll(
+              "[data-layer]"
+            )
+            .forEach(
+              item =>
+                item
+                  .classList
+                  .remove(
+                    "active"
+                  )
+            );
+
+
+          button
+            .classList
+            .add(
+              "active"
+            );
+
+
+          renderChartLevels();
+
+        }
+      );
+    }
+  );
+
+
+/* ============================================================
+   LOAD EVERYTHING
 ============================================================ */
 
 async function loadEverything(
@@ -5153,39 +6499,48 @@ async function loadEverything(
       );
   }
 
+
   $("error")
     .classList
     .remove(
       "show"
     );
 
+
   try{
+
+    createTradingViewChart();
+
 
     const results =
       await Promise.allSettled([
-
-        loadPrice(),
 
         loadXau(
           manual
         ),
 
-        loadChart()
+        loadChart(),
+
+        loadPrice()
 
       ]);
 
+
     const failed =
       results.find(
-        result =>
-          result.status ===
+        item =>
+          item.status ===
           "rejected"
       );
+
 
     if(
       failed
     ){
+
       throw failed.reason;
     }
+
 
   }catch(error){
 
@@ -5193,15 +6548,18 @@ async function loadEverything(
       error
     );
 
+
     $("error")
       .textContent =
         error.message;
+
 
     $("error")
       .classList
       .add(
         "show"
       );
+
 
   }finally{
 
@@ -5220,37 +6578,46 @@ async function loadEverything(
 
 
 /* ============================================================
-   AGE
+   PRICE AGE
 ============================================================ */
 
 setInterval(
   () => {
 
     if(
-      PRICE_TIMESTAMP
+      !PRICE_TIMESTAMP
     ){
-
-      const seconds =
-        (
-          Date.now() -
-          PRICE_TIMESTAMP
-        ) /
-        1000;
 
       $("priceAge")
         .textContent =
-          `${seconds.toFixed(1)}s`;
+          "—";
 
-      if(
-        seconds >
-        20
-      ){
+      return;
+    }
 
-        connectionState(
-          "error",
-          "STALE"
-        );
-      }
+
+    const age =
+      (
+        Date.now() -
+        PRICE_TIMESTAMP
+      ) /
+      1000;
+
+
+    $("priceAge")
+      .textContent =
+        `${age.toFixed(1)}s`;
+
+
+    if(
+      age >
+      20
+    ){
+
+      setFeed(
+        "dead",
+        "STALE"
+      );
     }
 
   },
@@ -5259,7 +6626,7 @@ setInterval(
 
 
 /* ============================================================
-   LOOPS
+   FAST PRICE LOOP
 ============================================================ */
 
 setInterval(
@@ -5271,6 +6638,10 @@ setInterval(
   5000
 );
 
+
+/* ============================================================
+   DEEP INTELLIGENCE LOOP
+============================================================ */
 
 setInterval(
   () => {
@@ -5287,6 +6658,10 @@ setInterval(
 );
 
 
+/* ============================================================
+   CANDLE REFRESH LOOP
+============================================================ */
+
 setInterval(
   () => {
 
@@ -5300,23 +6675,22 @@ setInterval(
 );
 
 
+/* ============================================================
+   RESIZE
+============================================================ */
+
 window.addEventListener(
   "resize",
   () => {
 
     clearTimeout(
-      window.__resizeTimer
+      window.__mkResize
     );
 
-    window.__resizeTimer =
+
+    window.__mkResize =
       setTimeout(
-        () => {
-
-          drawChart();
-
-          renderLadder();
-
-        },
+        resizeTradingView,
         80
       );
   }
@@ -5327,12 +6701,11 @@ window.addEventListener(
    START
 ============================================================ */
 
-createFilters();
-
-connectionState(
+setFeed(
   "loading",
   "CONNECTING"
 );
+
 
 loadEverything(
   true
@@ -5341,4 +6714,5 @@ loadEverything(
 </script>
 
 </body>
+
 </html>
