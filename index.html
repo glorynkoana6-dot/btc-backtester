@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
 <meta charset="UTF-8">
 
 <meta
@@ -26,7 +27,7 @@
   content="MKAYFX"
 >
 
-<title>MKAYFX GOLD V9</title>
+<title>MKAYFX GOLD V9 REST</title>
 
 <style>
 
@@ -39,32 +40,18 @@
   --bg:#050607;
   --panel:#0c0f14;
   --panel2:#11151c;
-  --panel3:#080a0e;
-
-  --line:rgba(255,255,255,.07);
-  --line2:rgba(255,255,255,.13);
-
+  --line:rgba(255,255,255,.075);
   --text:#f4f6f8;
-  --muted:#77808d;
-  --muted2:#505864;
-
+  --muted:#76808d;
   --gold:#f1c75b;
-  --gold2:#ffe090;
-
   --green:#35dfa0;
   --red:#ff5d73;
   --blue:#5aa9ff;
   --purple:#a679ff;
-  --cyan:#59dff5;
-}
-
-html{
-  scroll-behavior:smooth;
 }
 
 body{
   margin:0;
-
   min-height:100vh;
 
   color:var(--text);
@@ -74,7 +61,6 @@ body{
     -apple-system,
     BlinkMacSystemFont,
     "SF Pro Display",
-    "SF Pro Text",
     Arial,
     sans-serif;
 
@@ -85,17 +71,16 @@ body{
       transparent 27%
     ),
     radial-gradient(
-      circle at 105% 20%,
+      circle at 100% 20%,
       rgba(90,169,255,.06),
-      transparent 26%
+      transparent 25%
     ),
-    #050607;
+    var(--bg);
 }
 
 button{
   font:inherit;
   border:0;
-  cursor:pointer;
 }
 
 .app{
@@ -105,12 +90,10 @@ button{
   padding:
     calc(8px + env(safe-area-inset-top))
     10px
-    calc(95px + env(safe-area-inset-bottom));
+    calc(90px + env(safe-area-inset-bottom));
 }
 
-/* ============================================================
-   TOP BAR
-============================================================ */
+/* TOPBAR */
 
 .topbar{
   position:sticky;
@@ -128,13 +111,12 @@ button{
   border:1px solid var(--line);
   border-radius:17px;
 
-  background:rgba(7,9,12,.88);
+  background:rgba(7,9,12,.9);
 
   backdrop-filter:blur(24px);
-  -webkit-backdrop-filter:blur(24px);
 
   box-shadow:
-    0 12px 40px rgba(0,0,0,.38);
+    0 12px 40px rgba(0,0,0,.36);
 }
 
 .brand{
@@ -152,7 +134,7 @@ button{
 
   border-radius:12px;
 
-  color:#090909;
+  color:#080808;
 
   font-size:10px;
   font-weight:950;
@@ -160,7 +142,7 @@ button{
   background:
     linear-gradient(
       135deg,
-      #ffe78a,
+      #ffe58a,
       #c58d23
     );
 }
@@ -178,13 +160,13 @@ button{
 
   font-size:6px;
   font-weight:850;
-  letter-spacing:.13em;
+  letter-spacing:.12em;
 }
 
 .connection{
   display:flex;
   align-items:center;
-  gap:7px;
+  gap:6px;
 
   padding:7px 9px;
 
@@ -207,7 +189,7 @@ button{
   background:var(--green);
 
   box-shadow:
-    0 0 14px rgba(53,223,160,.5);
+    0 0 12px rgba(53,223,160,.5);
 }
 
 .connectionDot.dead{
@@ -217,37 +199,31 @@ button{
 .connectionText{
   font-size:6px;
   font-weight:950;
-  letter-spacing:.06em;
 }
 
-/* ============================================================
-   ERRORS
-============================================================ */
+/* ERROR */
 
 .error{
   display:none;
 
   margin-top:8px;
-  padding:10px 11px;
+  padding:10px;
 
   border:1px solid rgba(255,93,115,.2);
-  border-radius:11px;
+  border-radius:10px;
 
   color:#ff9cab;
 
-  background:rgba(255,93,115,.065);
+  background:rgba(255,93,115,.06);
 
   font-size:7px;
-  line-height:1.5;
 }
 
 .error.show{
   display:block;
 }
 
-/* ============================================================
-   NAV
-============================================================ */
+/* NAV */
 
 .nav{
   display:flex;
@@ -295,9 +271,7 @@ button{
   display:block;
 }
 
-/* ============================================================
-   HERO
-============================================================ */
+/* HERO */
 
 .hero{
   position:relative;
@@ -319,9 +293,6 @@ button{
       rgba(17,20,26,.96),
       rgba(7,9,12,.96)
     );
-
-  box-shadow:
-    0 25px 80px rgba(0,0,0,.35);
 }
 
 .heroLabel{
@@ -368,6 +339,18 @@ button{
 
   font-size:9px;
   font-weight:900;
+}
+
+.green{
+  color:var(--green)!important;
+}
+
+.red{
+  color:var(--red)!important;
+}
+
+.gold{
+  color:var(--gold)!important;
 }
 
 .liveTag{
@@ -440,9 +423,7 @@ button{
   font-weight:950;
 }
 
-/* ============================================================
-   LIQUIDITY FOCUS
-============================================================ */
+/* FOCUS */
 
 .focus{
   display:grid;
@@ -556,9 +537,7 @@ button{
   font-size:14px;
 }
 
-/* ============================================================
-   CARDS
-============================================================ */
+/* CARDS */
 
 .card{
   margin-top:8px;
@@ -618,9 +597,7 @@ button{
   font-weight:850;
 }
 
-/* ============================================================
-   CHART
-============================================================ */
+/* CHART */
 
 .chartTools{
   display:flex;
@@ -658,6 +635,7 @@ button{
 
 .tf.active{
   color:#080808;
+
   background:var(--gold);
 }
 
@@ -678,13 +656,7 @@ button{
   border:1px solid rgba(255,255,255,.04);
   border-radius:13px;
 
-  background:
-    radial-gradient(
-      circle at 50% 10%,
-      rgba(241,199,91,.02),
-      transparent 28%
-    ),
-    #07090c;
+  background:#07090c;
 }
 
 canvas{
@@ -692,8 +664,6 @@ canvas{
 
   width:100%;
   height:100%;
-
-  touch-action:none;
 }
 
 .ohlc{
@@ -704,7 +674,7 @@ canvas{
 
   z-index:5;
 
-  padding:6px 7px;
+  padding:6px;
 
   border:1px solid var(--line);
   border-radius:7px;
@@ -714,7 +684,6 @@ canvas{
   background:rgba(5,7,10,.78);
 
   font-size:6px;
-  line-height:1.5;
 
   pointer-events:none;
 }
@@ -733,39 +702,7 @@ canvas{
   pointer-events:none;
 }
 
-.legendRow{
-  display:flex;
-  flex-wrap:wrap;
-
-  gap:8px;
-
-  margin-top:7px;
-
-  color:var(--muted);
-
-  font-size:6px;
-}
-
-.legend{
-  display:flex;
-  align-items:center;
-  gap:4px;
-}
-
-.dot{
-  width:6px;
-  height:6px;
-  border-radius:50%;
-}
-
-.dotGold{background:var(--gold);}
-.dotRed{background:var(--red);}
-.dotGreen{background:var(--green);}
-.dotPurple{background:var(--purple);}
-
-/* ============================================================
-   TRADE IDEA
-============================================================ */
+/* TRADE IDEA */
 
 .ideaHero{
   padding:13px;
@@ -793,7 +730,6 @@ canvas{
 
   font-size:6px;
   font-weight:950;
-  letter-spacing:.11em;
 }
 
 .ideaSignal{
@@ -801,12 +737,7 @@ canvas{
 
   font-size:27px;
   font-weight:950;
-  letter-spacing:-.04em;
 }
-
-.green{color:var(--green)!important;}
-.red{color:var(--red)!important;}
-.gold{color:var(--gold)!important;}
 
 .conf{
   min-width:62px;
@@ -827,6 +758,7 @@ canvas{
 
 .conf span{
   color:var(--muted);
+
   font-size:5px;
 }
 
@@ -854,7 +786,7 @@ canvas{
   border:1px solid var(--line);
   border-radius:7px;
 
-  color:var(--muted2);
+  color:#505864;
 
   text-align:center;
 
@@ -864,19 +796,25 @@ canvas{
 
 .stage.done{
   color:#05110b;
+
   border-color:transparent;
+
   background:var(--green);
 }
 
 .stage.current{
   color:#080808;
+
   border-color:transparent;
+
   background:var(--gold);
 }
 
 .levels{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+
+  grid-template-columns:
+    repeat(4,1fr);
 
   gap:5px;
 
@@ -906,19 +844,15 @@ canvas{
   margin-top:5px;
 
   font-size:9px;
-
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
 }
 
-/* ============================================================
-   PULSE / GRID
-============================================================ */
+/* PULSE */
 
 .pulse{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+
+  grid-template-columns:
+    repeat(4,1fr);
 
   gap:5px;
 
@@ -941,6 +875,7 @@ canvas{
 
 .pulseBox label{
   color:var(--muted);
+
   font-size:6px;
   font-weight:900;
 }
@@ -967,31 +902,52 @@ canvas{
   filter:blur(13px);
 }
 
-.bull .glow{background:var(--green);}
-.bear .glow{background:var(--red);}
-.mixed .glow{background:var(--gold);}
+.bull .glow{
+  background:var(--green);
+}
+
+.bear .glow{
+  background:var(--red);
+}
+
+.mixed .glow{
+  background:var(--gold);
+}
+
+/* GRID */
 
 .grid{
   display:grid;
-  grid-template-columns:repeat(12,minmax(0,1fr));
+
+  grid-template-columns:
+    repeat(12,minmax(0,1fr));
 
   gap:8px;
 }
 
-.s4{grid-column:span 4;}
-.s5{grid-column:span 5;}
-.s6{grid-column:span 6;}
-.s7{grid-column:span 7;}
-.s8{grid-column:span 8;}
-.s12{grid-column:span 12;}
+.s5{
+  grid-column:span 5;
+}
 
-/* ============================================================
-   METRICS
-============================================================ */
+.s6{
+  grid-column:span 6;
+}
+
+.s7{
+  grid-column:span 7;
+}
+
+.s12{
+  grid-column:span 12;
+}
+
+/* METRICS */
 
 .metrics{
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+
+  grid-template-columns:
+    repeat(3,1fr);
 
   gap:5px;
 }
@@ -1021,13 +977,12 @@ canvas{
   font-size:10px;
 }
 
-/* ============================================================
-   ZONES
-============================================================ */
+/* ZONES */
 
 .zoneList{
   display:flex;
   flex-direction:column;
+
   gap:5px;
 }
 
@@ -1043,6 +998,7 @@ canvas{
   align-items:center;
 
   gap:6px;
+
   padding:9px;
 
   border:1px solid rgba(255,255,255,.04);
@@ -1085,6 +1041,7 @@ canvas{
   border-radius:5px;
 
   color:#080808;
+
   background:var(--gold);
 
   font-size:6px;
@@ -1100,9 +1057,7 @@ canvas{
   font-weight:900;
 }
 
-/* ============================================================
-   DATA
-============================================================ */
+/* DATA */
 
 .dataList{
   display:flex;
@@ -1117,7 +1072,9 @@ canvas{
 
   padding:8px 0;
 
-  border-bottom:1px solid rgba(255,255,255,.035);
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.035);
 
   font-size:7px;
 }
@@ -1139,9 +1096,7 @@ canvas{
   overflow-wrap:anywhere;
 }
 
-/* ============================================================
-   RAW
-============================================================ */
+/* RAW */
 
 pre{
   max-height:520px;
@@ -1155,18 +1110,16 @@ pre{
   border-radius:10px;
 
   color:#929aa5;
+
   background:#05070a;
 
   font-size:7px;
   line-height:1.55;
 
   white-space:pre-wrap;
-  word-break:break-word;
 }
 
-/* ============================================================
-   LOADER
-============================================================ */
+/* LOADER */
 
 .loader{
   position:fixed;
@@ -1187,7 +1140,10 @@ pre{
 }
 
 .loaderBox{
-  width:min(280px,calc(100% - 35px));
+  width:min(
+    280px,
+    calc(100% - 35px)
+  );
 
   padding:22px;
 
@@ -1207,10 +1163,15 @@ pre{
 
   border-radius:50%;
 
-  border:2px solid rgba(241,199,91,.12);
-  border-top-color:var(--gold);
+  border:
+    2px solid
+    rgba(241,199,91,.12);
 
-  animation:spin .8s linear infinite;
+  border-top-color:
+    var(--gold);
+
+  animation:
+    spin .8s linear infinite;
 }
 
 @keyframes spin{
@@ -1226,17 +1187,11 @@ pre{
   font-weight:900;
 }
 
-/* ============================================================
-   MOBILE
-============================================================ */
-
 @media(max-width:900px){
 
-  .s4,
   .s5,
   .s6,
-  .s7,
-  .s8{
+  .s7{
     grid-column:span 12;
   }
 }
@@ -1270,16 +1225,21 @@ pre{
   }
 
   .levels{
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:
+      repeat(2,1fr);
   }
 }
 
 </style>
+
 </head>
 
 <body>
 
-<div class="loader" id="loader">
+<div
+  class="loader"
+  id="loader"
+>
 
   <div class="loaderBox">
 
@@ -1310,7 +1270,7 @@ pre{
       </div>
 
       <div class="brandSub">
-        GOLD LIQUIDITY OS V9
+        GOLD LIQUIDITY OS · REST
       </div>
 
     </div>
@@ -1371,10 +1331,6 @@ pre{
 
 </nav>
 
-<!-- ============================================================
-     TERMINAL
-============================================================ -->
-
 <section
   class="view active"
   id="terminal"
@@ -1383,7 +1339,7 @@ pre{
 <div class="hero">
 
   <div class="heroLabel">
-    XAU/USD · REAL-TIME LIQUIDITY INTELLIGENCE
+    XAU/USD · LIQUIDITY INTELLIGENCE
   </div>
 
   <div class="heroAsset">
@@ -1412,7 +1368,7 @@ pre{
     class="liveTag"
     id="liveTag"
   >
-    ◉ WAITING FOR STREAM
+    ◉ FAST REST PRICE
   </div>
 
   <div class="meta">
@@ -1433,8 +1389,8 @@ pre{
     </div>
 
     <div class="chip">
-      STREAM AGE
-      <b id="streamAge">—</b>
+      PRICE AGE
+      <b id="priceAge">—</b>
     </div>
 
     <div class="chip">
@@ -1495,9 +1451,11 @@ pre{
       class="ring"
       id="scoreRing"
     >
+
       <b id="focusScore">
         0
       </b>
+
     </div>
 
   </div>
@@ -1506,237 +1464,221 @@ pre{
 
 <article class="card">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="head">
 
-      <div>
+  <div>
 
-        <div class="title">
-          LIVE MARKET MAP
-        </div>
-
-        <div class="sub">
-          REST candles + WebSocket live price + liquidity raids
-        </div>
-
-      </div>
-
-      <div class="badge">
-        HYBRID FEED
-      </div>
-
+    <div class="title">
+      MARKET MAP
     </div>
 
-    <div class="chartTools">
-
-      <div class="tfs">
-
-        <button class="tf" data-tf="m1">
-          M1
-        </button>
-
-        <button class="tf active" data-tf="m5">
-          M5
-        </button>
-
-        <button class="tf" data-tf="m15">
-          M15
-        </button>
-
-        <button class="tf" data-tf="h1">
-          H1
-        </button>
-
-      </div>
-
-      <div
-        class="chartStatus"
-        id="chartStatus"
-      >
-        LOADING
-      </div>
-
-    </div>
-
-    <div class="chartWrap">
-
-      <canvas id="chart"></canvas>
-
-      <div class="chartWatermark">
-        XAUUSD
-      </div>
-
-      <div
-        class="ohlc"
-        id="ohlc"
-      >
-        LOADING
-      </div>
-
-    </div>
-
-    <div class="legendRow">
-
-      <div class="legend">
-        <span class="dot dotGold"></span>
-        LIVE PRICE
-      </div>
-
-      <div class="legend">
-        <span class="dot dotRed"></span>
-        BUY-SIDE
-      </div>
-
-      <div class="legend">
-        <span class="dot dotGreen"></span>
-        SELL-SIDE
-      </div>
-
-      <div class="legend">
-        <span class="dot dotPurple"></span>
-        FVG
-      </div>
-
+    <div class="sub">
+      REST candles + fast REST quote polling
     </div>
 
   </div>
+
+  <div class="badge">
+    NO WEBSOCKET
+  </div>
+
+</div>
+
+<div class="chartTools">
+
+  <div class="tfs">
+
+    <button
+      class="tf"
+      data-tf="m1"
+    >
+      M1
+    </button>
+
+    <button
+      class="tf active"
+      data-tf="m5"
+    >
+      M5
+    </button>
+
+    <button
+      class="tf"
+      data-tf="m15"
+    >
+      M15
+    </button>
+
+    <button
+      class="tf"
+      data-tf="h1"
+    >
+      H1
+    </button>
+
+  </div>
+
+  <div
+    class="chartStatus"
+    id="chartStatus"
+  >
+    LOADING
+  </div>
+
+</div>
+
+<div class="chartWrap">
+
+  <canvas id="chart"></canvas>
+
+  <div class="chartWatermark">
+    XAUUSD
+  </div>
+
+  <div
+    class="ohlc"
+    id="ohlc"
+  >
+    LOADING
+  </div>
+
+</div>
+
+</div>
 
 </article>
 
 <article class="card">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="head">
 
-      <div>
+  <div>
 
-        <div class="title">
-          LIVE TRADE IDEA
-        </div>
+    <div class="title">
+      TRADE IDEA
+    </div>
 
-        <div class="sub">
-          Raid → rejection → structure confirmation
-        </div>
+    <div class="sub">
+      Liquidity raid + rejection + structure
+    </div>
 
+  </div>
+
+</div>
+
+<div class="ideaHero">
+
+  <div class="ideaTop">
+
+    <div>
+
+      <div class="ideaLabel">
+        CURRENT SCENARIO
       </div>
 
-      <div class="badge">
-        REAL-TIME RAID
+      <div
+        class="ideaSignal gold"
+        id="ideaSignal"
+      >
+        WAIT
       </div>
 
     </div>
 
-    <div class="ideaHero">
+    <div class="conf">
 
-      <div class="ideaTop">
+      <b id="ideaConfidence">
+        0
+      </b>
 
-        <div>
-
-          <div class="ideaLabel">
-            CURRENT SCENARIO
-          </div>
-
-          <div
-            class="ideaSignal gold"
-            id="ideaSignal"
-          >
-            WAIT
-          </div>
-
-        </div>
-
-        <div class="conf">
-
-          <b id="ideaConfidence">
-            0
-          </b>
-
-          <span>
-            CONFIDENCE
-          </span>
-
-        </div>
-
-      </div>
-
-      <div
-        class="ideaText"
-        id="ideaText"
-      >
-        Waiting for deep scan.
-      </div>
-
-      <div
-        class="stages"
-        id="stages"
-      ></div>
-
-      <div class="levels">
-
-        <div class="level">
-
-          <label>
-            TRIGGER
-          </label>
-
-          <strong id="ideaEntry">
-            WAIT
-          </strong>
-
-        </div>
-
-        <div class="level">
-
-          <label>
-            INVALIDATION
-          </label>
-
-          <strong
-            class="red"
-            id="ideaStop"
-          >
-            —
-          </strong>
-
-        </div>
-
-        <div class="level">
-
-          <label>
-            TP1
-          </label>
-
-          <strong
-            class="green"
-            id="ideaTp1"
-          >
-            —
-          </strong>
-
-        </div>
-
-        <div class="level">
-
-          <label>
-            TP2
-          </label>
-
-          <strong
-            class="green"
-            id="ideaTp2"
-          >
-            —
-          </strong>
-
-        </div>
-
-      </div>
+      <span>
+        CONFIDENCE
+      </span>
 
     </div>
 
   </div>
+
+  <div
+    class="ideaText"
+    id="ideaText"
+  >
+    Waiting for data.
+  </div>
+
+  <div
+    class="stages"
+    id="stages"
+  ></div>
+
+  <div class="levels">
+
+    <div class="level">
+
+      <label>
+        TRIGGER
+      </label>
+
+      <strong id="ideaEntry">
+        WAIT
+      </strong>
+
+    </div>
+
+    <div class="level">
+
+      <label>
+        INVALIDATION
+      </label>
+
+      <strong
+        class="red"
+        id="ideaStop"
+      >
+        —
+      </strong>
+
+    </div>
+
+    <div class="level">
+
+      <label>
+        TP1
+      </label>
+
+      <strong
+        class="green"
+        id="ideaTp1"
+      >
+        —
+      </strong>
+
+    </div>
+
+    <div class="level">
+
+      <label>
+        TP2
+      </label>
+
+      <strong
+        class="green"
+        id="ideaTp2"
+      >
+        —
+      </strong>
+
+    </div>
+
+  </div>
+
+</div>
+
+</div>
 
 </article>
 
@@ -1749,69 +1691,57 @@ pre{
 
 <article class="card s5">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="head">
 
-      <div>
+  <div>
 
-        <div class="title">
-          MARKET CONDITION
-        </div>
-
-        <div class="sub">
-          Volatility · momentum · value
-        </div>
-
-      </div>
-
+    <div class="title">
+      MARKET CONDITION
     </div>
 
-    <div
-      class="metrics"
-      id="metrics"
-    ></div>
-
   </div>
+
+</div>
+
+<div
+  class="metrics"
+  id="metrics"
+></div>
+
+</div>
 
 </article>
 
 <article class="card s7">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="head">
 
-      <div>
+  <div>
 
-        <div class="title">
-          TOP LIQUIDITY
-        </div>
-
-        <div class="sub">
-          Ranked by next-target score
-        </div>
-
-      </div>
-
+    <div class="title">
+      TOP LIQUIDITY
     </div>
 
-    <div
-      class="zoneList"
-      id="topZones"
-    ></div>
-
   </div>
+
+</div>
+
+<div
+  class="zoneList"
+  id="topZones"
+></div>
+
+</div>
 
 </article>
 
 </div>
 
 </section>
-
-<!-- ============================================================
-     LIQUIDITY
-============================================================ -->
 
 <section
   class="view"
@@ -1820,30 +1750,26 @@ pre{
 
 <div class="card">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="head">
 
-      <div>
+  <div>
 
-        <div class="title">
-          FULL LIQUIDITY MATRIX
-        </div>
-
-        <div class="sub">
-          Live stages update without waiting for a new candle
-        </div>
-
-      </div>
-
+    <div class="title">
+      FULL LIQUIDITY MATRIX
     </div>
 
-    <div
-      class="zoneList"
-      id="allZones"
-    ></div>
-
   </div>
+
+</div>
+
+<div
+  class="zoneList"
+  id="allZones"
+></div>
+
+</div>
 
 </div>
 
@@ -1851,49 +1777,41 @@ pre{
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        EQUAL LEVELS
-      </div>
-    </div>
+<div class="title">
+  EQUAL LEVELS
+</div>
 
-    <div
-      class="dataList"
-      id="equalLevels"
-    ></div>
+<div
+  class="dataList"
+  id="equalLevels"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        FAIR VALUE GAPS
-      </div>
-    </div>
+<div class="title">
+  FAIR VALUE GAPS
+</div>
 
-    <div
-      class="dataList"
-      id="fvgs"
-    ></div>
+<div
+  class="dataList"
+  id="fvgs"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 </div>
 
 </section>
-
-<!-- ============================================================
-     STRUCTURE
-============================================================ -->
 
 <section
   class="view"
@@ -1902,26 +1820,18 @@ pre{
 
 <div class="card">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="title">
+  MULTI-TIMEFRAME STRUCTURE
+</div>
 
-      <div>
+<div
+  class="pulse"
+  id="structurePulse"
+></div>
 
-        <div class="title">
-          MULTI-TIMEFRAME STRUCTURE
-        </div>
-
-      </div>
-
-    </div>
-
-    <div
-      class="pulse"
-      id="structurePulse"
-    ></div>
-
-  </div>
+</div>
 
 </div>
 
@@ -1929,87 +1839,75 @@ pre{
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        PREVIOUS DAY
-      </div>
-    </div>
+<div class="title">
+  PREVIOUS DAY
+</div>
 
-    <div
-      class="dataList"
-      id="previousDay"
-    ></div>
+<div
+  class="dataList"
+  id="previousDay"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        PREVIOUS WEEK
-      </div>
-    </div>
+<div class="title">
+  PREVIOUS WEEK
+</div>
 
-    <div
-      class="dataList"
-      id="previousWeek"
-    ></div>
+<div
+  class="dataList"
+  id="previousWeek"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        DEALING RANGE
-      </div>
-    </div>
+<div class="title">
+  DEALING RANGE
+</div>
 
-    <div
-      class="dataList"
-      id="dealingRange"
-    ></div>
+<div
+  class="dataList"
+  id="dealingRange"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        DISPLACEMENT
-      </div>
-    </div>
+<div class="title">
+  DISPLACEMENT
+</div>
 
-    <div
-      class="dataList"
-      id="displacement"
-    ></div>
+<div
+  class="dataList"
+  id="displacement"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 </div>
 
 </section>
-
-<!-- ============================================================
-     FLOW
-============================================================ -->
 
 <section
   class="view"
@@ -2020,49 +1918,41 @@ pre{
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        ORDER FLOW PROXY
-      </div>
-    </div>
+<div class="title">
+  ORDER FLOW PROXY
+</div>
 
-    <div
-      class="dataList"
-      id="flowData"
-    ></div>
+<div
+  class="dataList"
+  id="flowData"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        INTERMARKET
-      </div>
-    </div>
+<div class="title">
+  INTERMARKET
+</div>
 
-    <div
-      class="dataList"
-      id="intermarket"
-    ></div>
+<div
+  class="dataList"
+  id="intermarket"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 </div>
 
 </section>
-
-<!-- ============================================================
-     MACRO
-============================================================ -->
 
 <section
   class="view"
@@ -2073,49 +1963,41 @@ pre{
 
 <article class="card s7">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        GOLD MACRO ENGINE
-      </div>
-    </div>
+<div class="title">
+  GOLD MACRO ENGINE
+</div>
 
-    <div
-      class="dataList"
-      id="macroData"
-    ></div>
+<div
+  class="dataList"
+  id="macroData"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s5">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        FEED QUALITY
-      </div>
-    </div>
+<div class="title">
+  FEED QUALITY
+</div>
 
-    <div
-      class="dataList"
-      id="quality"
-    ></div>
+<div
+  class="dataList"
+  id="quality"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 </div>
 
 </section>
-
-<!-- ============================================================
-     SYSTEM
-============================================================ -->
 
 <section
   class="view"
@@ -2126,67 +2008,51 @@ pre{
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        ENGINE HEALTH
-      </div>
-    </div>
+<div class="title">
+  ENGINE HEALTH
+</div>
 
-    <div
-      class="dataList"
-      id="health"
-    ></div>
+<div
+  class="dataList"
+  id="health"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s6">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
-      <div class="title">
-        ARCHITECTURE
-      </div>
-    </div>
+<div class="title">
+  ARCHITECTURE
+</div>
 
-    <div
-      class="dataList"
-      id="architecture"
-    ></div>
+<div
+  class="dataList"
+  id="architecture"
+></div>
 
-  </div>
+</div>
 
 </article>
 
 <article class="card s12">
 
-  <div class="pad">
+<div class="pad">
 
-    <div class="head">
+<div class="title">
+  RAW RESPONSE
+</div>
 
-      <div>
-
-        <div class="title">
-          RAW RESPONSE
-        </div>
-
-        <div class="sub">
-          Deep engine debugging
-        </div>
-
-      </div>
-
-    </div>
-
-    <pre id="raw">
+<pre id="raw">
 WAITING
-    </pre>
+</pre>
 
-  </div>
+</div>
 
 </article>
 
@@ -2214,32 +2080,17 @@ let CHART_DATA =
 let CHART_CACHE =
   {};
 
-let POINTER =
-  null;
-
 let LIVE_PRICE =
   null;
 
-let PREVIOUS_LIVE_PRICE =
+let PREVIOUS_PRICE =
   null;
 
-let LIVE_TIMESTAMP =
+let PRICE_TIMESTAMP =
   null;
-
-let WS =
-  null;
-
-let WS_RECONNECT_TIMER =
-  null;
-
-let WS_RECONNECT_ATTEMPT =
-  0;
 
 let ZONES =
   [];
-
-let CURRENT_IDEA =
-  null;
 
 const LIVE_ZONE_STATES =
   new Map();
@@ -2321,27 +2172,6 @@ function fmt(
 }
 
 
-function fmtLoose(
-  value,
-  digits = 2
-){
-
-  const n =
-    finite(value);
-
-  if(n === null){
-    return "—";
-  }
-
-  return n.toLocaleString(
-    undefined,
-    {
-      maximumFractionDigits:digits
-    }
-  );
-}
-
-
 function pretty(
   value
 ){
@@ -2371,14 +2201,14 @@ function asText(
 
   if(
     value === null ||
-    value === undefined ||
-    value === ""
+    value === undefined
   ){
     return "—";
   }
 
   if(
-    typeof value === "object"
+    typeof value ===
+    "object"
   ){
 
     if(
@@ -2393,7 +2223,8 @@ function asText(
       .map(
         ([key,item]) =>
           `${pretty(key)}: ${
-            typeof item === "object"
+            typeof item ===
+            "object"
               ? "…"
               : item
           }`
@@ -2407,16 +2238,16 @@ function asText(
 
 function getSpot(){
 
-  const streamAge =
-    LIVE_TIMESTAMP
+  const age =
+    PRICE_TIMESTAMP
       ? Date.now() -
-        LIVE_TIMESTAMP
+        PRICE_TIMESTAMP
       : Infinity;
 
   if(
     LIVE_PRICE !== null &&
-    streamAge <
-    15000
+    age <
+    20000
   ){
     return LIVE_PRICE;
   }
@@ -2426,7 +2257,10 @@ function getSpot(){
       DATA?.market?.price
     ) ??
     finite(
-      CHART_DATA.at(-1)?.close
+      CHART_DATA[
+        CHART_DATA.length -
+        1
+      ]?.close
     )
   );
 }
@@ -2473,6 +2307,7 @@ function zonePrice(
     low !== null &&
     high !== null
   ){
+
     return (
       low +
       high
@@ -2490,19 +2325,8 @@ function zoneId(
 
   return (
     zone?.id ||
-    `${zone?.name || "ZONE"}-${zone?.side || ""}-${index}`
+    `${zone?.name}-${zone?.side}-${index}`
   );
-}
-
-
-function zoneSide(
-  zone
-){
-
-  return String(
-    zone?.side ||
-    ""
-  ).toUpperCase();
 }
 
 
@@ -2514,8 +2338,8 @@ function zoneScore(
     finite(
       zone?.raidScore ??
       zone?.raidLikelihood ??
-      zone?.score ??
-      zone?.nextTargetScore
+      zone?.nextTargetScore ??
+      zone?.score
     ) ?? 0,
     0,
     100
@@ -2547,9 +2371,11 @@ document
             )
             .forEach(
               element =>
-                element.classList.remove(
-                  "active"
-                )
+                element
+                  .classList
+                  .remove(
+                    "active"
+                  )
             );
 
           document
@@ -2558,11 +2384,13 @@ document
             )
             .forEach(
               element =>
-                element.classList.toggle(
-                  "active",
-                  element.dataset.view ===
-                  view
-                )
+                element
+                  .classList
+                  .toggle(
+                    "active",
+                    element.dataset.view ===
+                    view
+                  )
             );
 
           $(view)
@@ -2575,16 +2403,12 @@ document
             view ===
             "terminal"
           ){
+
             setTimeout(
               drawChart,
-              80
+              70
             );
           }
-
-          window.scrollTo({
-            top:0,
-            behavior:"smooth"
-          });
         }
       );
     }
@@ -2592,16 +2416,207 @@ document
 
 
 /* ============================================================
-   LIVE ZONE STATE ENGINE
+   CONNECTION
+============================================================ */
+
+function setConnection(
+  status,
+  text
+){
+
+  const dot =
+    $("connectionDot");
+
+  dot.className =
+    "connectionDot";
+
+  if(
+    status ===
+    "live"
+  ){
+    dot.classList.add(
+      "live"
+    );
+  }
+
+  if(
+    status ===
+    "dead"
+  ){
+    dot.classList.add(
+      "dead"
+    );
+  }
+
+  $("connectionText")
+    .textContent =
+      text;
+}
+
+
+/* ============================================================
+   FAST PRICE
+============================================================ */
+
+async function loadFastPrice(){
+
+  try{
+
+    const response =
+      await fetch(
+        `/api/price?t=${Date.now()}`,
+        {
+          cache:"no-store"
+        }
+      );
+
+    const json =
+      await response.json();
+
+    if(
+      !response.ok ||
+      json.ok ===
+      false
+    ){
+
+      throw new Error(
+        json.error ||
+        "Price request failed."
+      );
+    }
+
+    const price =
+      finite(
+        json.price
+      );
+
+    if(
+      price === null ||
+      price <= 0
+    ){
+      throw new Error(
+        "Invalid XAU/USD price."
+      );
+    }
+
+    PREVIOUS_PRICE =
+      LIVE_PRICE;
+
+    LIVE_PRICE =
+      price;
+
+    PRICE_TIMESTAMP =
+      finite(
+        json.timestamp
+      ) ??
+      Date.now();
+
+    setConnection(
+      "live",
+      "FAST REST"
+    );
+
+    updateZoneStates(
+      LIVE_PRICE
+    );
+
+    renderFastPrice();
+
+    renderFocus();
+
+    renderZones();
+
+    renderTradeIdea();
+
+    drawChart();
+
+  }catch(error){
+
+    console.error(
+      "FAST PRICE:",
+      error
+    );
+
+    setConnection(
+      "dead",
+      "PRICE ERROR"
+    );
+  }
+}
+
+
+function renderFastPrice(){
+
+  const price =
+    getSpot();
+
+  $("price")
+    .textContent =
+      fmt(
+        price
+      );
+
+  $("liveTag")
+    .textContent =
+      "◉ FAST REST PRICE";
+
+  const previousClose =
+    finite(
+      DATA?.market?.previousClose
+    );
+
+  if(
+    price !== null &&
+    previousClose !== null &&
+    previousClose > 0
+  ){
+
+    const move =
+      price -
+      previousClose;
+
+    const percent =
+      move /
+      previousClose *
+      100;
+
+    const element =
+      $("priceMove");
+
+    element.textContent =
+      `${
+        move >= 0
+          ? "+"
+          : ""
+      }${fmt(move)} (${
+        percent >= 0
+          ? "+"
+          : ""
+      }${percent.toFixed(2)}%)`;
+
+    element.className =
+      "priceMove";
+
+    element.classList.add(
+      move >= 0
+        ? "green"
+        : "red"
+    );
+  }
+}
+
+
+/* ============================================================
+   RAID STATE
 ============================================================ */
 
 function updateZoneStates(
-  livePrice
+  price
 ){
 
   if(
     !Number.isFinite(
-      livePrice
+      price
     )
   ){
     return;
@@ -2615,7 +2630,8 @@ function updateZoneStates(
       DATA?.market?.atr?.M5
     ) ??
     Math.max(
-      livePrice * .0005,
+      price *
+      .0005,
       .5
     );
 
@@ -2626,11 +2642,6 @@ function updateZoneStates(
         zoneId(
           zone,
           index
-        );
-
-      const side =
-        zoneSide(
-          zone
         );
 
       const center =
@@ -2656,9 +2667,16 @@ function updateZoneStates(
         ) ??
         center;
 
+      const side =
+        String(
+          zone.side ||
+          ""
+        )
+        .toUpperCase();
+
       const distance =
         Math.abs(
-          livePrice -
+          price -
           center
         );
 
@@ -2669,17 +2687,22 @@ function updateZoneStates(
           : 99;
 
       let state =
-        LIVE_ZONE_STATES.get(
-          id
-        ) || {
-          raided:false,
-          stage:
-            zone?.lifecycle?.stage ||
-            "TRACKING",
-          beyondTicks:0,
-          rejectionTicks:0,
-          lastPrice:null
-        };
+        LIVE_ZONE_STATES
+          .get(
+            id
+          ) || {
+
+            raided:false,
+
+            stage:
+              zone?.lifecycle?.stage ||
+              "TRACKING",
+
+            beyondCount:0,
+
+            lastPrice:null
+
+          };
 
       if(
         side ===
@@ -2687,33 +2710,32 @@ function updateZoneStates(
       ){
 
         if(
-          livePrice >
+          price >
           high
         ){
 
           state.raided =
             true;
 
-          state.beyondTicks++;
+          state.beyondCount++;
 
           state.stage =
-            state.beyondTicks >= 5
+            state.beyondCount >=
+            3
               ? "ACCEPTING"
               : "RAIDING";
 
         }else if(
           state.raided &&
-          livePrice <
+          price <
           high
         ){
-
-          state.rejectionTicks++;
 
           state.stage =
             "REJECTING";
 
         }else if(
-          livePrice >=
+          price >=
           low
         ){
 
@@ -2749,33 +2771,32 @@ function updateZoneStates(
       ){
 
         if(
-          livePrice <
+          price <
           low
         ){
 
           state.raided =
             true;
 
-          state.beyondTicks++;
+          state.beyondCount++;
 
           state.stage =
-            state.beyondTicks >= 5
+            state.beyondCount >=
+            3
               ? "ACCEPTING"
               : "RAIDING";
 
         }else if(
           state.raided &&
-          livePrice >
+          price >
           low
         ){
-
-          state.rejectionTicks++;
 
           state.stage =
             "REJECTING";
 
         }else if(
-          livePrice <=
+          price <=
           high
         ){
 
@@ -2806,14 +2827,14 @@ function updateZoneStates(
         }
       }
 
-      state.lastPrice =
-        livePrice;
-
       state.distance =
         distance;
 
       state.distanceATR =
         distanceATR;
+
+      state.lastPrice =
+        price;
 
       LIVE_ZONE_STATES.set(
         id,
@@ -2824,21 +2845,18 @@ function updateZoneStates(
 }
 
 
-function effectiveZoneStage(
+function effectiveStage(
   zone,
-  index = 0
+  index
 ){
-
-  const id =
-    zoneId(
-      zone,
-      index
-    );
 
   return (
     LIVE_ZONE_STATES
       .get(
-        id
+        zoneId(
+          zone,
+          index
+        )
       )
       ?.stage ||
     zone?.lifecycle?.stage ||
@@ -2848,427 +2866,18 @@ function effectiveZoneStage(
 
 
 /* ============================================================
-   WEBSOCKET
-============================================================ */
-
-function websocketUrl(){
-
-  const protocol =
-    location.protocol ===
-    "https:"
-      ? "wss:"
-      : "ws:";
-
-  return (
-    `${protocol}//${location.host}/api/live`
-  );
-}
-
-
-function setConnection(
-  state,
-  text
-){
-
-  const dot =
-    $("connectionDot");
-
-  dot.className =
-    "connectionDot";
-
-  if(
-    state ===
-    "live"
-  ){
-    dot.classList.add(
-      "live"
-    );
-  }
-
-  if(
-    state ===
-    "dead"
-  ){
-    dot.classList.add(
-      "dead"
-    );
-  }
-
-  $("connectionText")
-    .textContent =
-      text;
-}
-
-
-function scheduleReconnect(){
-
-  clearTimeout(
-    WS_RECONNECT_TIMER
-  );
-
-  const delay =
-    Math.min(
-      1500 *
-      Math.max(
-        WS_RECONNECT_ATTEMPT,
-        1
-      ),
-      15000
-    );
-
-  WS_RECONNECT_TIMER =
-    setTimeout(
-      connectLive,
-      delay
-    );
-}
-
-
-function connectLive(){
-
-  clearTimeout(
-    WS_RECONNECT_TIMER
-  );
-
-  if(
-    WS &&
-    (
-      WS.readyState ===
-      WebSocket.CONNECTING ||
-      WS.readyState ===
-      WebSocket.OPEN
-    )
-  ){
-    return;
-  }
-
-  setConnection(
-    "connecting",
-    "CONNECTING"
-  );
-
-  try{
-
-    WS =
-      new WebSocket(
-        websocketUrl()
-      );
-
-  }catch(error){
-
-    console.error(error);
-
-    setConnection(
-      "dead",
-      "STREAM ERROR"
-    );
-
-    scheduleReconnect();
-
-    return;
-  }
-
-  WS.addEventListener(
-    "open",
-    () => {
-
-      WS_RECONNECT_ATTEMPT =
-        0;
-
-      setConnection(
-        "live",
-        "LIVE STREAM"
-      );
-    }
-  );
-
-  WS.addEventListener(
-    "message",
-    event => {
-
-      let message;
-
-      try{
-
-        message =
-          JSON.parse(
-            event.data
-          );
-
-      }catch{
-
-        return;
-      }
-
-      if(
-        message.type ===
-        "price"
-      ){
-
-        const price =
-          finite(
-            message.price
-          );
-
-        if(
-          price === null ||
-          price <= 0
-        ){
-          return;
-        }
-
-        PREVIOUS_LIVE_PRICE =
-          LIVE_PRICE;
-
-        LIVE_PRICE =
-          price;
-
-        LIVE_TIMESTAMP =
-          finite(
-            message.timestamp
-          ) ??
-          Date.now();
-
-        updateZoneStates(
-          LIVE_PRICE
-        );
-
-        renderLivePrice();
-
-        renderFocus();
-
-        renderZones();
-
-        renderTradeIdea();
-
-        requestAnimationFrame(
-          drawChart
-        );
-      }
-
-      if(
-        message.type ===
-        "status"
-      ){
-
-        if(
-          message.status ===
-          "subscribed"
-        ){
-          setConnection(
-            "live",
-            "LIVE STREAM"
-          );
-        }
-      }
-
-      if(
-        message.type ===
-        "error"
-      ){
-
-        console.error(
-          "LIVE STREAM:",
-          message.message
-        );
-      }
-    }
-  );
-
-  WS.addEventListener(
-    "close",
-    () => {
-
-      setConnection(
-        "dead",
-        "RECONNECTING"
-      );
-
-      WS_RECONNECT_ATTEMPT++;
-
-      scheduleReconnect();
-    }
-  );
-
-  WS.addEventListener(
-    "error",
-    error => {
-
-      console.error(
-        "WebSocket error:",
-        error
-      );
-    }
-  );
-}
-
-
-/* ============================================================
-   LIVE PRICE UI
-============================================================ */
-
-function renderLivePrice(){
-
-  const spot =
-    getSpot();
-
-  $("price")
-    .textContent =
-      fmt(
-        spot
-      );
-
-  if(
-    LIVE_PRICE !== null
-  ){
-
-    $("liveTag")
-      .textContent =
-        "◉ TWELVE DATA LIVE PRICE";
-
-  }else{
-
-    $("liveTag")
-      .textContent =
-        "◉ REST PRICE";
-  }
-
-  if(
-    DATA
-  ){
-
-    const previousClose =
-      finite(
-        DATA?.market?.previousClose
-      );
-
-    if(
-      previousClose !== null &&
-      spot !== null
-    ){
-
-      const move =
-        spot -
-        previousClose;
-
-      const pct =
-        move /
-        previousClose *
-        100;
-
-      const element =
-        $("priceMove");
-
-      element.textContent =
-        `${
-          move >= 0
-            ? "+"
-            : ""
-        }${fmt(move)} (${
-          pct >= 0
-            ? "+"
-            : ""
-        }${pct.toFixed(2)}%)`;
-
-      element.className =
-        "priceMove";
-
-      element.classList.add(
-        move >= 0
-          ? "green"
-          : "red"
-      );
-    }
-  }
-}
-
-
-/* ============================================================
-   STRUCTURE
-============================================================ */
-
-function structureClass(
-  value
-){
-
-  const text =
-    String(
-      value ||
-      ""
-    ).toUpperCase();
-
-  if(
-    text.includes(
-      "BULL"
-    )
-  ){
-    return "bull";
-  }
-
-  if(
-    text.includes(
-      "BEAR"
-    )
-  ){
-    return "bear";
-  }
-
-  return "mixed";
-}
-
-
-function renderPulse(){
-
-  const tfs = [
-    "M1",
-    "M5",
-    "M15",
-    "H1"
-  ];
-
-  const html =
-    tfs.map(
-      tf => {
-
-        const bias =
-          DATA?.structure?.[tf]?.bias ||
-          "NEUTRAL";
-
-        return `
-          <div class="pulseBox ${structureClass(bias)}">
-
-            <label>
-              ${tf}
-            </label>
-
-            <strong>
-              ${bias}
-            </strong>
-
-            <div class="glow"></div>
-
-          </div>
-        `;
-      }
-    ).join("");
-
-  $("pulse").innerHTML =
-    html;
-
-  $("structurePulse").innerHTML =
-    html;
-}
-
-
-/* ============================================================
-   DOMINANT
+   FOCUS
 ============================================================ */
 
 function dominantZone(){
 
   return (
-    DATA?.deepLiquidity?.dominantZone ||
-    ZONES[0] ||
+    DATA
+      ?.deepLiquidity
+      ?.dominantZone ||
+    ZONES[
+      0
+    ] ||
     null
   );
 }
@@ -3286,15 +2895,6 @@ function renderFocus(){
     !zone ||
     spot === null
   ){
-
-    $("focusTarget")
-      .textContent =
-        "NO TARGET";
-
-    $("focusDetails")
-      .textContent =
-        "Waiting for liquidity map.";
-
     return;
   }
 
@@ -3309,12 +2909,18 @@ function renderFocus(){
     return;
   }
 
-  const stage =
-    effectiveZoneStage(
-      zone,
+  const index =
+    Math.max(
+      0,
       ZONES.indexOf(
         zone
       )
+    );
+
+  const stage =
+    effectiveStage(
+      zone,
+      index
     );
 
   const distance =
@@ -3339,6 +2945,10 @@ function renderFocus(){
         "LIQUIDITY"
       }`;
 
+  $("focusStage")
+    .textContent =
+      stage;
+
   $("focusScore")
     .textContent =
       Math.round(
@@ -3351,10 +2961,6 @@ function renderFocus(){
       "--score",
       score
     );
-
-  $("focusStage")
-    .textContent =
-      stage;
 }
 
 
@@ -3362,25 +2968,25 @@ function renderFocus(){
    TRADE IDEA
 ============================================================ */
 
-function countStructure(
+function structureCount(
   wanted
 ){
 
-  const tfs = [
+  return [
     "M1",
     "M5",
     "M15",
     "H1"
-  ];
-
-  return tfs.filter(
+  ]
+  .filter(
     tf =>
       DATA
         ?.structure
         ?.[tf]
         ?.bias ===
       wanted
-  ).length;
+  )
+  .length;
 }
 
 
@@ -3401,22 +3007,31 @@ function buildTradeIdea(){
       signal:"WAIT",
       confidence:0,
       text:
-        "Waiting for live price and liquidity map.",
+        "Waiting for market data.",
       entry:"WAIT",
       stop:null,
       tp1:null,
       tp2:null,
-      stages:[false,false,false,false,false]
+      stages:[
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
     };
   }
 
   const index =
-    ZONES.indexOf(
-      zone
+    Math.max(
+      0,
+      ZONES.indexOf(
+        zone
+      )
     );
 
   const stage =
-    effectiveZoneStage(
+    effectiveStage(
       zone,
       index
     );
@@ -3431,12 +3046,6 @@ function buildTradeIdea(){
       zone
     );
 
-  const atr =
-    finite(
-      DATA?.market?.atr?.M5
-    ) ??
-    1;
-
   const direction =
     zone.side ===
     "BUY_SIDE"
@@ -3448,7 +3057,8 @@ function buildTradeIdea(){
       "RAIDING",
       "REJECTING",
       "ACCEPTING"
-    ].includes(
+    ]
+    .includes(
       stage
     );
 
@@ -3456,13 +3066,13 @@ function buildTradeIdea(){
     stage ===
     "REJECTING";
 
-  const structureConfirm =
+  const structureConfirmed =
     direction ===
     "BUY"
-      ? countStructure(
+      ? structureCount(
           "BULLISH"
         ) >= 2
-      : countStructure(
+      : structureCount(
           "BEARISH"
         ) >= 2;
 
@@ -3490,18 +3100,18 @@ function buildTradeIdea(){
     raid
   ){
     confidence +=
-      14;
+      15;
   }
 
   if(
     rejection
   ){
     confidence +=
-      14;
+      15;
   }
 
   if(
-    structureConfirm
+    structureConfirmed
   ){
     confidence +=
       10;
@@ -3516,20 +3126,15 @@ function buildTradeIdea(){
       99
     );
 
-  let signal =
-    "WAIT";
-
-  if(
-    score >= 70
-  ){
-    signal =
-      `WATCH ${direction}`;
-  }
-
   const confirmed =
     score >= 70 &&
     rejection &&
-    structureConfirm;
+    structureConfirmed;
+
+  let signal =
+    score >= 70
+      ? `WATCH ${direction}`
+      : "WAIT";
 
   if(
     confirmed
@@ -3537,6 +3142,12 @@ function buildTradeIdea(){
     signal =
       direction;
   }
+
+  const atr =
+    finite(
+      DATA?.market?.atr?.M5
+    ) ??
+    1;
 
   let stop =
     null;
@@ -3558,7 +3169,9 @@ function buildTradeIdea(){
 
       stop =
         Math.min(
-          zone.low ||
+          finite(
+            zone.low
+          ) ??
           level,
           level
         ) -
@@ -3583,7 +3196,9 @@ function buildTradeIdea(){
 
       stop =
         Math.max(
-          zone.high ||
+          finite(
+            zone.high
+          ) ??
           level,
           level
         ) +
@@ -3615,39 +3230,48 @@ function buildTradeIdea(){
   ){
 
     text =
-      `Live price is approaching ${zone.name}. Raid score is ${Math.round(score)}.`;
+      `Price is approaching ${zone.name}. Raid score ${Math.round(score)}.`;
 
-  }else if(
+  }
+
+  if(
     stage ===
     "ATTACKING"
   ){
 
     text =
-      `Price is attacking ${zone.name}. The live stream is now watching for penetration of the liquidity zone.`;
+      `Price is attacking ${zone.name}. Waiting for a clean sweep.`;
 
-  }else if(
+  }
+
+  if(
     stage ===
     "RAIDING"
   ){
 
     text =
-      `${zone.name} is being raided live. Do not treat the sweep alone as a reversal; rejection is still required.`;
+      `${zone.name} is being swept. Waiting for rejection before reversal confirmation.`;
 
-  }else if(
+  }
+
+  if(
     stage ===
     "REJECTING"
   ){
 
     text =
-      `${zone.name} has been swept and live price moved back through the zone. ${direction} reversal confirmation is building.`;
+      `${zone.name} has been swept and price returned through the zone. ${direction} confirmation is building.`;
 
-  }else if(
+  }
+
+  if(
     stage ===
     "ACCEPTING"
   ){
 
     text =
-      `Price is holding beyond ${zone.name}. This currently looks more like acceptance than rejection.`;
+      `Price is holding beyond ${zone.name}. This currently looks like acceptance rather than reversal.`;
+
   }
 
   return {
@@ -3655,8 +3279,6 @@ function buildTradeIdea(){
     signal,
 
     confidence,
-
-    direction,
 
     text,
 
@@ -3681,13 +3303,15 @@ function buildTradeIdea(){
         "RAIDING",
         "REJECTING",
         "ACCEPTING"
-      ].includes(
+      ]
+      .includes(
         stage
       ),
       raid,
       rejection,
       confirmed
     ]
+
   };
 }
 
@@ -3697,16 +3321,13 @@ function renderTradeIdea(){
   const idea =
     buildTradeIdea();
 
-  CURRENT_IDEA =
-    idea;
-
-  const signal =
+  const element =
     $("ideaSignal");
 
-  signal.textContent =
+  element.textContent =
     idea.signal;
 
-  signal.className =
+  element.className =
     "ideaSignal";
 
   if(
@@ -3715,9 +3336,11 @@ function renderTradeIdea(){
     )
   ){
 
-    signal.classList.add(
-      "green"
-    );
+    element
+      .classList
+      .add(
+        "green"
+      );
 
   }else if(
     idea.signal.includes(
@@ -3725,15 +3348,19 @@ function renderTradeIdea(){
     )
   ){
 
-    signal.classList.add(
-      "red"
-    );
+    element
+      .classList
+      .add(
+        "red"
+      );
 
   }else{
 
-    signal.classList.add(
-      "gold"
-    );
+    element
+      .classList
+      .add(
+        "gold"
+      );
   }
 
   $("ideaConfidence")
@@ -3783,47 +3410,49 @@ function renderTradeIdea(){
     "CONFIRM"
   ];
 
-  let marked =
+  let currentMarked =
     false;
 
   $("stages")
     .innerHTML =
-      labels.map(
-        (
-          label,
-          index
-        ) => {
+      labels
+        .map(
+          (
+            label,
+            index
+          ) => {
 
-          let cls =
-            "";
+            let cls =
+              "";
 
-          if(
-            idea.stages[
-              index
-            ]
-          ){
+            if(
+              idea.stages[
+                index
+              ]
+            ){
 
-            cls =
-              "done";
+              cls =
+                "done";
 
-          }else if(
-            !marked
-          ){
+            }else if(
+              !currentMarked
+            ){
 
-            cls =
-              "current";
+              cls =
+                "current";
 
-            marked =
-              true;
+              currentMarked =
+                true;
+            }
+
+            return `
+              <div class="stage ${cls}">
+                ${label}
+              </div>
+            `;
           }
-
-          return `
-            <div class="stage ${cls}">
-              ${label}
-            </div>
-          `;
-        }
-      ).join("");
+        )
+        .join("");
 }
 
 
@@ -3833,7 +3462,7 @@ function renderTradeIdea(){
 
 function renderZones(){
 
-  function makeHtml(
+  function html(
     limit
   ){
 
@@ -3843,8 +3472,15 @@ function renderZones(){
 
       return `
         <div class="row">
-          <div class="key">Status</div>
-          <div class="value">No liquidity zones</div>
+
+          <div class="key">
+            Status
+          </div>
+
+          <div class="value">
+            No zones
+          </div>
+
         </div>
       `;
     }
@@ -3861,14 +3497,9 @@ function renderZones(){
         ) => {
 
           const stage =
-            effectiveZoneStage(
+            effectiveStage(
               zone,
               index
-            );
-
-          const side =
-            zoneSide(
-              zone
             );
 
           return `
@@ -3886,11 +3517,7 @@ function renderZones(){
                 ${Math.round(zoneScore(zone))}
               </div>
 
-              <div class="zoneStage ${
-                side === "BUY_SIDE"
-                  ? "red"
-                  : "green"
-              }">
+              <div class="zoneStage">
                 ${stage}
               </div>
 
@@ -3903,20 +3530,20 @@ function renderZones(){
 
   $("topZones")
     .innerHTML =
-      makeHtml(
+      html(
         8
       );
 
   $("allZones")
     .innerHTML =
-      makeHtml(
+      html(
         40
       );
 }
 
 
 /* ============================================================
-   OBJECT
+   OBJECT VIEW
 ============================================================ */
 
 function renderObject(
@@ -3939,8 +3566,15 @@ function renderObject(
 
     element.innerHTML = `
       <div class="row">
-        <div class="key">Status</div>
-        <div class="value">No data</div>
+
+        <div class="key">
+          Status
+        </div>
+
+        <div class="value">
+          No data
+        </div>
+
       </div>
     `;
 
@@ -3965,8 +3599,15 @@ function renderObject(
             index
           ) => `
             <div class="row">
-              <div class="key">${index + 1}</div>
-              <div class="value">${asText(value)}</div>
+
+              <div class="key">
+                ${index + 1}
+              </div>
+
+              <div class="value">
+                ${asText(value)}
+              </div>
+
             </div>
           `
         )
@@ -3982,8 +3623,15 @@ function renderObject(
 
     element.innerHTML = `
       <div class="row">
-        <div class="key">Value</div>
-        <div class="value">${asText(object)}</div>
+
+        <div class="key">
+          Value
+        </div>
+
+        <div class="value">
+          ${object}
+        </div>
+
       </div>
     `;
 
@@ -4007,8 +3655,15 @@ function renderObject(
           ]
         ) => `
           <div class="row">
-            <div class="key">${pretty(key)}</div>
-            <div class="value">${asText(value)}</div>
+
+            <div class="key">
+              ${pretty(key)}
+            </div>
+
+            <div class="value">
+              ${asText(value)}
+            </div>
+
           </div>
         `
       )
@@ -4017,7 +3672,90 @@ function renderObject(
 
 
 /* ============================================================
-   DEEP RENDER
+   STRUCTURE
+============================================================ */
+
+function structureClass(
+  value
+){
+
+  const text =
+    String(
+      value ||
+      ""
+    )
+    .toUpperCase();
+
+  if(
+    text.includes(
+      "BULL"
+    )
+  ){
+    return "bull";
+  }
+
+  if(
+    text.includes(
+      "BEAR"
+    )
+  ){
+    return "bear";
+  }
+
+  return "mixed";
+}
+
+
+function renderPulse(){
+
+  const html =
+    [
+      "M1",
+      "M5",
+      "M15",
+      "H1"
+    ]
+    .map(
+      tf => {
+
+        const bias =
+          DATA
+            ?.structure
+            ?.[tf]
+            ?.bias ||
+          "NEUTRAL";
+
+        return `
+          <div class="pulseBox ${structureClass(bias)}">
+
+            <label>
+              ${tf}
+            </label>
+
+            <strong>
+              ${bias}
+            </strong>
+
+            <div class="glow"></div>
+
+          </div>
+        `;
+      }
+    )
+    .join("");
+
+  $("pulse")
+    .innerHTML =
+      html;
+
+  $("structurePulse")
+    .innerHTML =
+      html;
+}
+
+
+/* ============================================================
+   DEEP DATA
 ============================================================ */
 
 function renderDeep(){
@@ -4028,7 +3766,9 @@ function renderDeep(){
 
   ZONES =
     Array.isArray(
-      DATA?.deepLiquidity?.zones
+      DATA
+        ?.deepLiquidity
+        ?.zones
     )
       ? DATA.deepLiquidity.zones
       : [];
@@ -4039,6 +3779,7 @@ function renderDeep(){
   if(
     spot !== null
   ){
+
     updateZoneStates(
       spot
     );
@@ -4046,26 +3787,33 @@ function renderDeep(){
 
   $("regime")
     .textContent =
-      DATA?.market?.regime?.regime ||
+      DATA
+        ?.market
+        ?.regime
+        ?.regime ||
       "—";
 
   $("vwap")
     .textContent =
       fmt(
-        DATA?.market?.vwap
+        DATA
+          ?.market
+          ?.vwap
       );
 
   $("session")
     .textContent =
-      DATA?.market?.currentSession ||
-      DATA?.currentSession ||
+      DATA
+        ?.market
+        ?.currentSession ||
       "—";
 
   $("deepTime")
     .textContent =
       new Date(
         DATA.generatedAt
-      ).toLocaleTimeString(
+      )
+      .toLocaleTimeString(
         [],
         {
           hour:"2-digit",
@@ -4109,14 +3857,28 @@ function renderDeep(){
 
   $("metrics")
     .innerHTML =
-      metrics.map(
-        ([label,value]) => `
-          <div class="metric">
-            <label>${label}</label>
-            <strong>${fmtLoose(value)}</strong>
-          </div>
-        `
-      ).join("");
+      metrics
+        .map(
+          (
+            [
+              label,
+              value
+            ]
+          ) => `
+            <div class="metric">
+
+              <label>
+                ${label}
+              </label>
+
+              <strong>
+                ${fmt(value)}
+              </strong>
+
+            </div>
+          `
+        )
+        .join("");
 
   renderPulse();
 
@@ -4194,16 +3956,14 @@ function renderDeep(){
         2
       );
 
-  renderLivePrice();
+  renderFastPrice();
 
-  requestAnimationFrame(
-    drawChart
-  );
+  drawChart();
 }
 
 
 /* ============================================================
-   XAU DEEP API
+   XAU API
 ============================================================ */
 
 async function loadXau(
@@ -4237,7 +3997,7 @@ async function loadXau(
   }catch{
 
     throw new Error(
-      `XAU API invalid JSON: ${text.slice(0,100)}`
+      "Invalid XAU API response."
     );
   }
 
@@ -4261,7 +4021,7 @@ async function loadXau(
 
 
 /* ============================================================
-   CHART FETCH
+   CHART
 ============================================================ */
 
 function normalizeCandle(
@@ -4289,12 +4049,9 @@ function normalizeCandle(
     );
 
   let time =
-    candle.time ??
-    candle.timestamp;
-
-  time =
     Number(
-      time
+      candle.time ??
+      candle.timestamp
     );
 
   if(
@@ -4306,12 +4063,15 @@ function normalizeCandle(
   }
 
   if(
-    !Number.isFinite(time) ||
+    !Number.isFinite(
+      time
+    ) ||
     open === null ||
     high === null ||
     low === null ||
     close === null
   ){
+
     return null;
   }
 
@@ -4320,11 +4080,7 @@ function normalizeCandle(
     open,
     high,
     low,
-    close,
-    volume:
-      finite(
-        candle.volume
-      ) ?? 0
+    close
   };
 }
 
@@ -4359,163 +4115,80 @@ async function loadChart(
     .textContent =
       "LOADING";
 
-  try{
+  const response =
+    await fetch(
+      `/api/chart?tf=${timeframe}&limit=260&t=${Date.now()}`,
+      {
+        cache:"no-store"
+      }
+    );
 
-    const response =
-      await fetch(
-        `/api/chart?tf=${timeframe}&limit=260&t=${Date.now()}`,
-        {
-          cache:"no-store"
-        }
-      );
-
-    const json =
-      await response.json();
-
-    if(
-      !response.ok ||
-      json.ok ===
-      false
-    ){
-      throw new Error(
-        json.error ||
-        "Chart request failed."
-      );
-    }
-
-    CHART_DATA =
-      (
-        json.candles ||
-        []
-      )
-      .map(
-        normalizeCandle
-      )
-      .filter(
-        Boolean
-      )
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.time -
-          b.time
-      );
-
-    CHART_CACHE[
-      timeframe
-    ] = {
-      time:Date.now(),
-      data:CHART_DATA
-    };
-
-    $("chartStatus")
-      .textContent =
-        `${timeframe.toUpperCase()} LIVE`;
-
-    drawChart();
-
-  }catch(error){
-
-    console.error(error);
-
-    $("chartStatus")
-      .textContent =
-        "CHART ERROR";
-
-    $("ohlc")
-      .textContent =
-        error.message;
-  }
-}
-
-
-/* ============================================================
-   FVG EXTRACT
-============================================================ */
-
-function getFvgs(){
+  const json =
+    await response.json();
 
   if(
-    !Array.isArray(
-      DATA?.fairValueGaps
-    )
+    !response.ok ||
+    json.ok ===
+    false
   ){
-    return [];
+
+    throw new Error(
+      json.error ||
+      "Chart request failed."
+    );
   }
 
-  const spot =
-    getSpot();
-
-  return DATA
-    .fairValueGaps
+  CHART_DATA =
+    (
+      json.candles ||
+      []
+    )
     .map(
-      gap => {
-
-        const low =
-          finite(
-            gap.low
-          );
-
-        const high =
-          finite(
-            gap.high
-          );
-
-        if(
-          low === null ||
-          high === null
-        ){
-          return null;
-        }
-
-        if(
-          spot !== null &&
-          (
-            low <
-            spot *
-            .75 ||
-            high >
-            spot *
-            1.25
-          )
-        ){
-          return null;
-        }
-
-        return {
-          low:
-            Math.min(
-              low,
-              high
-            ),
-          high:
-            Math.max(
-              low,
-              high
-            )
-        };
-      }
+      normalizeCandle
     )
     .filter(
       Boolean
+    )
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.time -
+        b.time
     );
+
+  CHART_CACHE[
+    timeframe
+  ] = {
+
+    time:
+      Date.now(),
+
+    data:
+      CHART_DATA
+
+  };
+
+  $("chartStatus")
+    .textContent =
+      `${timeframe.toUpperCase()} LIVE`;
+
+  drawChart();
 }
 
 
 /* ============================================================
-   CHART SIZE
+   DRAW CHART
 ============================================================ */
 
-function chartSize(){
+function drawChart(){
 
   const canvas =
     $("chart");
 
   const rect =
-    canvas
-      .getBoundingClientRect();
+    canvas.getBoundingClientRect();
 
   const dpr =
     Math.min(
@@ -4556,906 +4229,489 @@ function chartSize(){
     0
   );
 
-  return {
-    canvas,
-    ctx,
-    width:rect.width,
-    height:rect.height
-  };
-}
+  const width =
+    rect.width;
 
+  const height =
+    rect.height;
 
-/* ============================================================
-   DRAW CHART
-============================================================ */
+  ctx.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
 
-function drawChart(){
+  if(
+    CHART_DATA.length <
+    3
+  ){
+    return;
+  }
 
-  try{
-
-    const {
-      ctx,
-      width,
-      height
-    } =
-      chartSize();
-
-    ctx.clearRect(
-      0,
-      0,
-      width,
-      height
+  const candles =
+    CHART_DATA.slice(
+      -150
     );
 
-    if(
-      CHART_DATA.length <
-      3
-    ){
+  const left =
+    8;
 
-      ctx.fillStyle =
-        "#737c88";
+  const right =
+    68;
 
-      ctx.font =
-        "10px -apple-system";
+  const top =
+    12;
 
-      ctx.fillText(
-        "Waiting for candles…",
-        15,
-        35
-      );
+  const bottom =
+    22;
 
-      return;
-    }
+  const plotWidth =
+    width -
+    left -
+    right;
 
-    const visible =
-      CHART_DATA.slice(
-        -150
-      );
+  const plotHeight =
+    height -
+    top -
+    bottom;
 
-    const left =
-      8;
-
-    const right =
-      68;
-
-    const top =
-      12;
-
-    const bottom =
-      22;
-
-    const plotWidth =
-      width -
-      left -
-      right;
-
-    const plotHeight =
-      height -
-      top -
-      bottom;
-
-    const candleMin =
-      Math.min(
-        ...visible.map(
-          candle =>
-            candle.low
-        )
-      );
-
-    const candleMax =
-      Math.max(
-        ...visible.map(
-          candle =>
-            candle.high
-        )
-      );
-
-    const spot =
-      getSpot() ??
-      visible.at(-1).close;
-
-    let candleRange =
-      candleMax -
-      candleMin;
-
-    candleRange =
-      Math.max(
-        candleRange,
-        spot *
-        .0013,
-        2
-      );
-
-    /*
-       Liquidity cannot destroy chart scale.
-    */
-
-    const localBand =
-      Math.max(
-        candleRange *
-        2.3,
-        spot *
-        .006,
-        8
-      );
-
-    const candidates = [
-      candleMin,
-      candleMax,
-      spot
-    ];
-
-    ZONES
-      .slice(
-        0,
-        12
+  const candleMin =
+    Math.min(
+      ...candles.map(
+        candle =>
+          candle.low
       )
-      .forEach(
-        zone => {
+    );
 
-          const price =
-            zonePrice(
-              zone
-            );
+  const candleMax =
+    Math.max(
+      ...candles.map(
+        candle =>
+          candle.high
+      )
+    );
 
-          if(
-            price !== null &&
-            price >=
-            candleMin -
-            localBand &&
-            price <=
-            candleMax +
-            localBand
-          ){
-            candidates.push(
-              price
-            );
-          }
+  const spot =
+    getSpot() ??
+    candles[
+      candles.length -
+      1
+    ].close;
+
+  let range =
+    candleMax -
+    candleMin;
+
+  range =
+    Math.max(
+      range,
+      spot *
+      .001,
+      2
+    );
+
+  const localDistance =
+    Math.max(
+      range *
+      2,
+      spot *
+      .006,
+      8
+    );
+
+  const prices = [
+    candleMin,
+    candleMax,
+    spot
+  ];
+
+  ZONES
+    .slice(
+      0,
+      10
+    )
+    .forEach(
+      zone => {
+
+        const price =
+          zonePrice(
+            zone
+          );
+
+        if(
+          price !== null &&
+          price >=
+          candleMin -
+          localDistance &&
+          price <=
+          candleMax +
+          localDistance
+        ){
+
+          prices.push(
+            price
+          );
         }
-      );
-
-    const localFvgs =
-      getFvgs()
-        .filter(
-          gap =>
-            gap.high >=
-            candleMin -
-            localBand &&
-            gap.low <=
-            candleMax +
-            localBand
-        )
-        .slice(
-          0,
-          8
-        );
-
-    localFvgs.forEach(
-      gap => {
-
-        candidates.push(
-          gap.low,
-          gap.high
-        );
       }
     );
 
-    let min =
-      Math.min(
-        ...candidates
-      );
+  let min =
+    Math.min(
+      ...prices
+    );
 
-    let max =
-      Math.max(
-        ...candidates
-      );
+  let max =
+    Math.max(
+      ...prices
+    );
 
-    let span =
-      max -
-      min;
-
-    if(
-      !Number.isFinite(span) ||
-      span <= 0
-    ){
-      span =
-        Math.max(
-          spot *
-          .001,
-          3
-        );
-    }
-
-    const pad =
-      Math.max(
-        span *
-        .08,
-        .7
-      );
-
-    min -=
-      pad;
-
-    max +=
-      pad;
-
-    span =
-      max -
-      min;
-
-    function y(
-      price
-    ){
-
-      return (
-        top +
-        (
-          max -
-          price
-        ) /
-        span *
-        plotHeight
-      );
-    }
-
-    /* GRID */
-
-    for(
-      let i = 0;
-      i <= 6;
-      i++
-    ){
-
-      const yy =
-        top +
-        plotHeight *
-        i /
-        6;
-
-      ctx.strokeStyle =
-        "rgba(255,255,255,.032)";
-
-      ctx.lineWidth =
-        1;
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        left,
-        yy
-      );
-
-      ctx.lineTo(
-        left +
-        plotWidth,
-        yy
-      );
-
-      ctx.stroke();
-
-      const p =
+  const padding =
+    Math.max(
+      (
         max -
-        span *
-        i /
-        6;
+        min
+      ) *
+      .08,
+      .6
+    );
 
-      ctx.fillStyle =
-        "#59626f";
+  min -=
+    padding;
 
-      ctx.font =
-        "7px -apple-system";
+  max +=
+    padding;
 
-      ctx.textAlign =
-        "left";
+  const span =
+    max -
+    min;
 
-      ctx.fillText(
-        fmt(p),
-        left +
-        plotWidth +
-        5,
-        yy +
-        2
-      );
-    }
+  function y(
+    price
+  ){
 
-    /* FVG */
+    return (
+      top +
+      (
+        max -
+        price
+      ) /
+      span *
+      plotHeight
+    );
+  }
 
-    localFvgs.forEach(
-      gap => {
+  /* GRID */
+
+  for(
+    let i = 0;
+    i <= 6;
+    i++
+  ){
+
+    const yy =
+      top +
+      plotHeight *
+      i /
+      6;
+
+    ctx.strokeStyle =
+      "rgba(255,255,255,.035)";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      left,
+      yy
+    );
+
+    ctx.lineTo(
+      left +
+      plotWidth,
+      yy
+    );
+
+    ctx.stroke();
+
+    const price =
+      max -
+      span *
+      i /
+      6;
+
+    ctx.fillStyle =
+      "#59626f";
+
+    ctx.font =
+      "7px -apple-system";
+
+    ctx.textAlign =
+      "left";
+
+    ctx.fillText(
+      fmt(
+        price
+      ),
+      left +
+      plotWidth +
+      5,
+      yy +
+      2
+    );
+  }
+
+  /* LIQUIDITY */
+
+  ZONES
+    .slice(
+      0,
+      10
+    )
+    .forEach(
+      (
+        zone,
+        index
+      ) => {
+
+        const price =
+          zonePrice(
+            zone
+          );
 
         if(
-          gap.high <
+          price === null ||
+          price <
           min ||
-          gap.low >
+          price >
           max
         ){
           return;
         }
 
-        const y1 =
+        const yy =
           y(
-            Math.min(
-              gap.high,
-              max
-            )
+            price
           );
-
-        const y2 =
-          y(
-            Math.max(
-              gap.low,
-              min
-            )
-          );
-
-        ctx.fillStyle =
-          "rgba(166,121,255,.06)";
-
-        ctx.fillRect(
-          left,
-          y1,
-          plotWidth,
-          Math.max(
-            2,
-            y2 -
-            y1
-          )
-        );
-      }
-    );
-
-    /* LIQUIDITY */
-
-    ZONES
-      .slice(
-        0,
-        10
-      )
-      .forEach(
-        (
-          zone,
-          index
-        ) => {
-
-          const price =
-            zonePrice(
-              zone
-            );
-
-          if(
-            price === null
-          ){
-            return;
-          }
-
-          const side =
-            zoneSide(
-              zone
-            );
-
-          const color =
-            side ===
-            "BUY_SIDE"
-              ? "rgba(255,93,115,.52)"
-              : "rgba(53,223,160,.50)";
-
-          if(
-            price >=
-            min &&
-            price <=
-            max
-          ){
-
-            const yy =
-              y(
-                price
-              );
-
-            ctx.save();
-
-            ctx.setLineDash(
-              index ===
-              0
-                ? [8,4]
-                : [4,5]
-            );
-
-            ctx.strokeStyle =
-              color;
-
-            ctx.lineWidth =
-              index ===
-              0
-                ? 1.4
-                : 1;
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-              left,
-              yy
-            );
-
-            ctx.lineTo(
-              left +
-              plotWidth,
-              yy
-            );
-
-            ctx.stroke();
-
-            ctx.restore();
-
-            ctx.fillStyle =
-              color;
-
-            ctx.font =
-              index ===
-              0
-                ? "bold 7px -apple-system"
-                : "6px -apple-system";
-
-            ctx.textAlign =
-              "left";
-
-            ctx.fillText(
-              `${
-                index === 0
-                  ? "◎ "
-                  : ""
-              }${zone.name}`,
-              left +
-              4,
-              yy -
-              3
-            );
-
-          }else if(
-            index <
-            4
-          ){
-
-            const above =
-              price >
-              max;
-
-            ctx.fillStyle =
-              color;
-
-            ctx.font =
-              "bold 6px -apple-system";
-
-            ctx.fillText(
-              `${
-                above
-                  ? "↑"
-                  : "↓"
-              } ${zone.name} ${fmt(price)}`,
-              left +
-              5,
-              above
-                ? top +
-                  48 +
-                  index *
-                  10
-                : top +
-                  plotHeight -
-                  8 -
-                  index *
-                  10
-            );
-          }
-        }
-      );
-
-    /* CANDLES */
-
-    const step =
-      plotWidth /
-      visible.length;
-
-    const body =
-      Math.max(
-        1.5,
-        Math.min(
-          6,
-          step *
-          .58
-        )
-      );
-
-    visible.forEach(
-      (
-        candle,
-        index
-      ) => {
-
-        const x =
-          left +
-          step *
-          index +
-          step /
-          2;
-
-        const bullish =
-          candle.close >=
-          candle.open;
 
         const color =
-          bullish
-            ? "#35dfa0"
-            : "#ff5d73";
+          zone.side ===
+          "BUY_SIDE"
+            ? "rgba(255,93,115,.5)"
+            : "rgba(53,223,160,.5)";
 
-        const highY =
-          y(
-            candle.high
-          );
+        ctx.save();
 
-        const lowY =
-          y(
-            candle.low
-          );
-
-        const openY =
-          y(
-            candle.open
-          );
-
-        const closeY =
-          y(
-            candle.close
-          );
+        ctx.setLineDash(
+          index ===
+          0
+            ? [8,4]
+            : [4,5]
+        );
 
         ctx.strokeStyle =
-          color;
-
-        ctx.fillStyle =
           color;
 
         ctx.beginPath();
 
         ctx.moveTo(
-          x,
-          highY
+          left,
+          yy
         );
 
         ctx.lineTo(
-          x,
-          lowY
+          left +
+          plotWidth,
+          yy
         );
 
         ctx.stroke();
 
-        ctx.fillRect(
-          x -
-          body /
-          2,
-          Math.min(
-            openY,
-            closeY
-          ),
-          body,
-          Math.max(
-            1.2,
-            Math.abs(
-              closeY -
-              openY
-            )
-          )
-        );
+        ctx.restore();
       }
     );
 
-    /* LIVE PRICE */
+  /* CANDLES */
 
-    if(
-      spot >=
-      min &&
-      spot <=
-      max
-    ){
+  const step =
+    plotWidth /
+    candles.length;
 
-      const yy =
-        y(
-          spot
-        );
-
-      ctx.save();
-
-      ctx.setLineDash(
-        [2,3]
-      );
-
-      ctx.strokeStyle =
-        "#f1c75b";
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        left,
-        yy
-      );
-
-      ctx.lineTo(
-        left +
-        plotWidth,
-        yy
-      );
-
-      ctx.stroke();
-
-      ctx.restore();
-
-      ctx.fillStyle =
-        "#f1c75b";
-
-      ctx.fillRect(
-        left +
-        plotWidth +
-        3,
-        yy -
-        9,
-        right -
-        5,
-        18
-      );
-
-      ctx.fillStyle =
-        "#080808";
-
-      ctx.font =
-        "bold 7px -apple-system";
-
-      ctx.textAlign =
-        "left";
-
-      ctx.fillText(
-        fmt(
-          spot
-        ),
-        left +
-        plotWidth +
+  const body =
+    Math.max(
+      1.5,
+      Math.min(
         6,
-        yy +
-        2
-      );
-    }
+        step *
+        .58
+      )
+    );
 
-    /* TIME */
+  candles.forEach(
+    (
+      candle,
+      index
+    ) => {
 
-    for(
-      let i = 0;
-      i < 4;
-      i++
-    ){
-
-      const index =
-        Math.round(
-          i *
-          (
-            visible.length -
-            1
-          ) /
-          3
-        );
-
-      const candle =
-        visible[
-          index
-        ];
-
-      const date =
-        new Date(
-          candle.time
-        );
-
-      const text =
-        date.toLocaleTimeString(
-          [],
-          {
-            hour:"2-digit",
-            minute:"2-digit"
-          }
-        );
-
-      ctx.fillStyle =
-        "#59626f";
-
-      ctx.font =
-        "6px -apple-system";
-
-      ctx.textAlign =
-        "center";
-
-      ctx.fillText(
-        text,
+      const x =
         left +
         step *
-        index,
-        height -
-        5
-      );
-    }
+        index +
+        step /
+        2;
 
-    /* CROSSHAIR */
+      const bullish =
+        candle.close >=
+        candle.open;
 
-    if(
-      POINTER
-    ){
+      const color =
+        bullish
+          ? "#35dfa0"
+          : "#ff5d73";
 
-      const px =
-        clamp(
-          POINTER.x,
-          left,
-          left +
-          plotWidth
+      const highY =
+        y(
+          candle.high
         );
 
-      const py =
-        clamp(
-          POINTER.y,
-          top,
-          top +
-          plotHeight
+      const lowY =
+        y(
+          candle.low
         );
 
-      ctx.save();
+      const openY =
+        y(
+          candle.open
+        );
 
-      ctx.setLineDash(
-        [3,4]
-      );
+      const closeY =
+        y(
+          candle.close
+        );
 
       ctx.strokeStyle =
-        "rgba(255,255,255,.22)";
+        color;
+
+      ctx.fillStyle =
+        color;
 
       ctx.beginPath();
 
       ctx.moveTo(
-        px,
-        top
+        x,
+        highY
       );
 
       ctx.lineTo(
-        px,
-        top +
-        plotHeight
-      );
-
-      ctx.moveTo(
-        left,
-        py
-      );
-
-      ctx.lineTo(
-        left +
-        plotWidth,
-        py
+        x,
+        lowY
       );
 
       ctx.stroke();
 
-      ctx.restore();
-
-      const index =
-        Math.round(
-          clamp(
-            (
-              px -
-              left
-            ) /
-            step -
-            .5,
-            0,
-            visible.length -
-            1
+      ctx.fillRect(
+        x -
+        body /
+        2,
+        Math.min(
+          openY,
+          closeY
+        ),
+        body,
+        Math.max(
+          1.2,
+          Math.abs(
+            closeY -
+            openY
           )
-        );
-
-      const candle =
-        visible[
-          index
-        ];
-
-      if(
-        candle
-      ){
-
-        const cursorPrice =
-          max -
-          (
-            py -
-            top
-          ) /
-          plotHeight *
-          span;
-
-        $("ohlc")
-          .innerHTML =
-            `${ACTIVE_TF.toUpperCase()} ·
-            O ${fmt(candle.open)} ·
-            H ${fmt(candle.high)} ·
-            L ${fmt(candle.low)} ·
-            C ${fmt(candle.close)}
-            <br>
-            CURSOR ${fmt(cursorPrice)}`;
-      }
-
-    }else{
-
-      const candle =
-        visible.at(
-          -1
-        );
-
-      $("ohlc")
-        .textContent =
-          `${ACTIVE_TF.toUpperCase()} · O ${fmt(candle.open)} · H ${fmt(candle.high)} · L ${fmt(candle.low)} · C ${fmt(candle.close)}`;
+        )
+      );
     }
+  );
 
-  }catch(error){
+  /* LIVE PRICE */
 
-    console.error(
-      "Chart draw:",
-      error
+  if(
+    spot >=
+    min &&
+    spot <=
+    max
+  ){
+
+    const yy =
+      y(
+        spot
+      );
+
+    ctx.save();
+
+    ctx.setLineDash(
+      [2,3]
     );
 
-    $("chartStatus")
-      .textContent =
-        "CHART ERROR";
+    ctx.strokeStyle =
+      "#f1c75b";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      left,
+      yy
+    );
+
+    ctx.lineTo(
+      left +
+      plotWidth,
+      yy
+    );
+
+    ctx.stroke();
+
+    ctx.restore();
+
+    ctx.fillStyle =
+      "#f1c75b";
+
+    ctx.fillRect(
+      left +
+      plotWidth +
+      3,
+      yy -
+      9,
+      62,
+      18
+    );
+
+    ctx.fillStyle =
+      "#080808";
+
+    ctx.font =
+      "bold 7px -apple-system";
+
+    ctx.textAlign =
+      "left";
+
+    ctx.fillText(
+      fmt(
+        spot
+      ),
+      left +
+      plotWidth +
+      6,
+      yy +
+      2
+    );
   }
+
+  const latest =
+    candles[
+      candles.length -
+      1
+    ];
+
+  $("ohlc")
+    .textContent =
+      `${ACTIVE_TF.toUpperCase()} · O ${fmt(latest.open)} · H ${fmt(latest.high)} · L ${fmt(latest.low)} · C ${fmt(latest.close)}`;
 }
-
-
-/* ============================================================
-   POINTER
-============================================================ */
-
-function pointerMove(
-  event
-){
-
-  const rect =
-    $("chart")
-      .getBoundingClientRect();
-
-  POINTER = {
-    x:
-      event.clientX -
-      rect.left,
-    y:
-      event.clientY -
-      rect.top
-  };
-
-  drawChart();
-}
-
-
-$("chart")
-  .addEventListener(
-    "pointermove",
-    pointerMove
-  );
-
-
-$("chart")
-  .addEventListener(
-    "pointerdown",
-    pointerMove
-  );
-
-
-$("chart")
-  .addEventListener(
-    "pointerleave",
-    () => {
-
-      POINTER =
-        null;
-
-      drawChart();
-    }
-  );
 
 
 /* ============================================================
@@ -5482,9 +4738,11 @@ document
             )
             .forEach(
               element =>
-                element.classList.remove(
-                  "active"
-                )
+                element
+                  .classList
+                  .remove(
+                    "active"
+                  )
             );
 
           button
@@ -5492,9 +4750,6 @@ document
             .add(
               "active"
             );
-
-          POINTER =
-            null;
 
           await loadChart(
             ACTIVE_TF,
@@ -5507,7 +4762,7 @@ document
 
 
 /* ============================================================
-   EVERYTHING
+   LOAD ALL
 ============================================================ */
 
 async function loadEverything(
@@ -5536,6 +4791,8 @@ async function loadEverything(
     const results =
       await Promise.allSettled([
 
+        loadFastPrice(),
+
         loadXau(
           manual
         ),
@@ -5547,7 +4804,7 @@ async function loadEverything(
 
       ]);
 
-    const rejected =
+    const failure =
       results.find(
         result =>
           result.status ===
@@ -5555,15 +4812,17 @@ async function loadEverything(
       );
 
     if(
-      rejected
+      failure
     ){
 
-      throw rejected.reason;
+      throw failure.reason;
     }
 
   }catch(error){
 
-    console.error(error);
+    console.error(
+      error
+    );
 
     $("error")
       .textContent =
@@ -5592,46 +4851,43 @@ async function loadEverything(
 
 
 /* ============================================================
-   STREAM AGE
+   PRICE AGE
 ============================================================ */
 
 setInterval(
   () => {
 
     if(
-      LIVE_TIMESTAMP
+      PRICE_TIMESTAMP
     ){
 
       const seconds =
         (
           Date.now() -
-          LIVE_TIMESTAMP
+          PRICE_TIMESTAMP
         ) /
         1000;
 
-      $("streamAge")
+      $("priceAge")
         .textContent =
-          seconds <
-          10
-            ? `${seconds.toFixed(1)}s`
-            : `${Math.round(seconds)}s`;
+          `${seconds.toFixed(1)}s`;
 
       if(
         seconds >
-        15
+        20
       ){
 
         setConnection(
           "dead",
-          "STREAM STALE"
+          "STALE"
         );
       }
 
     }else{
 
-      $("streamAge")
+      $("priceAge")
         .textContent =
-          "REST";
+          "—";
     }
 
   },
@@ -5640,9 +4896,23 @@ setInterval(
 
 
 /* ============================================================
-   DEEP REFRESH
+   FAST PRICE LOOP
 
-   Live price does NOT wait for these.
+   Change 5000 to 10000 if your API plan is being rate limited.
+============================================================ */
+
+setInterval(
+  () => {
+
+    loadFastPrice();
+
+  },
+  5000
+);
+
+
+/* ============================================================
+   DEEP ENGINE LOOP
 ============================================================ */
 
 setInterval(
@@ -5660,6 +4930,10 @@ setInterval(
 );
 
 
+/* ============================================================
+   CHART LOOP
+============================================================ */
+
 setInterval(
   () => {
 
@@ -5672,7 +4946,7 @@ setInterval(
     );
 
   },
-  60000
+  30000
 );
 
 
@@ -5697,7 +4971,10 @@ window.addEventListener(
    START
 ============================================================ */
 
-connectLive();
+setConnection(
+  "connecting",
+  "CONNECTING"
+);
 
 loadEverything(
   true
@@ -5706,4 +4983,5 @@ loadEverything(
 </script>
 
 </body>
+
 </html>
