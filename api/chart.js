@@ -1,7 +1,5 @@
 /* ================================================================
-   MKAYFX XAU CHART ENGINE V3
-   ---------------------------------------------------------------
-   FILE:
+   MKAYFX XAU CHART V4
    /api/chart.js
 
    M1 / M5
@@ -31,16 +29,12 @@ const SYMBOL =
 
 
 const CACHE_MS =
-  20000;
+  15000;
 
 
 const CACHE =
   new Map();
 
-
-/* ================================================================
-   HELPERS
-================================================================ */
 
 function finite(
   value
@@ -82,20 +76,6 @@ function parseTime(
   ) {
 
     return null;
-
-  }
-
-
-  if (
-    typeof value ===
-    "number"
-  ) {
-
-    return value <
-      100000000000
-      ? value *
-        1000
-      : value;
 
   }
 
@@ -150,10 +130,6 @@ function parseTime(
 
 }
 
-
-/* ================================================================
-   TIMEFRAME
-================================================================ */
 
 function timeframeConfig(
   tf
@@ -241,10 +217,6 @@ function timeframeConfig(
 }
 
 
-/* ================================================================
-   FETCH
-================================================================ */
-
 async function fetchCandles(
   config,
   limit
@@ -269,9 +241,7 @@ async function fetchCandles(
       SYMBOL
     )}` +
 
-    `&interval=${encodeURIComponent(
-      config.interval
-    )}` +
+    `&interval=${config.interval}` +
 
     `&outputsize=${limit}` +
 
@@ -325,7 +295,7 @@ async function fetchCandles(
   ) {
 
     throw new Error(
-      "No chart candles returned."
+      "No candles returned."
     );
 
   }
@@ -424,10 +394,6 @@ async function fetchCandles(
 
 }
 
-
-/* ================================================================
-   HANDLER
-================================================================ */
 
 export default async function handler(
   req,
@@ -531,7 +497,7 @@ export default async function handler(
         true,
 
       engine:
-        "MKAYFX CHART V3",
+        "MKAYFX CHART V4",
 
       symbol:
         SYMBOL,
@@ -595,7 +561,7 @@ export default async function handler(
           false,
 
         engine:
-          "MKAYFX CHART V3",
+          "MKAYFX CHART V4",
 
         error:
           error?.message ||
