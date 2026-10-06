@@ -26,7 +26,7 @@
   content="MKAYFX"
 >
 
-<title>MKAYFX Liquidity OS</title>
+<title>MKAYFX GOLD V9</title>
 
 <style>
 
@@ -35,39 +35,39 @@
   -webkit-tap-highlight-color:transparent;
 }
 
+:root{
+  --bg:#050607;
+  --panel:#0c0f14;
+  --panel2:#11151c;
+  --panel3:#080a0e;
+
+  --line:rgba(255,255,255,.07);
+  --line2:rgba(255,255,255,.13);
+
+  --text:#f4f6f8;
+  --muted:#77808d;
+  --muted2:#505864;
+
+  --gold:#f1c75b;
+  --gold2:#ffe090;
+
+  --green:#35dfa0;
+  --red:#ff5d73;
+  --blue:#5aa9ff;
+  --purple:#a679ff;
+  --cyan:#59dff5;
+}
+
 html{
   scroll-behavior:smooth;
 }
 
-:root{
-  --bg:#050607;
-  --bg2:#090b0e;
-  --panel:rgba(13,15,20,.82);
-  --panel2:rgba(18,21,27,.88);
-  --panel3:rgba(7,9,12,.93);
-  --line:rgba(255,255,255,.07);
-  --line2:rgba(255,255,255,.12);
-  --text:#f5f7f9;
-  --muted:#7d8593;
-  --muted2:#545c69;
-  --gold:#f1c75b;
-  --gold2:#ffdf88;
-  --green:#35dfa0;
-  --green2:#72f5c5;
-  --red:#ff5d73;
-  --red2:#ff8797;
-  --blue:#5aa9ff;
-  --purple:#a679ff;
-  --cyan:#58dcf4;
-
-  --shadow:
-    0 30px 100px rgba(0,0,0,.48),
-    inset 0 1px rgba(255,255,255,.025);
-}
-
 body{
   margin:0;
+
   min-height:100vh;
+
+  color:var(--text);
 
   font-family:
     Inter,
@@ -78,71 +78,34 @@ body{
     Arial,
     sans-serif;
 
-  color:var(--text);
-
   background:
     radial-gradient(
-      circle at 8% -5%,
+      circle at 8% -10%,
       rgba(241,199,91,.12),
-      transparent 28%
+      transparent 27%
     ),
     radial-gradient(
-      circle at 110% 18%,
-      rgba(90,169,255,.065),
-      transparent 28%
+      circle at 105% 20%,
+      rgba(90,169,255,.06),
+      transparent 26%
     ),
-    radial-gradient(
-      circle at 55% 110%,
-      rgba(166,121,255,.055),
-      transparent 30%
-    ),
-    var(--bg);
-
-  overflow-x:hidden;
-}
-
-body::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  opacity:.18;
-
-  background-image:
-    linear-gradient(
-      rgba(255,255,255,.014) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,.014) 1px,
-      transparent 1px
-    );
-
-  background-size:42px 42px;
-
-  mask-image:
-    linear-gradient(
-      to bottom,
-      #000,
-      transparent 92%
-    );
+    #050607;
 }
 
 button{
   font:inherit;
-  border:none;
+  border:0;
   cursor:pointer;
 }
 
 .app{
-  width:min(1500px,100%);
+  width:min(1450px,100%);
   margin:auto;
 
   padding:
     calc(8px + env(safe-area-inset-top))
-    11px
-    calc(93px + env(safe-area-inset-bottom));
+    10px
+    calc(95px + env(safe-area-inset-bottom));
 }
 
 /* ============================================================
@@ -161,12 +124,11 @@ button{
   justify-content:space-between;
 
   padding:8px 11px;
-  margin-bottom:9px;
 
   border:1px solid var(--line);
   border-radius:17px;
 
-  background:rgba(7,9,12,.82);
+  background:rgba(7,9,12,.88);
 
   backdrop-filter:blur(24px);
   -webkit-backdrop-filter:blur(24px);
@@ -190,7 +152,7 @@ button{
 
   border-radius:12px;
 
-  color:#080808;
+  color:#090909;
 
   font-size:10px;
   font-weight:950;
@@ -198,32 +160,31 @@ button{
   background:
     linear-gradient(
       135deg,
-      #ffe689,
-      #c38b23
+      #ffe78a,
+      #c58d23
     );
-
-  box-shadow:
-    0 0 25px rgba(241,199,91,.16);
 }
 
 .brandName{
   font-size:12px;
   font-weight:950;
-  letter-spacing:.1em;
+  letter-spacing:.11em;
 }
 
 .brandSub{
   margin-top:3px;
+
   color:var(--muted);
+
   font-size:6px;
-  font-weight:800;
-  letter-spacing:.14em;
+  font-weight:850;
+  letter-spacing:.13em;
 }
 
-.liveStatus{
+.connection{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:7px;
 
   padding:7px 9px;
 
@@ -233,55 +194,54 @@ button{
   background:rgba(255,255,255,.02);
 }
 
-.liveDot{
+.connectionDot{
   width:7px;
   height:7px;
 
-  border-radius:999px;
+  border-radius:50%;
 
+  background:var(--gold);
+}
+
+.connectionDot.live{
   background:var(--green);
 
   box-shadow:
-    0 0 0 5px rgba(53,223,160,.06),
-    0 0 16px rgba(53,223,160,.45);
-
-  animation:pulse 1.7s infinite;
+    0 0 14px rgba(53,223,160,.5);
 }
 
-@keyframes pulse{
-  50%{
-    opacity:.35;
-  }
+.connectionDot.dead{
+  background:var(--red);
 }
 
-.liveText{
-  font-size:7px;
+.connectionText{
+  font-size:6px;
   font-weight:950;
-  letter-spacing:.09em;
+  letter-spacing:.06em;
 }
 
 /* ============================================================
    ERRORS
 ============================================================ */
 
-.errorBox{
+.error{
   display:none;
 
-  margin-bottom:8px;
-  padding:10px 12px;
+  margin-top:8px;
+  padding:10px 11px;
 
-  border:1px solid rgba(255,93,115,.18);
-  border-radius:12px;
+  border:1px solid rgba(255,93,115,.2);
+  border-radius:11px;
 
-  color:#ff9aaa;
+  color:#ff9cab;
 
-  background:rgba(255,93,115,.07);
+  background:rgba(255,93,115,.065);
 
-  font-size:8px;
+  font-size:7px;
   line-height:1.5;
 }
 
-.errorBox.show{
+.error.show{
   display:block;
 }
 
@@ -289,39 +249,42 @@ button{
    NAV
 ============================================================ */
 
-.desktopNav{
+.nav{
   display:flex;
   gap:4px;
-  overflow-x:auto;
-  margin-bottom:10px;
+
+  overflow:auto;
+
+  margin-top:8px;
+  margin-bottom:8px;
+
   scrollbar-width:none;
 }
 
-.desktopNav::-webkit-scrollbar{
+.nav::-webkit-scrollbar{
   display:none;
 }
 
-.navBtn{
+.nav button{
   flex:0 0 auto;
 
-  padding:8px 13px;
+  padding:8px 12px;
 
-  border-radius:10px;
+  border-radius:9px;
 
   color:var(--muted);
   background:transparent;
 
-  font-size:8px;
+  font-size:7px;
   font-weight:900;
-  letter-spacing:.05em;
 }
 
-.navBtn.active{
+.nav button.active{
   color:var(--text);
 
-  background:rgba(255,255,255,.045);
-
   border:1px solid var(--line);
+
+  background:rgba(255,255,255,.04);
 }
 
 .view{
@@ -330,173 +293,69 @@ button{
 
 .view.active{
   display:block;
-  animation:viewIn .24s ease;
-}
-
-@keyframes viewIn{
-  from{
-    opacity:0;
-    transform:translateY(5px);
-  }
-}
-
-/* ============================================================
-   GENERIC CARD
-============================================================ */
-
-.card{
-  position:relative;
-  overflow:hidden;
-
-  border:1px solid var(--line);
-  border-radius:19px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(17,20,26,.86),
-      rgba(8,10,14,.9)
-    );
-
-  box-shadow:
-    inset 0 1px rgba(255,255,255,.025),
-    0 15px 45px rgba(0,0,0,.19);
-
-  backdrop-filter:blur(22px);
-}
-
-.cardPad{
-  padding:15px;
-}
-
-.sectionHead{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:12px;
-}
-
-.sectionTitle{
-  font-size:9px;
-  font-weight:950;
-  letter-spacing:.065em;
-}
-
-.sectionSub{
-  margin-top:3px;
-  color:var(--muted);
-  font-size:7px;
-}
-
-.badge{
-  padding:5px 7px;
-
-  border:1px solid var(--line);
-  border-radius:999px;
-
-  color:var(--muted);
-
-  background:rgba(255,255,255,.02);
-
-  font-size:6px;
-  font-weight:900;
-  letter-spacing:.06em;
 }
 
 /* ============================================================
    HERO
 ============================================================ */
 
-.marketHero{
+.hero{
   position:relative;
   overflow:hidden;
 
-  min-height:178px;
   padding:18px;
 
   border:1px solid var(--line);
-  border-radius:21px;
+  border-radius:22px;
 
   background:
     radial-gradient(
-      circle at 92% 5%,
+      circle at 92% 0,
       rgba(241,199,91,.11),
-      transparent 33%
+      transparent 34%
     ),
     linear-gradient(
       145deg,
-      rgba(16,18,23,.94),
-      rgba(7,9,12,.93)
+      rgba(17,20,26,.96),
+      rgba(7,9,12,.96)
     );
 
-  box-shadow:var(--shadow);
-}
-
-.marketHero::after{
-  content:"";
-
-  position:absolute;
-
-  width:270px;
-  height:270px;
-
-  border-radius:50%;
-
-  right:-150px;
-  top:-170px;
-
-  border:1px solid rgba(241,199,91,.07);
-
   box-shadow:
-    0 0 0 45px rgba(241,199,91,.012),
-    0 0 0 90px rgba(241,199,91,.008);
+    0 25px 80px rgba(0,0,0,.35);
 }
 
-.heroTop{
-  position:relative;
-  z-index:2;
-
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:12px;
-}
-
-.symbolLabel{
+.heroLabel{
   color:var(--gold);
 
   font-size:7px;
   font-weight:950;
-  letter-spacing:.17em;
+  letter-spacing:.16em;
 }
 
-.assetLabel{
-  margin-top:9px;
+.heroAsset{
+  margin-top:7px;
 
-  color:#a7afba;
+  color:#9ba4af;
 
-  font-size:10px;
+  font-size:9px;
   font-weight:800;
 }
 
-.priceRow{
-  position:relative;
-  z-index:2;
-
+.priceLine{
   display:flex;
   align-items:flex-end;
   flex-wrap:wrap;
 
-  gap:9px;
+  gap:10px;
+
   margin-top:3px;
 }
 
-.mainPrice{
-  font-size:clamp(39px,8vw,62px);
+.price{
+  font-size:clamp(40px,9vw,65px);
   line-height:1;
 
-  font-weight:800;
+  font-weight:850;
   letter-spacing:-.055em;
 
   font-variant-numeric:tabular-nums;
@@ -507,34 +366,39 @@ button{
 
   color:var(--muted);
 
-  font-size:10px;
+  font-size:9px;
   font-weight:900;
 }
 
-.green{
-  color:var(--green)!important;
+.liveTag{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+
+  margin-top:9px;
+  padding:5px 7px;
+
+  border:1px solid rgba(53,223,160,.13);
+  border-radius:999px;
+
+  color:var(--green);
+
+  background:rgba(53,223,160,.04);
+
+  font-size:6px;
+  font-weight:900;
 }
 
-.red{
-  color:var(--red)!important;
-}
-
-.gold{
-  color:var(--gold)!important;
-}
-
-.heroMeta{
-  position:relative;
-  z-index:2;
-
+.meta{
   display:flex;
   flex-wrap:wrap;
 
   gap:5px;
-  margin-top:13px;
+
+  margin-top:11px;
 }
 
-.metaChip{
+.chip{
   padding:6px 8px;
 
   border:1px solid var(--line);
@@ -542,27 +406,23 @@ button{
 
   color:var(--muted);
 
-  background:rgba(255,255,255,.018);
+  background:rgba(255,255,255,.017);
 
   font-size:6px;
-  font-weight:800;
+  font-weight:850;
 }
 
-.metaChip b{
+.chip b{
   margin-left:3px;
-  color:#dfe4e9;
+  color:#dce1e6;
 }
 
-.heroAction{
+.scanBtn{
   position:absolute;
 
   right:15px;
   bottom:15px;
 
-  z-index:4;
-}
-
-.scanBtn{
   padding:9px 12px;
 
   border-radius:10px;
@@ -572,33 +432,29 @@ button{
   background:
     linear-gradient(
       135deg,
-      #ffe185,
-      #c68d21
+      #ffe487,
+      #c99024
     );
 
   font-size:7px;
   font-weight:950;
-  letter-spacing:.05em;
 }
 
 /* ============================================================
-   LIQUIDITY STRIP
+   LIQUIDITY FOCUS
 ============================================================ */
 
-.liquidityStrip{
-  position:relative;
-  overflow:hidden;
-
+.focus{
   display:grid;
 
   grid-template-columns:
-    minmax(0,1.35fr)
-    .7fr;
+    minmax(0,1fr)
+    auto;
 
-  gap:8px;
+  gap:10px;
+
   margin-top:8px;
-
-  padding:12px 13px;
+  padding:13px;
 
   border:1px solid rgba(241,199,91,.14);
   border-radius:16px;
@@ -607,53 +463,67 @@ button{
     linear-gradient(
       100deg,
       rgba(241,199,91,.075),
-      rgba(255,255,255,.018)
+      rgba(255,255,255,.014)
     );
 }
 
-.stripLabel{
-  color:#987f48;
+.focusLabel{
+  color:#927b45;
 
   font-size:6px;
   font-weight:950;
   letter-spacing:.12em;
 }
 
-.stripTarget{
+.focusTarget{
   margin-top:5px;
 
-  font-size:14px;
+  font-size:15px;
   font-weight:900;
-
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
 }
 
-.stripDetails{
-  margin-top:4px;
+.focusDetails{
+  margin-top:5px;
 
   color:var(--muted);
 
   font-size:7px;
-  line-height:1.45;
+  line-height:1.5;
 }
 
-.stripScore{
+.focusRight{
   display:flex;
   align-items:center;
-  justify-content:flex-end;
-  gap:9px;
+  gap:8px;
 }
 
-.miniRing{
+.scoreMeta{
+  text-align:right;
+}
+
+.scoreMeta strong{
+  display:block;
+
+  font-size:7px;
+}
+
+.scoreMeta span{
+  display:block;
+
+  margin-top:3px;
+
+  color:var(--muted);
+
+  font-size:6px;
+}
+
+.ring{
   --score:0;
 
   position:relative;
 
-  width:52px;
-  height:52px;
-  flex:0 0 52px;
+  width:56px;
+  height:56px;
 
   display:grid;
   place-items:center;
@@ -669,7 +539,7 @@ button{
     );
 }
 
-.miniRing::before{
+.ring::before{
   content:"";
 
   position:absolute;
@@ -680,57 +550,99 @@ button{
   background:#0c0e12;
 }
 
-.miniRing b{
+.ring b{
   position:relative;
-  font-size:13px;
+
+  font-size:14px;
 }
 
-.miniScoreText{
-  text-align:right;
+/* ============================================================
+   CARDS
+============================================================ */
+
+.card{
+  margin-top:8px;
+
+  overflow:hidden;
+
+  border:1px solid var(--line);
+  border-radius:18px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(16,19,25,.93),
+      rgba(7,9,12,.94)
+    );
 }
 
-.miniScoreText strong{
-  display:block;
-  color:#e9edf1;
-  font-size:7px;
+.pad{
+  padding:14px;
 }
 
-.miniScoreText span{
-  display:block;
+.head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+
+  gap:10px;
+
+  margin-bottom:11px;
+}
+
+.title{
+  font-size:9px;
+  font-weight:950;
+  letter-spacing:.07em;
+}
+
+.sub{
   margin-top:3px;
+
   color:var(--muted);
+
   font-size:6px;
+}
+
+.badge{
+  padding:5px 7px;
+
+  border:1px solid var(--line);
+  border-radius:999px;
+
+  color:var(--muted);
+
+  background:rgba(255,255,255,.02);
+
+  font-size:6px;
+  font-weight:850;
 }
 
 /* ============================================================
    CHART
 ============================================================ */
 
-.chartCard{
-  margin-top:8px;
-}
-
-.chartToolbar{
+.chartTools{
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
+
   gap:8px;
+
   margin-bottom:8px;
 }
 
-.timeframes{
+.tfs{
   display:flex;
-  gap:4px;
 
+  gap:4px;
   padding:3px;
 
   border:1px solid var(--line);
   border-radius:9px;
-
-  background:rgba(255,255,255,.015);
 }
 
-.tfBtn{
+.tf{
   min-width:34px;
 
   padding:6px 7px;
@@ -744,51 +656,38 @@ button{
   font-weight:950;
 }
 
-.tfBtn.active{
+.tf.active{
   color:#080808;
   background:var(--gold);
 }
 
-.chartState{
-  display:flex;
-  align-items:center;
-  gap:5px;
-
+.chartStatus{
   color:var(--muted);
 
   font-size:6px;
-  font-weight:800;
-}
-
-.chartStateDot{
-  width:5px;
-  height:5px;
-
-  border-radius:50%;
-
-  background:var(--green);
+  font-weight:850;
 }
 
 .chartWrap{
   position:relative;
 
-  height:410px;
+  height:405px;
 
   overflow:hidden;
 
-  border:1px solid rgba(255,255,255,.045);
-  border-radius:14px;
+  border:1px solid rgba(255,255,255,.04);
+  border-radius:13px;
 
   background:
     radial-gradient(
-      circle at 50% 20%,
-      rgba(241,199,91,.018),
-      transparent 30%
+      circle at 50% 10%,
+      rgba(241,199,91,.02),
+      transparent 28%
     ),
     #07090c;
 }
 
-#chartCanvas{
+canvas{
   display:block;
 
   width:100%;
@@ -797,54 +696,50 @@ button{
   touch-action:none;
 }
 
+.ohlc{
+  position:absolute;
+
+  left:8px;
+  top:8px;
+
+  z-index:5;
+
+  padding:6px 7px;
+
+  border:1px solid var(--line);
+  border-radius:7px;
+
+  color:#8c95a1;
+
+  background:rgba(5,7,10,.78);
+
+  font-size:6px;
+  line-height:1.5;
+
+  pointer-events:none;
+}
+
 .chartWatermark{
   position:absolute;
 
   left:14px;
-  top:14px;
+  top:38px;
 
   color:rgba(255,255,255,.025);
 
   font-size:31px;
   font-weight:950;
-  letter-spacing:-.05em;
 
   pointer-events:none;
 }
 
-.chartOHLC{
-  position:absolute;
-
-  top:9px;
-  left:9px;
-
-  z-index:10;
-
-  max-width:calc(100% - 18px);
-
-  padding:6px 8px;
-
-  border:1px solid var(--line);
-  border-radius:8px;
-
-  color:#8f98a5;
-
-  background:rgba(6,8,11,.74);
-
-  backdrop-filter:blur(11px);
-
-  font-size:6px;
-  line-height:1.45;
-
-  pointer-events:none;
-}
-
-.chartLegend{
+.legendRow{
   display:flex;
   flex-wrap:wrap;
 
   gap:8px;
-  margin-top:8px;
+
+  margin-top:7px;
 
   color:var(--muted);
 
@@ -857,49 +752,44 @@ button{
   gap:4px;
 }
 
-.legendDot{
+.dot{
   width:6px;
   height:6px;
   border-radius:50%;
 }
 
-.goldDot{background:var(--gold);}
-.redDot{background:var(--red);}
-.greenDot{background:var(--green);}
-.purpleDot{background:var(--purple);}
+.dotGold{background:var(--gold);}
+.dotRed{background:var(--red);}
+.dotGreen{background:var(--green);}
+.dotPurple{background:var(--purple);}
 
 /* ============================================================
    TRADE IDEA
 ============================================================ */
 
-.tradeIdea{
-  margin-top:8px;
-}
-
 .ideaHero{
   padding:13px;
 
   border:1px solid var(--line);
-  border-radius:14px;
+  border-radius:13px;
 
   background:
     radial-gradient(
-      circle at 92% 0,
-      rgba(241,199,91,.085),
+      circle at 95% 0,
+      rgba(241,199,91,.07),
       transparent 38%
     ),
-    rgba(255,255,255,.018);
+    rgba(255,255,255,.015);
 }
 
 .ideaTop{
   display:flex;
   justify-content:space-between;
   align-items:flex-start;
-  gap:10px;
 }
 
 .ideaLabel{
-  color:#947d49;
+  color:#927a43;
 
   font-size:6px;
   font-weight:950;
@@ -910,66 +800,61 @@ button{
   margin-top:5px;
 
   font-size:27px;
-  line-height:1;
-
   font-weight:950;
   letter-spacing:-.04em;
 }
 
-.ideaConfidence{
-  min-width:61px;
+.green{color:var(--green)!important;}
+.red{color:var(--red)!important;}
+.gold{color:var(--gold)!important;}
+
+.conf{
+  min-width:62px;
 
   padding:8px;
 
   border:1px solid var(--line);
-  border-radius:11px;
+  border-radius:10px;
 
   text-align:center;
-
-  background:rgba(0,0,0,.18);
 }
 
-.ideaConfidence b{
+.conf b{
   display:block;
+
   font-size:16px;
 }
 
-.ideaConfidence span{
-  display:block;
-  margin-top:3px;
-
+.conf span{
   color:var(--muted);
-
   font-size:5px;
-  font-weight:850;
 }
 
-.ideaDescription{
+.ideaText{
   margin-top:10px;
 
-  color:#98a1ae;
+  color:#96a0ac;
 
   font-size:8px;
-  line-height:1.6;
+  line-height:1.55;
 }
 
-.stageTrack{
+.stages{
   display:grid;
   grid-template-columns:repeat(5,1fr);
+
   gap:4px;
 
-  margin-top:11px;
+  margin-top:10px;
 }
 
 .stage{
-  padding:7px 3px;
+  padding:7px 2px;
 
   border:1px solid var(--line);
-  border-radius:8px;
+  border-radius:7px;
 
   color:var(--muted2);
-
-  background:rgba(255,255,255,.012);
 
   text-align:center;
 
@@ -978,124 +863,65 @@ button{
 }
 
 .stage.done{
-  color:#07110c;
+  color:#05110b;
   border-color:transparent;
   background:var(--green);
 }
 
 .stage.current{
-  color:#090909;
+  color:#080808;
   border-color:transparent;
   background:var(--gold);
 }
 
-.ideaLevels{
+.levels{
   display:grid;
   grid-template-columns:repeat(4,1fr);
 
   gap:5px;
-  margin-top:9px;
+
+  margin-top:8px;
 }
 
-.ideaLevel{
-  min-width:0;
-
-  padding:9px 7px;
+.level{
+  padding:8px;
 
   border:1px solid var(--line);
-  border-radius:10px;
+  border-radius:9px;
 
-  background:rgba(255,255,255,.015);
+  background:rgba(255,255,255,.012);
 }
 
-.ideaLevel label{
+.level label{
   display:block;
+
   color:var(--muted);
+
   font-size:5px;
-  font-weight:850;
 }
 
-.ideaLevel strong{
+.level strong{
   display:block;
 
   margin-top:5px;
 
+  font-size:9px;
+
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
-
-  font-size:9px;
-}
-
-.checks{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-
-  gap:5px;
-  margin-top:9px;
-}
-
-.check{
-  display:flex;
-  align-items:center;
-  gap:6px;
-
-  min-height:36px;
-  padding:7px;
-
-  border:1px solid rgba(255,255,255,.035);
-  border-radius:9px;
-
-  color:#818a97;
-
-  background:rgba(255,255,255,.012);
-
-  font-size:6px;
-  line-height:1.3;
-}
-
-.checkIcon{
-  flex:0 0 16px;
-
-  width:16px;
-  height:16px;
-
-  display:grid;
-  place-items:center;
-
-  border-radius:5px;
-
-  color:#7b8490;
-
-  background:rgba(255,255,255,.04);
-
-  font-size:7px;
-  font-weight:950;
-}
-
-.check.done{
-  color:#cbd4dc;
-}
-
-.check.done .checkIcon{
-  color:#07110c;
-  background:var(--green);
-}
-
-.check.pending .checkIcon{
-  color:#111;
-  background:var(--gold);
 }
 
 /* ============================================================
-   MARKET PULSE
+   PULSE / GRID
 ============================================================ */
 
-.marketPulse{
+.pulse{
   display:grid;
   grid-template-columns:repeat(4,1fr);
 
   gap:5px;
+
   margin-top:8px;
 }
 
@@ -1103,14 +929,14 @@ button{
   position:relative;
   overflow:hidden;
 
-  min-height:61px;
+  min-height:62px;
 
   padding:9px;
 
   border:1px solid var(--line);
-  border-radius:11px;
+  border-radius:10px;
 
-  background:rgba(255,255,255,.014);
+  background:rgba(255,255,255,.012);
 }
 
 .pulseBox label{
@@ -1122,40 +948,34 @@ button{
 .pulseBox strong{
   display:block;
 
-  margin-top:9px;
+  margin-top:8px;
 
   font-size:8px;
-  overflow-wrap:anywhere;
 }
 
-.pulseGlow{
+.glow{
   position:absolute;
+
+  right:-17px;
+  bottom:-20px;
 
   width:40px;
   height:40px;
 
   border-radius:50%;
 
-  right:-20px;
-  bottom:-23px;
-
-  filter:blur(12px);
+  filter:blur(13px);
 }
 
-.pulseBox.bull .pulseGlow{background:var(--green);}
-.pulseBox.bear .pulseGlow{background:var(--red);}
-.pulseBox.mixed .pulseGlow{background:var(--gold);}
-
-/* ============================================================
-   GRID
-============================================================ */
+.bull .glow{background:var(--green);}
+.bear .glow{background:var(--red);}
+.mixed .glow{background:var(--gold);}
 
 .grid{
   display:grid;
   grid-template-columns:repeat(12,minmax(0,1fr));
 
   gap:8px;
-  margin-top:8px;
 }
 
 .s4{grid-column:span 4;}
@@ -1172,28 +992,33 @@ button{
 .metrics{
   display:grid;
   grid-template-columns:repeat(3,1fr);
+
   gap:5px;
 }
 
 .metric{
   padding:9px;
 
-  border:1px solid rgba(255,255,255,.035);
-  border-radius:10px;
+  border:1px solid rgba(255,255,255,.04);
+  border-radius:9px;
 
   background:rgba(255,255,255,.012);
 }
 
 .metric label{
+  display:block;
+
   color:var(--muted);
+
   font-size:6px;
-  font-weight:800;
 }
 
 .metric strong{
   display:block;
-  margin-top:4px;
-  font-size:11px;
+
+  margin-top:5px;
+
+  font-size:10px;
 }
 
 /* ============================================================
@@ -1206,40 +1031,38 @@ button{
   gap:5px;
 }
 
-.zoneRow{
+.zone{
   display:grid;
 
   grid-template-columns:
-    minmax(90px,1.35fr)
-    .8fr
+    minmax(110px,1.4fr)
+    .7fr
     .55fr
-    .65fr;
+    .7fr;
 
   align-items:center;
 
-  gap:7px;
-  padding:9px 10px;
+  gap:6px;
+  padding:9px;
 
-  border:1px solid rgba(255,255,255,.038);
-  border-radius:10px;
+  border:1px solid rgba(255,255,255,.04);
+  border-radius:9px;
 
   background:rgba(255,255,255,.012);
 }
 
-.zoneRow:first-child{
-  border-color:rgba(241,199,91,.14);
+.zone:first-child{
+  border-color:rgba(241,199,91,.16);
 
   background:
     linear-gradient(
       90deg,
-      rgba(241,199,91,.065),
-      rgba(241,199,91,.012)
+      rgba(241,199,91,.06),
+      transparent
     );
 }
 
 .zoneName{
-  min-width:0;
-
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
@@ -1252,7 +1075,6 @@ button{
   text-align:right;
 
   font-size:7px;
-  font-variant-numeric:tabular-nums;
 }
 
 .zoneScore{
@@ -1260,7 +1082,7 @@ button{
 
   padding:4px 6px;
 
-  border-radius:6px;
+  border-radius:5px;
 
   color:#080808;
   background:var(--gold);
@@ -1269,7 +1091,7 @@ button{
   font-weight:950;
 }
 
-.zoneSide{
+.zoneStage{
   text-align:right;
 
   color:var(--muted);
@@ -1279,83 +1101,7 @@ button{
 }
 
 /* ============================================================
-   FLOW
-============================================================ */
-
-.flowGrid{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:5px;
-}
-
-.flowBox{
-  min-height:70px;
-
-  padding:9px;
-
-  border:1px solid var(--line);
-  border-radius:10px;
-
-  background:rgba(255,255,255,.012);
-}
-
-.flowBox label{
-  color:var(--muted);
-  font-size:6px;
-  font-weight:800;
-}
-
-.flowBox strong{
-  display:block;
-
-  margin-top:9px;
-
-  font-size:10px;
-  overflow-wrap:anywhere;
-}
-
-/* ============================================================
-   SESSION
-============================================================ */
-
-.sessions{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:5px;
-}
-
-.session{
-  padding:10px;
-
-  border:1px solid var(--line);
-  border-radius:10px;
-
-  background:rgba(255,255,255,.012);
-}
-
-.session strong{
-  font-size:7px;
-}
-
-.sessionState{
-  margin-top:3px;
-
-  color:var(--muted);
-
-  font-size:6px;
-}
-
-.sessionLevels{
-  margin-top:9px;
-
-  color:#8a93a0;
-
-  font-size:6px;
-  line-height:1.6;
-}
-
-/* ============================================================
-   DATA ROWS
+   DATA
 ============================================================ */
 
 .dataList{
@@ -1363,9 +1109,10 @@ button{
   flex-direction:column;
 }
 
-.dataRow{
+.row{
   display:flex;
   justify-content:space-between;
+
   gap:12px;
 
   padding:8px 0;
@@ -1375,145 +1122,21 @@ button{
   font-size:7px;
 }
 
-.dataRow:last-child{
+.row:last-child{
   border-bottom:0;
 }
 
-.dataKey{
+.key{
   color:var(--muted);
 }
 
-.dataValue{
-  max-width:65%;
+.value{
+  max-width:68%;
+
+  color:#d4d9df;
 
   text-align:right;
-
-  color:#d5dae0;
-  font-weight:700;
-
   overflow-wrap:anywhere;
-}
-
-/* ============================================================
-   LADDER
-============================================================ */
-
-.ladder{
-  position:relative;
-
-  min-height:470px;
-
-  overflow:hidden;
-
-  border:1px solid rgba(255,255,255,.04);
-  border-radius:14px;
-
-  background:
-    linear-gradient(
-      rgba(255,255,255,.018) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,.018) 1px,
-      transparent 1px
-    ),
-    #07090c;
-
-  background-size:
-    100% 52px,
-    75px 100%;
-}
-
-.ladderLine{
-  position:absolute;
-
-  left:7px;
-
-  display:flex;
-  align-items:center;
-
-  height:20px;
-
-  padding:0 7px;
-
-  border-radius:6px;
-
-  font-size:6px;
-  font-weight:850;
-
-  white-space:nowrap;
-}
-
-.buyLiquidity{
-  color:#ffafbb;
-
-  border-right:2px solid var(--red);
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255,93,115,.045),
-      rgba(255,93,115,.25)
-    );
-}
-
-.sellLiquidity{
-  color:#94f2cc;
-
-  border-right:2px solid var(--green);
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(53,223,160,.045),
-      rgba(53,223,160,.23)
-    );
-}
-
-.neutralLiquidity{
-  color:var(--gold2);
-
-  border-right:2px solid var(--gold);
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(241,199,91,.04),
-      rgba(241,199,91,.22)
-    );
-}
-
-.ladderCurrent{
-  position:absolute;
-
-  left:0;
-  right:0;
-
-  height:1px;
-
-  background:var(--gold);
-
-  box-shadow:
-    0 0 14px rgba(241,199,91,.35);
-}
-
-.ladderTag{
-  position:absolute;
-
-  right:6px;
-
-  transform:translateY(-50%);
-
-  padding:4px 6px;
-
-  border-radius:6px;
-
-  color:#080808;
-  background:var(--gold);
-
-  font-size:6px;
-  font-weight:950;
 }
 
 /* ============================================================
@@ -1521,20 +1144,21 @@ button{
 ============================================================ */
 
 pre{
-  max-height:530px;
+  max-height:520px;
+
   overflow:auto;
 
   margin:0;
-  padding:13px;
+  padding:12px;
 
   border:1px solid var(--line);
-  border-radius:12px;
+  border-radius:10px;
 
-  color:#929aa6;
-  background:#06070a;
+  color:#929aa5;
+  background:#05070a;
 
   font-size:7px;
-  line-height:1.6;
+  line-height:1.55;
 
   white-space:pre-wrap;
   word-break:break-word;
@@ -1548,14 +1172,14 @@ pre{
   position:fixed;
   inset:0;
 
-  z-index:200;
+  z-index:250;
 
   display:none;
   place-items:center;
 
-  background:rgba(4,5,7,.73);
+  background:rgba(4,5,7,.75);
 
-  backdrop-filter:blur(13px);
+  backdrop-filter:blur(12px);
 }
 
 .loader.show{
@@ -1563,30 +1187,30 @@ pre{
 }
 
 .loaderBox{
-  width:min(270px,calc(100% - 35px));
+  width:min(280px,calc(100% - 35px));
 
-  padding:21px;
+  padding:22px;
 
   border:1px solid var(--line);
-  border-radius:19px;
+  border-radius:18px;
 
   text-align:center;
 
-  background:rgba(14,16,21,.94);
+  background:#0d1015;
 }
 
-.loaderOrb{
-  width:40px;
-  height:40px;
+.spinner{
+  width:42px;
+  height:42px;
 
   margin:auto;
 
   border-radius:50%;
 
-  border:2px solid rgba(241,199,91,.1);
+  border:2px solid rgba(241,199,91,.12);
   border-top-color:var(--gold);
 
-  animation:spin .75s linear infinite;
+  animation:spin .8s linear infinite;
 }
 
 @keyframes spin{
@@ -1598,74 +1222,15 @@ pre{
 .loaderText{
   margin-top:12px;
 
-  color:#d3d8de;
-
   font-size:8px;
   font-weight:900;
 }
 
 /* ============================================================
-   MOBILE NAV
+   MOBILE
 ============================================================ */
 
-.mobileNav{
-  display:none;
-
-  position:fixed;
-  z-index:120;
-
-  left:8px;
-  right:8px;
-
-  bottom:calc(7px + env(safe-area-inset-bottom));
-
-  padding:5px;
-
-  border:1px solid var(--line);
-  border-radius:17px;
-
-  background:rgba(7,9,12,.92);
-
-  backdrop-filter:blur(25px);
-  -webkit-backdrop-filter:blur(25px);
-
-  box-shadow:
-    0 18px 45px rgba(0,0,0,.5);
-}
-
-.mobileNav button{
-  flex:1;
-  min-width:0;
-
-  padding:7px 1px;
-
-  border-radius:11px;
-
-  color:#606976;
-  background:transparent;
-
-  font-size:5px;
-  font-weight:900;
-}
-
-.mobileNav button b{
-  display:block;
-
-  margin-bottom:3px;
-
-  font-size:12px;
-}
-
-.mobileNav button.active{
-  color:var(--gold);
-  background:rgba(241,199,91,.07);
-}
-
-/* ============================================================
-   RESPONSIVE
-============================================================ */
-
-@media(max-width:950px){
+@media(max-width:900px){
 
   .s4,
   .s5,
@@ -1676,56 +1241,36 @@ pre{
   }
 }
 
-@media(max-width:680px){
-
-  .desktopNav{
-    display:none;
-  }
-
-  .mobileNav{
-    display:flex;
-  }
+@media(max-width:650px){
 
   .brandSub{
     display:none;
-  }
-
-  .marketHero{
-    min-height:171px;
   }
 
   .chartWrap{
     height:385px;
   }
 
-  .zoneRow{
+  .zone{
     grid-template-columns:
-      minmax(80px,1.35fr)
-      .8fr
+      minmax(100px,1.4fr)
+      .7fr
       .55fr;
   }
 
-  .zoneSide{
+  .zoneStage{
     display:none;
-  }
-
-  .sessions{
-    grid-template-columns:1fr;
   }
 }
 
-@media(max-width:390px){
+@media(max-width:400px){
 
-  .mainPrice{
+  .price{
     font-size:38px;
   }
 
-  .ideaLevels{
+  .levels{
     grid-template-columns:repeat(2,1fr);
-  }
-
-  .marketPulse{
-    gap:4px;
   }
 }
 
@@ -1738,10 +1283,10 @@ pre{
 
   <div class="loaderBox">
 
-    <div class="loaderOrb"></div>
+    <div class="spinner"></div>
 
     <div class="loaderText">
-      DEEP LIQUIDITY SCAN
+      DEEP XAU/USD SCAN
     </div>
 
   </div>
@@ -1765,255 +1310,291 @@ pre{
       </div>
 
       <div class="brandSub">
-        XAU LIQUIDITY OS
+        GOLD LIQUIDITY OS V9
       </div>
 
     </div>
 
   </div>
 
-  <div class="liveStatus">
+  <div class="connection">
 
-    <div class="liveDot" id="liveDot"></div>
+    <span
+      class="connectionDot"
+      id="connectionDot"
+    ></span>
 
-    <div class="liveText" id="liveText">
-      LIVE
-    </div>
+    <span
+      class="connectionText"
+      id="connectionText"
+    >
+      CONNECTING
+    </span>
 
   </div>
 
 </header>
 
-<div class="errorBox" id="errorBox"></div>
+<div
+  class="error"
+  id="error"
+></div>
 
-<nav class="desktopNav">
+<nav class="nav">
 
-  <button class="navBtn active" data-view="terminal">
+  <button
+    class="active"
+    data-view="terminal"
+  >
     TERMINAL
   </button>
 
-  <button class="navBtn" data-view="liquidityView">
+  <button data-view="liquidity">
     LIQUIDITY
   </button>
 
-  <button class="navBtn" data-view="structureView">
+  <button data-view="structure">
     STRUCTURE
   </button>
 
-  <button class="navBtn" data-view="flowView">
+  <button data-view="flow">
     FLOW
   </button>
 
-  <button class="navBtn" data-view="macroView">
+  <button data-view="macro">
     MACRO
   </button>
 
-  <button class="navBtn" data-view="systemView">
+  <button data-view="system">
     SYSTEM
   </button>
 
 </nav>
 
-<section class="view active" id="terminal">
+<!-- ============================================================
+     TERMINAL
+============================================================ -->
 
-<div class="marketHero">
+<section
+  class="view active"
+  id="terminal"
+>
 
-  <div class="heroTop">
+<div class="hero">
 
-    <div>
-
-      <div class="symbolLabel">
-        XAU/USD · LIQUIDITY INTELLIGENCE
-      </div>
-
-      <div class="assetLabel">
-        GOLD / US DOLLAR
-      </div>
-
-    </div>
-
+  <div class="heroLabel">
+    XAU/USD · REAL-TIME LIQUIDITY INTELLIGENCE
   </div>
 
-  <div class="priceRow">
+  <div class="heroAsset">
+    GOLD / US DOLLAR
+  </div>
 
-    <div class="mainPrice" id="price">
+  <div class="priceLine">
+
+    <div
+      class="price"
+      id="price"
+    >
       —
     </div>
 
-    <div class="priceMove" id="priceMove">
-      LIVE
+    <div
+      class="priceMove"
+      id="priceMove"
+    >
+      —
     </div>
 
   </div>
 
-  <div class="heroMeta">
+  <div
+    class="liveTag"
+    id="liveTag"
+  >
+    ◉ WAITING FOR STREAM
+  </div>
 
-    <div class="metaChip">
+  <div class="meta">
+
+    <div class="chip">
       REGIME
       <b id="regime">—</b>
     </div>
 
-    <div class="metaChip">
+    <div class="chip">
       VWAP
       <b id="vwap">—</b>
     </div>
 
-    <div class="metaChip">
+    <div class="chip">
       SESSION
       <b id="session">—</b>
     </div>
 
-    <div class="metaChip">
-      SCAN
-      <b id="scanTime">—</b>
+    <div class="chip">
+      STREAM AGE
+      <b id="streamAge">—</b>
+    </div>
+
+    <div class="chip">
+      DEEP SCAN
+      <b id="deepTime">—</b>
     </div>
 
   </div>
 
-  <div class="heroAction">
-
-    <button
-      class="scanBtn"
-      onclick="loadEverything(true)"
-    >
-      DEEP SCAN
-    </button>
-
-  </div>
+  <button
+    class="scanBtn"
+    onclick="loadEverything(true)"
+  >
+    DEEP SCAN
+  </button>
 
 </div>
 
-<div class="liquidityStrip">
+<div class="focus">
 
   <div>
 
-    <div class="stripLabel">
+    <div class="focusLabel">
       DOMINANT LIQUIDITY DRAW
     </div>
 
-    <div class="stripTarget" id="focusTarget">
-      FINDING TARGET…
+    <div
+      class="focusTarget"
+      id="focusTarget"
+    >
+      SEARCHING…
     </div>
 
-    <div class="stripDetails" id="focusDetails">
-      Mapping liquidity around live price.
+    <div
+      class="focusDetails"
+      id="focusDetails"
+    >
+      Building liquidity map.
     </div>
 
   </div>
 
-  <div class="stripScore">
+  <div class="focusRight">
 
-    <div class="miniScoreText">
+    <div class="scoreMeta">
 
-      <strong id="scoreTitle">
+      <strong>
         RAID SCORE
       </strong>
 
-      <span id="scoreStatus">
+      <span id="focusStage">
         TRACKING
       </span>
 
     </div>
 
-    <div class="miniRing" id="scoreRing">
-      <b id="focusScore">0</b>
+    <div
+      class="ring"
+      id="scoreRing"
+    >
+      <b id="focusScore">
+        0
+      </b>
     </div>
 
   </div>
 
 </div>
 
-<article class="card chartCard">
+<article class="card">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
+    <div class="head">
 
       <div>
 
-        <div class="sectionTitle">
+        <div class="title">
           LIVE MARKET MAP
         </div>
 
-        <div class="sectionSub">
-          Candles · liquidity · FVG · raids · current price
+        <div class="sub">
+          REST candles + WebSocket live price + liquidity raids
         </div>
 
       </div>
 
       <div class="badge">
-        INTERACTIVE
+        HYBRID FEED
       </div>
 
     </div>
 
-    <div class="chartToolbar">
+    <div class="chartTools">
 
-      <div class="timeframes">
+      <div class="tfs">
 
-        <button class="tfBtn" data-tf="m1">
+        <button class="tf" data-tf="m1">
           M1
         </button>
 
-        <button class="tfBtn active" data-tf="m5">
+        <button class="tf active" data-tf="m5">
           M5
         </button>
 
-        <button class="tfBtn" data-tf="m15">
+        <button class="tf" data-tf="m15">
           M15
         </button>
 
-        <button class="tfBtn" data-tf="h1">
+        <button class="tf" data-tf="h1">
           H1
         </button>
 
       </div>
 
-      <div class="chartState">
-
-        <span class="chartStateDot"></span>
-
-        <span id="chartState">
-          LOADING
-        </span>
-
+      <div
+        class="chartStatus"
+        id="chartStatus"
+      >
+        LOADING
       </div>
 
     </div>
 
     <div class="chartWrap">
 
-      <canvas id="chartCanvas"></canvas>
+      <canvas id="chart"></canvas>
 
       <div class="chartWatermark">
         XAUUSD
       </div>
 
-      <div class="chartOHLC" id="chartOHLC">
-        LOADING CHART
+      <div
+        class="ohlc"
+        id="ohlc"
+      >
+        LOADING
       </div>
 
     </div>
 
-    <div class="chartLegend">
+    <div class="legendRow">
 
       <div class="legend">
-        <div class="legendDot goldDot"></div>
-        CURRENT
+        <span class="dot dotGold"></span>
+        LIVE PRICE
       </div>
 
       <div class="legend">
-        <div class="legendDot redDot"></div>
+        <span class="dot dotRed"></span>
         BUY-SIDE
       </div>
 
       <div class="legend">
-        <div class="legendDot greenDot"></div>
+        <span class="dot dotGreen"></span>
         SELL-SIDE
       </div>
 
       <div class="legend">
-        <div class="legendDot purpleDot"></div>
+        <span class="dot dotPurple"></span>
         FVG
       </div>
 
@@ -2023,26 +1604,26 @@ pre{
 
 </article>
 
-<article class="card tradeIdea">
+<article class="card">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
+    <div class="head">
 
       <div>
 
-        <div class="sectionTitle">
-          TRADE IDEA
+        <div class="title">
+          LIVE TRADE IDEA
         </div>
 
-        <div class="sectionSub">
-          Liquidity first · confirmation second · trade last
+        <div class="sub">
+          Raid → rejection → structure confirmation
         </div>
 
       </div>
 
       <div class="badge">
-        LIVE MODEL
+        REAL-TIME RAID
       </div>
 
     </div>
@@ -2057,13 +1638,16 @@ pre{
             CURRENT SCENARIO
           </div>
 
-          <div class="ideaSignal gold" id="ideaSignal">
+          <div
+            class="ideaSignal gold"
+            id="ideaSignal"
+          >
             WAIT
           </div>
 
         </div>
 
-        <div class="ideaConfidence">
+        <div class="conf">
 
           <b id="ideaConfidence">
             0
@@ -2077,15 +1661,21 @@ pre{
 
       </div>
 
-      <div class="ideaDescription" id="ideaDescription">
-        Building liquidity scenario.
+      <div
+        class="ideaText"
+        id="ideaText"
+      >
+        Waiting for deep scan.
       </div>
 
-      <div class="stageTrack" id="stageTrack"></div>
+      <div
+        class="stages"
+        id="stages"
+      ></div>
 
-      <div class="ideaLevels">
+      <div class="levels">
 
-        <div class="ideaLevel">
+        <div class="level">
 
           <label>
             TRIGGER
@@ -2097,37 +1687,46 @@ pre{
 
         </div>
 
-        <div class="ideaLevel">
+        <div class="level">
 
           <label>
             INVALIDATION
           </label>
 
-          <strong class="red" id="ideaStop">
+          <strong
+            class="red"
+            id="ideaStop"
+          >
             —
           </strong>
 
         </div>
 
-        <div class="ideaLevel">
+        <div class="level">
 
           <label>
             TP1
           </label>
 
-          <strong class="green" id="ideaTp1">
+          <strong
+            class="green"
+            id="ideaTp1"
+          >
             —
           </strong>
 
         </div>
 
-        <div class="ideaLevel">
+        <div class="level">
 
           <label>
             TP2
           </label>
 
-          <strong class="green" id="ideaTp2">
+          <strong
+            class="green"
+            id="ideaTp2"
+          >
             —
           </strong>
 
@@ -2135,31 +1734,32 @@ pre{
 
       </div>
 
-      <div class="checks" id="ideaChecks"></div>
-
     </div>
 
   </div>
 
 </article>
 
-<div class="marketPulse" id="marketPulse"></div>
+<div
+  class="pulse"
+  id="pulse"
+></div>
 
 <div class="grid">
 
 <article class="card s5">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
+    <div class="head">
 
       <div>
 
-        <div class="sectionTitle">
+        <div class="title">
           MARKET CONDITION
         </div>
 
-        <div class="sectionSub">
+        <div class="sub">
           Volatility · momentum · value
         </div>
 
@@ -2167,7 +1767,10 @@ pre{
 
     </div>
 
-    <div class="metrics" id="metrics"></div>
+    <div
+      class="metrics"
+      id="metrics"
+    ></div>
 
   </div>
 
@@ -2175,29 +1778,313 @@ pre{
 
 <article class="card s7">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
+    <div class="head">
 
       <div>
 
-        <div class="sectionTitle">
+        <div class="title">
           TOP LIQUIDITY
         </div>
 
-        <div class="sectionSub">
-          Highest ranked pools around price
+        <div class="sub">
+          Ranked by next-target score
         </div>
 
-      </div>
-
-      <div class="badge">
-        RANKED
       </div>
 
     </div>
 
-    <div class="zoneList" id="topZones"></div>
+    <div
+      class="zoneList"
+      id="topZones"
+    ></div>
+
+  </div>
+
+</article>
+
+</div>
+
+</section>
+
+<!-- ============================================================
+     LIQUIDITY
+============================================================ -->
+
+<section
+  class="view"
+  id="liquidity"
+>
+
+<div class="card">
+
+  <div class="pad">
+
+    <div class="head">
+
+      <div>
+
+        <div class="title">
+          FULL LIQUIDITY MATRIX
+        </div>
+
+        <div class="sub">
+          Live stages update without waiting for a new candle
+        </div>
+
+      </div>
+
+    </div>
+
+    <div
+      class="zoneList"
+      id="allZones"
+    ></div>
+
+  </div>
+
+</div>
+
+<div class="grid">
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        EQUAL LEVELS
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="equalLevels"
+    ></div>
+
+  </div>
+
+</article>
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        FAIR VALUE GAPS
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="fvgs"
+    ></div>
+
+  </div>
+
+</article>
+
+</div>
+
+</section>
+
+<!-- ============================================================
+     STRUCTURE
+============================================================ -->
+
+<section
+  class="view"
+  id="structure"
+>
+
+<div class="card">
+
+  <div class="pad">
+
+    <div class="head">
+
+      <div>
+
+        <div class="title">
+          MULTI-TIMEFRAME STRUCTURE
+        </div>
+
+      </div>
+
+    </div>
+
+    <div
+      class="pulse"
+      id="structurePulse"
+    ></div>
+
+  </div>
+
+</div>
+
+<div class="grid">
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        PREVIOUS DAY
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="previousDay"
+    ></div>
+
+  </div>
+
+</article>
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        PREVIOUS WEEK
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="previousWeek"
+    ></div>
+
+  </div>
+
+</article>
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        DEALING RANGE
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="dealingRange"
+    ></div>
+
+  </div>
+
+</article>
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        DISPLACEMENT
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="displacement"
+    ></div>
+
+  </div>
+
+</article>
+
+</div>
+
+</section>
+
+<!-- ============================================================
+     FLOW
+============================================================ -->
+
+<section
+  class="view"
+  id="flow"
+>
+
+<div class="grid">
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        ORDER FLOW PROXY
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="flowData"
+    ></div>
+
+  </div>
+
+</article>
+
+<article class="card s6">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        INTERMARKET
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="intermarket"
+    ></div>
+
+  </div>
+
+</article>
+
+</div>
+
+</section>
+
+<!-- ============================================================
+     MACRO
+============================================================ -->
+
+<section
+  class="view"
+  id="macro"
+>
+
+<div class="grid">
+
+<article class="card s7">
+
+  <div class="pad">
+
+    <div class="head">
+      <div class="title">
+        GOLD MACRO ENGINE
+      </div>
+    </div>
+
+    <div
+      class="dataList"
+      id="macroData"
+    ></div>
 
   </div>
 
@@ -2205,45 +2092,18 @@ pre{
 
 <article class="card s5">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
-
-      <div>
-
-        <div class="sectionTitle">
-          ORDER FLOW
-        </div>
-
-        <div class="sectionSub">
-          Delta · CVD · absorption
-        </div>
-
+    <div class="head">
+      <div class="title">
+        FEED QUALITY
       </div>
-
     </div>
 
-    <div class="flowGrid" id="flowGrid"></div>
-
-  </div>
-
-</article>
-
-<article class="card s7">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          SESSION INTELLIGENCE
-        </div>
-      </div>
-
-    </div>
-
-    <div class="sessions" id="sessions"></div>
+    <div
+      class="dataList"
+      id="quality"
+    ></div>
 
   </div>
 
@@ -2253,51 +2113,50 @@ pre{
 
 </section>
 
-<section class="view" id="liquidityView">
+<!-- ============================================================
+     SYSTEM
+============================================================ -->
+
+<section
+  class="view"
+  id="system"
+>
 
 <div class="grid">
 
-<article class="card s8">
+<article class="card s6">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
-
-      <div>
-
-        <div class="sectionTitle">
-          DEEP LIQUIDITY LADDER
-        </div>
-
-        <div class="sectionSub">
-          Institutional pools surrounding current price
-        </div>
-
+    <div class="head">
+      <div class="title">
+        ENGINE HEALTH
       </div>
-
     </div>
 
-    <div class="ladder" id="liquidityLadder"></div>
+    <div
+      class="dataList"
+      id="health"
+    ></div>
 
   </div>
 
 </article>
 
-<article class="card s4">
+<article class="card s6">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          DOMINANT TARGET
-        </div>
+    <div class="head">
+      <div class="title">
+        ARCHITECTURE
       </div>
-
     </div>
 
-    <div class="dataList" id="dominantDetails"></div>
+    <div
+      class="dataList"
+      id="architecture"
+    ></div>
 
   </div>
 
@@ -2305,359 +2164,27 @@ pre{
 
 <article class="card s12">
 
-  <div class="cardPad">
+  <div class="pad">
 
-    <div class="sectionHead">
+    <div class="head">
 
       <div>
 
-        <div class="sectionTitle">
-          LIQUIDITY MATRIX
+        <div class="title">
+          RAW RESPONSE
         </div>
 
-        <div class="sectionSub">
-          All detected pools
+        <div class="sub">
+          Deep engine debugging
         </div>
 
       </div>
 
     </div>
 
-    <div class="zoneList" id="allZones"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          EQUAL LEVELS
-        </div>
-      </div>
-
-    </div>
-
-    <div class="dataList" id="equalLevels"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          FAIR VALUE GAPS
-        </div>
-      </div>
-
-    </div>
-
-    <div class="dataList" id="fairValueGaps"></div>
-
-  </div>
-
-</article>
-
-</div>
-
-</section>
-
-<section class="view" id="structureView">
-
-<div class="grid">
-
-<article class="card s12">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          MULTI-TIMEFRAME STRUCTURE
-        </div>
-      </div>
-
-    </div>
-
-    <div class="marketPulse" id="structureFull"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-      <div>
-        <div class="sectionTitle">
-          DEALING RANGE
-        </div>
-      </div>
-    </div>
-
-    <div class="dataList" id="dealingRange"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-      <div>
-        <div class="sectionTitle">
-          DISPLACEMENT
-        </div>
-      </div>
-    </div>
-
-    <div class="dataList" id="displacement"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-      <div>
-        <div class="sectionTitle">
-          PREVIOUS DAY
-        </div>
-      </div>
-    </div>
-
-    <div class="dataList" id="previousDay"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-      <div>
-        <div class="sectionTitle">
-          PREVIOUS WEEK
-        </div>
-      </div>
-    </div>
-
-    <div class="dataList" id="previousWeek"></div>
-
-  </div>
-
-</article>
-
-</div>
-
-</section>
-
-<section class="view" id="flowView">
-
-<div class="grid">
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          ORDER FLOW ENGINE
-        </div>
-      </div>
-
-    </div>
-
-    <div class="flowGrid" id="flowFull"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-      <div>
-        <div class="sectionTitle">
-          INTERMARKET
-        </div>
-      </div>
-    </div>
-
-    <div class="dataList" id="intermarket"></div>
-
-  </div>
-
-</article>
-
-<article class="card s12">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          HISTORICAL LIQUIDITY
-        </div>
-      </div>
-
-    </div>
-
-    <div class="dataList" id="historicalLiquidity"></div>
-
-  </div>
-
-</article>
-
-</div>
-
-</section>
-
-<section class="view" id="macroView">
-
-<div class="grid">
-
-<article class="card s8">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-
-        <div class="sectionTitle">
-          GOLD MACRO ENGINE
-        </div>
-
-        <div class="sectionSub">
-          FRED · USD · rates
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="dataList" id="macroData"></div>
-
-  </div>
-
-</article>
-
-<article class="card s4">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          DATA QUALITY
-        </div>
-      </div>
-
-    </div>
-
-    <div class="dataList" id="dataQuality"></div>
-
-  </div>
-
-</article>
-
-</div>
-
-</section>
-
-<section class="view" id="systemView">
-
-<div class="grid">
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          API ARCHITECTURE
-        </div>
-      </div>
-
-    </div>
-
-    <div class="dataList" id="apiArchitecture"></div>
-
-  </div>
-
-</article>
-
-<article class="card s6">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-        <div class="sectionTitle">
-          ENGINE HEALTH
-        </div>
-      </div>
-
-    </div>
-
-    <div class="dataList" id="health"></div>
-
-  </div>
-
-</article>
-
-<article class="card s12">
-
-  <div class="cardPad">
-
-    <div class="sectionHead">
-
-      <div>
-
-        <div class="sectionTitle">
-          RAW XAU RESPONSE
-        </div>
-
-        <div class="sectionSub">
-          Backend debugging
-        </div>
-
-      </div>
-
-    </div>
-
-    <pre id="rawJson">WAITING FOR DATA</pre>
+    <pre id="raw">
+WAITING
+    </pre>
 
   </div>
 
@@ -2668,40 +2195,6 @@ pre{
 </section>
 
 </div>
-
-<nav class="mobileNav">
-
-  <button class="active" data-view="terminal">
-    <b>⌂</b>
-    HOME
-  </button>
-
-  <button data-view="liquidityView">
-    <b>◫</b>
-    LIQUID
-  </button>
-
-  <button data-view="structureView">
-    <b>⌁</b>
-    STRUCT
-  </button>
-
-  <button data-view="flowView">
-    <b>↯</b>
-    FLOW
-  </button>
-
-  <button data-view="macroView">
-    <b>◎</b>
-    MACRO
-  </button>
-
-  <button data-view="systemView">
-    <b>☷</b>
-    SYSTEM
-  </button>
-
-</nav>
 
 <script>
 
@@ -2709,19 +2202,47 @@ pre{
    STATE
 ============================================================ */
 
-let DATA = null;
+let DATA =
+  null;
 
-let ACTIVE_TF = "m5";
+let ACTIVE_TF =
+  "m5";
 
-let CHART_DATA = [];
+let CHART_DATA =
+  [];
 
-let CHART_CACHE = {};
+let CHART_CACHE =
+  {};
 
-let POINTER = null;
+let POINTER =
+  null;
 
-let CURRENT_ZONES = [];
+let LIVE_PRICE =
+  null;
 
-let CURRENT_IDEA = null;
+let PREVIOUS_LIVE_PRICE =
+  null;
+
+let LIVE_TIMESTAMP =
+  null;
+
+let WS =
+  null;
+
+let WS_RECONNECT_TIMER =
+  null;
+
+let WS_RECONNECT_ATTEMPT =
+  0;
+
+let ZONES =
+  [];
+
+let CURRENT_IDEA =
+  null;
+
+const LIVE_ZONE_STATES =
+  new Map();
 
 
 /* ============================================================
@@ -2730,22 +2251,14 @@ let CURRENT_IDEA = null;
 
 const $ =
   id =>
-    document.getElementById(id);
+    document.getElementById(
+      id
+    );
 
 
-/*
-  IMPORTANT FIX
-
-  Number(null) === 0
-  Number("") === 0
-
-  The old version therefore converted missing price fields into
-  literal XAU/USD prices of 0.00.
-
-  That was the main reason the chart axis stretched below zero.
-*/
-
-function finite(value){
+function finite(
+  value
+){
 
   if(
     value === null ||
@@ -2762,46 +2275,6 @@ function finite(value){
   return Number.isFinite(n)
     ? n
     : null;
-}
-
-
-function validPrice(
-  value,
-  reference = null
-){
-
-  const n =
-    finite(value);
-
-  if(
-    n === null ||
-    n <= 0
-  ){
-    return null;
-  }
-
-  const ref =
-    finite(reference);
-
-  if(
-    ref !== null &&
-    ref > 0
-  ){
-
-    /*
-      Stops accidental scores such as 47, 90 or 0.25
-      from becoming XAU price coordinates.
-    */
-
-    if(
-      n < ref * 0.50 ||
-      n > ref * 1.50
-    ){
-      return null;
-    }
-  }
-
-  return n;
 }
 
 
@@ -2869,7 +2342,9 @@ function fmtLoose(
 }
 
 
-function pretty(value){
+function pretty(
+  value
+){
 
   return String(
     value ?? ""
@@ -2884,36 +2359,15 @@ function pretty(value){
   )
   .replace(
     /\b\w/g,
-    x => x.toUpperCase()
+    x =>
+      x.toUpperCase()
   );
 }
 
 
-function pick(
-  object,
-  keys,
-  fallback = null
+function asText(
+  value
 ){
-
-  if(!object){
-    return fallback;
-  }
-
-  for(const key of keys){
-
-    if(
-      object[key] !== undefined &&
-      object[key] !== null
-    ){
-      return object[key];
-    }
-  }
-
-  return fallback;
-}
-
-
-function asText(value){
 
   if(
     value === null ||
@@ -2926,332 +2380,99 @@ function asText(value){
   if(
     typeof value === "object"
   ){
-    return summarize(value);
+
+    if(
+      Array.isArray(value)
+    ){
+      return `${value.length} items`;
+    }
+
+    return Object
+      .entries(value)
+      .slice(0,3)
+      .map(
+        ([key,item]) =>
+          `${pretty(key)}: ${
+            typeof item === "object"
+              ? "…"
+              : item
+          }`
+      )
+      .join(" · ");
   }
 
   return String(value);
 }
 
 
-function summarize(object){
+function getSpot(){
 
-  if(object === null){
-    return "—";
+  const streamAge =
+    LIVE_TIMESTAMP
+      ? Date.now() -
+        LIVE_TIMESTAMP
+      : Infinity;
+
+  if(
+    LIVE_PRICE !== null &&
+    streamAge <
+    15000
+  ){
+    return LIVE_PRICE;
   }
-
-  if(Array.isArray(object)){
-    return `${object.length} items`;
-  }
-
-  const keys = [
-    "state",
-    "status",
-    "bias",
-    "direction",
-    "stage",
-    "score",
-    "raidLikelihood",
-    "value",
-    "price",
-    "high",
-    "low",
-    "signal"
-  ];
-
-  const values = [];
-
-  for(const key of keys){
-
-    if(
-      object[key] !== undefined &&
-      object[key] !== null
-    ){
-
-      values.push(
-        `${pretty(key)}: ${asText(object[key])}`
-      );
-    }
-  }
-
-  if(values.length){
-    return values.join(" · ");
-  }
-
-  return Object
-    .entries(object)
-    .slice(0,3)
-    .map(
-      ([key,value]) =>
-        `${pretty(key)}: ${
-          typeof value === "object"
-            ? "…"
-            : String(value)
-        }`
-    )
-    .join(" · ");
-}
-
-
-/* ============================================================
-   RECURSIVE FINDERS
-============================================================ */
-
-function findFirstObject(
-  root,
-  wantedKeys
-){
-
-  let found = null;
-
-  const wanted =
-    new Set(
-      wantedKeys.map(
-        key =>
-          key.toLowerCase()
-      )
-    );
-
-  function walk(value){
-
-    if(
-      found ||
-      !value ||
-      typeof value !== "object"
-    ){
-      return;
-    }
-
-    if(Array.isArray(value)){
-
-      for(const child of value){
-
-        walk(child);
-
-        if(found){
-          return;
-        }
-      }
-
-      return;
-    }
-
-    for(
-      const [key,child]
-      of Object.entries(value)
-    ){
-
-      if(
-        wanted.has(
-          key.toLowerCase()
-        ) &&
-        child &&
-        typeof child === "object"
-      ){
-
-        found = child;
-        return;
-      }
-    }
-
-    for(const child of Object.values(value)){
-
-      walk(child);
-
-      if(found){
-        return;
-      }
-    }
-  }
-
-  walk(root);
-
-  return found;
-}
-
-
-function findFirstValue(
-  root,
-  wantedKeys
-){
-
-  let found;
-
-  const wanted =
-    new Set(
-      wantedKeys.map(
-        key =>
-          key.toLowerCase()
-      )
-    );
-
-  function walk(value){
-
-    if(
-      found !== undefined ||
-      !value ||
-      typeof value !== "object"
-    ){
-      return;
-    }
-
-    if(Array.isArray(value)){
-
-      for(const child of value){
-
-        walk(child);
-
-        if(found !== undefined){
-          return;
-        }
-      }
-
-      return;
-    }
-
-    for(
-      const [key,child]
-      of Object.entries(value)
-    ){
-
-      if(
-        wanted.has(
-          key.toLowerCase()
-        )
-      ){
-        found = child;
-        return;
-      }
-    }
-
-    for(const child of Object.values(value)){
-
-      walk(child);
-
-      if(found !== undefined){
-        return;
-      }
-    }
-  }
-
-  walk(root);
-
-  return found;
-}
-
-
-/* ============================================================
-   SPOT
-============================================================ */
-
-function getSpot(
-  data = DATA
-){
 
   return (
-    validPrice(
-      data?.market?.price
+    finite(
+      DATA?.market?.price
     ) ??
-    validPrice(
-      data?.price
-    ) ??
-    validPrice(
+    finite(
       CHART_DATA.at(-1)?.close
     )
   );
 }
 
 
-/* ============================================================
-   LIQUIDITY
-============================================================ */
-
-function zoneLevel(
-  zone,
-  reference = getSpot()
+function zonePrice(
+  zone
 ){
 
   if(!zone){
     return null;
   }
 
-  const directKeys = [
-    "price",
-    "level",
-    "center",
-    "centre",
-    "centerPrice",
-    "mid",
-    "midpoint",
-    "target",
-    "liquidityLevel",
-    "liquidity_level"
+  const candidates = [
+    zone.price,
+    zone.level,
+    zone.center,
+    zone.midpoint
   ];
 
-  for(const key of directKeys){
+  for(
+    const value
+    of candidates
+  ){
 
     const n =
-      validPrice(
-        zone[key],
-        reference
-      );
+      finite(value);
 
-    if(n !== null){
+    if(
+      n !== null &&
+      n > 0
+    ){
       return n;
     }
   }
 
-  const lowKeys = [
-    "low",
-    "bottom",
-    "from",
-    "zoneLow",
-    "zone_low"
-  ];
+  const low =
+    finite(zone.low);
 
-  const highKeys = [
-    "high",
-    "top",
-    "to",
-    "zoneHigh",
-    "zone_high"
-  ];
-
-  let low = null;
-  let high = null;
-
-  for(const key of lowKeys){
-
-    const n =
-      validPrice(
-        zone[key],
-        reference
-      );
-
-    if(n !== null){
-      low = n;
-      break;
-    }
-  }
-
-  for(const key of highKeys){
-
-    const n =
-      validPrice(
-        zone[key],
-        reference
-      );
-
-    if(n !== null){
-      high = n;
-      break;
-    }
-  }
+  const high =
+    finite(zone.high);
 
   if(
     low !== null &&
     high !== null
   ){
-
     return (
       low +
       high
@@ -3262,705 +2483,703 @@ function zoneLevel(
 }
 
 
-function zoneName(zone){
+function zoneId(
+  zone,
+  index = 0
+){
 
-  return String(
-    pick(
-      zone,
-      [
-        "name",
-        "label",
-        "type",
-        "code",
-        "source",
-        "category",
-        "kind"
-      ],
-      "Liquidity"
-    )
+  return (
+    zone?.id ||
+    `${zone?.name || "ZONE"}-${zone?.side || ""}-${index}`
   );
 }
 
 
-function zoneSide(zone){
+function zoneSide(
+  zone
+){
 
   return String(
-    pick(
-      zone,
-      [
-        "side",
-        "liquiditySide",
-        "liquidity_side",
-        "direction",
-        "poolSide",
-        "pool_side"
-      ],
-      ""
-    )
+    zone?.side ||
+    ""
   ).toUpperCase();
 }
 
 
-function actualZoneScore(zone){
-
-  const fields = [
-    "raidLikelihood",
-    "raid_likelihood",
-    "raidScore",
-    "raid_score",
-    "nextTargetScore",
-    "next_target_score",
-    "heat",
-    "score",
-    "liquidityScore",
-    "liquidity_score",
-    "strengthScore",
-    "strength_score",
-    "quality"
-  ];
-
-  for(const field of fields){
-
-    const value =
-      finite(
-        zone?.[field]
-      );
-
-    if(value !== null){
-
-      return clamp(
-        value,
-        0,
-        100
-      );
-    }
-  }
-
-  return null;
-}
-
-
-function fallbackZoneScore(
-  zone,
-  spot
+function zoneScore(
+  zone
 ){
 
-  const weight =
-    finite(
-      pick(
-        zone,
-        [
-          "priority",
-          "weight",
-          "baseWeight",
-          "base_weight",
-          "importance",
-          "rank",
-          "structuralStrength"
-        ]
-      )
-    );
-
-  let score = 42;
-
-  if(weight !== null){
-
-    if(weight <= 10){
-
-      score =
-        28 +
-        weight * 10;
-
-    }else{
-
-      score = weight;
-    }
-  }
-
-  const name =
-    zoneName(zone)
-      .toUpperCase();
-
-  if(
-    name.includes("PREVIOUS WEEK")
-  ){
-    score = Math.max(score,88);
-  }
-
-  if(
-    name.includes("PREVIOUS DAY") ||
-    name === "PDH" ||
-    name === "PDL"
-  ){
-    score = Math.max(score,78);
-  }
-
-  if(
-    name.includes("EQUAL HIGH") ||
-    name.includes("EQUAL LOW") ||
-    name === "EQH" ||
-    name === "EQL"
-  ){
-    score = Math.max(score,76);
-  }
-
-  if(name.includes("ASIA")){
-    score = Math.max(score,68);
-  }
-
-  if(name.includes("LONDON")){
-    score = Math.max(score,72);
-  }
-
-  if(name.includes("NEW YORK")){
-    score = Math.max(score,74);
-  }
-
-  if(name.includes("SWING")){
-    score = Math.max(score,58);
-  }
-
-  const level =
-    zoneLevel(
-      zone,
-      spot
-    );
-
-  if(
-    level !== null &&
-    Number.isFinite(spot)
-  ){
-
-    const distancePct =
-      Math.abs(
-        level -
-        spot
-      ) /
-      Math.max(
-        Math.abs(spot),
-        1
-      );
-
-    if(distancePct < .002){
-      score += 7;
-    }else if(distancePct < .005){
-      score += 4;
-    }
-  }
-
   return clamp(
-    score,
+    finite(
+      zone?.raidScore ??
+      zone?.raidLikelihood ??
+      zone?.score ??
+      zone?.nextTargetScore
+    ) ?? 0,
     0,
-    95
+    100
   );
 }
 
 
-function zoneScore(
-  zone,
-  spot
-){
-
-  const actual =
-    actualZoneScore(zone);
-
-  if(actual !== null){
-
-    return {
-      value:actual,
-      actual:true
-    };
-  }
-
-  return {
-    value:
-      fallbackZoneScore(
-        zone,
-        spot
-      ),
-    actual:false
-  };
-}
-
-
-function addZone(
-  result,
-  seen,
-  zone,
-  spot
-){
-
-  const level =
-    zoneLevel(
-      zone,
-      spot
-    );
-
-  if(level === null){
-    return;
-  }
-
-  const name =
-    zoneName(zone);
-
-  const side =
-    zoneSide(zone);
-
-  const key =
-    `${name}|${level.toFixed(3)}|${side}`;
-
-  if(seen.has(key)){
-    return;
-  }
-
-  seen.add(key);
-
-  result.push({
-    ...zone,
-    price:
-      zone.price ??
-      level,
-    level:
-      zone.level ??
-      level
-  });
-}
-
-
 /* ============================================================
-   KNOWN SCALAR LEVELS
+   NAV
 ============================================================ */
 
-const SCALAR_LEVELS = {
+document
+  .querySelectorAll(
+    "[data-view]"
+  )
+  .forEach(
+    button => {
 
-  previousDayHigh:{
-    name:"Previous Day High",
-    code:"PDH",
-    side:"BUY_SIDE",
-    weight:5
-  },
+      button.addEventListener(
+        "click",
+        () => {
 
-  previous_day_high:{
-    name:"Previous Day High",
-    code:"PDH",
-    side:"BUY_SIDE",
-    weight:5
-  },
+          const view =
+            button.dataset.view;
 
-  pdh:{
-    name:"Previous Day High",
-    code:"PDH",
-    side:"BUY_SIDE",
-    weight:5
-  },
-
-  previousDayLow:{
-    name:"Previous Day Low",
-    code:"PDL",
-    side:"SELL_SIDE",
-    weight:5
-  },
-
-  previous_day_low:{
-    name:"Previous Day Low",
-    code:"PDL",
-    side:"SELL_SIDE",
-    weight:5
-  },
-
-  pdl:{
-    name:"Previous Day Low",
-    code:"PDL",
-    side:"SELL_SIDE",
-    weight:5
-  },
-
-  previousWeekHigh:{
-    name:"Previous Week High",
-    code:"PWH",
-    side:"BUY_SIDE",
-    weight:6
-  },
-
-  previousWeekLow:{
-    name:"Previous Week Low",
-    code:"PWL",
-    side:"SELL_SIDE",
-    weight:6
-  },
-
-  asianHigh:{
-    name:"Asia High",
-    code:"ASIA_HIGH",
-    side:"BUY_SIDE",
-    weight:4
-  },
-
-  asiaHigh:{
-    name:"Asia High",
-    code:"ASIA_HIGH",
-    side:"BUY_SIDE",
-    weight:4
-  },
-
-  asianLow:{
-    name:"Asia Low",
-    code:"ASIA_LOW",
-    side:"SELL_SIDE",
-    weight:4
-  },
-
-  asiaLow:{
-    name:"Asia Low",
-    code:"ASIA_LOW",
-    side:"SELL_SIDE",
-    weight:4
-  }
-};
-
-
-/* ============================================================
-   COLLECT LIQUIDITY
-============================================================ */
-
-function collectLiquidityZones(data){
-
-  const direct =
-    data?.deepLiquidity?.zones;
-
-  const spot =
-    getSpot(data);
-
-  if(
-    Array.isArray(direct) &&
-    direct.length
-  ){
-
-    const seen =
-      new Set();
-
-    const result = [];
-
-    for(const zone of direct){
-
-      addZone(
-        result,
-        seen,
-        zone,
-        spot
-      );
-    }
-
-    return result
-      .sort(
-        (a,b) => {
-
-          const scoreDiff =
-            zoneScore(b,spot).value -
-            zoneScore(a,spot).value;
-
-          if(scoreDiff !== 0){
-            return scoreDiff;
-          }
-
-          return (
-            Math.abs(
-              zoneLevel(a,spot) -
-              spot
-            ) -
-            Math.abs(
-              zoneLevel(b,spot) -
-              spot
+          document
+            .querySelectorAll(
+              ".view"
             )
-          );
-        }
-      )
-      .slice(0,60);
-  }
+            .forEach(
+              element =>
+                element.classList.remove(
+                  "active"
+                )
+            );
 
-  const result = [];
-  const seen = new Set();
+          document
+            .querySelectorAll(
+              "[data-view]"
+            )
+            .forEach(
+              element =>
+                element.classList.toggle(
+                  "active",
+                  element.dataset.view ===
+                  view
+                )
+            );
 
-  function walk(
-    value,
-    path = "root"
-  ){
+          $(view)
+            ?.classList
+            .add(
+              "active"
+            );
 
-    if(
-      value === null ||
-      value === undefined
-    ){
-      return;
-    }
-
-    if(Array.isArray(value)){
-
-      for(const item of value){
-
-        if(
-          item &&
-          typeof item === "object"
-        ){
-
-          const context =
-            path.toLowerCase();
-
-          const relevant =
-            context.includes("liquid") ||
-            context.includes("raid") ||
-            context.includes("sweep") ||
-            context.includes("swing") ||
-            context.includes("equal");
-
-          if(relevant){
-
-            addZone(
-              result,
-              seen,
-              item,
-              spot
+          if(
+            view ===
+            "terminal"
+          ){
+            setTimeout(
+              drawChart,
+              80
             );
           }
+
+          window.scrollTo({
+            top:0,
+            behavior:"smooth"
+          });
         }
-
-        walk(
-          item,
-          path
-        );
-      }
-
-      return;
-    }
-
-    if(typeof value !== "object"){
-      return;
-    }
-
-    for(
-      const [key,child]
-      of Object.entries(value)
-    ){
-
-      const lowerKey =
-        key.toLowerCase();
-
-      const scalar =
-        Object.entries(
-          SCALAR_LEVELS
-        )
-        .find(
-          ([known]) =>
-            known.toLowerCase() ===
-            lowerKey
-        );
-
-      if(scalar){
-
-        const n =
-          validPrice(
-            child,
-            spot
-          );
-
-        if(n !== null){
-
-          const definition =
-            scalar[1];
-
-          addZone(
-            result,
-            seen,
-            {
-              name:definition.name,
-              code:definition.code,
-              side:definition.side,
-              price:n,
-              level:n,
-              weight:definition.weight,
-              source:path
-            },
-            spot
-          );
-        }
-      }
-
-      walk(
-        child,
-        `${path}.${key}`
       );
     }
-  }
-
-  walk(data);
-
-  return result
-    .sort(
-      (a,b) => {
-
-        const scoreDiff =
-          zoneScore(b,spot).value -
-          zoneScore(a,spot).value;
-
-        if(scoreDiff !== 0){
-          return scoreDiff;
-        }
-
-        return (
-          Math.abs(
-            zoneLevel(a,spot) -
-            spot
-          ) -
-          Math.abs(
-            zoneLevel(b,spot) -
-            spot
-          )
-        );
-      }
-    )
-    .slice(0,60);
-}
+  );
 
 
 /* ============================================================
-   DOMINANT ZONE
+   LIVE ZONE STATE ENGINE
 ============================================================ */
 
-function dominantZone(
-  data,
-  zones
+function updateZoneStates(
+  livePrice
 ){
 
-  const direct =
-
-    data?.deepLiquidity?.dominantZone ??
-
-    data?.dominantLiquidity ??
-
-    data?.liquidity?.dominantZone;
-
   if(
-    direct &&
-    zoneLevel(
-      direct,
-      getSpot(data)
-    ) !== null
+    !Number.isFinite(
+      livePrice
+    )
   ){
-    return direct;
+    return;
   }
 
-  const recursive =
-    findFirstObject(
-      data,
-      [
-        "dominantLiquidity",
-        "dominantZone",
-        "primaryLiquidity",
-        "highestRankedLiquidity",
-        "highestRanked",
-        "topLiquidity",
-        "topTarget",
-        "primaryTarget"
-      ]
+  const atr =
+    finite(
+      DATA?.market?.atr?.M1
+    ) ??
+    finite(
+      DATA?.market?.atr?.M5
+    ) ??
+    Math.max(
+      livePrice * .0005,
+      .5
     );
 
-  if(
-    recursive &&
-    zoneLevel(
-      recursive,
-      getSpot(data)
-    ) !== null
-  ){
-    return recursive;
-  }
+  ZONES.forEach(
+    (zone,index) => {
 
-  return zones[0] || null;
+      const id =
+        zoneId(
+          zone,
+          index
+        );
+
+      const side =
+        zoneSide(
+          zone
+        );
+
+      const center =
+        zonePrice(
+          zone
+        );
+
+      if(
+        center === null
+      ){
+        return;
+      }
+
+      const low =
+        finite(
+          zone.low
+        ) ??
+        center;
+
+      const high =
+        finite(
+          zone.high
+        ) ??
+        center;
+
+      const distance =
+        Math.abs(
+          livePrice -
+          center
+        );
+
+      const distanceATR =
+        atr > 0
+          ? distance /
+            atr
+          : 99;
+
+      let state =
+        LIVE_ZONE_STATES.get(
+          id
+        ) || {
+          raided:false,
+          stage:
+            zone?.lifecycle?.stage ||
+            "TRACKING",
+          beyondTicks:0,
+          rejectionTicks:0,
+          lastPrice:null
+        };
+
+      if(
+        side ===
+        "BUY_SIDE"
+      ){
+
+        if(
+          livePrice >
+          high
+        ){
+
+          state.raided =
+            true;
+
+          state.beyondTicks++;
+
+          state.stage =
+            state.beyondTicks >= 5
+              ? "ACCEPTING"
+              : "RAIDING";
+
+        }else if(
+          state.raided &&
+          livePrice <
+          high
+        ){
+
+          state.rejectionTicks++;
+
+          state.stage =
+            "REJECTING";
+
+        }else if(
+          livePrice >=
+          low
+        ){
+
+          state.stage =
+            "ATTACKING";
+
+        }else if(
+          distanceATR <=
+          .25
+        ){
+
+          state.stage =
+            "ATTACKING";
+
+        }else if(
+          distanceATR <=
+          .8
+        ){
+
+          state.stage =
+            "APPROACHING";
+
+        }else{
+
+          state.stage =
+            zone?.lifecycle?.stage ||
+            "TRACKING";
+        }
+
+      }else if(
+        side ===
+        "SELL_SIDE"
+      ){
+
+        if(
+          livePrice <
+          low
+        ){
+
+          state.raided =
+            true;
+
+          state.beyondTicks++;
+
+          state.stage =
+            state.beyondTicks >= 5
+              ? "ACCEPTING"
+              : "RAIDING";
+
+        }else if(
+          state.raided &&
+          livePrice >
+          low
+        ){
+
+          state.rejectionTicks++;
+
+          state.stage =
+            "REJECTING";
+
+        }else if(
+          livePrice <=
+          high
+        ){
+
+          state.stage =
+            "ATTACKING";
+
+        }else if(
+          distanceATR <=
+          .25
+        ){
+
+          state.stage =
+            "ATTACKING";
+
+        }else if(
+          distanceATR <=
+          .8
+        ){
+
+          state.stage =
+            "APPROACHING";
+
+        }else{
+
+          state.stage =
+            zone?.lifecycle?.stage ||
+            "TRACKING";
+        }
+      }
+
+      state.lastPrice =
+        livePrice;
+
+      state.distance =
+        distance;
+
+      state.distanceATR =
+        distanceATR;
+
+      LIVE_ZONE_STATES.set(
+        id,
+        state
+      );
+    }
+  );
+}
+
+
+function effectiveZoneStage(
+  zone,
+  index = 0
+){
+
+  const id =
+    zoneId(
+      zone,
+      index
+    );
+
+  return (
+    LIVE_ZONE_STATES
+      .get(
+        id
+      )
+      ?.stage ||
+    zone?.lifecycle?.stage ||
+    "TRACKING"
+  );
 }
 
 
 /* ============================================================
-   SESSION
+   WEBSOCKET
 ============================================================ */
 
-function sessionNow(){
+function websocketUrl(){
 
-  const now =
-    new Date();
+  const protocol =
+    location.protocol ===
+    "https:"
+      ? "wss:"
+      : "ws:";
 
-  function hourIn(zone){
+  return (
+    `${protocol}//${location.host}/api/live`
+  );
+}
 
-    try{
 
-      const parts =
-        new Intl.DateTimeFormat(
-          "en-US",
-          {
-            timeZone:zone,
-            hour:"2-digit",
-            hourCycle:"h23"
-          }
-        )
-        .formatToParts(now);
+function setConnection(
+  state,
+  text
+){
 
-      return Number(
-        parts.find(
-          x =>
-            x.type === "hour"
-        )?.value
-      );
+  const dot =
+    $("connectionDot");
 
-    }catch{
-
-      return null;
-    }
-  }
-
-  const london =
-    hourIn(
-      "Europe/London"
-    );
-
-  const ny =
-    hourIn(
-      "America/New_York"
-    );
+  dot.className =
+    "connectionDot";
 
   if(
-    london !== null &&
-    ny !== null
+    state ===
+    "live"
   ){
-
-    if(
-      london >= 12 &&
-      london < 16 &&
-      ny >= 7 &&
-      ny < 11
-    ){
-      return "LONDON / NY";
-    }
-
-    if(
-      london >= 8 &&
-      london < 12
-    ){
-      return "LONDON";
-    }
-
-    if(
-      ny >= 8 &&
-      ny < 13
-    ){
-      return "NEW YORK";
-    }
-
-    if(
-      london >= 0 &&
-      london < 8
-    ){
-      return "ASIA";
-    }
+    dot.classList.add(
+      "live"
+    );
   }
 
-  return "TRANSITION";
+  if(
+    state ===
+    "dead"
+  ){
+    dot.classList.add(
+      "dead"
+    );
+  }
+
+  $("connectionText")
+    .textContent =
+      text;
+}
+
+
+function scheduleReconnect(){
+
+  clearTimeout(
+    WS_RECONNECT_TIMER
+  );
+
+  const delay =
+    Math.min(
+      1500 *
+      Math.max(
+        WS_RECONNECT_ATTEMPT,
+        1
+      ),
+      15000
+    );
+
+  WS_RECONNECT_TIMER =
+    setTimeout(
+      connectLive,
+      delay
+    );
+}
+
+
+function connectLive(){
+
+  clearTimeout(
+    WS_RECONNECT_TIMER
+  );
+
+  if(
+    WS &&
+    (
+      WS.readyState ===
+      WebSocket.CONNECTING ||
+      WS.readyState ===
+      WebSocket.OPEN
+    )
+  ){
+    return;
+  }
+
+  setConnection(
+    "connecting",
+    "CONNECTING"
+  );
+
+  try{
+
+    WS =
+      new WebSocket(
+        websocketUrl()
+      );
+
+  }catch(error){
+
+    console.error(error);
+
+    setConnection(
+      "dead",
+      "STREAM ERROR"
+    );
+
+    scheduleReconnect();
+
+    return;
+  }
+
+  WS.addEventListener(
+    "open",
+    () => {
+
+      WS_RECONNECT_ATTEMPT =
+        0;
+
+      setConnection(
+        "live",
+        "LIVE STREAM"
+      );
+    }
+  );
+
+  WS.addEventListener(
+    "message",
+    event => {
+
+      let message;
+
+      try{
+
+        message =
+          JSON.parse(
+            event.data
+          );
+
+      }catch{
+
+        return;
+      }
+
+      if(
+        message.type ===
+        "price"
+      ){
+
+        const price =
+          finite(
+            message.price
+          );
+
+        if(
+          price === null ||
+          price <= 0
+        ){
+          return;
+        }
+
+        PREVIOUS_LIVE_PRICE =
+          LIVE_PRICE;
+
+        LIVE_PRICE =
+          price;
+
+        LIVE_TIMESTAMP =
+          finite(
+            message.timestamp
+          ) ??
+          Date.now();
+
+        updateZoneStates(
+          LIVE_PRICE
+        );
+
+        renderLivePrice();
+
+        renderFocus();
+
+        renderZones();
+
+        renderTradeIdea();
+
+        requestAnimationFrame(
+          drawChart
+        );
+      }
+
+      if(
+        message.type ===
+        "status"
+      ){
+
+        if(
+          message.status ===
+          "subscribed"
+        ){
+          setConnection(
+            "live",
+            "LIVE STREAM"
+          );
+        }
+      }
+
+      if(
+        message.type ===
+        "error"
+      ){
+
+        console.error(
+          "LIVE STREAM:",
+          message.message
+        );
+      }
+    }
+  );
+
+  WS.addEventListener(
+    "close",
+    () => {
+
+      setConnection(
+        "dead",
+        "RECONNECTING"
+      );
+
+      WS_RECONNECT_ATTEMPT++;
+
+      scheduleReconnect();
+    }
+  );
+
+  WS.addEventListener(
+    "error",
+    error => {
+
+      console.error(
+        "WebSocket error:",
+        error
+      );
+    }
+  );
+}
+
+
+/* ============================================================
+   LIVE PRICE UI
+============================================================ */
+
+function renderLivePrice(){
+
+  const spot =
+    getSpot();
+
+  $("price")
+    .textContent =
+      fmt(
+        spot
+      );
+
+  if(
+    LIVE_PRICE !== null
+  ){
+
+    $("liveTag")
+      .textContent =
+        "◉ TWELVE DATA LIVE PRICE";
+
+  }else{
+
+    $("liveTag")
+      .textContent =
+        "◉ REST PRICE";
+  }
+
+  if(
+    DATA
+  ){
+
+    const previousClose =
+      finite(
+        DATA?.market?.previousClose
+      );
+
+    if(
+      previousClose !== null &&
+      spot !== null
+    ){
+
+      const move =
+        spot -
+        previousClose;
+
+      const pct =
+        move /
+        previousClose *
+        100;
+
+      const element =
+        $("priceMove");
+
+      element.textContent =
+        `${
+          move >= 0
+            ? "+"
+            : ""
+        }${fmt(move)} (${
+          pct >= 0
+            ? "+"
+            : ""
+        }${pct.toFixed(2)}%)`;
+
+      element.className =
+        "priceMove";
+
+      element.classList.add(
+        move >= 0
+          ? "green"
+          : "red"
+      );
+    }
+  }
 }
 
 
@@ -3968,54 +3187,28 @@ function sessionNow(){
    STRUCTURE
 ============================================================ */
 
-function structureBias(value){
-
-  if(
-    value === null ||
-    value === undefined
-  ){
-    return "MIXED";
-  }
-
-  if(typeof value === "string"){
-    return value;
-  }
-
-  return String(
-    pick(
-      value,
-      [
-        "bias",
-        "direction",
-        "trend",
-        "state",
-        "structure",
-        "signal"
-      ],
-      "MIXED"
-    )
-  );
-}
-
-
-function biasClass(value){
+function structureClass(
+  value
+){
 
   const text =
-    String(value)
-      .toUpperCase();
+    String(
+      value ||
+      ""
+    ).toUpperCase();
 
   if(
-    text.includes("BULL") ||
-    text.includes("BUY") ||
-    text.includes("UP")
+    text.includes(
+      "BULL"
+    )
   ){
     return "bull";
   }
 
   if(
-    text.includes("BEAR") ||
-    text.includes("SELL") ||
-    text.includes("DOWN")
+    text.includes(
+      "BEAR"
+    )
   ){
     return "bear";
   }
@@ -4024,247 +3217,152 @@ function biasClass(value){
 }
 
 
-function getTfStructure(
-  data,
-  tf
-){
+function renderPulse(){
 
-  const lower =
-    tf.toLowerCase();
-
-  const candidates = [
-    data?.structure?.[tf],
-    data?.structure?.[lower],
-    data?.timeframes?.[tf],
-    data?.timeframes?.[lower],
-    data?.marketStructure?.[tf],
-    data?.marketStructure?.[lower],
-    data?.analysis?.timeframes?.[tf],
-    data?.analysis?.timeframes?.[lower]
-  ];
-
-  for(const value of candidates){
-
-    if(
-      value !== undefined &&
-      value !== null
-    ){
-      return value;
-    }
-  }
-
-  return null;
-}
-
-
-function renderPulse(
-  id,
-  data,
-  timeframes = [
+  const tfs = [
     "M1",
     "M5",
     "M15",
     "H1"
-  ]
-){
-
-  const element =
-    $(id);
-
-  if(!element){
-    return;
-  }
-
-  element.innerHTML =
-    timeframes
-      .map(
-        tf => {
-
-          const value =
-            getTfStructure(
-              data,
-              tf
-            );
-
-          const bias =
-            structureBias(
-              value
-            );
-
-          return `
-            <div class="pulseBox ${biasClass(bias)}">
-
-              <label>
-                ${tf}
-              </label>
-
-              <strong>
-                ${bias}
-              </strong>
-
-              <div class="pulseGlow"></div>
-
-            </div>
-          `;
-        }
-      )
-      .join("");
-}
-
-
-/* ============================================================
-   FLOW
-============================================================ */
-
-function getFlow(data){
-
-  return (
-    data.flow ||
-    data.orderFlow ||
-    data.order_flow ||
-    data.deepLiquidity?.flow ||
-    data.deepLiquidity?.orderFlow ||
-    {}
-  );
-}
-
-
-function renderFlow(
-  id,
-  data
-){
-
-  const element =
-    $(id);
-
-  if(!element){
-    return;
-  }
-
-  const flow =
-    getFlow(data);
-
-  const values = [
-
-    [
-      "DELTA",
-      pick(
-        flow,
-        [
-          "delta",
-          "volumeDelta",
-          "deltaProxy",
-          "volume_delta"
-        ]
-      )
-    ],
-
-    [
-      "CVD",
-      pick(
-        flow,
-        [
-          "cvd",
-          "cumulativeDelta",
-          "cvdProxy"
-        ]
-      )
-    ],
-
-    [
-      "ABSORPTION",
-      pick(
-        flow,
-        [
-          "absorption",
-          "absorptionScore",
-          "absorptionState"
-        ]
-      )
-    ],
-
-    [
-      "DIVERGENCE",
-      pick(
-        flow,
-        [
-          "divergence",
-          "deltaDivergence",
-          "cvdDivergence"
-        ]
-      )
-    ]
-
   ];
 
-  element.innerHTML =
-    values
-      .map(
-        ([label,value]) => `
-          <div class="flowBox">
+  const html =
+    tfs.map(
+      tf => {
+
+        const bias =
+          DATA?.structure?.[tf]?.bias ||
+          "NEUTRAL";
+
+        return `
+          <div class="pulseBox ${structureClass(bias)}">
 
             <label>
-              ${label}
+              ${tf}
             </label>
 
             <strong>
-              ${asText(value)}
+              ${bias}
             </strong>
 
+            <div class="glow"></div>
+
           </div>
-        `
-      )
-      .join("");
+        `;
+      }
+    ).join("");
+
+  $("pulse").innerHTML =
+    html;
+
+  $("structurePulse").innerHTML =
+    html;
 }
 
 
 /* ============================================================
-   FLAGS
+   DOMINANT
 ============================================================ */
 
-function hasPositiveFlag(
-  root,
-  keys
-){
+function dominantZone(){
 
-  const value =
-    findFirstValue(
-      root,
-      keys
-    );
-
-  if(
-    value === true ||
-    value === 1
-  ){
-    return true;
-  }
-
-  const text =
-    String(
-      value ?? ""
-    )
-    .toUpperCase();
-
-  return [
-    "TRUE",
-    "YES",
-    "CONFIRMED",
-    "ACTIVE",
-    "RAIDED",
-    "SWEPT",
-    "REJECTED",
-    "PASSED"
-  ]
-  .some(
-    token =>
-      text.includes(token)
+  return (
+    DATA?.deepLiquidity?.dominantZone ||
+    ZONES[0] ||
+    null
   );
 }
 
 
-function structureCount(
-  data,
+function renderFocus(){
+
+  const zone =
+    dominantZone();
+
+  const spot =
+    getSpot();
+
+  if(
+    !zone ||
+    spot === null
+  ){
+
+    $("focusTarget")
+      .textContent =
+        "NO TARGET";
+
+    $("focusDetails")
+      .textContent =
+        "Waiting for liquidity map.";
+
+    return;
+  }
+
+  const level =
+    zonePrice(
+      zone
+    );
+
+  if(
+    level === null
+  ){
+    return;
+  }
+
+  const stage =
+    effectiveZoneStage(
+      zone,
+      ZONES.indexOf(
+        zone
+      )
+    );
+
+  const distance =
+    Math.abs(
+      spot -
+      level
+    );
+
+  const score =
+    zoneScore(
+      zone
+    );
+
+  $("focusTarget")
+    .textContent =
+      `${zone.name} · ${fmt(level)}`;
+
+  $("focusDetails")
+    .textContent =
+      `${zone.side} · ${fmt(distance)} away · ${
+        zone.liquidityClass ||
+        "LIQUIDITY"
+      }`;
+
+  $("focusScore")
+    .textContent =
+      Math.round(
+        score
+      );
+
+  $("scoreRing")
+    .style
+    .setProperty(
+      "--score",
+      score
+    );
+
+  $("focusStage")
+    .textContent =
+      stage;
+}
+
+
+/* ============================================================
+   TRADE IDEA
+============================================================ */
+
+function countStructure(
   wanted
 ){
 
@@ -4275,301 +3373,145 @@ function structureCount(
     "H1"
   ];
 
-  let count = 0;
-
-  for(const tf of tfs){
-
-    const bias =
-      structureBias(
-        getTfStructure(
-          data,
-          tf
-        )
-      )
-      .toUpperCase();
-
-    if(
-      wanted === "BULL" &&
-      (
-        bias.includes("BULL") ||
-        bias.includes("BUY") ||
-        bias.includes("UP")
-      )
-    ){
-      count++;
-    }
-
-    if(
-      wanted === "BEAR" &&
-      (
-        bias.includes("BEAR") ||
-        bias.includes("SELL") ||
-        bias.includes("DOWN")
-      )
-    ){
-      count++;
-    }
-  }
-
-  return count;
+  return tfs.filter(
+    tf =>
+      DATA
+        ?.structure
+        ?.[tf]
+        ?.bias ===
+      wanted
+  ).length;
 }
 
 
-/* ============================================================
-   TRADE IDEA
-============================================================ */
+function buildTradeIdea(){
 
-function buildTradeIdea(
-  data,
-  zones
-){
+  const zone =
+    dominantZone();
 
   const spot =
-    getSpot(data);
-
-  const target =
-    dominantZone(
-      data,
-      zones
-    );
+    getSpot();
 
   if(
-    spot === null ||
-    !target
+    !zone ||
+    spot === null
   ){
 
     return {
       signal:"WAIT",
       confidence:0,
-      direction:null,
-      target:null,
-      entryText:"WAIT",
-      entry:null,
+      text:
+        "Waiting for live price and liquidity map.",
+      entry:"WAIT",
       stop:null,
       tp1:null,
       tp2:null,
-      description:
-        "Waiting for a valid liquidity pool.",
-      checks:[],
-      stages:{
-        target:false,
-        approach:false,
-        raid:false,
-        rejection:false,
-        confirm:false
-      }
+      stages:[false,false,false,false,false]
     };
   }
 
-  const level =
-    zoneLevel(
-      target,
-      spot
+  const index =
+    ZONES.indexOf(
+      zone
     );
 
-  if(level === null){
-
-    return {
-      signal:"WAIT",
-      confidence:0,
-      direction:null,
-      target:null,
-      entryText:"WAIT",
-      entry:null,
-      stop:null,
-      tp1:null,
-      tp2:null,
-      description:
-        "Dominant liquidity object does not contain a valid XAU/USD price.",
-      checks:[],
-      stages:{
-        target:false,
-        approach:false,
-        raid:false,
-        rejection:false,
-        confirm:false
-      }
-    };
-  }
-
-  const side =
-    zoneSide(target);
-
-  const scoreInfo =
-    zoneScore(
-      target,
-      spot
+  const stage =
+    effectiveZoneStage(
+      zone,
+      index
     );
 
   const score =
-    scoreInfo.value;
+    zoneScore(
+      zone
+    );
 
-  const distance =
-    Math.abs(
-      spot -
-      level
+  const level =
+    zonePrice(
+      zone
     );
 
   const atr =
     finite(
-      data?.market?.atr?.M5 ??
-      data?.market?.atr?.m5 ??
-      data?.atr?.M5 ??
-      data?.atr?.m5
+      DATA?.market?.atr?.M5
     ) ??
-    Math.max(
-      spot * .001,
-      1
-    );
+    1;
 
-  const approachDistance =
-    Math.max(
-      atr * 1.2,
-      spot * .001
-    );
-
-  const approaching =
-    distance <=
-    approachDistance;
-
-  let direction;
-
-  if(side.includes("SELL")){
-    direction = "BUY";
-  }else if(side.includes("BUY")){
-    direction = "SELL";
-  }else{
-    direction =
-      level < spot
-        ? "BUY"
-        : "SELL";
-  }
-
-  const lifecycle =
-    String(
-      target?.lifecycle?.stage ??
-      target?.stage ??
-      ""
-    ).toUpperCase();
+  const direction =
+    zone.side ===
+    "BUY_SIDE"
+      ? "SELL"
+      : "BUY";
 
   const raid =
-    lifecycle === "RAIDING" ||
-    lifecycle === "REJECTING" ||
-    lifecycle === "ACCEPTING" ||
-    hasPositiveFlag(
-      target,
-      [
-        "raided",
-        "swept",
-        "sweepConfirmed",
-        "raidConfirmed",
-        "penetrated"
-      ]
+    [
+      "RAIDING",
+      "REJECTING",
+      "ACCEPTING"
+    ].includes(
+      stage
     );
 
   const rejection =
-    lifecycle === "REJECTING" ||
-    hasPositiveFlag(
-      target,
-      [
-        "rejection",
-        "rejected",
-        "rejectionConfirmed",
-        "reversalConfirmed"
-      ]
-    );
-
-  const bullishStructure =
-    structureCount(
-      data,
-      "BULL"
-    );
-
-  const bearishStructure =
-    structureCount(
-      data,
-      "BEAR"
-    );
+    stage ===
+    "REJECTING";
 
   const structureConfirm =
-    direction === "BUY"
-      ? bullishStructure >= 2
-      : bearishStructure >= 2;
-
-  const flow =
-    getFlow(data);
-
-  const flowText =
-    JSON.stringify(flow)
-      .toUpperCase();
-
-  const flowConfirm =
-
-    hasPositiveFlag(
-      flow,
-      [
-        "deltaConfirmation",
-        "deltaConfirmed",
-        "flowConfirmed",
-        "confirmation"
-      ]
-    ) ||
-
-    (
-      direction === "BUY" &&
-      (
-        flowText.includes("BUYING PRESSURE") ||
-        flowText.includes("BULLISH") ||
-        flowText.includes("POSITIVE")
-      )
-    ) ||
-
-    (
-      direction === "SELL" &&
-      (
-        flowText.includes("SELLING PRESSURE") ||
-        flowText.includes("BEARISH") ||
-        flowText.includes("NEGATIVE")
-      )
-    );
+    direction ===
+    "BUY"
+      ? countStructure(
+          "BULLISH"
+        ) >= 2
+      : countStructure(
+          "BEARISH"
+        ) >= 2;
 
   let confidence =
+    score *
+    .60;
 
-    score * .54 +
+  if(
+    stage ===
+    "APPROACHING"
+  ){
+    confidence +=
+      5;
+  }
 
-    (
-      approaching
-        ? 6
-        : 0
-    ) +
+  if(
+    stage ===
+    "ATTACKING"
+  ){
+    confidence +=
+      10;
+  }
 
-    (
-      raid
-        ? 13
-        : 0
-    ) +
+  if(
+    raid
+  ){
+    confidence +=
+      14;
+  }
 
-    (
-      rejection
-        ? 12
-        : 0
-    ) +
+  if(
+    rejection
+  ){
+    confidence +=
+      14;
+  }
 
-    (
-      structureConfirm
-        ? 10
-        : 0
-    ) +
-
-    (
-      flowConfirm
-        ? 5
-        : 0
-    );
+  if(
+    structureConfirm
+  ){
+    confidence +=
+      10;
+  }
 
   confidence =
     clamp(
-      Math.round(confidence),
+      Math.round(
+        confidence
+      ),
       0,
       99
     );
@@ -4577,199 +3519,186 @@ function buildTradeIdea(
   let signal =
     "WAIT";
 
-  if(score >= 70){
-    signal = `WATCH ${direction}`;
+  if(
+    score >= 70
+  ){
+    signal =
+      `WATCH ${direction}`;
   }
 
   const confirmed =
     score >= 70 &&
-    raid &&
     rejection &&
     structureConfirm;
 
-  if(confirmed){
-    signal = direction;
+  if(
+    confirmed
+  ){
+    signal =
+      direction;
   }
 
-  let stop = null;
-  let tp1 = null;
-  let tp2 = null;
+  let stop =
+    null;
 
-  if(confirmed){
+  let tp1 =
+    null;
 
-    if(direction === "BUY"){
+  let tp2 =
+    null;
+
+  if(
+    confirmed
+  ){
+
+    if(
+      direction ===
+      "BUY"
+    ){
 
       stop =
         Math.min(
+          zone.low ||
           level,
-          spot
+          level
         ) -
-        atr * .45;
+        atr *
+        .45;
 
       const risk =
-        Math.max(
-          spot -
-          stop,
-          atr * .35
-        );
+        spot -
+        stop;
 
       tp1 =
         spot +
-        risk * 1.25;
+        risk *
+        1.25;
 
       tp2 =
         spot +
-        risk * 2;
+        risk *
+        2;
 
     }else{
 
       stop =
         Math.max(
+          zone.high ||
           level,
-          spot
+          level
         ) +
-        atr * .45;
+        atr *
+        .45;
 
       const risk =
-        Math.max(
-          stop -
-          spot,
-          atr * .35
-        );
+        stop -
+        spot;
 
       tp1 =
         spot -
-        risk * 1.25;
+        risk *
+        1.25;
 
       tp2 =
         spot -
-        risk * 2;
+        risk *
+        2;
     }
   }
 
-  let description;
+  let text =
+    `${zone.name} at ${fmt(level)} is being tracked.`;
 
-  if(confirmed){
+  if(
+    stage ===
+    "APPROACHING"
+  ){
 
-    description =
-      `${zoneName(target)} has been raided and rejection plus structure confirmation is present. ${direction} reversal scenario is active.`;
+    text =
+      `Live price is approaching ${zone.name}. Raid score is ${Math.round(score)}.`;
 
-  }else if(rejection){
+  }else if(
+    stage ===
+    "ATTACKING"
+  ){
 
-    description =
-      `${zoneName(target)} has rejected after a liquidity raid. Waiting for final ${direction} confirmation.`;
+    text =
+      `Price is attacking ${zone.name}. The live stream is now watching for penetration of the liquidity zone.`;
 
-  }else if(raid){
+  }else if(
+    stage ===
+    "RAIDING"
+  ){
 
-    description =
-      `${zoneName(target)} is being swept. Wait for rejection and structure confirmation before activating the ${direction} setup.`;
+    text =
+      `${zone.name} is being raided live. Do not treat the sweep alone as a reversal; rejection is still required.`;
 
-  }else if(approaching){
+  }else if(
+    stage ===
+    "REJECTING"
+  ){
 
-    description =
-      `Price is approaching ${zoneName(target)} at ${fmt(level)}. Wait for a liquidity raid before considering the ${direction} reversal scenario.`;
+    text =
+      `${zone.name} has been swept and live price moved back through the zone. ${direction} reversal confirmation is building.`;
 
-  }else{
+  }else if(
+    stage ===
+    "ACCEPTING"
+  ){
 
-    description =
-      `${zoneName(target)} at ${fmt(level)} is the highest-ranked liquidity draw. Price is ${fmt(distance)} away.`;
+    text =
+      `Price is holding beyond ${zone.name}. This currently looks more like acceptance than rejection.`;
   }
 
   return {
 
     signal,
-    confidence,
-    direction,
-    target,
-    targetLevel:level,
 
-    entryText:
-      confirmed
-        ? fmt(spot)
-        : `Sweep ${fmt(level)} + reclaim`,
+    confidence,
+
+    direction,
+
+    text,
 
     entry:
       confirmed
-        ? spot
-        : null,
+        ? fmt(
+            spot
+          )
+        : `Sweep ${fmt(level)} + reclaim`,
 
     stop,
-    tp1,
-    tp2,
-    description,
-    score,
-    scoreActual:scoreInfo.actual,
-    distance,
-    approaching,
-    raid,
-    rejection,
-    structureConfirm,
-    flowConfirm,
 
-    stages:{
-      target:true,
-      approach:approaching || raid,
+    tp1,
+
+    tp2,
+
+    stages:[
+      true,
+      [
+        "APPROACHING",
+        "ATTACKING",
+        "RAIDING",
+        "REJECTING",
+        "ACCEPTING"
+      ].includes(
+        stage
+      ),
       raid,
       rejection,
-      confirm:confirmed
-    },
-
-    checks:[
-
-      {
-        text:
-          `Raid score ${Math.round(score)} / 70 minimum`,
-        done:
-          score >= 70
-      },
-
-      {
-        text:
-          `Price ${
-            approaching
-              ? "inside"
-              : "outside"
-          } attack zone`,
-        done:
-          approaching
-      },
-
-      {
-        text:
-          "Liquidity raid / sweep confirmed",
-        done:
-          raid
-      },
-
-      {
-        text:
-          "Rejection / reclaim confirmed",
-        done:
-          rejection
-      },
-
-      {
-        text:
-          "Structure participation confirmed",
-        done:
-          structureConfirm
-      },
-
-      {
-        text:
-          "Order-flow confirmation",
-        done:
-          flowConfirm
-      }
-
+      confirmed
     ]
   };
 }
 
 
-function renderTradeIdea(idea){
+function renderTradeIdea(){
 
-  CURRENT_IDEA = idea;
+  const idea =
+    buildTradeIdea();
+
+  CURRENT_IDEA =
+    idea;
 
   const signal =
     $("ideaSignal");
@@ -4781,66 +3710,111 @@ function renderTradeIdea(idea){
     "ideaSignal";
 
   if(
-    idea.signal.includes("BUY")
+    idea.signal.includes(
+      "BUY"
+    )
   ){
-    signal.classList.add("green");
+
+    signal.classList.add(
+      "green"
+    );
+
   }else if(
-    idea.signal.includes("SELL")
+    idea.signal.includes(
+      "SELL"
+    )
   ){
-    signal.classList.add("red");
+
+    signal.classList.add(
+      "red"
+    );
+
   }else{
-    signal.classList.add("gold");
+
+    signal.classList.add(
+      "gold"
+    );
   }
 
-  $("ideaConfidence").textContent =
-    idea.confidence;
+  $("ideaConfidence")
+    .textContent =
+      idea.confidence;
 
-  $("ideaDescription").textContent =
-    idea.description;
+  $("ideaText")
+    .textContent =
+      idea.text;
 
-  $("ideaEntry").textContent =
-    idea.entryText;
+  $("ideaEntry")
+    .textContent =
+      idea.entry;
 
-  $("ideaStop").textContent =
-    idea.stop !== null
-      ? fmt(idea.stop)
-      : "WAIT";
+  $("ideaStop")
+    .textContent =
+      idea.stop !==
+      null
+        ? fmt(
+            idea.stop
+          )
+        : "WAIT";
 
-  $("ideaTp1").textContent =
-    idea.tp1 !== null
-      ? fmt(idea.tp1)
-      : "WAIT";
+  $("ideaTp1")
+    .textContent =
+      idea.tp1 !==
+      null
+        ? fmt(
+            idea.tp1
+          )
+        : "WAIT";
 
-  $("ideaTp2").textContent =
-    idea.tp2 !== null
-      ? fmt(idea.tp2)
-      : "WAIT";
+  $("ideaTp2")
+    .textContent =
+      idea.tp2 !==
+      null
+        ? fmt(
+            idea.tp2
+          )
+        : "WAIT";
 
-  const stages = [
-    ["TARGET",idea.stages.target],
-    ["APPROACH",idea.stages.approach],
-    ["RAID",idea.stages.raid],
-    ["REJECT",idea.stages.rejection],
-    ["CONFIRM",idea.stages.confirm]
+  const labels = [
+    "TARGET",
+    "APPROACH",
+    "RAID",
+    "REJECT",
+    "CONFIRM"
   ];
 
-  let reachedCurrent = false;
+  let marked =
+    false;
 
-  $("stageTrack").innerHTML =
-    stages
-      .map(
-        ([label,done]) => {
+  $("stages")
+    .innerHTML =
+      labels.map(
+        (
+          label,
+          index
+        ) => {
 
-          let cls = "";
+          let cls =
+            "";
 
-          if(done){
+          if(
+            idea.stages[
+              index
+            ]
+          ){
 
-            cls = "done";
+            cls =
+              "done";
 
-          }else if(!reachedCurrent){
+          }else if(
+            !marked
+          ){
 
-            cls = "current";
-            reachedCurrent = true;
+            cls =
+              "current";
+
+            marked =
+              true;
           }
 
           return `
@@ -4849,164 +3823,7 @@ function renderTradeIdea(idea){
             </div>
           `;
         }
-      )
-      .join("");
-
-  $("ideaChecks").innerHTML =
-    idea.checks
-      .map(
-        check => `
-          <div class="check ${check.done ? "done" : "pending"}">
-
-            <div class="checkIcon">
-              ${check.done ? "✓" : "○"}
-            </div>
-
-            <div>
-              ${check.text}
-            </div>
-
-          </div>
-        `
-      )
-      .join("");
-}
-
-
-/* ============================================================
-   FOCUS
-============================================================ */
-
-function renderFocus(
-  data,
-  zones
-){
-
-  const target =
-    dominantZone(
-      data,
-      zones
-    );
-
-  const spot =
-    getSpot(data);
-
-  if(!target){
-
-    $("focusTarget").textContent =
-      "NO LIQUIDITY TARGET FOUND";
-
-    $("focusDetails").textContent =
-      "No valid XAU/USD liquidity levels were returned.";
-
-    $("focusScore").textContent =
-      "0";
-
-    $("scoreRing")
-      .style
-      .setProperty(
-        "--score",
-        0
-      );
-
-    return;
-  }
-
-  const level =
-    zoneLevel(
-      target,
-      spot
-    );
-
-  if(level === null){
-
-    $("focusTarget").textContent =
-      "INVALID LIQUIDITY LEVEL";
-
-    $("focusDetails").textContent =
-      "The backend target does not contain a valid gold price.";
-
-    $("focusScore").textContent =
-      "0";
-
-    $("scoreRing")
-      .style
-      .setProperty(
-        "--score",
-        0
-      );
-
-    return;
-  }
-
-  const score =
-    zoneScore(
-      target,
-      spot
-    );
-
-  const distance =
-    spot !== null
-      ? Math.abs(
-          level -
-          spot
-        )
-      : null;
-
-  const side =
-    zoneSide(target) ||
-    (
-      level >= spot
-        ? "BUY_SIDE"
-        : "SELL_SIDE"
-    );
-
-  $("focusTarget").textContent =
-    `${zoneName(target)} · ${fmt(level)}`;
-
-  $("focusDetails").textContent =
-    `${side.replace("_","-")} · ${
-      distance !== null
-        ? `${fmt(distance)} away`
-        : "distance unavailable"
-    } · ${
-      target?.lifecycle?.stage ??
-      target?.stage ??
-      "TRACKING"
-    }`;
-
-  $("focusScore").textContent =
-    Math.round(
-      score.value
-    );
-
-  $("scoreRing")
-    .style
-    .setProperty(
-      "--score",
-      score.value
-    );
-
-  $("scoreTitle").textContent =
-    target?.raidLikelihood !== undefined
-      ? "RAID SCORE"
-      : score.actual
-        ? "SCORE"
-        : "PRIORITY";
-
-  $("scoreStatus").textContent =
-    String(
-      target?.lifecycle?.stage ??
-      (
-        score.value >= 80
-          ? "EXTREME"
-          : score.value >= 70
-            ? "HIGH"
-            : score.value >= 55
-              ? "TRACKING"
-              : "DEVELOPING"
-      )
-    );
+      ).join("");
 }
 
 
@@ -5014,86 +3831,67 @@ function renderFocus(
    ZONES
 ============================================================ */
 
-function renderZones(
-  id,
-  data,
-  zones,
-  limit
-){
+function renderZones(){
 
-  const element =
-    $(id);
+  function makeHtml(
+    limit
+  ){
 
-  if(!element){
-    return;
-  }
+    if(
+      !ZONES.length
+    ){
 
-  const spot =
-    getSpot(data);
-
-  if(!zones.length){
-
-    element.innerHTML = `
-      <div class="dataRow">
-
-        <div class="dataKey">
-          Status
+      return `
+        <div class="row">
+          <div class="key">Status</div>
+          <div class="value">No liquidity zones</div>
         </div>
+      `;
+    }
 
-        <div class="dataValue">
-          No liquidity pools detected
-        </div>
-
-      </div>
-    `;
-
-    return;
-  }
-
-  element.innerHTML =
-    zones
-      .slice(0,limit)
+    return ZONES
+      .slice(
+        0,
+        limit
+      )
       .map(
-        (zone,index) => {
+        (
+          zone,
+          index
+        ) => {
 
-          const level =
-            zoneLevel(
+          const stage =
+            effectiveZoneStage(
               zone,
-              spot
-            );
-
-          const score =
-            zoneScore(
-              zone,
-              spot
+              index
             );
 
           const side =
-            zoneSide(zone);
+            zoneSide(
+              zone
+            );
 
           return `
-            <div class="zoneRow">
+            <div class="zone">
 
               <div class="zoneName">
-                ${index + 1}. ${zoneName(zone)}
+                ${index + 1}. ${zone.name}
               </div>
 
               <div class="zonePrice">
-                ${fmt(level)}
+                ${fmt(zonePrice(zone))}
               </div>
 
               <div class="zoneScore">
-                ${Math.round(score.value)}
+                ${Math.round(zoneScore(zone))}
               </div>
 
-              <div class="zoneSide ${
-                side.includes("BUY")
+              <div class="zoneStage ${
+                side === "BUY_SIDE"
                   ? "red"
-                  : side.includes("SELL")
-                    ? "green"
-                    : ""
+                  : "green"
               }">
-                ${side || "LEVEL"}
+                ${stage}
               </div>
 
             </div>
@@ -5101,314 +3899,24 @@ function renderZones(
         }
       )
       .join("");
-}
-
-
-/* ============================================================
-   HERO
-============================================================ */
-
-function renderHero(data){
-
-  const market =
-    data.market || {};
-
-  const spot =
-    getSpot(data);
-
-  $("price").textContent =
-    fmt(spot);
-
-  const change =
-    finite(
-      market.change ??
-      data.change
-    );
-
-  const percent =
-    finite(
-      market.percentChange ??
-      market.percent_change ??
-      data.percentChange
-    );
-
-  const move =
-    $("priceMove");
-
-  if(
-    change !== null ||
-    percent !== null
-  ){
-
-    move.textContent =
-      `${
-        change !== null
-          ? `${
-              change >= 0
-                ? "+"
-                : ""
-            }${fmtLoose(change)}`
-          : ""
-      } ${
-        percent !== null
-          ? `(${
-              percent >= 0
-                ? "+"
-                : ""
-            }${percent.toFixed(2)}%)`
-          : ""
-      }`;
-
-  }else{
-
-    move.textContent =
-      "LIVE";
   }
 
-  move.className =
-    "priceMove";
+  $("topZones")
+    .innerHTML =
+      makeHtml(
+        8
+      );
 
-  if(
-    (percent !== null && percent > 0) ||
-    (change !== null && change > 0)
-  ){
-    move.classList.add("green");
-  }else if(
-    (percent !== null && percent < 0) ||
-    (change !== null && change < 0)
-  ){
-    move.classList.add("red");
-  }
-
-  const regime =
-    market?.regime?.regime ??
-    market?.regime?.state ??
-    market?.regime ??
-    data?.regime?.regime ??
-    data?.regime?.state ??
-    data?.regime ??
-    "—";
-
-  $("regime").textContent =
-    asText(regime);
-
-  const vwap =
-    market.vwap ??
-    data.vwap ??
-    findFirstValue(
-      data,
-      ["vwap"]
-    );
-
-  $("vwap").textContent =
-    fmt(vwap);
-
-  $("session").textContent =
-    data?.market?.currentSession ??
-    data?.currentSession ??
-    findFirstValue(
-      data,
-      [
-        "currentSession",
-        "activeSession"
-      ]
-    ) ??
-    sessionNow();
-
-  const generated =
-    new Date(
-      data.generatedAt ||
-      Date.now()
-    );
-
-  $("scanTime").textContent =
-    generated.toLocaleTimeString(
-      [],
-      {
-        hour:"2-digit",
-        minute:"2-digit"
-      }
-    );
+  $("allZones")
+    .innerHTML =
+      makeHtml(
+        40
+      );
 }
 
 
 /* ============================================================
-   METRICS
-============================================================ */
-
-function renderMetrics(data){
-
-  const market =
-    data.market || {};
-
-  const rows = [
-
-    [
-      "ATR M1",
-      market?.atr?.M1 ??
-      market?.atr?.m1
-    ],
-
-    [
-      "ATR M5",
-      market?.atr?.M5 ??
-      market?.atr?.m5
-    ],
-
-    [
-      "ATR M15",
-      market?.atr?.M15 ??
-      market?.atr?.m15
-    ],
-
-    [
-      "RSI M5",
-      market?.rsi?.M5 ??
-      market?.rsi?.m5
-    ],
-
-    [
-      "RSI M15",
-      market?.rsi?.M15 ??
-      market?.rsi?.m15
-    ],
-
-    [
-      "ROC M5",
-      market.rocM5 ??
-      market.roc_m5
-    ]
-
-  ];
-
-  $("metrics").innerHTML =
-    rows
-      .map(
-        ([label,value]) => `
-          <div class="metric">
-
-            <label>
-              ${label}
-            </label>
-
-            <strong>
-              ${fmtLoose(value)}
-            </strong>
-
-          </div>
-        `
-      )
-      .join("");
-}
-
-
-/* ============================================================
-   SESSIONS
-============================================================ */
-
-function sessionObject(data){
-
-  return (
-    data.sessions ||
-    data.sessionIntelligence ||
-    data.session_intelligence ||
-    {}
-  );
-}
-
-
-function renderSessions(data){
-
-  const sessions =
-    sessionObject(data);
-
-  const definitions = [
-
-    [
-      "ASIA",
-      sessions.ASIA ??
-      sessions.asia
-    ],
-
-    [
-      "LONDON",
-      sessions.LONDON ??
-      sessions.london
-    ],
-
-    [
-      "NEW YORK",
-      sessions.NEW_YORK ??
-      sessions.newYork ??
-      sessions.new_york
-    ]
-
-  ];
-
-  $("sessions").innerHTML =
-    definitions
-      .map(
-        ([name,session]) => {
-
-          session =
-            session || {};
-
-          const high =
-            pick(
-              session,
-              [
-                "high",
-                "sessionHigh"
-              ]
-            );
-
-          const low =
-            pick(
-              session,
-              [
-                "low",
-                "sessionLow"
-              ]
-            );
-
-          const state =
-            pick(
-              session,
-              [
-                "state",
-                "status",
-                "active"
-              ],
-              "MONITORING"
-            );
-
-          return `
-            <div class="session">
-
-              <strong>
-                ${name}
-              </strong>
-
-              <div class="sessionState">
-                ${asText(state)}
-              </div>
-
-              <div class="sessionLevels">
-                HIGH ${fmt(high)}
-                <br>
-                LOW ${fmt(low)}
-              </div>
-
-            </div>
-          `;
-        }
-      )
-      .join("");
-}
-
-
-/* ============================================================
-   OBJECT RENDERER
+   OBJECT
 ============================================================ */
 
 function renderObject(
@@ -5430,62 +3938,35 @@ function renderObject(
   ){
 
     element.innerHTML = `
-      <div class="dataRow">
-
-        <div class="dataKey">
-          Status
-        </div>
-
-        <div class="dataValue">
-          No data
-        </div>
-
+      <div class="row">
+        <div class="key">Status</div>
+        <div class="value">No data</div>
       </div>
     `;
 
     return;
   }
 
-  if(Array.isArray(object)){
-
-    if(!object.length){
-
-      element.innerHTML = `
-        <div class="dataRow">
-
-          <div class="dataKey">
-            Status
-          </div>
-
-          <div class="dataValue">
-            Empty
-          </div>
-
-        </div>
-      `;
-
-      return;
-    }
+  if(
+    Array.isArray(
+      object
+    )
+  ){
 
     element.innerHTML =
       object
-        .slice(0,limit)
+        .slice(
+          0,
+          limit
+        )
         .map(
-          (value,index) => `
-            <div class="dataRow">
-
-              <div class="dataKey">
-                ${index + 1}
-              </div>
-
-              <div class="dataValue">
-                ${
-                  typeof value === "object"
-                    ? summarize(value)
-                    : asText(value)
-                }
-              </div>
-
+          (
+            value,
+            index
+          ) => `
+            <div class="row">
+              <div class="key">${index + 1}</div>
+              <div class="value">${asText(value)}</div>
             </div>
           `
         )
@@ -5494,19 +3975,15 @@ function renderObject(
     return;
   }
 
-  if(typeof object !== "object"){
+  if(
+    typeof object !==
+    "object"
+  ){
 
     element.innerHTML = `
-      <div class="dataRow">
-
-        <div class="dataKey">
-          Value
-        </div>
-
-        <div class="dataValue">
-          ${asText(object)}
-        </div>
-
+      <div class="row">
+        <div class="key">Value</div>
+        <div class="value">${asText(object)}</div>
       </div>
     `;
 
@@ -5515,24 +3992,23 @@ function renderObject(
 
   element.innerHTML =
     Object
-      .entries(object)
-      .slice(0,limit)
+      .entries(
+        object
+      )
+      .slice(
+        0,
+        limit
+      )
       .map(
-        ([key,value]) => `
-          <div class="dataRow">
-
-            <div class="dataKey">
-              ${pretty(key)}
-            </div>
-
-            <div class="dataValue">
-              ${
-                typeof value === "object"
-                  ? summarize(value)
-                  : asText(value)
-              }
-            </div>
-
+        (
+          [
+            key,
+            value
+          ]
+        ) => `
+          <div class="row">
+            <div class="key">${pretty(key)}</div>
+            <div class="value">${asText(value)}</div>
           </div>
         `
       )
@@ -5541,243 +4017,317 @@ function renderObject(
 
 
 /* ============================================================
-   FVG
+   DEEP RENDER
 ============================================================ */
 
-function extractFvgs(data){
+function renderDeep(){
 
-  const root =
-    data.fairValueGaps ??
-    data.fvgs ??
-    data.fvg ??
-    data.imbalances;
-
-  if(!root){
-    return [];
+  if(!DATA){
+    return;
   }
 
-  let array;
-
-  if(Array.isArray(root)){
-
-    array = root;
-
-  }else if(
-    typeof root === "object"
-  ){
-
-    array =
-      Object
-        .values(root)
-        .flat();
-
-  }else{
-
-    return [];
-  }
+  ZONES =
+    Array.isArray(
+      DATA?.deepLiquidity?.zones
+    )
+      ? DATA.deepLiquidity.zones
+      : [];
 
   const spot =
-    getSpot(data);
+    getSpot();
 
-  return array
-    .filter(
-      item =>
-        item &&
-        typeof item === "object"
-    )
-    .map(
-      item => {
+  if(
+    spot !== null
+  ){
+    updateZoneStates(
+      spot
+    );
+  }
 
-        const low =
-          validPrice(
-            pick(
-              item,
-              [
-                "low",
-                "bottom",
-                "from",
-                "zoneLow"
-              ]
-            ),
-            spot
-          );
+  $("regime")
+    .textContent =
+      DATA?.market?.regime?.regime ||
+      "—";
 
-        const high =
-          validPrice(
-            pick(
-              item,
-              [
-                "high",
-                "top",
-                "to",
-                "zoneHigh"
-              ]
-            ),
-            spot
-          );
+  $("vwap")
+    .textContent =
+      fmt(
+        DATA?.market?.vwap
+      );
 
-        if(
-          low === null ||
-          high === null
-        ){
-          return null;
+  $("session")
+    .textContent =
+      DATA?.market?.currentSession ||
+      DATA?.currentSession ||
+      "—";
+
+  $("deepTime")
+    .textContent =
+      new Date(
+        DATA.generatedAt
+      ).toLocaleTimeString(
+        [],
+        {
+          hour:"2-digit",
+          minute:"2-digit"
         }
+      );
 
-        return {
-          low:
-            Math.min(
-              low,
-              high
-            ),
-          high:
-            Math.max(
-              low,
-              high
-            ),
-          direction:
-            String(
-              pick(
-                item,
-                [
-                  "direction",
-                  "side",
-                  "type"
-                ],
-                ""
-              )
-            )
-        };
-      }
-    )
-    .filter(Boolean)
-    .slice(0,20);
+  const metrics = [
+
+    [
+      "ATR M1",
+      DATA?.market?.atr?.M1
+    ],
+
+    [
+      "ATR M5",
+      DATA?.market?.atr?.M5
+    ],
+
+    [
+      "ATR M15",
+      DATA?.market?.atr?.M15
+    ],
+
+    [
+      "RSI M5",
+      DATA?.market?.rsi?.M5
+    ],
+
+    [
+      "RSI M15",
+      DATA?.market?.rsi?.M15
+    ],
+
+    [
+      "ROC M5",
+      DATA?.market?.rocM5
+    ]
+
+  ];
+
+  $("metrics")
+    .innerHTML =
+      metrics.map(
+        ([label,value]) => `
+          <div class="metric">
+            <label>${label}</label>
+            <strong>${fmtLoose(value)}</strong>
+          </div>
+        `
+      ).join("");
+
+  renderPulse();
+
+  renderFocus();
+
+  renderZones();
+
+  renderTradeIdea();
+
+  renderObject(
+    "equalLevels",
+    DATA.equalLevels
+  );
+
+  renderObject(
+    "fvgs",
+    DATA.fairValueGaps
+  );
+
+  renderObject(
+    "previousDay",
+    DATA.previousDay
+  );
+
+  renderObject(
+    "previousWeek",
+    DATA.previousWeek
+  );
+
+  renderObject(
+    "dealingRange",
+    DATA.dealingRange
+  );
+
+  renderObject(
+    "displacement",
+    DATA.displacement
+  );
+
+  renderObject(
+    "flowData",
+    DATA.flow
+  );
+
+  renderObject(
+    "intermarket",
+    DATA.intermarket
+  );
+
+  renderObject(
+    "macroData",
+    DATA.macro
+  );
+
+  renderObject(
+    "quality",
+    DATA.dataQuality
+  );
+
+  renderObject(
+    "health",
+    DATA.health
+  );
+
+  renderObject(
+    "architecture",
+    DATA.apiArchitecture
+  );
+
+  $("raw")
+    .textContent =
+      JSON.stringify(
+        DATA,
+        null,
+        2
+      );
+
+  renderLivePrice();
+
+  requestAnimationFrame(
+    drawChart
+  );
 }
 
 
 /* ============================================================
-   CHART NORMALIZER
+   XAU DEEP API
 ============================================================ */
 
-function normalizeChartCandle(candle){
+async function loadXau(
+  force = false
+){
 
-  if(
-    !candle ||
-    typeof candle !== "object"
-  ){
-    return null;
-  }
+  const response =
+    await fetch(
+      `/api/xau?force=${
+        force
+          ? "1"
+          : "0"
+      }&t=${Date.now()}`,
+      {
+        cache:"no-store"
+      }
+    );
 
-  const open =
-    finite(candle.open);
+  const text =
+    await response.text();
 
-  const high =
-    finite(candle.high);
+  let json;
 
-  const low =
-    finite(candle.low);
+  try{
 
-  const close =
-    finite(candle.close);
+    json =
+      JSON.parse(
+        text
+      );
 
-  if(
-    open === null ||
-    high === null ||
-    low === null ||
-    close === null ||
-    open <= 0 ||
-    high <= 0 ||
-    low <= 0 ||
-    close <= 0
-  ){
-    return null;
-  }
+  }catch{
 
-  /*
-    Reject corrupt OHLC candles.
-  */
-
-  if(
-    high <
-    Math.max(
-      open,
-      close,
-      low
-    )
-  ){
-    return null;
+    throw new Error(
+      `XAU API invalid JSON: ${text.slice(0,100)}`
+    );
   }
 
   if(
-    low >
-    Math.min(
-      open,
-      close,
-      high
-    )
+    !response.ok ||
+    json.ok ===
+    false
   ){
-    return null;
+
+    throw new Error(
+      json.error ||
+      `XAU HTTP ${response.status}`
+    );
   }
 
-  let timestamp =
-    candle.timestamp ??
-    candle.time ??
-    candle.datetime;
+  DATA =
+    json;
 
-  if(typeof timestamp === "string"){
-
-    let text =
-      timestamp;
-
-    if(
-      !text.includes("T") &&
-      text.includes(" ")
-    ){
-      text =
-        text.replace(
-          " ",
-          "T"
-        );
-    }
-
-    if(
-      !/[zZ]|[+-]\d\d:\d\d$/.test(text)
-    ){
-      text += "Z";
-    }
-
-    timestamp =
-      Date.parse(text);
-  }
-
-  timestamp =
-    Number(timestamp);
-
-  if(
-    !Number.isFinite(timestamp)
-  ){
-    return null;
-  }
-
-  if(timestamp < 100000000000){
-    timestamp *= 1000;
-  }
-
-  return {
-    timestamp,
-    time:timestamp,
-    open,
-    high,
-    low,
-    close,
-    volume:
-      finite(candle.volume) ?? 0
-  };
+  renderDeep();
 }
 
 
 /* ============================================================
    CHART FETCH
 ============================================================ */
+
+function normalizeCandle(
+  candle
+){
+
+  const open =
+    finite(
+      candle.open
+    );
+
+  const high =
+    finite(
+      candle.high
+    );
+
+  const low =
+    finite(
+      candle.low
+    );
+
+  const close =
+    finite(
+      candle.close
+    );
+
+  let time =
+    candle.time ??
+    candle.timestamp;
+
+  time =
+    Number(
+      time
+    );
+
+  if(
+    time <
+    100000000000
+  ){
+    time *=
+      1000;
+  }
+
+  if(
+    !Number.isFinite(time) ||
+    open === null ||
+    high === null ||
+    low === null ||
+    close === null
+  ){
+    return null;
+  }
+
+  return {
+    time,
+    open,
+    high,
+    low,
+    close,
+    volume:
+      finite(
+        candle.volume
+      ) ?? 0
+  };
+}
+
 
 async function loadChart(
   timeframe,
@@ -5794,127 +4344,183 @@ async function loadChart(
     cached &&
     Date.now() -
     cached.time <
-    20000
+    25000
   ){
 
     CHART_DATA =
-      cached.candles;
+      cached.data;
 
     drawChart();
+
     return;
   }
 
-  $("chartState").textContent =
-    "LOADING";
+  $("chartStatus")
+    .textContent =
+      "LOADING";
 
   try{
 
     const response =
       await fetch(
-        `/api/chart?tf=${encodeURIComponent(timeframe)}&limit=260&force=${force ? "1" : "0"}&t=${Date.now()}`,
+        `/api/chart?tf=${timeframe}&limit=260&t=${Date.now()}`,
         {
           cache:"no-store"
         }
       );
 
-    const text =
-      await response.text();
-
-    let data;
-
-    try{
-      data = JSON.parse(text);
-    }catch{
-      throw new Error(
-        `Chart returned invalid JSON: ${text.slice(0,80)}`
-      );
-    }
+    const json =
+      await response.json();
 
     if(
       !response.ok ||
-      data.ok === false
+      json.ok ===
+      false
     ){
-
       throw new Error(
-        data.error ||
-        `Chart HTTP ${response.status}`
-      );
-    }
-
-    const raw =
-      Array.isArray(data.candles)
-        ? data.candles
-        : Array.isArray(data.values)
-          ? data.values
-          : [];
-
-    const normalized =
-      raw
-        .map(
-          normalizeChartCandle
-        )
-        .filter(Boolean)
-        .sort(
-          (a,b) =>
-            a.time -
-            b.time
-        );
-
-    if(normalized.length < 3){
-
-      throw new Error(
-        `Only ${normalized.length} valid ${timeframe.toUpperCase()} candles returned`
+        json.error ||
+        "Chart request failed."
       );
     }
 
     CHART_DATA =
-      normalized;
+      (
+        json.candles ||
+        []
+      )
+      .map(
+        normalizeCandle
+      )
+      .filter(
+        Boolean
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a.time -
+          b.time
+      );
 
     CHART_CACHE[
       timeframe
     ] = {
       time:Date.now(),
-      candles:CHART_DATA
+      data:CHART_DATA
     };
 
-    $("chartState").textContent =
-      `${timeframe.toUpperCase()} LIVE`;
+    $("chartStatus")
+      .textContent =
+        `${timeframe.toUpperCase()} LIVE`;
 
     drawChart();
 
   }catch(error){
 
-    console.error(
-      "CHART ERROR:",
-      error
-    );
+    console.error(error);
 
-    $("chartState").textContent =
-      "CHART ERROR";
+    $("chartStatus")
+      .textContent =
+        "CHART ERROR";
 
-    $("chartOHLC").textContent =
-      error.message;
-
-    drawChart();
+    $("ohlc")
+      .textContent =
+        error.message;
   }
 }
 
 
 /* ============================================================
-   CANVAS SIZE
+   FVG EXTRACT
+============================================================ */
+
+function getFvgs(){
+
+  if(
+    !Array.isArray(
+      DATA?.fairValueGaps
+    )
+  ){
+    return [];
+  }
+
+  const spot =
+    getSpot();
+
+  return DATA
+    .fairValueGaps
+    .map(
+      gap => {
+
+        const low =
+          finite(
+            gap.low
+          );
+
+        const high =
+          finite(
+            gap.high
+          );
+
+        if(
+          low === null ||
+          high === null
+        ){
+          return null;
+        }
+
+        if(
+          spot !== null &&
+          (
+            low <
+            spot *
+            .75 ||
+            high >
+            spot *
+            1.25
+          )
+        ){
+          return null;
+        }
+
+        return {
+          low:
+            Math.min(
+              low,
+              high
+            ),
+          high:
+            Math.max(
+              low,
+              high
+            )
+        };
+      }
+    )
+    .filter(
+      Boolean
+    );
+}
+
+
+/* ============================================================
+   CHART SIZE
 ============================================================ */
 
 function chartSize(){
 
   const canvas =
-    $("chartCanvas");
+    $("chart");
 
   const rect =
-    canvas.getBoundingClientRect();
+    canvas
+      .getBoundingClientRect();
 
-  const ratio =
+  const dpr =
     Math.min(
-      window.devicePixelRatio || 1,
+      window.devicePixelRatio ||
+      1,
       2
     );
 
@@ -5923,7 +4529,7 @@ function chartSize(){
       1,
       Math.floor(
         rect.width *
-        ratio
+        dpr
       )
     );
 
@@ -5932,18 +4538,20 @@ function chartSize(){
       1,
       Math.floor(
         rect.height *
-        ratio
+        dpr
       )
     );
 
   const ctx =
-    canvas.getContext("2d");
+    canvas.getContext(
+      "2d"
+    );
 
   ctx.setTransform(
-    ratio,
+    dpr,
     0,
     0,
-    ratio,
+    dpr,
     0,
     0
   );
@@ -5958,7 +4566,7 @@ function chartSize(){
 
 
 /* ============================================================
-   CHART
+   DRAW CHART
 ============================================================ */
 
 function drawChart(){
@@ -5980,77 +4588,51 @@ function drawChart(){
     );
 
     if(
-      !CHART_DATA ||
-      CHART_DATA.length < 3
+      CHART_DATA.length <
+      3
     ){
 
       ctx.fillStyle =
-        "#747d89";
+        "#737c88";
 
       ctx.font =
-        "10px -apple-system, sans-serif";
+        "10px -apple-system";
 
       ctx.fillText(
-        "Waiting for chart candles…",
-        18,
-        40
+        "Waiting for candles…",
+        15,
+        35
       );
 
       return;
     }
 
     const visible =
-      CHART_DATA
-        .slice(
-          -Math.min(
-            CHART_DATA.length,
-            150
-          )
-        )
-        .filter(
-          candle =>
-            candle.high > 0 &&
-            candle.low > 0 &&
-            candle.open > 0 &&
-            candle.close > 0
-        );
+      CHART_DATA.slice(
+        -150
+      );
 
-    if(visible.length < 3){
-      return;
-    }
+    const left =
+      8;
 
-    const left = 9;
-    const right = 67;
-    const top = 12;
-    const bottom = 23;
+    const right =
+      68;
+
+    const top =
+      12;
+
+    const bottom =
+      22;
 
     const plotWidth =
-      Math.max(
-        20,
-        width -
-        left -
-        right
-      );
+      width -
+      left -
+      right;
 
     const plotHeight =
-      Math.max(
-        20,
-        height -
-        top -
-        bottom
-      );
-
-    /*
-      THE BIG CHART FIX
-
-      The scale starts from CANDLES ONLY.
-
-      Liquidity/FVG overlays are allowed to enlarge the scale only
-      if they are reasonably close to the currently visible market.
-
-      A previous-week level 300 points away can therefore no longer
-      crush M1/M5 candles into one tiny line.
-    */
+      height -
+      top -
+      bottom;
 
     const candleMin =
       Math.min(
@@ -6068,195 +4650,142 @@ function drawChart(){
         )
       );
 
-    const latestPrice =
-      finite(
-        visible.at(-1)?.close
-      );
-
     const spot =
-      getSpot();
-
-    const baseReference =
-      spot ??
-      latestPrice ??
-      (
-        candleMin +
-        candleMax
-      ) / 2;
+      getSpot() ??
+      visible.at(-1).close;
 
     let candleRange =
       candleMax -
       candleMin;
 
-    const minimumUsefulRange =
+    candleRange =
       Math.max(
-        baseReference *
-        0.0014,
-        2.5
+        candleRange,
+        spot *
+        .0013,
+        2
       );
 
-    if(
-      !Number.isFinite(candleRange) ||
-      candleRange <
-      minimumUsefulRange
-    ){
-      candleRange =
-        minimumUsefulRange;
-    }
+    /*
+       Liquidity cannot destroy chart scale.
+    */
 
     const localBand =
       Math.max(
-        candleRange * 2.2,
-        baseReference * 0.006,
+        candleRange *
+        2.3,
+        spot *
+        .006,
         8
       );
 
-    const candidateMin =
-      candleMin -
-      localBand;
-
-    const candidateMax =
-      candleMax +
-      localBand;
-
-    const scalePrices = [
+    const candidates = [
       candleMin,
-      candleMax
+      candleMax,
+      spot
     ];
 
-    if(
-      spot !== null &&
-      spot >= candidateMin &&
-      spot <= candidateMax
-    ){
-      scalePrices.push(spot);
-    }
+    ZONES
+      .slice(
+        0,
+        12
+      )
+      .forEach(
+        zone => {
 
-    const localZones =
-      CURRENT_ZONES
-        .map(
-          zone => ({
-            zone,
-            level:
-              zoneLevel(
-                zone,
-                baseReference
-              )
-          })
-        )
-        .filter(
-          item =>
-            item.level !== null
-        );
+          const price =
+            zonePrice(
+              zone
+            );
 
-    for(
-      const item
-      of localZones.slice(0,12)
-    ){
-
-      if(
-        item.level >= candidateMin &&
-        item.level <= candidateMax
-      ){
-        scalePrices.push(
-          item.level
-        );
-      }
-    }
-
-    const fvgs =
-      DATA
-        ? extractFvgs(DATA)
-        : [];
+          if(
+            price !== null &&
+            price >=
+            candleMin -
+            localBand &&
+            price <=
+            candleMax +
+            localBand
+          ){
+            candidates.push(
+              price
+            );
+          }
+        }
+      );
 
     const localFvgs =
-      fvgs
+      getFvgs()
         .filter(
           gap =>
-            gap.high >= candidateMin &&
-            gap.low <= candidateMax
+            gap.high >=
+            candleMin -
+            localBand &&
+            gap.low <=
+            candleMax +
+            localBand
         )
-        .slice(0,8);
+        .slice(
+          0,
+          8
+        );
 
-    for(const gap of localFvgs){
+    localFvgs.forEach(
+      gap => {
 
-      scalePrices.push(
-        Math.max(
+        candidates.push(
           gap.low,
-          candidateMin
-        ),
-        Math.min(
-          gap.high,
-          candidateMax
-        )
-      );
-    }
-
-    if(CURRENT_IDEA){
-
-      for(
-        const level
-        of [
-          CURRENT_IDEA.entry,
-          CURRENT_IDEA.stop,
-          CURRENT_IDEA.tp1,
-          CURRENT_IDEA.tp2
-        ]
-      ){
-
-        const n =
-          validPrice(
-            level,
-            baseReference
-          );
-
-        if(
-          n !== null &&
-          n >= candidateMin &&
-          n <= candidateMax
-        ){
-          scalePrices.push(n);
-        }
+          gap.high
+        );
       }
-    }
+    );
 
     let min =
       Math.min(
-        ...scalePrices
+        ...candidates
       );
 
     let max =
       Math.max(
-        ...scalePrices
+        ...candidates
       );
 
-    let range =
+    let span =
       max -
       min;
 
     if(
-      !Number.isFinite(range) ||
-      range <= 0
+      !Number.isFinite(span) ||
+      span <= 0
     ){
-      range =
-        minimumUsefulRange;
+      span =
+        Math.max(
+          spot *
+          .001,
+          3
+        );
     }
 
-    const padding =
+    const pad =
       Math.max(
-        range * .10,
-        baseReference * .00025,
-        .75
+        span *
+        .08,
+        .7
       );
 
-    min -= padding;
-    max += padding;
+    min -=
+      pad;
 
-    const span =
+    max +=
+      pad;
+
+    span =
       max -
       min;
 
-    function y(price){
+    function y(
+      price
+    ){
 
       return (
         top +
@@ -6269,13 +4798,13 @@ function drawChart(){
       );
     }
 
-    const step =
-      plotWidth /
-      visible.length;
-
     /* GRID */
 
-    for(let i = 0; i <= 6; i++){
+    for(
+      let i = 0;
+      i <= 6;
+      i++
+    ){
 
       const yy =
         top +
@@ -6286,7 +4815,8 @@ function drawChart(){
       ctx.strokeStyle =
         "rgba(255,255,255,.032)";
 
-      ctx.lineWidth = 1;
+      ctx.lineWidth =
+        1;
 
       ctx.beginPath();
 
@@ -6313,7 +4843,7 @@ function drawChart(){
         "#59626f";
 
       ctx.font =
-        "7px -apple-system, sans-serif";
+        "7px -apple-system";
 
       ctx.textAlign =
         "left";
@@ -6328,154 +4858,116 @@ function drawChart(){
       );
     }
 
-    for(let i = 0; i <= 5; i++){
-
-      const xx =
-        left +
-        plotWidth *
-        i /
-        5;
-
-      ctx.strokeStyle =
-        "rgba(255,255,255,.018)";
-
-      ctx.beginPath();
-
-      ctx.moveTo(
-        xx,
-        top
-      );
-
-      ctx.lineTo(
-        xx,
-        top +
-        plotHeight
-      );
-
-      ctx.stroke();
-    }
-
     /* FVG */
 
-    for(
-      const gap
-      of localFvgs
-    ){
+    localFvgs.forEach(
+      gap => {
 
-      const clippedHigh =
-        Math.min(
-          gap.high,
+        if(
+          gap.high <
+          min ||
+          gap.low >
           max
-        );
+        ){
+          return;
+        }
 
-      const clippedLow =
-        Math.max(
-          gap.low,
-          min
-        );
+        const y1 =
+          y(
+            Math.min(
+              gap.high,
+              max
+            )
+          );
 
-      if(
-        clippedHigh <
-        min ||
-        clippedLow >
-        max
-      ){
-        continue;
+        const y2 =
+          y(
+            Math.max(
+              gap.low,
+              min
+            )
+          );
+
+        ctx.fillStyle =
+          "rgba(166,121,255,.06)";
+
+        ctx.fillRect(
+          left,
+          y1,
+          plotWidth,
+          Math.max(
+            2,
+            y2 -
+            y1
+          )
+        );
       }
+    );
 
-      const topY =
-        y(
-          clippedHigh
-        );
+    /* LIQUIDITY */
 
-      const bottomY =
-        y(
-          clippedLow
-        );
-
-      ctx.fillStyle =
-        "rgba(166,121,255,.065)";
-
-      ctx.fillRect(
-        left,
-        topY,
-        plotWidth,
-        Math.max(
-          2,
-          bottomY -
-          topY
-        )
-      );
-
-      ctx.strokeStyle =
-        "rgba(166,121,255,.16)";
-
-      ctx.strokeRect(
-        left,
-        topY,
-        plotWidth,
-        Math.max(
-          2,
-          bottomY -
-          topY
-        )
-      );
-    }
-
-    /* LIQUIDITY LEVELS */
-
-    localZones
-      .slice(0,10)
+    ZONES
+      .slice(
+        0,
+        10
+      )
       .forEach(
-        (item,index) => {
+        (
+          zone,
+          index
+        ) => {
 
-          const zone =
-            item.zone;
-
-          const level =
-            item.level;
-
-          const side =
-            zoneSide(zone);
-
-          let color =
-            "rgba(241,199,91,.48)";
-
-          if(side.includes("BUY")){
-
-            color =
-              "rgba(255,93,115,.55)";
-          }
-
-          if(side.includes("SELL")){
-
-            color =
-              "rgba(53,223,160,.52)";
-          }
+          const price =
+            zonePrice(
+              zone
+            );
 
           if(
-            level >= min &&
-            level <= max
+            price === null
+          ){
+            return;
+          }
+
+          const side =
+            zoneSide(
+              zone
+            );
+
+          const color =
+            side ===
+            "BUY_SIDE"
+              ? "rgba(255,93,115,.52)"
+              : "rgba(53,223,160,.50)";
+
+          if(
+            price >=
+            min &&
+            price <=
+            max
           ){
 
             const yy =
-              y(level);
+              y(
+                price
+              );
 
             ctx.save();
 
             ctx.setLineDash(
-              index === 0
+              index ===
+              0
                 ? [8,4]
                 : [4,5]
             );
 
-            ctx.lineWidth =
-              index === 0
-                ? 1.4
-                : 1;
-
             ctx.strokeStyle =
               color;
+
+            ctx.lineWidth =
+              index ===
+              0
+                ? 1.4
+                : 1;
 
             ctx.beginPath();
 
@@ -6498,9 +4990,10 @@ function drawChart(){
               color;
 
             ctx.font =
-              index === 0
-                ? "bold 7px -apple-system, sans-serif"
-                : "6px -apple-system, sans-serif";
+              index ===
+              0
+                ? "bold 7px -apple-system"
+                : "6px -apple-system";
 
             ctx.textAlign =
               "left";
@@ -6510,54 +5003,46 @@ function drawChart(){
                 index === 0
                   ? "◎ "
                   : ""
-              }${zoneName(zone)}`,
-              left + 5,
-              Math.max(
-                top + 8,
-                yy - 3
-              )
+              }${zone.name}`,
+              left +
+              4,
+              yy -
+              3
             );
 
           }else if(
-            index < 4
+            index <
+            4
           ){
 
-            /*
-              Off-screen liquidity indicator.
-
-              We keep the real candle scale readable while still
-              telling you a liquidity pool exists outside the current
-              visible range.
-            */
-
             const above =
-              level > max;
-
-            const edgeY =
-              above
-                ? top + 9 + index * 11
-                : top +
-                  plotHeight -
-                  8 -
-                  index * 11;
+              price >
+              max;
 
             ctx.fillStyle =
               color;
 
             ctx.font =
-              "bold 6px -apple-system, sans-serif";
-
-            ctx.textAlign =
-              "left";
+              "bold 6px -apple-system";
 
             ctx.fillText(
               `${
                 above
                   ? "↑"
                   : "↓"
-              } ${zoneName(zone)} ${fmt(level)}`,
-              left + 7,
-              edgeY
+              } ${zone.name} ${fmt(price)}`,
+              left +
+              5,
+              above
+                ? top +
+                  48 +
+                  index *
+                  10
+                : top +
+                  plotHeight -
+                  8 -
+                  index *
+                  10
             );
           }
         }
@@ -6565,17 +5050,25 @@ function drawChart(){
 
     /* CANDLES */
 
-    const bodyWidth =
+    const step =
+      plotWidth /
+      visible.length;
+
+    const body =
       Math.max(
-        1.4,
+        1.5,
         Math.min(
           6,
-          step * .58
+          step *
+          .58
         )
       );
 
     visible.forEach(
-      (candle,index) => {
+      (
+        candle,
+        index
+      ) => {
 
         const x =
           left +
@@ -6583,18 +5076,6 @@ function drawChart(){
           index +
           step /
           2;
-
-        const openY =
-          y(candle.open);
-
-        const closeY =
-          y(candle.close);
-
-        const highY =
-          y(candle.high);
-
-        const lowY =
-          y(candle.low);
 
         const bullish =
           candle.close >=
@@ -6605,13 +5086,31 @@ function drawChart(){
             ? "#35dfa0"
             : "#ff5d73";
 
+        const highY =
+          y(
+            candle.high
+          );
+
+        const lowY =
+          y(
+            candle.low
+          );
+
+        const openY =
+          y(
+            candle.open
+          );
+
+        const closeY =
+          y(
+            candle.close
+          );
+
         ctx.strokeStyle =
           color;
 
         ctx.fillStyle =
           color;
-
-        ctx.lineWidth = 1;
 
         ctx.beginPath();
 
@@ -6629,15 +5128,15 @@ function drawChart(){
 
         ctx.fillRect(
           x -
-          bodyWidth /
+          body /
           2,
           Math.min(
             openY,
             closeY
           ),
-          bodyWidth,
+          body,
           Math.max(
-            1.3,
+            1.2,
             Math.abs(
               closeY -
               openY
@@ -6647,30 +5146,28 @@ function drawChart(){
       }
     );
 
-    /* CURRENT PRICE */
-
-    const current =
-      spot ??
-      latestPrice;
+    /* LIVE PRICE */
 
     if(
-      current !== null &&
-      current >= min &&
-      current <= max
+      spot >=
+      min &&
+      spot <=
+      max
     ){
 
       const yy =
-        y(current);
+        y(
+          spot
+        );
 
       ctx.save();
 
-      ctx.setLineDash([2,3]);
+      ctx.setLineDash(
+        [2,3]
+      );
 
       ctx.strokeStyle =
         "#f1c75b";
-
-      ctx.lineWidth =
-        1.1;
 
       ctx.beginPath();
 
@@ -6704,16 +5201,18 @@ function drawChart(){
       );
 
       ctx.fillStyle =
-        "#070707";
+        "#080808";
 
       ctx.font =
-        "bold 7px -apple-system, sans-serif";
+        "bold 7px -apple-system";
 
       ctx.textAlign =
         "left";
 
       ctx.fillText(
-        fmt(current),
+        fmt(
+          spot
+        ),
         left +
         plotWidth +
         6,
@@ -6722,111 +5221,11 @@ function drawChart(){
       );
     }
 
-    /* TRADE LEVELS */
-
-    if(CURRENT_IDEA){
-
-      const levels = [
-
-        [
-          CURRENT_IDEA.entry,
-          "ENTRY",
-          "rgba(90,169,255,.8)"
-        ],
-
-        [
-          CURRENT_IDEA.stop,
-          "SL",
-          "rgba(255,93,115,.8)"
-        ],
-
-        [
-          CURRENT_IDEA.tp1,
-          "TP1",
-          "rgba(53,223,160,.8)"
-        ],
-
-        [
-          CURRENT_IDEA.tp2,
-          "TP2",
-          "rgba(53,223,160,.55)"
-        ]
-
-      ];
-
-      for(
-        const [
-          level,
-          label,
-          color
-        ]
-        of levels
-      ){
-
-        const n =
-          validPrice(
-            level,
-            baseReference
-          );
-
-        if(
-          n === null ||
-          n < min ||
-          n > max
-        ){
-          continue;
-        }
-
-        const yy =
-          y(n);
-
-        ctx.strokeStyle =
-          color;
-
-        ctx.lineWidth = 1;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-          left +
-          plotWidth *
-          .62,
-          yy
-        );
-
-        ctx.lineTo(
-          left +
-          plotWidth,
-          yy
-        );
-
-        ctx.stroke();
-
-        ctx.fillStyle =
-          color;
-
-        ctx.font =
-          "bold 6px -apple-system, sans-serif";
-
-        ctx.fillText(
-          `${label} ${fmt(n)}`,
-          left +
-          plotWidth *
-          .62 +
-          3,
-          yy -
-          2
-        );
-      }
-    }
-
-    /* TIME LABELS */
-
-    const labelCount = 4;
+    /* TIME */
 
     for(
       let i = 0;
-      i < labelCount;
+      i < 4;
       i++
     ){
 
@@ -6837,31 +5236,18 @@ function drawChart(){
             visible.length -
             1
           ) /
-          (
-            labelCount -
-            1
-          )
+          3
         );
 
       const candle =
-        visible[index];
-
-      if(!candle){
-        continue;
-      }
+        visible[
+          index
+        ];
 
       const date =
         new Date(
           candle.time
         );
-
-      if(
-        Number.isNaN(
-          date.getTime()
-        )
-      ){
-        continue;
-      }
 
       const text =
         date.toLocaleTimeString(
@@ -6872,30 +5258,30 @@ function drawChart(){
           }
         );
 
-      const xx =
-        left +
-        step *
-        index;
-
       ctx.fillStyle =
         "#59626f";
 
       ctx.font =
-        "6px -apple-system, sans-serif";
+        "6px -apple-system";
 
       ctx.textAlign =
         "center";
 
       ctx.fillText(
         text,
-        xx,
-        height - 5
+        left +
+        step *
+        index,
+        height -
+        5
       );
     }
 
     /* CROSSHAIR */
 
-    if(POINTER){
+    if(
+      POINTER
+    ){
 
       const px =
         clamp(
@@ -6915,10 +5301,12 @@ function drawChart(){
 
       ctx.save();
 
-      ctx.setLineDash([3,4]);
+      ctx.setLineDash(
+        [3,4]
+      );
 
       ctx.strokeStyle =
-        "rgba(255,255,255,.24)";
+        "rgba(255,255,255,.22)";
 
       ctx.beginPath();
 
@@ -6958,59 +5346,62 @@ function drawChart(){
             step -
             .5,
             0,
-            visible.length - 1
+            visible.length -
+            1
           )
         );
 
       const candle =
-        visible[index];
+        visible[
+          index
+        ];
 
-      const pointerPrice =
-        max -
-        (
-          py -
-          top
-        ) /
-        plotHeight *
-        span;
+      if(
+        candle
+      ){
 
-      if(candle){
+        const cursorPrice =
+          max -
+          (
+            py -
+            top
+          ) /
+          plotHeight *
+          span;
 
-        $("chartOHLC").innerHTML =
-          `${ACTIVE_TF.toUpperCase()} ·
-          O ${fmt(candle.open)} ·
-          H ${fmt(candle.high)} ·
-          L ${fmt(candle.low)} ·
-          C ${fmt(candle.close)}
-          <br>
-          CURSOR ${fmt(pointerPrice)}`;
+        $("ohlc")
+          .innerHTML =
+            `${ACTIVE_TF.toUpperCase()} ·
+            O ${fmt(candle.open)} ·
+            H ${fmt(candle.high)} ·
+            L ${fmt(candle.low)} ·
+            C ${fmt(candle.close)}
+            <br>
+            CURSOR ${fmt(cursorPrice)}`;
       }
 
     }else{
 
       const candle =
-        visible.at(-1);
+        visible.at(
+          -1
+        );
 
-      $("chartOHLC").innerHTML =
-        `${ACTIVE_TF.toUpperCase()} ·
-        O ${fmt(candle.open)} ·
-        H ${fmt(candle.high)} ·
-        L ${fmt(candle.low)} ·
-        C ${fmt(candle.close)}`;
+      $("ohlc")
+        .textContent =
+          `${ACTIVE_TF.toUpperCase()} · O ${fmt(candle.open)} · H ${fmt(candle.high)} · L ${fmt(candle.low)} · C ${fmt(candle.close)}`;
     }
 
   }catch(error){
 
     console.error(
-      "DRAW CHART ERROR:",
+      "Chart draw:",
       error
     );
 
-    $("chartState").textContent =
-      "CHART ERROR";
-
-    $("chartOHLC").textContent =
-      error.message;
+    $("chartStatus")
+      .textContent =
+        "CHART ERROR";
   }
 }
 
@@ -7019,13 +5410,13 @@ function drawChart(){
    POINTER
 ============================================================ */
 
-function pointerMove(event){
-
-  const canvas =
-    $("chartCanvas");
+function pointerMove(
+  event
+){
 
   const rect =
-    canvas.getBoundingClientRect();
+    $("chart")
+      .getBoundingClientRect();
 
   POINTER = {
     x:
@@ -7040,26 +5431,27 @@ function pointerMove(event){
 }
 
 
-$("chartCanvas")
+$("chart")
   .addEventListener(
     "pointermove",
     pointerMove
   );
 
 
-$("chartCanvas")
+$("chart")
   .addEventListener(
     "pointerdown",
     pointerMove
   );
 
 
-$("chartCanvas")
+$("chart")
   .addEventListener(
     "pointerleave",
     () => {
 
-      POINTER = null;
+      POINTER =
+        null;
 
       drawChart();
     }
@@ -7067,499 +5459,13 @@ $("chartCanvas")
 
 
 /* ============================================================
-   LADDER
-============================================================ */
-
-function renderLadder(
-  data,
-  zones
-){
-
-  const element =
-    $("liquidityLadder");
-
-  const spot =
-    getSpot(data);
-
-  if(spot === null){
-    return;
-  }
-
-  const valid =
-    zones
-      .map(
-        zone => ({
-          zone,
-          level:
-            zoneLevel(
-              zone,
-              spot
-            ),
-          score:
-            zoneScore(
-              zone,
-              spot
-            ).value
-        })
-      )
-      .filter(
-        item =>
-          item.level !== null
-      );
-
-  if(!valid.length){
-
-    element.innerHTML = `
-      <div
-        style="
-          display:grid;
-          place-items:center;
-          height:470px;
-          color:#656e7b;
-          font-size:8px;
-        "
-      >
-        No liquidity levels found
-      </div>
-    `;
-
-    return;
-  }
-
-  /*
-    Ladder shows a wider range than the candle chart,
-    but still rejects absurd values.
-  */
-
-  const local =
-    valid.filter(
-      item =>
-        item.level >= spot * .85 &&
-        item.level <= spot * 1.15
-    );
-
-  const displayed =
-    local.length
-      ? local
-      : valid.slice(0,15);
-
-  const prices = [
-    spot,
-    ...displayed.map(
-      item =>
-        item.level
-    )
-  ];
-
-  let min =
-    Math.min(
-      ...prices
-    );
-
-  let max =
-    Math.max(
-      ...prices
-    );
-
-  let range =
-    max -
-    min;
-
-  if(range <= 0){
-    range = 10;
-  }
-
-  min -= range * .1;
-  max += range * .1;
-
-  const span =
-    max -
-    min;
-
-  const y =
-    value =>
-      100 -
-      (
-        value -
-        min
-      ) /
-      span *
-      100;
-
-  let html = `
-    <div
-      class="ladderCurrent"
-      style="top:${y(spot)}%"
-    ></div>
-
-    <div
-      class="ladderTag"
-      style="top:${y(spot)}%"
-    >
-      ${fmt(spot)}
-    </div>
-  `;
-
-  displayed
-    .slice(0,25)
-    .forEach(
-      item => {
-
-        const side =
-          zoneSide(
-            item.zone
-          );
-
-        let css =
-          "neutralLiquidity";
-
-        if(side.includes("BUY")){
-          css = "buyLiquidity";
-        }
-
-        if(side.includes("SELL")){
-          css = "sellLiquidity";
-        }
-
-        const width =
-          clamp(
-            36 +
-            item.score *
-            .55,
-            36,
-            94
-          );
-
-        html += `
-          <div
-            class="ladderLine ${css}"
-            style="
-              top:calc(${y(item.level)}% - 10px);
-              width:${width}%;
-            "
-          >
-            ${zoneName(item.zone)}
-            ·
-            ${fmt(item.level)}
-            ·
-            ${Math.round(item.score)}
-          </div>
-        `;
-      }
-    );
-
-  element.innerHTML =
-    html;
-}
-
-
-/* ============================================================
-   RENDER
-============================================================ */
-
-function render(data){
-
-  DATA = data;
-
-  CURRENT_ZONES =
-    collectLiquidityZones(
-      data
-    );
-
-  renderHero(data);
-
-  renderFocus(
-    data,
-    CURRENT_ZONES
-  );
-
-  renderPulse(
-    "marketPulse",
-    data
-  );
-
-  renderPulse(
-    "structureFull",
-    data,
-    [
-      "M1",
-      "M5",
-      "M15",
-      "H1"
-    ]
-  );
-
-  renderMetrics(data);
-
-  renderFlow(
-    "flowGrid",
-    data
-  );
-
-  renderFlow(
-    "flowFull",
-    data
-  );
-
-  renderSessions(data);
-
-  renderZones(
-    "topZones",
-    data,
-    CURRENT_ZONES,
-    8
-  );
-
-  renderZones(
-    "allZones",
-    data,
-    CURRENT_ZONES,
-    35
-  );
-
-  renderLadder(
-    data,
-    CURRENT_ZONES
-  );
-
-  const dominant =
-    dominantZone(
-      data,
-      CURRENT_ZONES
-    );
-
-  renderObject(
-    "dominantDetails",
-    dominant
-  );
-
-  const idea =
-    buildTradeIdea(
-      data,
-      CURRENT_ZONES
-    );
-
-  renderTradeIdea(
-    idea
-  );
-
-  renderObject(
-    "equalLevels",
-    data.equalLevels ??
-    data.liquidityMap?.equalLevels ??
-    data.deepLiquidity?.equalLevels
-  );
-
-  renderObject(
-    "fairValueGaps",
-    data.fairValueGaps ??
-    data.fvgs ??
-    data.fvg
-  );
-
-  renderObject(
-    "dealingRange",
-    data.dealingRange
-  );
-
-  renderObject(
-    "displacement",
-    data.displacement
-  );
-
-  renderObject(
-    "previousDay",
-    data.previousDay
-  );
-
-  renderObject(
-    "previousWeek",
-    data.previousWeek
-  );
-
-  renderObject(
-    "intermarket",
-    data.intermarket
-  );
-
-  renderObject(
-    "historicalLiquidity",
-    data.historicalLiquidity
-  );
-
-  renderObject(
-    "macroData",
-    data.macro
-  );
-
-  renderObject(
-    "dataQuality",
-    data.dataQuality
-  );
-
-  renderObject(
-    "apiArchitecture",
-    data.apiArchitecture
-  );
-
-  renderObject(
-    "health",
-    data.health
-  );
-
-  $("rawJson").textContent =
-    JSON.stringify(
-      data,
-      null,
-      2
-    );
-
-  $("liveText").textContent =
-    "LIVE";
-
-  $("liveDot").style.background =
-    "var(--green)";
-
-  requestAnimationFrame(
-    drawChart
-  );
-}
-
-
-/* ============================================================
-   XAU FETCH
-============================================================ */
-
-async function loadXau(
-  manual = false
-){
-
-  $("errorBox")
-    .classList
-    .remove("show");
-
-  try{
-
-    const response =
-      await fetch(
-        `/api/xau?force=${manual ? "1" : "0"}&t=${Date.now()}`,
-        {
-          cache:"no-store"
-        }
-      );
-
-    const text =
-      await response.text();
-
-    let data;
-
-    try{
-
-      data =
-        JSON.parse(text);
-
-    }catch{
-
-      throw new Error(
-        `XAU API returned invalid JSON: ${text.slice(0,100)}`
-      );
-    }
-
-    if(
-      !response.ok ||
-      data.ok === false
-    ){
-
-      throw new Error(
-        data.error ||
-        data.message ||
-        `HTTP ${response.status}`
-      );
-    }
-
-    render(data);
-
-  }catch(error){
-
-    console.error(
-      "XAU ERROR:",
-      error
-    );
-
-    $("errorBox").textContent =
-      `XAU ENGINE ERROR · ${error.message}`;
-
-    $("errorBox")
-      .classList
-      .add("show");
-
-    $("liveText").textContent =
-      "DEGRADED";
-
-    $("liveDot").style.background =
-      "var(--red)";
-  }
-}
-
-
-/* ============================================================
-   LOAD EVERYTHING
-============================================================ */
-
-async function loadEverything(
-  manual = false
-){
-
-  if(manual){
-
-    $("loader")
-      .classList
-      .add("show");
-  }
-
-  try{
-
-    const results =
-      await Promise.allSettled([
-
-        loadXau(manual),
-
-        loadChart(
-          ACTIVE_TF,
-          manual
-        )
-
-      ]);
-
-    for(const result of results){
-
-      if(result.status === "rejected"){
-        console.error(result.reason);
-      }
-    }
-
-    if(DATA){
-      render(DATA);
-    }
-
-  }finally{
-
-    if(manual){
-
-      $("loader")
-        .classList
-        .remove("show");
-    }
-  }
-}
-
-
-/* ============================================================
-   TIMEFRAMES
+   TIMEFRAME
 ============================================================ */
 
 document
-  .querySelectorAll("[data-tf]")
+  .querySelectorAll(
+    "[data-tf]"
+  )
   .forEach(
     button => {
 
@@ -7571,19 +5477,24 @@ document
             button.dataset.tf;
 
           document
-            .querySelectorAll("[data-tf]")
+            .querySelectorAll(
+              "[data-tf]"
+            )
             .forEach(
-              x =>
-                x.classList.remove(
+              element =>
+                element.classList.remove(
                   "active"
                 )
             );
 
           button
             .classList
-            .add("active");
+            .add(
+              "active"
+            );
 
-          POINTER = null;
+          POINTER =
+            null;
 
           await loadChart(
             ACTIVE_TF,
@@ -7596,101 +5507,156 @@ document
 
 
 /* ============================================================
-   NAV
+   EVERYTHING
 ============================================================ */
 
-function switchView(view){
+async function loadEverything(
+  manual = false
+){
 
-  document
-    .querySelectorAll(".view")
-    .forEach(
-      element =>
-        element.classList.remove(
-          "active"
-        )
-    );
+  if(
+    manual
+  ){
 
-  document
-    .querySelectorAll("[data-view]")
-    .forEach(
-      button =>
-        button.classList.toggle(
-          "active",
-          button.dataset.view ===
-          view
-        )
-    );
-
-  const target =
-    $(view);
-
-  if(target){
-    target.classList.add("active");
+    $("loader")
+      .classList
+      .add(
+        "show"
+      );
   }
 
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
-
-  if(view === "terminal"){
-
-    setTimeout(
-      drawChart,
-      80
+  $("error")
+    .classList
+    .remove(
+      "show"
     );
+
+  try{
+
+    const results =
+      await Promise.allSettled([
+
+        loadXau(
+          manual
+        ),
+
+        loadChart(
+          ACTIVE_TF,
+          manual
+        )
+
+      ]);
+
+    const rejected =
+      results.find(
+        result =>
+          result.status ===
+          "rejected"
+      );
+
+    if(
+      rejected
+    ){
+
+      throw rejected.reason;
+    }
+
+  }catch(error){
+
+    console.error(error);
+
+    $("error")
+      .textContent =
+        error.message;
+
+    $("error")
+      .classList
+      .add(
+        "show"
+      );
+
+  }finally{
+
+    if(
+      manual
+    ){
+
+      $("loader")
+        .classList
+        .remove(
+          "show"
+        );
+    }
   }
 }
 
 
-document
-  .querySelectorAll("[data-view]")
-  .forEach(
-    button => {
-
-      button.addEventListener(
-        "click",
-        () =>
-          switchView(
-            button.dataset.view
-          )
-      );
-    }
-  );
-
-
 /* ============================================================
-   RESIZE
-============================================================ */
-
-window.addEventListener(
-  "resize",
-  () => {
-
-    clearTimeout(
-      window.__mkResize
-    );
-
-    window.__mkResize =
-      setTimeout(
-        drawChart,
-        90
-      );
-  }
-);
-
-
-/* ============================================================
-   AUTO REFRESH
+   STREAM AGE
 ============================================================ */
 
 setInterval(
   () => {
 
-    loadXau(false);
+    if(
+      LIVE_TIMESTAMP
+    ){
+
+      const seconds =
+        (
+          Date.now() -
+          LIVE_TIMESTAMP
+        ) /
+        1000;
+
+      $("streamAge")
+        .textContent =
+          seconds <
+          10
+            ? `${seconds.toFixed(1)}s`
+            : `${Math.round(seconds)}s`;
+
+      if(
+        seconds >
+        15
+      ){
+
+        setConnection(
+          "dead",
+          "STREAM STALE"
+        );
+      }
+
+    }else{
+
+      $("streamAge")
+        .textContent =
+          "REST";
+    }
 
   },
-  30000
+  500
+);
+
+
+/* ============================================================
+   DEEP REFRESH
+
+   Live price does NOT wait for these.
+============================================================ */
+
+setInterval(
+  () => {
+
+    loadXau(
+      false
+    )
+    .catch(
+      console.error
+    );
+
+  },
+  45000
 );
 
 
@@ -7700,10 +5666,30 @@ setInterval(
     loadChart(
       ACTIVE_TF,
       true
+    )
+    .catch(
+      console.error
     );
 
   },
-  30000
+  60000
+);
+
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    clearTimeout(
+      window.__resizeTimer
+    );
+
+    window.__resizeTimer =
+      setTimeout(
+        drawChart,
+        80
+      );
+  }
 );
 
 
@@ -7711,7 +5697,11 @@ setInterval(
    START
 ============================================================ */
 
-loadEverything(true);
+connectLive();
+
+loadEverything(
+  true
+);
 
 </script>
 
