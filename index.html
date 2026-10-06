@@ -1,123 +1,343 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 
 <meta
   name="viewport"
   content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no"
->
+/>
 
-<meta
-  name="theme-color"
-  content="#020406"
->
-
-<meta
-  name="apple-mobile-web-app-capable"
-  content="yes"
->
-
+<meta name="theme-color" content="#050608" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
 <meta
   name="apple-mobile-web-app-status-bar-style"
   content="black-translucent"
->
+/>
 
-<meta
-  name="apple-mobile-web-app-title"
-  content="MKAYFX GOLD"
->
-
-<title>
-  MKAYFX GOLD V8
-</title>
-
+<title>MKAYFX Deep Liquidity</title>
 
 <style>
-
 /* ============================================================
-   RESET
+   MKAYFX DEEP LIQUIDITY UI V9
+   FRONTEND ONLY
 ============================================================ */
 
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-:root{
-
-  --bg:#020406;
-  --bg2:#04080d;
-
-  --card:#071019;
-  --card2:#09141f;
-  --card3:#050b11;
-
-  --border:rgba(255,255,255,.075);
-  --border2:rgba(255,255,255,.045);
-
-  --text:#f7f8fa;
-  --muted:#7d8997;
-  --muted2:#56616d;
-
-  --green:#34e7a2;
-  --red:#ff637c;
-  --gold:#f5ca67;
-  --blue:#6d8dff;
-  --cyan:#48d7ff;
-  --orange:#ffad50;
-  --purple:#a883ff;
+html {
+  scroll-behavior: smooth;
 }
 
-html{
-  background:var(--bg);
+:root {
+  --bg: #050608;
+  --bg-soft: #090b10;
+
+  --panel: rgba(13, 15, 20, 0.78);
+  --panel-2: rgba(18, 21, 28, 0.82);
+
+  --panel-hover: rgba(25, 29, 38, 0.9);
+
+  --border: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  --text: #f5f7fa;
+  --muted: #7d8594;
+  --muted2: #555d6b;
+
+  --gold: #f5c451;
+  --gold-2: #ffdc79;
+  --gold-soft: rgba(245, 196, 81, 0.11);
+
+  --green: #35e39a;
+  --green-soft: rgba(53, 227, 154, 0.12);
+
+  --red: #ff5b72;
+  --red-soft: rgba(255, 91, 114, 0.12);
+
+  --blue: #56a8ff;
+  --blue-soft: rgba(86, 168, 255, 0.12);
+
+  --purple: #a378ff;
+
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+
+  --blur: blur(22px);
+
+  --shadow:
+    0 30px 100px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-body{
-
-  margin:0;
-
-  min-height:100vh;
-
-  color:var(--text);
-
-  background:
-
-    radial-gradient(
-      circle at 50% -10%,
-      rgba(41,85,135,.18),
-      transparent 30%
-    ),
-
-    radial-gradient(
-      circle at 100% 10%,
-      rgba(245,202,103,.05),
-      transparent 28%
-    ),
-
-    linear-gradient(
-      180deg,
-      #020406 0%,
-      #03070b 100%
-    );
+body {
+  margin: 0;
+  min-height: 100vh;
 
   font-family:
+    Inter,
     -apple-system,
     BlinkMacSystemFont,
     "SF Pro Display",
     "SF Pro Text",
-    Inter,
     Arial,
     sans-serif;
 
-  -webkit-font-smoothing:
-    antialiased;
+  color: var(--text);
+
+  background:
+    radial-gradient(
+      circle at 18% -10%,
+      rgba(245, 196, 81, 0.13),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 110% 25%,
+      rgba(86, 168, 255, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 60% 110%,
+      rgba(163, 120, 255, 0.08),
+      transparent 30%
+    ),
+    var(--bg);
+
+  overflow-x: hidden;
 }
 
-button{
-  font:inherit;
+body::before {
+  content: "";
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
+
+  opacity: 0.17;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px
+    );
+
+  background-size: 38px 38px;
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.9),
+      transparent 85%
+    );
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+.app {
+  width: min(1500px, 100%);
+  margin: auto;
+
+  padding:
+    calc(12px + env(safe-area-inset-top))
+    18px
+    calc(105px + env(safe-area-inset-bottom));
+}
+
+
+/* ============================================================
+   TOP BAR
+============================================================ */
+
+.topbar {
+  position: sticky;
+  top: 8px;
+
+  z-index: 90;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 14px;
+
+  padding: 12px 14px;
+
+  margin-bottom: 18px;
+
+  border: 1px solid var(--border);
+
+  background: rgba(8, 10, 14, 0.72);
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 16px 50px rgba(0, 0, 0, 0.38),
+    inset 0 1px rgba(255, 255, 255, 0.035);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brandMark {
+  width: 38px;
+  height: 38px;
+
+  border-radius: 12px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 11px;
+  font-weight: 950;
+
+  color: #050505;
+
+  background:
+    linear-gradient(
+      135deg,
+      var(--gold-2),
+      #b87917
+    );
+
+  box-shadow:
+    0 0 28px rgba(245, 196, 81, 0.2);
+}
+
+.brandText {
+  line-height: 1.05;
+}
+
+.brandName {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.brandSub {
+  font-size: 8px;
+
+  margin-top: 5px;
+
+  color: var(--muted);
+
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.systemStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 999px;
+
+  background: var(--green);
+
+  box-shadow:
+    0 0 0 5px rgba(53, 227, 154, 0.08),
+    0 0 18px rgba(53, 227, 154, 0.55);
+
+  animation: livePulse 1.8s infinite;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.38;
+  }
+}
+
+.statusText {
+  font-size: 9px;
+  font-weight: 850;
+
+  letter-spacing: 0.1em;
+
+  color: #c9d2db;
+}
+
+
+/* ============================================================
+   DESKTOP NAV
+============================================================ */
+
+.desktopNav {
+  display: flex;
+
+  gap: 5px;
+
+  margin-bottom: 18px;
+
+  overflow-x: auto;
+
+  scrollbar-width: none;
+}
+
+.desktopNav::-webkit-scrollbar {
+  display: none;
+}
+
+.navButton {
+  flex: 0 0 auto;
+
+  padding: 10px 15px;
+
+  border: 1px solid transparent;
+
+  border-radius: 12px;
+
+  color: var(--muted);
+
+  background: transparent;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.04em;
+
+  transition: 0.2s ease;
+}
+
+.navButton.active {
+  color: var(--text);
+
+  border-color: var(--border);
+
+  background: rgba(255, 255, 255, 0.045);
 }
 
 
@@ -125,323 +345,961 @@ button{
    PAGE
 ============================================================ */
 
-.app{
+.view {
+  display: none;
+}
 
-  width:100%;
+.view.active {
+  display: block;
 
-  max-width:980px;
+  animation: viewIn 0.28s ease;
+}
 
-  margin:auto;
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 
-  padding:
-
-    max(
-      19px,
-      env(safe-area-inset-top)
-    )
-
-    13px
-
-    calc(
-      90px +
-      env(safe-area-inset-bottom)
-    );
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 
 /* ============================================================
-   HEADER
+   COMMAND HERO
 ============================================================ */
 
-.header{
+.commandHero {
+  position: relative;
 
-  display:flex;
+  overflow: hidden;
 
-  justify-content:
-    space-between;
+  display: grid;
 
-  align-items:
-    flex-start;
+  grid-template-columns:
+    minmax(0, 1.45fr)
+    minmax(310px, 0.72fr);
 
-  gap:15px;
+  gap: 16px;
 
-  margin-bottom:20px;
-}
+  min-height: 390px;
 
-.logo{
+  border: 1px solid var(--border);
 
-  color:var(--gold);
-
-  font-size:10px;
-
-  font-weight:950;
-
-  letter-spacing:2.4px;
-}
-
-.title{
-
-  margin-top:5px;
-
-  font-size:
-    clamp(
-      31px,
-      9vw,
-      53px
-    );
-
-  font-weight:950;
-
-  line-height:.92;
-
-  letter-spacing:-2.4px;
-}
-
-.subtitle{
-
-  margin-top:9px;
-
-  color:var(--muted);
-
-  font-size:10px;
-
-  letter-spacing:.5px;
-}
-
-.live-pill{
-
-  white-space:nowrap;
-
-  padding:
-    8px
-    11px;
-
-  border:
-    1px solid
-    rgba(52,231,162,.25);
-
-  border-radius:99px;
+  border-radius: var(--radius-xl);
 
   background:
-    rgba(52,231,162,.07);
-
-  color:var(--green);
-
-  font-size:9px;
-
-  font-weight:950;
-
-  letter-spacing:1px;
-}
-
-
-/* ============================================================
-   CARD
-============================================================ */
-
-.card{
-
-  position:relative;
-
-  overflow:hidden;
-
-  margin-bottom:12px;
-
-  padding:18px;
-
-  border:
-    1px solid
-    var(--border);
-
-  border-radius:25px;
-
-  background:
-
+    radial-gradient(
+      circle at 65% 5%,
+      rgba(245, 196, 81, 0.12),
+      transparent 26%
+    ),
     linear-gradient(
       145deg,
-      rgba(10,22,34,.98),
-      rgba(5,11,17,.98)
+      rgba(16, 18, 24, 0.93),
+      rgba(8, 10, 14, 0.9)
+    );
+
+  box-shadow: var(--shadow);
+}
+
+.commandHero::after {
+  content: "";
+
+  position: absolute;
+
+  width: 400px;
+  height: 400px;
+
+  right: -200px;
+  top: -220px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(245, 196, 81, 0.1);
+
+  box-shadow:
+    0 0 0 50px rgba(245, 196, 81, 0.018),
+    0 0 0 100px rgba(245, 196, 81, 0.012);
+
+  pointer-events: none;
+}
+
+.heroMain {
+  position: relative;
+  z-index: 2;
+
+  padding: 30px;
+}
+
+.overline {
+  color: var(--gold);
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.17em;
+  text-transform: uppercase;
+}
+
+.heroSymbol {
+  margin-top: 18px;
+
+  color: #abb3c0;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+}
+
+.priceRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+
+  flex-wrap: wrap;
+
+  margin-top: 2px;
+}
+
+.bigPrice {
+  font-size: clamp(48px, 7vw, 82px);
+
+  line-height: 0.98;
+
+  font-weight: 750;
+
+  letter-spacing: -0.055em;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.priceChange {
+  padding-bottom: 9px;
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.up {
+  color: var(--green);
+}
+
+.down {
+  color: var(--red);
+}
+
+.neutral {
+  color: var(--muted);
+}
+
+.heroMeta {
+  display: flex;
+  gap: 8px;
+
+  flex-wrap: wrap;
+
+  margin-top: 23px;
+}
+
+.metaPill {
+  padding: 8px 10px;
+
+  border: 1px solid var(--border);
+
+  background: rgba(255, 255, 255, 0.025);
+
+  border-radius: 10px;
+
+  font-size: 9px;
+
+  color: #9aa3b2;
+
+  font-weight: 750;
+}
+
+.metaPill strong {
+  color: #e9edf2;
+}
+
+.heroActions {
+  display: flex;
+  gap: 9px;
+
+  margin-top: 26px;
+
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 13px 18px;
+
+  border-radius: 13px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #f9d26c,
+      #c38b24
+    );
+
+  color: #090909;
+
+  font-weight: 950;
+
+  font-size: 10px;
+
+  letter-spacing: 0.06em;
+
+  box-shadow:
+    0 10px 35px rgba(245, 196, 81, 0.14);
+}
+
+.primaryBtn:active {
+  transform: scale(0.98);
+}
+
+.secondaryBtn {
+  padding: 12px 15px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 13px;
+
+  background:
+    rgba(255, 255, 255, 0.035);
+
+  color: #d5dae1;
+
+  font-size: 10px;
+
+  font-weight: 800;
+}
+
+.heroSide {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 18px;
+}
+
+.focusCard {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 22px;
+
+  border: 1px solid rgba(245, 196, 81, 0.13);
+
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(245, 196, 81, 0.065),
+      rgba(255, 255, 255, 0.018)
+    );
+
+  backdrop-filter: blur(20px);
+}
+
+.focusLabel {
+  font-size: 9px;
+
+  color: #9d8551;
+
+  font-weight: 900;
+
+  letter-spacing: 0.14em;
+
+  text-transform: uppercase;
+}
+
+.focusName {
+  margin-top: 13px;
+
+  font-size: 22px;
+  font-weight: 780;
+
+  letter-spacing: -0.025em;
+}
+
+.focusLevel {
+  margin-top: 6px;
+
+  font-size: 28px;
+  font-weight: 850;
+
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreRingWrap {
+  margin-top: auto;
+
+  display: flex;
+  align-items: center;
+
+  gap: 17px;
+
+  padding-top: 24px;
+}
+
+.scoreRing {
+  --score: 0;
+
+  width: 86px;
+  height: 86px;
+
+  flex: 0 0 auto;
+
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  background:
+    conic-gradient(
+      var(--gold)
+      calc(var(--score) * 1%),
+      rgba(255, 255, 255, 0.06)
+      0
+    );
+
+  position: relative;
+}
+
+.scoreRing::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 7px;
+
+  border-radius: 50%;
+
+  background: #0d0f13;
+}
+
+.scoreRing strong {
+  position: relative;
+
+  font-size: 21px;
+}
+
+.scoreText strong {
+  display: block;
+
+  margin-bottom: 4px;
+
+  font-size: 12px;
+}
+
+.scoreText span {
+  color: var(--muted);
+
+  font-size: 9px;
+
+  line-height: 1.55;
+}
+
+
+/* ============================================================
+   BENTO GRID
+============================================================ */
+
+.bento {
+  display: grid;
+
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+
+  gap: 14px;
+
+  margin-top: 14px;
+}
+
+.card {
+  position: relative;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius-lg);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(17, 20, 26, 0.84),
+      rgba(9, 11, 15, 0.88)
     );
 
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 14px 45px rgba(0, 0, 0, 0.19);
 
-    inset
-    0
-    1px
-    0
-    rgba(255,255,255,.02),
-
-    0
-    14px
-    45px
-    rgba(0,0,0,.10);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
 }
 
-.card-glow::before{
+.card:hover {
+  border-color: var(--border-strong);
+}
 
-  content:"";
+.cardPad {
+  padding: 20px;
+}
 
-  position:absolute;
+.span4 {
+  grid-column: span 4;
+}
 
-  width:180px;
-  height:180px;
+.span5 {
+  grid-column: span 5;
+}
 
-  right:-80px;
-  top:-100px;
+.span6 {
+  grid-column: span 6;
+}
 
-  border-radius:50%;
+.span7 {
+  grid-column: span 7;
+}
+
+.span8 {
+  grid-column: span 8;
+}
+
+.span12 {
+  grid-column: span 12;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 18px;
+}
+
+.cardTitle {
+  font-size: 11px;
+  font-weight: 900;
+
+  letter-spacing: 0.055em;
+}
+
+.cardSubtitle {
+  margin-top: 4px;
+
+  font-size: 9px;
+
+  color: var(--muted);
+}
+
+.miniBadge {
+  padding: 6px 8px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 999px;
+
+  color: var(--muted);
+
+  font-size: 8px;
+  font-weight: 800;
+}
+
+
+/* ============================================================
+   METRICS
+============================================================ */
+
+.metricGrid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 9px;
+}
+
+.metric {
+  padding: 14px;
+
+  border-radius: 14px;
+
+  background: rgba(255, 255, 255, 0.025);
+
+  border: 1px solid rgba(255, 255, 255, 0.035);
+}
+
+.metricLabel {
+  color: var(--muted);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 0.07em;
+
+  text-transform: uppercase;
+}
+
+.metricValue {
+  margin-top: 6px;
+
+  font-size: 17px;
+  font-weight: 800;
+
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ============================================================
+   STRUCTURE MATRIX
+============================================================ */
+
+.structureGrid {
+  display: grid;
+
+  grid-template-columns: repeat(5, 1fr);
+
+  gap: 8px;
+}
+
+.structureCell {
+  position: relative;
+
+  overflow: hidden;
+
+  min-height: 94px;
+
+  padding: 13px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 15px;
+
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.structureTf {
+  font-size: 9px;
+  font-weight: 900;
+
+  color: var(--muted);
+
+  letter-spacing: 0.08em;
+}
+
+.structureBias {
+  margin-top: 17px;
+
+  font-size: 11px;
+
+  font-weight: 850;
+
+  overflow-wrap: anywhere;
+}
+
+.structureDot {
+  position: absolute;
+
+  width: 48px;
+  height: 48px;
+
+  border-radius: 50%;
+
+  bottom: -25px;
+  right: -18px;
+
+  filter: blur(14px);
+
+  opacity: 0.6;
+}
+
+.structureCell.bull .structureDot {
+  background: var(--green);
+}
+
+.structureCell.bear .structureDot {
+  background: var(--red);
+}
+
+.structureCell.mixed .structureDot {
+  background: var(--gold);
+}
+
+
+/* ============================================================
+   LIQUIDITY LADDER
+============================================================ */
+
+.ladder {
+  position: relative;
+
+  height: 430px;
+
+  border-radius: 18px;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, 0.035);
 
   background:
-    rgba(245,202,103,.06);
+    linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.015) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px
+    ),
+    #080a0e;
 
-  filter:
-    blur(5px);
-
-  pointer-events:none;
+  background-size:
+    80px 100%,
+    100% 55px;
 }
 
-.label{
+.ladderCenterLine {
+  position: absolute;
 
-  position:relative;
+  left: 0;
+  right: 0;
 
-  z-index:1;
+  height: 1px;
 
-  color:#8995a3;
+  background: rgba(245, 196, 81, 0.9);
 
-  font-size:9px;
-
-  font-weight:950;
-
-  letter-spacing:1.8px;
-
-  text-transform:uppercase;
+  box-shadow:
+    0 0 16px rgba(245, 196, 81, 0.36);
 }
 
+.currentPriceLabel {
+  position: absolute;
 
-/* ============================================================
-   HERO PRICE
-============================================================ */
+  right: 8px;
 
-.price{
+  transform: translateY(-50%);
 
-  position:relative;
+  padding: 5px 8px;
 
-  z-index:1;
+  border-radius: 7px;
 
-  margin-top:5px;
+  color: #111;
 
-  font-size:
-    clamp(
-      49px,
-      15vw,
-      79px
+  background: var(--gold);
+
+  font-size: 8px;
+
+  font-weight: 950;
+}
+
+.liquidityBand {
+  position: absolute;
+
+  left: 8px;
+
+  min-height: 20px;
+
+  border-radius: 7px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 9px;
+
+  font-size: 8px;
+
+  font-weight: 850;
+
+  white-space: nowrap;
+
+  transition: 0.2s;
+}
+
+.liquidityBand.buySide {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 91, 114, 0.08),
+      rgba(255, 91, 114, 0.32)
     );
 
-  line-height:1;
+  border-right: 2px solid var(--red);
 
-  font-weight:950;
-
-  letter-spacing:-4px;
+  color: #ffabb7;
 }
 
-.change{
+.liquidityBand.sellSide {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(53, 227, 154, 0.08),
+      rgba(53, 227, 154, 0.28)
+    );
 
-  position:relative;
+  border-right: 2px solid var(--green);
 
-  z-index:1;
+  color: #8ff4c9;
+}
 
-  margin-top:5px;
+.liquidityBand.generic {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(245, 196, 81, 0.08),
+      rgba(245, 196, 81, 0.27)
+    );
 
-  font-size:11px;
+  border-right: 2px solid var(--gold);
 
-  color:var(--muted);
+  color: var(--gold-2);
 }
 
 
 /* ============================================================
-   GRID
+   ZONE ROWS
 ============================================================ */
 
-.grid{
+.zoneList {
+  display: flex;
+  flex-direction: column;
 
-  display:grid;
+  gap: 7px;
+}
+
+.zoneRow {
+  display: grid;
 
   grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
+    minmax(90px, 1.4fr)
+    1fr
+    0.7fr
+    0.8fr;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 12px 13px;
+
+  border: 1px solid rgba(255, 255, 255, 0.045);
+
+  border-radius: 13px;
+
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.zoneRow:first-child {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(245, 196, 81, 0.08),
+      rgba(245, 196, 81, 0.02)
     );
 
-  gap:8px;
-
-  margin-top:14px;
+  border-color: rgba(245, 196, 81, 0.13);
 }
 
-.metric{
+.zoneName {
+  font-size: 10px;
+  font-weight: 800;
 
-  min-width:0;
-
-  padding:12px;
-
-  border:
-    1px solid
-    var(--border2);
-
-  border-radius:15px;
-
-  background:
-    rgba(255,255,255,.018);
+  overflow-wrap: anywhere;
 }
 
-.metric-label{
+.zoneValue {
+  text-align: right;
 
-  color:var(--muted);
+  font-size: 10px;
 
-  font-size:8px;
-
-  font-weight:900;
-
-  letter-spacing:.9px;
-
-  text-transform:uppercase;
+  font-variant-numeric: tabular-nums;
 }
 
-.metric-value{
+.zoneScore {
+  justify-self: end;
 
-  margin-top:5px;
+  min-width: 45px;
 
-  overflow:hidden;
+  padding: 5px 7px;
 
-  font-size:16px;
+  border-radius: 7px;
 
-  font-weight:950;
+  text-align: center;
 
-  text-overflow:ellipsis;
+  font-size: 9px;
+
+  font-weight: 950;
+
+  color: #050505;
+
+  background: var(--gold);
+}
+
+.zoneSide {
+  justify-self: end;
+
+  font-size: 8px;
+  font-weight: 900;
+
+  letter-spacing: 0.05em;
 }
 
 
 /* ============================================================
-   COLORS
+   SESSION CARDS
 ============================================================ */
 
-.bull{
-  color:var(--green);
+.sessionGrid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 8px;
 }
 
-.bear{
-  color:var(--red);
+.session {
+  padding: 15px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 15px;
+
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.neutral{
-  color:var(--gold);
+.sessionName {
+  font-size: 9px;
+  font-weight: 900;
+
+  color: #cdd3db;
 }
 
-.cyan{
-  color:var(--cyan);
+.sessionState {
+  margin-top: 5px;
+
+  color: var(--muted);
+
+  font-size: 8px;
 }
 
-.purple{
-  color:var(--purple);
+.sessionRange {
+  margin-top: 17px;
+
+  font-size: 10px;
+  line-height: 1.7;
+
+  color: #929baa;
+}
+
+
+/* ============================================================
+   OBJECT LIST
+============================================================ */
+
+.dataList {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.dataRow {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 11px 0;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+  font-size: 9px;
+}
+
+.dataRow:last-child {
+  border-bottom: 0;
+}
+
+.dataKey {
+  color: var(--muted);
+
+  overflow-wrap: anywhere;
+}
+
+.dataValue {
+  max-width: 60%;
+
+  text-align: right;
+
+  color: #dce1e8;
+
+  font-weight: 700;
+
+  overflow-wrap: anywhere;
+}
+
+
+/* ============================================================
+   FLOW
+============================================================ */
+
+.flowHero {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 9px;
+}
+
+.flowBox {
+  min-height: 110px;
+
+  padding: 16px;
+
+  border-radius: 17px;
+
+  background: rgba(255, 255, 255, 0.025);
+
+  border: 1px solid var(--border);
+}
+
+.flowBox span {
+  color: var(--muted);
+
+  font-size: 8px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.08em;
+}
+
+.flowBox strong {
+  display: block;
+
+  margin-top: 13px;
+
+  font-size: 19px;
+
+  overflow-wrap: anywhere;
 }
 
 
@@ -449,2541 +1307,2242 @@ button{
    CONSENSUS
 ============================================================ */
 
-.consensus{
+.consensusBar {
+  overflow: hidden;
 
-  margin-top:8px;
+  display: flex;
 
-  font-size:
-    clamp(
-      38px,
-      12vw,
-      60px
-    );
+  height: 14px;
 
-  font-weight:950;
+  border-radius: 999px;
 
-  letter-spacing:-2.4px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.consensus-sub{
-
-  color:var(--muted);
-
-  font-size:10px;
-
-  line-height:1.5;
+.consensusBull {
+  background: var(--green);
 }
 
-.score-track{
-
-  position:relative;
-
-  height:9px;
-
-  margin:
-    17px
-    0;
-
-  border-radius:99px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255,99,124,.85),
-      rgba(245,202,103,.8),
-      rgba(52,231,162,.85)
-    );
+.consensusBear {
+  background: var(--red);
 }
 
-.score-marker{
+.consensusNeutral {
+  background: var(--gold);
+}
 
-  position:absolute;
 
-  top:-4px;
+/* ============================================================
+   RAW SYSTEM
+============================================================ */
 
-  width:4px;
+pre {
+  margin: 0;
 
-  height:17px;
+  max-height: 550px;
 
-  border-radius:99px;
+  overflow: auto;
 
-  background:#fff;
+  padding: 18px;
 
-  transform:
-    translateX(-2px);
+  border-radius: 16px;
+
+  background: #06070a;
+
+  border: 1px solid var(--border);
+
+  color: #9ea6b2;
+
+  font-size: 9px;
+
+  line-height: 1.65;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
+/* ============================================================
+   ERROR / LOADING
+============================================================ */
+
+.loadingOverlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 150;
+
+  display: none;
+
+  place-items: center;
+
+  background: rgba(4, 5, 7, 0.72);
+
+  backdrop-filter: blur(15px);
+}
+
+.loadingOverlay.show {
+  display: grid;
+}
+
+.loaderPanel {
+  width: min(300px, calc(100% - 40px));
+
+  padding: 24px;
+
+  text-align: center;
+
+  border: 1px solid var(--border);
+
+  border-radius: 22px;
+
+  background: rgba(15, 17, 23, 0.92);
+}
+
+.loaderOrb {
+  width: 45px;
+  height: 45px;
+
+  margin: auto;
+
+  border-radius: 50%;
+
+  border: 2px solid rgba(245, 196, 81, 0.12);
+  border-top-color: var(--gold);
+
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loaderText {
+  margin-top: 14px;
+
+  color: #c9ced7;
+
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.errorBanner {
+  display: none;
+
+  margin-bottom: 13px;
+
+  padding: 12px 14px;
+
+  border: 1px solid rgba(255, 91, 114, 0.18);
+
+  border-radius: 14px;
+
+  background: var(--red-soft);
+
+  color: #ff95a5;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+.errorBanner.show {
+  display: block;
+}
+
+
+/* ============================================================
+   MOBILE NAV
+============================================================ */
+
+.mobileNav {
+  display: none;
+
+  position: fixed;
+
+  z-index: 100;
+
+  left: 10px;
+  right: 10px;
+
+  bottom: calc(
+    8px + env(safe-area-inset-bottom)
+  );
+
+  padding: 6px;
+
+  border: 1px solid var(--border);
+
+  border-radius: 19px;
+
+  background: rgba(9, 11, 15, 0.9);
+
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
 
   box-shadow:
-    0
-    0
-    8px
-    rgba(255,255,255,.6);
+    0 20px 50px rgba(0, 0, 0, 0.46);
+}
+
+.mobileNav button {
+  flex: 1;
+
+  min-width: 0;
+
+  padding: 9px 2px;
+
+  border-radius: 13px;
+
+  background: transparent;
+
+  color: #69717e;
+
+  font-size: 7px;
+
+  font-weight: 800;
+}
+
+.mobileNav button.active {
+  color: var(--gold);
+
+  background: rgba(245, 196, 81, 0.08);
+}
+
+.mobileNav b {
+  display: block;
+
+  margin-bottom: 3px;
+
+  font-size: 14px;
 }
 
 
 /* ============================================================
-   DOMINANT ZONE
+   RESPONSIVE
 ============================================================ */
 
-.zone-hero{
-
-  margin-top:11px;
-
-  padding:17px;
-
-  border:
-    1px solid
-    rgba(245,202,103,.25);
-
-  border-radius:21px;
-
-  background:
-
-    linear-gradient(
-      145deg,
-      rgba(245,202,103,.065),
-      rgba(255,255,255,.01)
-    );
-}
-
-.zone-name{
-
-  font-size:
-    clamp(
-      22px,
-      7vw,
-      32px
-    );
-
-  line-height:1.05;
-
-  font-weight:950;
-
-  letter-spacing:-1px;
-}
-
-.zone-range{
-
-  margin-top:5px;
-
-  color:var(--gold);
-
-  font-size:21px;
-
-  font-weight:950;
-}
-
-.zone-stage{
-
-  display:inline-flex;
-
-  margin-top:10px;
-
-  padding:
-    6px
-    9px;
-
-  border-radius:99px;
-
-  background:
-    rgba(255,255,255,.06);
-
-  color:#dfe5eb;
-
-  font-size:8px;
-
-  font-weight:950;
-
-  letter-spacing:.8px;
-}
-
-
-/* ============================================================
-   PROGRESS BARS
-============================================================ */
-
-.bar-wrap{
-
-  margin-top:13px;
-}
-
-.bar-head{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:10px;
-
-  margin-bottom:6px;
-
-  font-size:9px;
-}
-
-.bar-head span:first-child{
-
-  color:var(--muted);
-
-  font-weight:800;
-}
-
-.bar-head span:last-child{
-
-  font-weight:950;
-}
-
-.bar{
-
-  height:7px;
-
-  overflow:hidden;
-
-  border-radius:99px;
-
-  background:
-    rgba(255,255,255,.055);
-}
-
-.bar-fill{
-
-  height:100%;
-
-  width:0%;
-
-  border-radius:99px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(245,202,103,.55),
-      rgba(245,202,103,1)
-    );
-}
-
-.bar-green{
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(52,231,162,.45),
-      var(--green)
-    );
-}
-
-.bar-red{
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(255,99,124,.45),
-      var(--red)
-    );
-}
-
-.bar-blue{
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(72,215,255,.45),
-      var(--cyan)
-    );
-}
-
-.bar-purple{
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(168,131,255,.45),
-      var(--purple)
-    );
-}
-
-
-/* ============================================================
-   ROW
-============================================================ */
-
-.row{
-
-  display:grid;
-
-  grid-template-columns:
-    1fr auto;
-
-  align-items:center;
-
-  gap:13px;
-
-  padding:
-    12px
-    0;
-
-  border-bottom:
-    1px solid
-    rgba(255,255,255,.055);
-}
-
-.row:last-child{
-  border-bottom:0;
-}
-
-.row-title{
-
-  font-size:12px;
-
-  font-weight:850;
-}
-
-.row-sub{
-
-  margin-top:3px;
-
-  color:var(--muted);
-
-  font-size:9px;
-
-  line-height:1.45;
-}
-
-.row-value{
-
-  max-width:160px;
-
-  text-align:right;
-
-  font-size:12px;
-
-  font-weight:950;
-}
-
-
-/* ============================================================
-   ZONE CARDS
-============================================================ */
-
-.zone-card{
-
-  margin-top:9px;
-
-  padding:15px;
-
-  border:
-    1px solid
-    rgba(255,255,255,.06);
-
-  border-radius:18px;
-
-  background:
-    rgba(255,255,255,.015);
-}
-
-.zone-card.top{
-
-  border-color:
-    rgba(245,202,103,.28);
-
-  background:
-    rgba(245,202,103,.035);
-}
-
-.zone-card-head{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  gap:12px;
-}
-
-.zone-card-name{
-
-  font-size:13px;
-
-  font-weight:950;
-}
-
-.zone-score{
-
-  color:var(--gold);
-
-  font-size:21px;
-
-  font-weight:950;
-}
-
-.zone-meta{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-
-  gap:6px;
-
-  margin-top:10px;
-}
-
-.zone-mini{
-
-  min-width:0;
-
-  padding:8px;
-
-  border-radius:10px;
-
-  background:
-    rgba(0,0,0,.18);
-}
-
-.zone-mini span{
-
-  display:block;
-
-  color:var(--muted);
-
-  font-size:7px;
-
-  letter-spacing:.5px;
-
-  text-transform:uppercase;
-}
-
-.zone-mini strong{
-
-  display:block;
-
-  margin-top:4px;
-
-  overflow:hidden;
-
-  font-size:10px;
-
-  text-overflow:ellipsis;
-}
-
-
-/* ============================================================
-   COMPONENT CHIP
-============================================================ */
-
-.chips{
-
-  display:flex;
-
-  flex-wrap:wrap;
-
-  gap:5px;
-
-  margin-top:10px;
-}
-
-.chip{
-
-  padding:
-    5px
-    7px;
-
-  border:
-    1px solid
-    rgba(255,255,255,.06);
-
-  border-radius:99px;
-
-  color:#aab4bf;
-
-  background:
-    rgba(255,255,255,.03);
-
-  font-size:7px;
-
-  font-weight:850;
-}
-
-
-/* ============================================================
-   BADGES
-============================================================ */
-
-.badge{
-
-  display:inline-flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  padding:
-    5px
-    8px;
-
-  border-radius:99px;
-
-  font-size:8px;
-
-  font-weight:950;
-
-  letter-spacing:.5px;
-
-  background:
-    rgba(255,255,255,.06);
-}
-
-.badge.good{
-
-  color:var(--green);
-
-  background:
-    rgba(52,231,162,.08);
-}
-
-.badge.warn{
-
-  color:var(--gold);
-
-  background:
-    rgba(245,202,103,.08);
-}
-
-.badge.bad{
-
-  color:var(--red);
-
-  background:
-    rgba(255,99,124,.08);
-}
-
-.badge.blue{
-
-  color:var(--cyan);
-
-  background:
-    rgba(72,215,255,.08);
-}
-
-.badge.purple{
-
-  color:var(--purple);
-
-  background:
-    rgba(168,131,255,.08);
-}
-
-
-/* ============================================================
-   PATH
-============================================================ */
-
-.path-item{
-
-  position:relative;
-
-  padding:
-    13px
-    0
-    13px
-    24px;
-
-  border-bottom:
-    1px solid
-    rgba(255,255,255,.05);
-}
-
-.path-item:last-child{
-  border-bottom:0;
-}
-
-.path-dot{
-
-  position:absolute;
-
-  left:0;
-
-  top:17px;
-
-  width:9px;
-  height:9px;
-
-  border-radius:50%;
-
-  background:var(--gold);
-
-  box-shadow:
-    0
-    0
-    9px
-    rgba(245,202,103,.35);
-}
-
-.path-line{
-
-  position:absolute;
-
-  left:4px;
-
-  top:27px;
-
-  bottom:-4px;
-
-  width:1px;
-
-  background:
-    rgba(255,255,255,.08);
-}
-
-.path-item:last-child
-.path-line{
-  display:none;
-}
-
-
-/* ============================================================
-   HISTORICAL
-============================================================ */
-
-.history-card{
-
-  margin-top:9px;
-
-  padding:14px;
-
-  border:
-    1px solid
-    rgba(255,255,255,.06);
-
-  border-radius:17px;
-
-  background:
-    rgba(255,255,255,.014);
-}
-
-.history-header{
-
-  display:flex;
-
-  align-items:flex-start;
-
-  justify-content:
-    space-between;
-
-  gap:12px;
-}
-
-.history-name{
-
-  color:#9da8b4;
-
-  font-size:9px;
-
-  font-weight:950;
-
-  letter-spacing:1px;
-}
-
-.history-rate{
-
-  margin-top:4px;
-
-  font-size:25px;
-
-  font-weight:950;
-}
-
-
-/* ============================================================
-   BUTTON
-============================================================ */
-
-.refresh{
-
-  width:100%;
-
-  margin-top:2px;
-
-  padding:16px;
-
-  border:0;
-
-  border-radius:17px;
-
-  background:
-    #f5f6f8;
-
-  color:#030506;
-
-  font-size:12px;
-
-  font-weight:950;
-
-  cursor:pointer;
-}
-
-
-/* ============================================================
-   FOOTER
-============================================================ */
-
-.footer{
-
-  padding:
-    22px
-    8px;
-
-  color:var(--muted2);
-
-  text-align:center;
-
-  font-size:8px;
-
-  line-height:1.7;
-}
-
-.error{
-  color:var(--red);
-}
-
-
-/* ============================================================
-   DESKTOP
-============================================================ */
-
-@media(
-  min-width:700px
-){
-
-  .grid{
-
+@media (max-width: 980px) {
+
+  .commandHero {
+    grid-template-columns: 1fr;
+  }
+
+  .heroSide {
+    padding-top: 0;
+  }
+
+  .span4,
+  .span5,
+  .span6,
+  .span7,
+  .span8 {
+    grid-column: span 12;
+  }
+
+  .structureGrid {
     grid-template-columns:
-      repeat(
-        4,
-        minmax(0,1fr)
-      );
-  }
+      repeat(5, minmax(110px, 1fr));
 
-  .zone-meta{
-
-    grid-template-columns:
-      repeat(
-        6,
-        minmax(0,1fr)
-      );
-  }
-
-  .app{
-    padding-top:28px;
+    overflow-x: auto;
   }
 }
 
+@media (max-width: 680px) {
+
+  .app {
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+
+  .desktopNav {
+    display: none;
+  }
+
+  .mobileNav {
+    display: flex;
+  }
+
+  .topbar {
+    border-radius: 15px;
+  }
+
+  .brandSub {
+    display: none;
+  }
+
+  .commandHero {
+    min-height: auto;
+
+    border-radius: 22px;
+  }
+
+  .heroMain {
+    padding: 22px 19px 19px;
+  }
+
+  .heroSide {
+    padding: 0 10px 10px;
+  }
+
+  .focusCard {
+    padding: 17px;
+  }
+
+  .bigPrice {
+    font-size: 48px;
+  }
+
+  .metricGrid {
+    grid-template-columns:
+      repeat(2, 1fr);
+  }
+
+  .metric:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+
+  .sessionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .flowHero {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .zoneRow {
+    grid-template-columns:
+      minmax(80px, 1.2fr)
+      1fr
+      0.6fr;
+  }
+
+  .zoneSide {
+    display: none;
+  }
+
+  .ladder {
+    height: 390px;
+  }
+
+  .cardPad {
+    padding: 16px;
+  }
+}
 </style>
-
 </head>
 
 
 <body>
 
+<div
+  class="loadingOverlay"
+  id="loadingOverlay"
+>
+  <div class="loaderPanel">
+    <div class="loaderOrb"></div>
+    <div class="loaderText">
+      DEEP LIQUIDITY SCAN
+    </div>
+  </div>
+</div>
+
+
 <div class="app">
 
+  <!-- ======================================================
+       TOP
+  ======================================================= -->
 
-<!-- =========================================================
-     HEADER
-========================================================= -->
+  <header class="topbar">
 
-<div class="header">
+    <div class="brand">
 
-  <div>
-
-    <div class="logo">
-      MKAYFX · V8
-    </div>
-
-    <div class="title">
-      DEEP GOLD<br>
-      LIQUIDITY
-    </div>
-
-    <div class="subtitle">
-      XAU/USD · ZONES · RAIDS · INTERMARKET · MACRO
-    </div>
-
-  </div>
-
-
-  <div
-    id="status"
-    class="live-pill"
-  >
-    CONNECTING
-  </div>
-
-</div>
-
-
-
-<!-- =========================================================
-     MARKET HERO
-========================================================= -->
-
-<div class="card card-glow">
-
-  <div class="label">
-    XAU / USD LIVE
-  </div>
-
-  <div
-    id="price"
-    class="price"
-  >
-    —
-  </div>
-
-  <div
-    id="change"
-    class="change"
-  >
-    —
-  </div>
-
-
-  <div class="grid">
-
-    <div class="metric">
-
-      <div class="metric-label">
-        ATR M5
+      <div class="brandMark">
+        MK
       </div>
 
-      <div
-        id="atrM5"
-        class="metric-value"
-      >
-        —
-      </div>
+      <div class="brandText">
 
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        RSI M5
-      </div>
-
-      <div
-        id="rsiM5"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        VWAP
-      </div>
-
-      <div
-        id="vwap"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Regime
-      </div>
-
-      <div
-        id="regime"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-
-<!-- =========================================================
-     CONSENSUS
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    GOLD CONSENSUS
-  </div>
-
-  <div
-    id="consensus"
-    class="consensus neutral"
-  >
-    —
-  </div>
-
-  <div
-    id="consensusSub"
-    class="consensus-sub"
-  >
-    —
-  </div>
-
-
-  <div class="score-track">
-
-    <div
-      id="scoreMarker"
-      class="score-marker"
-      style="left:50%"
-    ></div>
-
-  </div>
-
-
-  <div class="grid">
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Confidence
-      </div>
-
-      <div
-        id="confidence"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Technical
-      </div>
-
-      <div
-        id="technical"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Liquidity Draw
-      </div>
-
-      <div
-        id="liquidityDraw"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-
-    <div class="metric">
-
-      <div class="metric-label">
-        Intermarket
-      </div>
-
-      <div
-        id="intermarketScore"
-        class="metric-value"
-      >
-        —
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-
-<!-- =========================================================
-     DOMINANT LIQUIDITY ZONE
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    DOMINANT LIQUIDITY ZONE
-  </div>
-
-  <div
-    id="dominantZone"
-    class="zone-hero"
-  >
-    Loading…
-  </div>
-
-</div>
-
-
-
-<!-- =========================================================
-     LIQUIDITY PATH
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    MOST LIKELY LIQUIDITY PATH
-  </div>
-
-  <div
-    id="liquidityPath"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     DEEP ZONE MAP
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    DEEP LIQUIDITY HEATMAP
-  </div>
-
-  <div
-    id="zoneList"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     SWEEP QUALITY
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    RAID / REJECTION QUALITY
-  </div>
-
-  <div
-    id="sweepQuality"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     DEALING RANGE
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    H1 DEALING RANGE
-  </div>
-
-  <div
-    id="dealingRange"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     STRUCTURE
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    MULTI-TIMEFRAME STRUCTURE
-  </div>
-
-  <div
-    id="structure"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     SESSIONS
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    SESSION LIQUIDITY
-  </div>
-
-  <div
-    id="sessions"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     FLOW
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    FLOW / DELTA INTELLIGENCE
-  </div>
-
-  <div
-    id="flowHeading"
-    style="
-      margin-top:8px;
-      font-size:24px;
-      font-weight:950;
-    "
-  >
-    —
-  </div>
-
-  <div
-    id="flow"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     DISPLACEMENT
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    DISPLACEMENT
-  </div>
-
-  <div
-    id="displacement"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     INTERMARKET
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    API #4 · INTERMARKET GOLD PRESSURE
-  </div>
-
-  <div
-    id="intermarketHeading"
-    style="
-      margin-top:8px;
-      font-size:26px;
-      font-weight:950;
-    "
-  >
-    —
-  </div>
-
-  <div
-    id="intermarket"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     MACRO
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    FRED MACRO PRESSURE
-  </div>
-
-  <div
-    id="macroHeading"
-    style="
-      margin-top:8px;
-      font-size:26px;
-      font-weight:950;
-    "
-  >
-    —
-  </div>
-
-  <div
-    id="macro"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     HISTORICAL
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    HISTORICAL LIQUIDITY BEHAVIOUR
-  </div>
-
-  <div
-    style="
-      color:var(--muted);
-      font-size:9px;
-      line-height:1.5;
-      margin-top:7px;
-    "
-  >
-    Historical sweep and return statistics use API #3.
-    Current zone likelihood scores are model heuristics,
-    not guaranteed probabilities.
-  </div>
-
-  <div
-    id="historical"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     FVG
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    M15 IMBALANCE / FVG
-  </div>
-
-  <div
-    id="fvg"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     DATA QUALITY
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    DATA QUALITY
-  </div>
-
-  <div
-    id="quality"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     SYSTEM HEALTH
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    ENGINE HEALTH
-  </div>
-
-  <div
-    id="health"
-  ></div>
-
-</div>
-
-
-
-<!-- =========================================================
-     REASONS
-========================================================= -->
-
-<div class="card">
-
-  <div class="label">
-    MODEL REASONS
-  </div>
-
-  <div
-    id="reasons"
-  ></div>
-
-</div>
-
-
-
-<button
-  id="refresh"
-  class="refresh"
->
-  FORCE NEW ANALYSIS
-</button>
-
-
-<div
-  id="footer"
-  class="footer"
->
-  Connecting to MKAYFX V8…
-</div>
-
-
-</div>
-
-
-<script>
-
-/* ============================================================
-   CONFIG
-============================================================ */
-
-const API =
-  "/api/xau";
-
-
-/* ============================================================
-   HELPERS
-============================================================ */
-
-function el(
-  id
-){
-
-  return (
-    document.getElementById(
-      id
-    )
-  );
-}
-
-
-function num(
-  value,
-  decimals = 2
-){
-
-  const n =
-    Number(value);
-
-
-  if (
-    !Number.isFinite(n)
-  ){
-
-    return "—";
-  }
-
-
-  return (
-    n.toLocaleString(
-      undefined,
-      {
-        minimumFractionDigits:
-          decimals,
-
-        maximumFractionDigits:
-          decimals
-      }
-    )
-  );
-}
-
-
-function signed(
-  value,
-  decimals = 1
-){
-
-  const n =
-    Number(value);
-
-
-  if (
-    !Number.isFinite(n)
-  ){
-
-    return "—";
-  }
-
-
-  return (
-    (
-      n > 0
-        ? "+"
-        : ""
-    ) +
-    num(
-      n,
-      decimals
-    )
-  );
-}
-
-
-function biasClass(
-  value
-){
-
-  const text =
-    String(
-      value ||
-      ""
-    ).toUpperCase();
-
-
-  if (
-    text.includes(
-      "BULL"
-    ) ||
-    text.includes(
-      "BUYING"
-    ) ||
-    text.includes(
-      "UP "
-    )
-  ){
-
-    return "bull";
-  }
-
-
-  if (
-    text.includes(
-      "BEAR"
-    ) ||
-    text.includes(
-      "SELLING"
-    ) ||
-    text.includes(
-      "DOWN "
-    )
-  ){
-
-    return "bear";
-  }
-
-
-  return "neutral";
-}
-
-
-function row(
-  title,
-  value,
-  sub = ""
-){
-
-  return `
-
-    <div class="row">
-
-      <div>
-
-        <div class="row-title">
-          ${title}
+        <div class="brandName">
+          MKAYFX
         </div>
 
-        ${
-          sub
-            ? `
-              <div class="row-sub">
-                ${sub}
-              </div>
-            `
-            : ""
-        }
+        <div class="brandSub">
+          Deep Liquidity Intelligence
+        </div>
 
-      </div>
-
-      <div class="row-value">
-        ${value}
       </div>
 
     </div>
-  `;
-}
 
 
-function badge(
-  text,
-  type = ""
-){
+    <div class="systemStatus">
 
-  return `
-    <span
-      class="badge ${type}"
+      <div
+        class="liveDot"
+        id="healthDot"
+      ></div>
+
+      <div
+        class="statusText"
+        id="healthText"
+      >
+        CONNECTING
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <div
+    class="errorBanner"
+    id="errorBanner"
+  ></div>
+
+
+  <!-- ======================================================
+       DESKTOP NAV
+  ======================================================= -->
+
+  <nav class="desktopNav">
+
+    <button
+      class="navButton active"
+      data-view="command"
     >
-      ${text}
-    </span>
-  `;
-}
-
-
-function progress(
-  title,
-  value,
-  className = ""
-){
-
-  const safe =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Number(value) ||
-        0
-      )
-    );
-
-
-  return `
-
-    <div class="bar-wrap">
-
-      <div class="bar-head">
-
-        <span>
-          ${title}
-        </span>
-
-        <span>
-          ${num(
-            safe,
-            1
-          )}
-        </span>
-
-      </div>
-
-      <div class="bar">
-
-        <div
-          class="bar-fill ${className}"
-          style="width:${safe}%"
-        ></div>
-
-      </div>
-
-    </div>
-  `;
-}
-
-
-/* ============================================================
-   MARKET
-============================================================ */
-
-function renderMarket(
-  data
-){
-
-  const market =
-    data.market;
-
-
-  el("price")
-    .textContent =
-      "$" +
-      num(
-        market.price,
-        2
-      );
-
-
-  el("change")
-    .textContent =
-      `${signed(
-        market.change,
-        2
-      )} · ${signed(
-        market.percentChange,
-        3
-      )}%`;
-
-
-  el("atrM5")
-    .textContent =
-      num(
-        market.atr
-          ?.M5,
-        2
-      );
-
-
-  el("rsiM5")
-    .textContent =
-      num(
-        market.rsi
-          ?.M5,
-        1
-      );
-
-
-  el("vwap")
-    .innerHTML =
-
-      `${num(
-        market.vwap,
-        2
-      )}
-
-      <div class="row-sub">
-        ${market.vwapPosition}
-      </div>`;
-
-
-  el("regime")
-    .innerHTML =
-
-      `${market.regime
-          ?.regime ||
-        "—"}
-
-      <div class="row-sub">
-        ${market.regime
-            ?.volatility ||
-          "—"}
-      </div>`;
-}
-
-
-/* ============================================================
-   CONSENSUS
-============================================================ */
-
-function renderConsensus(
-  data
-){
-
-  const c =
-    data.consensus;
-
-
-  const heading =
-    el(
-      "consensus"
-    );
-
-
-  heading.textContent =
-    c.direction;
-
-
-  heading.className =
-    "consensus " +
-    biasClass(
-      c.direction
-    );
-
-
-  el("consensusSub")
-    .innerHTML =
-
-      `MODEL SCORE
-      <strong>
-        ${signed(
-          c.score,
-          1
-        )}
-      </strong>
-
-      ·
-
-      ${c.liquidityDrawDirection}`;
-
-
-  el("confidence")
-    .textContent =
-      num(
-        c.confidence,
-        1
-      ) + "%";
-
-
-  el("technical")
-    .textContent =
-      signed(
-        c.components
-          ?.technical,
-        1
-      );
-
-
-  el("liquidityDraw")
-    .textContent =
-      signed(
-        c.components
-          ?.liquidityDraw,
-        1
-      );
-
-
-  el("intermarketScore")
-    .textContent =
-      signed(
-        c.components
-          ?.intermarket,
-        1
-      );
-
-
-  const marker =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        (
-          Number(
-            c.score
-          ) +
-          100
-        ) /
-        2
-      )
-    );
-
-
-  el("scoreMarker")
-    .style.left =
-      marker +
-      "%";
-}
-
-
-/* ============================================================
-   DOMINANT ZONE
-============================================================ */
-
-function renderDominantZone(
-  data
-){
-
-  const zone =
-    data.deepLiquidity
-      ?.dominantZone;
-
-
-  if (!zone){
-
-    el("dominantZone")
-      .innerHTML =
-        "No active liquidity zone.";
-
-    return;
-  }
-
-
-  const sideClass =
-    zone.side ===
-    "BUY_SIDE"
-      ? "bull"
-      : "bear";
-
-
-  const lifecycle =
-    zone.lifecycle
-      ?.stage ||
-    "TRACKING";
-
-
-  el("dominantZone")
-    .innerHTML = `
-
-      <div
-        class="
-          zone-name
-          ${sideClass}
-        "
-      >
-        ${zone.name}
-      </div>
-
-
-      <div class="zone-range">
-        ${num(
-          zone.low,
-          2
-        )}
-        –
-        ${num(
-          zone.high,
-          2
-        )}
-      </div>
-
-
-      <div class="zone-stage">
-        ${lifecycle}
-      </div>
-
-
-      <div
-        style="
-          margin-top:10px;
-          color:var(--muted);
-          font-size:10px;
-          line-height:1.6;
-        "
-      >
-
-        ${zone.side}
-
-        ·
-
-        ${zone.liquidityClass}
-
-        ·
-
-        ${num(
-          zone.distanceATR,
-          2
-        )} ATR away
-
-        <br>
-
-        Components:
-        <strong>
-          ${zone.componentCount}
-        </strong>
-
-        ·
-
-        Freshness:
-        <strong>
-          ${zone.freshnessState}
-        </strong>
-
-      </div>
-
-
-      ${progress(
-        "LIQUIDITY HEAT",
-        zone.heat
-      )}
-
-
-      ${progress(
-        "RAID LIKELIHOOD",
-        zone.raidLikelihood,
-        "bar-blue"
-      )}
-
-
-      ${progress(
-        "REVERSAL LIKELIHOOD",
-        zone.reversalLikelihood,
-        "bar-green"
-      )}
-
-
-      ${progress(
-        "CONTINUATION LIKELIHOOD",
-        zone.continuationLikelihood,
-        "bar-red"
-      )}
-
-
-      <div class="grid">
-
-        <div class="metric">
-
-          <div class="metric-label">
-            Density
+      COMMAND
+    </button>
+
+    <button
+      class="navButton"
+      data-view="liquidity"
+    >
+      LIQUIDITY
+    </button>
+
+    <button
+      class="navButton"
+      data-view="structure"
+    >
+      STRUCTURE
+    </button>
+
+    <button
+      class="navButton"
+      data-view="flow"
+    >
+      FLOW
+    </button>
+
+    <button
+      class="navButton"
+      data-view="macro"
+    >
+      MACRO
+    </button>
+
+    <button
+      class="navButton"
+      data-view="system"
+    >
+      SYSTEM
+    </button>
+
+  </nav>
+
+
+  <!-- ======================================================
+       COMMAND
+  ======================================================= -->
+
+  <section
+    class="view active"
+    id="command"
+  >
+
+    <div class="commandHero">
+
+      <div class="heroMain">
+
+        <div class="overline">
+          XAU/USD · DEEP LIQUIDITY OS
+        </div>
+
+
+        <div class="heroSymbol">
+          GOLD / US DOLLAR
+        </div>
+
+
+        <div class="priceRow">
+
+          <div
+            class="bigPrice"
+            id="price"
+          >
+            —
           </div>
 
-          <div class="metric-value">
-            ${num(
-              zone.density,
-              1
-            )}
+          <div
+            class="priceChange neutral"
+            id="priceChange"
+          >
+            —
           </div>
 
         </div>
 
 
-        <div class="metric">
+        <div class="heroMeta">
 
-          <div class="metric-label">
-            Freshness
+          <div class="metaPill">
+            REGIME
+            <strong id="regime">
+              —
+            </strong>
           </div>
 
-          <div class="metric-value">
-            ${num(
-              zone.freshness,
-              1
-            )}
+          <div class="metaPill">
+            VWAP
+            <strong id="vwap">
+              —
+            </strong>
+          </div>
+
+          <div class="metaPill">
+            UPDATED
+            <strong id="updateTime">
+              —
+            </strong>
+          </div>
+
+          <div class="metaPill">
+            ENGINE
+            <strong id="engineName">
+              V8
+            </strong>
           </div>
 
         </div>
 
 
-        <div class="metric">
+        <div class="heroActions">
 
-          <div class="metric-label">
-            Approach
-          </div>
+          <button
+            class="primaryBtn"
+            onclick="loadData(true)"
+          >
+            RUN DEEP ANALYSIS
+          </button>
 
-          <div class="metric-value">
-            ${zone.approach
-                ?.label ||
-              "—"}
-          </div>
-
-        </div>
-
-
-        <div class="metric">
-
-          <div class="metric-label">
-            FVG overlap
-          </div>
-
-          <div class="metric-value">
-            ${zone.fvgOverlap
-                ? "YES"
-                : "NO"}
-          </div>
+          <button
+            class="secondaryBtn"
+            onclick="switchView('liquidity')"
+          >
+            OPEN LIQUIDITY MAP
+          </button>
 
         </div>
 
       </div>
 
 
-      <div
-        style="
-          margin-top:13px;
-          color:var(--muted);
-          font-size:9px;
-          line-height:1.6;
-        "
-      >
+      <div class="heroSide">
 
-        Estimated stops:
+        <div class="focusCard">
 
-        <strong
-          style="color:var(--text)"
-        >
-          ${num(
-            zone.estimatedStopPool
-              ?.low,
-            2
-          )}
-          –
-          ${num(
-            zone.estimatedStopPool
-              ?.high,
-            2
-          )}
-        </strong>
+          <div class="focusLabel">
+            Highest Ranked Liquidity
+          </div>
 
-        <br>
+          <div
+            class="focusName"
+            id="focusName"
+          >
+            Scanning…
+          </div>
 
-        Projected raid zone:
-
-        <strong
-          style="color:var(--text)"
-        >
-          ${num(
-            zone.projectedRaidZone
-              ?.low,
-            2
-          )}
-          –
-          ${num(
-            zone.projectedRaidZone
-              ?.high,
-            2
-          )}
-        </strong>
-
-      </div>
+          <div
+            class="focusLevel"
+            id="focusLevel"
+          >
+            —
+          </div>
 
 
-      <div class="chips">
+          <div class="scoreRingWrap">
 
-        ${
-          (
-            zone.componentNames ||
-            []
-          )
-          .map(
-            name =>
-              `<span class="chip">
-                ${name}
-              </span>`
-          )
-          .join("")
-        }
+            <div
+              class="scoreRing"
+              id="raidRing"
+            >
+              <strong id="raidScore">
+                0
+              </strong>
+            </div>
 
-      </div>
-    `;
-}
+            <div class="scoreText">
 
+              <strong>
+                RAID SCORE
+              </strong>
 
-/* ============================================================
-   LIQUIDITY PATH
-============================================================ */
-
-function renderLiquidityPath(
-  data
-){
-
-  const path =
-    data.deepLiquidity
-      ?.path ||
-    [];
-
-
-  if (!path.length){
-
-    el("liquidityPath")
-      .innerHTML =
-        row(
-          "No liquidity path",
-          "—"
-        );
-
-    return;
-  }
-
-
-  el("liquidityPath")
-    .innerHTML =
-
-      path
-        .slice(
-          0,
-          6
-        )
-        .map(
-          item => `
-
-            <div class="path-item">
-
-              <div class="path-dot"></div>
-
-              <div class="path-line"></div>
-
-              <div
-                style="
-                  display:flex;
-                  justify-content:space-between;
-                  gap:12px;
-                "
-              >
-
-                <div>
-
-                  <div class="row-title">
-                    #${item.rank}
-                    ${item.name}
-                  </div>
-
-                  <div class="row-sub">
-
-                    ${item.side}
-
-                    ·
-
-                    ${num(
-                      item.range
-                        ?.low,
-                      2
-                    )}
-
-                    –
-
-                    ${num(
-                      item.range
-                        ?.high,
-                      2
-                    )}
-
-                    ·
-
-                    ${item.stage}
-
-                  </div>
-
-                </div>
-
-
-                <div
-                  style="
-                    text-align:right;
-                  "
-                >
-
-                  <div
-                    style="
-                      color:var(--gold);
-                      font-size:17px;
-                      font-weight:950;
-                    "
-                  >
-                    ${num(
-                      item.nextTargetScore,
-                      1
-                    )}
-                  </div>
-
-                  <div class="row-sub">
-                    target score
-                  </div>
-
-                </div>
-
-              </div>
+              <span id="focusDescription">
+                Ranking institutional liquidity pools.
+              </span>
 
             </div>
-          `
-        )
-        .join("");
-}
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
 
 
-/* ============================================================
-   ZONE LIST
-============================================================ */
+    <div class="bento">
 
-function renderZones(
-  data
-){
+      <!-- MARKET INTELLIGENCE -->
 
-  const zones =
-    data.deepLiquidity
-      ?.zones ||
-    [];
+      <article class="card span5">
 
+        <div class="cardPad">
 
-  const root =
-    el(
-      "zoneList"
-    );
+          <div class="cardHeader">
 
+            <div>
+              <div class="cardTitle">
+                MARKET INTELLIGENCE
+              </div>
 
-  root.innerHTML =
-    "";
+              <div class="cardSubtitle">
+                Volatility · Momentum · Value
+              </div>
+            </div>
 
+            <div class="miniBadge">
+              LIVE
+            </div>
 
-  zones
-    .slice(
-      0,
-      12
-    )
-    .forEach(
-      (
-        zone,
-        index
-      ) => {
-
-        const div =
-          document.createElement(
-            "div"
-          );
+          </div>
 
 
-        div.className =
-          "zone-card" +
-          (
-            index === 0
-              ? " top"
-              : ""
-          );
+          <div
+            class="metricGrid"
+            id="marketMetrics"
+          ></div>
+
+        </div>
+
+      </article>
 
 
-        const sideClass =
-          zone.side ===
-          "BUY_SIDE"
-            ? "bull"
-            : "bear";
+      <!-- STRUCTURE -->
+
+      <article class="card span7">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+              <div class="cardTitle">
+                MULTI-TIMEFRAME STRUCTURE
+              </div>
+
+              <div class="cardSubtitle">
+                M1 → H4 directional architecture
+              </div>
+            </div>
+
+            <div class="miniBadge">
+              MTF
+            </div>
+
+          </div>
 
 
-        div.innerHTML = `
+          <div
+            class="structureGrid"
+            id="commandStructure"
+          ></div>
 
-          <div class="zone-card-head">
+        </div>
+
+      </article>
+
+
+      <!-- LIQUIDITY MAP -->
+
+      <article class="card span8">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+              <div class="cardTitle">
+                LIVE LIQUIDITY HEAT MAP
+              </div>
+
+              <div class="cardSubtitle">
+                Current price vs ranked liquidity
+              </div>
+            </div>
+
+            <div class="miniBadge">
+              DEEP SCAN
+            </div>
+
+          </div>
+
+
+          <div
+            class="ladder"
+            id="commandLadder"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <!-- FLOW -->
+
+      <article class="card span4">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+              <div class="cardTitle">
+                ORDER FLOW
+              </div>
+
+              <div class="cardSubtitle">
+                Delta · CVD · absorption
+              </div>
+            </div>
+
+          </div>
+
+
+          <div
+            class="flowHero"
+            id="commandFlow"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <!-- SESSIONS -->
+
+      <article class="card span7">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+              <div class="cardTitle">
+                SESSION INTELLIGENCE
+              </div>
+
+              <div class="cardSubtitle">
+                Asia · London · New York
+              </div>
+            </div>
+
+          </div>
+
+
+          <div
+            class="sessionGrid"
+            id="sessionGrid"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <!-- CONSENSUS -->
+
+      <article class="card span5">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+              <div class="cardTitle">
+                ENGINE CONSENSUS
+              </div>
+
+              <div class="cardSubtitle">
+                Combined intelligence state
+              </div>
+            </div>
+
+          </div>
+
+
+          <div
+            class="dataList"
+            id="consensusList"
+          ></div>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- ======================================================
+       LIQUIDITY
+  ======================================================= -->
+
+  <section
+    class="view"
+    id="liquidity"
+  >
+
+    <div class="bento">
+
+      <article class="card span8">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
 
             <div>
 
-              <div
-                class="
-                  zone-card-name
-                  ${sideClass}
-                "
-              >
-                ${zone.name}
+              <div class="cardTitle">
+                DEEP LIQUIDITY LADDER
               </div>
 
-              <div class="row-sub">
-
-                ${num(
-                  zone.low,
-                  2
-                )}
-
-                –
-
-                ${num(
-                  zone.high,
-                  2
-                )}
-
-                ·
-
-                ${zone.liquidityClass}
-
-                ·
-
-                ${zone.lifecycle
-                    ?.stage ||
-                  "TRACKING"}
-
+              <div class="cardSubtitle">
+                Institutional targets ranked around spot
               </div>
 
             </div>
 
-
-            <div class="zone-score">
-              ${num(
-                zone.heat,
-                0
-              )}
+            <div class="miniBadge">
+              V8 ENGINE
             </div>
 
           </div>
 
+          <div
+            class="ladder"
+            id="fullLadder"
+          ></div>
 
-          <div class="zone-meta">
+        </div>
 
-            <div class="zone-mini">
-
-              <span>
-                RAID
-              </span>
-
-              <strong>
-                ${num(
-                  zone.raidLikelihood,
-                  1
-                )}
-              </strong>
-
-            </div>
+      </article>
 
 
-            <div class="zone-mini">
+      <article class="card span4">
 
-              <span>
-                DENSITY
-              </span>
+        <div class="cardPad">
 
-              <strong>
-                ${num(
-                  zone.density,
-                  1
-                )}
-              </strong>
+          <div class="cardHeader">
+            <div>
+
+              <div class="cardTitle">
+                PRIMARY TARGET
+              </div>
+
+              <div class="cardSubtitle">
+                Highest-priority draw
+              </div>
 
             </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="primaryLiquidityData"
+          ></div>
+
+        </div>
+
+      </article>
 
 
-            <div class="zone-mini">
+      <article class="card span12">
 
-              <span>
-                FRESHNESS
-              </span>
+        <div class="cardPad">
 
-              <strong>
-                ${num(
-                  zone.freshness,
-                  1
-                )}
-              </strong>
+          <div class="cardHeader">
 
-            </div>
+            <div>
 
+              <div class="cardTitle">
+                RANKED LIQUIDITY MATRIX
+              </div>
 
-            <div class="zone-mini">
-
-              <span>
-                DISTANCE
-              </span>
-
-              <strong>
-                ${num(
-                  zone.distanceATR,
-                  2
-                )} ATR
-              </strong>
-
-            </div>
-
-
-            <div class="zone-mini">
-
-              <span>
-                COMPONENTS
-              </span>
-
-              <strong>
-                ${zone.componentCount}
-              </strong>
-
-            </div>
-
-
-            <div class="zone-mini">
-
-              <span>
-                APPROACH
-              </span>
-
-              <strong>
-                ${zone.approach
-                    ?.label ||
-                  "—"}
-              </strong>
+              <div class="cardSubtitle">
+                Score · level · side · priority
+              </div>
 
             </div>
 
           </div>
 
+          <div
+            class="zoneList"
+            id="zoneList"
+          ></div>
 
-          <div class="chips">
+        </div>
 
-            ${
-              (
-                zone.componentNames ||
-                []
-              )
-              .map(
-                name =>
-                  `<span class="chip">
-                    ${name}
-                  </span>`
-              )
-              .join("")
-            }
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                EQUAL LEVELS
+              </div>
+              <div class="cardSubtitle">
+                EQH / EQL clustering
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="equalLevels"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                FAIR VALUE GAPS
+              </div>
+              <div class="cardSubtitle">
+                Imbalance map
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="fvgData"
+          ></div>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- ======================================================
+       STRUCTURE
+  ======================================================= -->
+
+  <section
+    class="view"
+    id="structure"
+  >
+
+    <div class="bento">
+
+      <article class="card span12">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+
+              <div class="cardTitle">
+                STRUCTURE ENGINE
+              </div>
+
+              <div class="cardSubtitle">
+                Multi-timeframe market architecture
+              </div>
+
+            </div>
 
           </div>
-        `;
 
 
-        root.appendChild(
-          div
-        );
-      }
+          <div
+            class="structureGrid"
+            id="fullStructure"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                DEALING RANGE
+              </div>
+              <div class="cardSubtitle">
+                Premium · equilibrium · discount
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="dealingRange"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                DISPLACEMENT
+              </div>
+              <div class="cardSubtitle">
+                Expansion / intent detection
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="displacementData"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                PREVIOUS DAY
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="previousDay"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                PREVIOUS WEEK
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="previousWeek"
+          ></div>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- ======================================================
+       FLOW
+  ======================================================= -->
+
+  <section
+    class="view"
+    id="flow"
+  >
+
+    <div class="bento">
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                ORDER FLOW ENGINE
+              </div>
+              <div class="cardSubtitle">
+                Delta / CVD / absorption proxies
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="flowHero"
+            id="fullFlow"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                INTERMARKET
+              </div>
+              <div class="cardSubtitle">
+                Secondary-market confirmation
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="intermarketData"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span12">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                HISTORICAL LIQUIDITY BEHAVIOUR
+              </div>
+              <div class="cardSubtitle">
+                Historical engine context
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="historicalLiquidity"
+          ></div>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- ======================================================
+       MACRO
+  ======================================================= -->
+
+  <section
+    class="view"
+    id="macro"
+  >
+
+    <div class="bento">
+
+      <article class="card span7">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+
+              <div class="cardTitle">
+                GOLD MACRO ENGINE
+              </div>
+
+              <div class="cardSubtitle">
+                FRED / USD / rates pressure
+              </div>
+
+            </div>
+
+          </div>
+
+          <div
+            class="dataList"
+            id="macroData"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span5">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                DATA QUALITY
+              </div>
+              <div class="cardSubtitle">
+                Feed confidence
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="dataQuality"
+          ></div>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <!-- ======================================================
+       SYSTEM
+  ======================================================= -->
+
+  <section
+    class="view"
+    id="system"
+  >
+
+    <div class="bento">
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                API ARCHITECTURE
+              </div>
+              <div class="cardSubtitle">
+                Data engine routing
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="apiArchitecture"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span6">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                ENGINE HEALTH
+              </div>
+              <div class="cardSubtitle">
+                Runtime diagnostics
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="systemHealth"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span12">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+            <div>
+              <div class="cardTitle">
+                MODEL NOTES
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="dataList"
+            id="modelNotes"
+          ></div>
+
+        </div>
+
+      </article>
+
+
+      <article class="card span12">
+
+        <div class="cardPad">
+
+          <div class="cardHeader">
+
+            <div>
+              <div class="cardTitle">
+                RAW ENGINE RESPONSE
+              </div>
+
+              <div class="cardSubtitle">
+                Developer diagnostics
+              </div>
+            </div>
+
+          </div>
+
+          <pre id="rawJson">
+Waiting for data…
+          </pre>
+
+        </div>
+
+      </article>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- ==========================================================
+     MOBILE NAV
+=========================================================== -->
+
+<nav class="mobileNav">
+
+  <button
+    class="active"
+    data-view="command"
+  >
+    <b>⌂</b>
+    HOME
+  </button>
+
+  <button
+    data-view="liquidity"
+  >
+    <b>◫</b>
+    LIQUID
+  </button>
+
+  <button
+    data-view="structure"
+  >
+    <b>⌁</b>
+    STRUCT
+  </button>
+
+  <button
+    data-view="flow"
+  >
+    <b>↯</b>
+    FLOW
+  </button>
+
+  <button
+    data-view="macro"
+  >
+    <b>◎</b>
+    MACRO
+  </button>
+
+  <button
+    data-view="system"
+  >
+    <b>☷</b>
+    SYSTEM
+  </button>
+
+</nav>
+
+
+<script>
+/* ============================================================
+   STATE
+============================================================ */
+
+let DATA = null;
+
+let refreshSeconds = 30;
+let refreshRemaining = refreshSeconds;
+
+
+/* ============================================================
+   UTILITIES
+============================================================ */
+
+const $ =
+  id =>
+    document.getElementById(id);
+
+
+function finite(value) {
+
+  const n =
+    Number(value);
+
+  return Number.isFinite(n)
+    ? n
+    : null;
+
+}
+
+
+function clamp(
+  value,
+  min,
+  max
+) {
+
+  return Math.max(
+    min,
+    Math.min(
+      max,
+      Number(value) || 0
+    )
+  );
+
+}
+
+
+function price(value) {
+
+  const n =
+    finite(value);
+
+  if (n === null) {
+    return "—";
+  }
+
+  return n.toLocaleString(
+    undefined,
+    {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }
+  );
+
+}
+
+
+function number(
+  value,
+  digits = 2
+) {
+
+  const n =
+    finite(value);
+
+  if (n === null) {
+    return "—";
+  }
+
+  return n.toLocaleString(
+    undefined,
+    {
+      maximumFractionDigits: digits
+    }
+  );
+
+}
+
+
+function percent(value) {
+
+  const n =
+    finite(value);
+
+  if (n === null) {
+    return "—";
+  }
+
+  return `${n >= 0 ? "+" : ""}${n.toFixed(2)}%`;
+
+}
+
+
+function textValue(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+
+    return "—";
+
+  }
+
+
+  if (
+    typeof value === "object"
+  ) {
+
+    return JSON.stringify(
+      value
     );
+
+  }
+
+
+  return String(value);
+
+}
+
+
+function prettify(key) {
+
+  return String(key)
+
+    .replace(
+      /([a-z])([A-Z])/g,
+      "$1 $2"
+    )
+
+    .replace(
+      /_/g,
+      " "
+    )
+
+    .replace(
+      /\b\w/g,
+      x => x.toUpperCase()
+    );
+
+}
+
+
+function pick(
+  object,
+  keys,
+  fallback = null
+) {
+
+  if (!object) {
+    return fallback;
+  }
+
+
+  for (
+    const key
+    of keys
+  ) {
+
+    if (
+      object[key] !== undefined &&
+      object[key] !== null
+    ) {
+
+      return object[key];
+
+    }
+
+  }
+
+
+  return fallback;
+
+}
+
+
+function objectBias(value) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return "UNKNOWN";
+
+  }
+
+
+  if (
+    typeof value === "string"
+  ) {
+
+    return value;
+
+  }
+
+
+  return pick(
+    value,
+    [
+      "bias",
+      "direction",
+      "trend",
+      "state",
+      "structure",
+      "signal",
+      "mode"
+    ],
+    "MIXED"
+  );
+
+}
+
+
+function biasClass(value) {
+
+  const v =
+    String(value)
+      .toUpperCase();
+
+
+  if (
+    v.includes("BULL") ||
+    v.includes("BUY") ||
+    v.includes("UP")
+  ) {
+
+    return "bull";
+
+  }
+
+
+  if (
+    v.includes("BEAR") ||
+    v.includes("SELL") ||
+    v.includes("DOWN")
+  ) {
+
+    return "bear";
+
+  }
+
+
+  return "mixed";
+
+}
+
+
+function scoreOf(zone) {
+
+  return finite(
+    pick(
+      zone,
+      [
+        "raidScore",
+        "raid_score",
+        "score",
+        "liquidityScore",
+        "liquidity_score",
+        "strength",
+        "heat",
+        "priorityScore",
+        "quality"
+      ],
+      0
+    )
+  ) || 0;
+
+}
+
+
+function levelOf(zone) {
+
+  const direct =
+    finite(
+      pick(
+        zone,
+        [
+          "price",
+          "level",
+          "mid",
+          "midpoint",
+          "target",
+          "liquidityLevel"
+        ]
+      )
+    );
+
+
+  if (
+    direct !== null
+  ) {
+
+    return direct;
+
+  }
+
+
+  const low =
+    finite(
+      pick(
+        zone,
+        [
+          "low",
+          "zoneLow",
+          "bottom",
+          "from"
+        ]
+      )
+    );
+
+
+  const high =
+    finite(
+      pick(
+        zone,
+        [
+          "high",
+          "zoneHigh",
+          "top",
+          "to"
+        ]
+      )
+    );
+
+
+  if (
+    low !== null &&
+    high !== null
+  ) {
+
+    return (
+      low +
+      high
+    ) / 2;
+
+  }
+
+
+  return null;
+
+}
+
+
+function zoneName(zone) {
+
+  return pick(
+    zone,
+    [
+      "name",
+      "label",
+      "type",
+      "source",
+      "category",
+      "kind"
+    ],
+    "Liquidity Zone"
+  );
+
+}
+
+
+function zoneSide(zone) {
+
+  return String(
+    pick(
+      zone,
+      [
+        "side",
+        "liquiditySide",
+        "direction",
+        "bias"
+      ],
+      ""
+    )
+  ).toUpperCase();
+
 }
 
 
 /* ============================================================
-   SWEEP QUALITY
+   EXTRACT LIQUIDITY ZONES
 ============================================================ */
 
-function renderSweepQuality(
-  data
-){
+function collectCandidateZones(
+  root
+) {
 
-  const quality =
-    data.deepLiquidity
-      ?.dominantSweepQuality;
+  const output = [];
+  const seen = new Set();
 
 
-  if (!quality){
+  function walk(
+    value,
+    path = ""
+  ) {
 
+    if (
+      value === null ||
+      value === undefined
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      Array.isArray(value)
+    ) {
+
+      for (
+        const item
+        of value
+      ) {
+
+        walk(
+          item,
+          path
+        );
+
+      }
+
+      return;
+
+    }
+
+
+    if (
+      typeof value !== "object"
+    ) {
+
+      return;
+
+    }
+
+
+    const level =
+      levelOf(value);
+
+
+    const score =
+      scoreOf(value);
+
+
+    const hasLiquidityShape =
+      level !== null &&
+      (
+        score > 0 ||
+        value.type ||
+        value.name ||
+        value.side ||
+        value.label ||
+        path.toLowerCase().includes("liquid")
+      );
+
+
+    if (
+      hasLiquidityShape
+    ) {
+
+      const key =
+        `${level}-${zoneName(value)}-${zoneSide(value)}`;
+
+
+      if (
+        !seen.has(key)
+      ) {
+
+        seen.add(key);
+
+        output.push({
+          ...value,
+          __path: path
+        });
+
+      }
+
+    }
+
+
+    for (
+      const [
+        key,
+        child
+      ]
+      of Object.entries(value)
+    ) {
+
+      walk(
+        child,
+        `${path}.${key}`
+      );
+
+    }
+
+  }
+
+
+  walk(
+    root,
+    "deepLiquidity"
+  );
+
+
+  return output
+
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        scoreOf(b) -
+        scoreOf(a)
+    )
+
+    .slice(
+      0,
+      40
+    );
+
+}
+
+
+/* ============================================================
+   RENDER OBJECT
+============================================================ */
+
+function renderObject(
+  elementId,
+  object,
+  maxRows = 20
+) {
+
+  const el =
+    $(elementId);
+
+
+  if (!el) {
     return;
   }
 
 
-  const checks =
-    quality.checks ||
-    {};
+  if (
+    object === null ||
+    object === undefined
+  ) {
+
+    el.innerHTML =
+      `
+        <div class="dataRow">
+          <div class="dataKey">
+            Status
+          </div>
+
+          <div class="dataValue">
+            No data
+          </div>
+        </div>
+      `;
+
+    return;
+
+  }
 
 
-  el("sweepQuality")
-    .innerHTML =
+  if (
+    Array.isArray(object)
+  ) {
 
-      row(
-        "Overall Quality",
-        `${quality.quality} · ${num(
-          quality.score,
-          1
-        )}/100`
-      ) +
+    if (
+      object.length === 0
+    ) {
 
-      row(
-        "Zone Penetrated",
-        checks.zonePenetrated
-          ? badge(
-              "YES",
-              "good"
-            )
-          : badge(
-              "NO"
-            )
-      ) +
+      el.innerHTML =
+        `
+          <div class="dataRow">
+            <div class="dataKey">
+              Status
+            </div>
 
-      row(
-        "Close Back Inside",
-        checks.closeBackInside
-          ? badge(
-              "YES",
-              "good"
-            )
-          : badge(
-              "NO"
-            )
-      ) +
+            <div class="dataValue">
+              Empty
+            </div>
+          </div>
+        `;
 
-      row(
-        "M1 Reversal Structure",
-        checks.m1ReversalStructure
-          ? badge(
-              "CONFIRMED",
-              "good"
-            )
-          : badge(
-              "WAIT"
-            )
-      ) +
+      return;
 
-      row(
-        "Displacement Away",
-        checks.displacementAway
-          ? badge(
-              "CONFIRMED",
-              "good"
-            )
-          : badge(
-              "WAIT"
-            )
-      ) +
+    }
 
-      row(
-        "Delta Divergence",
-        checks.deltaDivergence
-          ? badge(
-              "YES",
-              "good"
-            )
-          : badge(
-              "NO"
-            )
-      ) +
 
-      row(
-        "Absorption",
-        checks.absorption
-          ? badge(
-              "YES",
-              "good"
-            )
-          : badge(
-              "NO"
-            )
-      );
+    el.innerHTML =
+      object
+
+        .slice(
+          0,
+          maxRows
+        )
+
+        .map(
+          (
+            value,
+            index
+          ) => {
+
+            return `
+              <div class="dataRow">
+
+                <div class="dataKey">
+                  ${index + 1}
+                </div>
+
+                <div class="dataValue">
+                  ${
+                    typeof value === "object"
+                      ? objectSummary(value)
+                      : textValue(value)
+                  }
+                </div>
+
+              </div>
+            `;
+
+          }
+        )
+
+        .join("");
+
+    return;
+
+  }
+
+
+  if (
+    typeof object !== "object"
+  ) {
+
+    el.innerHTML =
+      `
+        <div class="dataRow">
+          <div class="dataKey">
+            Value
+          </div>
+
+          <div class="dataValue">
+            ${textValue(object)}
+          </div>
+        </div>
+      `;
+
+    return;
+
+  }
+
+
+  const rows =
+    Object.entries(object)
+
+      .slice(
+        0,
+        maxRows
+      )
+
+      .map(
+        ([
+          key,
+          value
+        ]) => {
+
+          return `
+            <div class="dataRow">
+
+              <div class="dataKey">
+                ${prettify(key)}
+              </div>
+
+              <div class="dataValue">
+                ${
+                  typeof value === "object"
+                    ? objectSummary(value)
+                    : textValue(value)
+                }
+              </div>
+
+            </div>
+          `;
+
+        }
+      )
+
+      .join("");
+
+
+  el.innerHTML =
+    rows ||
+    `
+      <div class="dataRow">
+        <div class="dataKey">
+          Status
+        </div>
+
+        <div class="dataValue">
+          No values
+        </div>
+      </div>
+    `;
+
 }
 
 
-/* ============================================================
-   DEALING RANGE
-============================================================ */
+function objectSummary(
+  object
+) {
 
-function renderDealingRange(
-  data
-){
+  if (
+    object === null
+  ) {
 
-  const range =
-    data.dealingRange;
+    return "—";
+
+  }
 
 
-  el("dealingRange")
-    .innerHTML =
+  if (
+    Array.isArray(object)
+  ) {
 
-      row(
-        "Range High",
-        num(
-          range?.high,
-          2
-        )
-      ) +
+    return `${object.length} items`;
 
-      row(
-        "Midpoint",
-        num(
-          range?.midpoint,
-          2
-        )
-      ) +
+  }
 
-      row(
-        "Range Low",
-        num(
-          range?.low,
-          2
-        )
-      ) +
 
-      row(
-        "Range Width",
-        `$${num(
-          range?.range,
-          2
-        )}`
+  const useful =
+    [
+      "value",
+      "price",
+      "score",
+      "bias",
+      "direction",
+      "state",
+      "signal",
+      "high",
+      "low"
+    ];
+
+
+  const parts = [];
+
+
+  for (
+    const key
+    of useful
+  ) {
+
+    if (
+      object[key] !== undefined
+    ) {
+
+      parts.push(
+        `${prettify(key)}: ${textValue(object[key])}`
       );
+
+    }
+
+  }
+
+
+  if (
+    parts.length
+  ) {
+
+    return parts.join(" · ");
+
+  }
+
+
+  const entries =
+    Object.entries(object)
+      .slice(0, 3);
+
+
+  return entries
+
+    .map(
+      ([key, value]) =>
+        `${prettify(key)}: ${
+          typeof value === "object"
+            ? "…"
+            : textValue(value)
+        }`
+    )
+
+    .join(" · ");
+
 }
 
 
@@ -2992,206 +3551,137 @@ function renderDealingRange(
 ============================================================ */
 
 function renderStructure(
-  data
-){
+  elementId,
+  structure
+) {
 
-  const root =
-    el(
-      "structure"
-    );
-
-
-  root.innerHTML =
-    "";
+  const el =
+    $(elementId);
 
 
-  for (
-    const timeframe
-    of
+  if (!el) {
+    return;
+  }
+
+
+  const timeframes =
     [
       "M1",
       "M5",
       "M15",
       "H1",
       "H4"
-    ]
-  ){
-
-    const s =
-      data.structure
-        ?.[timeframe];
+    ];
 
 
-    if (!s){
-      continue;
-    }
+  el.innerHTML =
+    timeframes
+
+      .map(
+        tf => {
+
+          const value =
+            structure?.[tf] ??
+            structure?.[tf.toLowerCase()] ??
+            null;
 
 
-    root.innerHTML += `
-
-      <div class="row">
-
-        <div>
-
-          <div class="row-title">
-            ${timeframe}
-          </div>
-
-          <div class="row-sub">
-
-            EMA20
-            ${num(
-              s.ema20,
-              2
-            )}
-
-            ·
-
-            EMA50
-            ${num(
-              s.ema50,
-              2
-            )}
-
-            ${
-              s.bos
-                ? ` · ${s.bos}`
-                : ""
-            }
-
-            ${
-              s.choch
-                ? ` · ${s.choch}`
-                : ""
-            }
-
-          </div>
-
-        </div>
+          const bias =
+            objectBias(value);
 
 
-        <div
-          class="
-            row-value
-            ${biasClass(
-              s.bias
-            )}
-          "
-        >
-          ${s.bias}
-        </div>
+          return `
+            <div
+              class="
+                structureCell
+                ${biasClass(bias)}
+              "
+            >
 
-      </div>
-    `;
-  }
+              <div class="structureTf">
+                ${tf}
+              </div>
+
+              <div class="structureBias">
+                ${textValue(bias)}
+              </div>
+
+              <div class="structureDot"></div>
+
+            </div>
+          `;
+
+        }
+      )
+
+      .join("");
+
 }
 
 
 /* ============================================================
-   SESSIONS
+   MARKET METRICS
 ============================================================ */
 
-function renderSessions(
-  data
-){
+function renderMarketMetrics(
+  market
+) {
 
-  const sessions =
-    data.sessions ||
-    {};
-
-
-  const blocks = [];
-
-
-  for (
-    const name
-    of
+  const values =
     [
-      "ASIA",
-      "LONDON",
-      "NEW_YORK"
-    ]
-  ){
+      [
+        "ATR M1",
+        market?.atr?.M1
+      ],
 
-    const session =
-      sessions[name];
+      [
+        "ATR M5",
+        market?.atr?.M5
+      ],
+
+      [
+        "ATR M15",
+        market?.atr?.M15
+      ],
+
+      [
+        "RSI M5",
+        market?.rsi?.M5
+      ],
+
+      [
+        "RSI M15",
+        market?.rsi?.M15
+      ],
+
+      [
+        "ROC M5",
+        market?.rocM5
+      ]
+    ];
 
 
-    if (!session){
-      continue;
-    }
+  $("marketMetrics").innerHTML =
+    values
 
+      .map(
+        ([label, value]) => `
+          <div class="metric">
 
-    blocks.push(
+            <div class="metricLabel">
+              ${label}
+            </div>
 
-      row(
-        name.replace(
-          "_",
-          " "
-        ),
+            <div class="metricValue">
+              ${number(value)}
+            </div>
 
-        `${num(
-          session.low,
-          2
-        )} – ${num(
-          session.high,
-          2
-        )}`,
-
-        `Range $${num(
-          session.range,
-          2
-        )}`
+          </div>
+        `
       )
-    );
-  }
 
+      .join("");
 
-  if (
-    data.previousDay
-  ){
-
-    blocks.push(
-
-      row(
-        "Previous Day",
-        `${num(
-          data.previousDay.low,
-          2
-        )} – ${num(
-          data.previousDay.high,
-          2
-        )}`,
-        data.previousDay.date
-      )
-    );
-  }
-
-
-  if (
-    data.previousWeek
-  ){
-
-    blocks.push(
-
-      row(
-        "Previous Week",
-        `${num(
-          data.previousWeek.low,
-          2
-        )} – ${num(
-          data.previousWeek.high,
-          2
-        )}`,
-        data.previousWeek.week
-      )
-    );
-  }
-
-
-  el("sessions")
-    .innerHTML =
-      blocks.join("");
 }
 
 
@@ -3200,612 +3690,742 @@ function renderSessions(
 ============================================================ */
 
 function renderFlow(
-  data
-){
+  elementId,
+  flow
+) {
 
-  const flow =
-    data.flow;
-
-
-  const heading =
-    el(
-      "flowHeading"
-    );
+  const el =
+    $(elementId);
 
 
-  heading.textContent =
-    flow.bias;
+  if (!el) {
+    return;
+  }
 
 
-  heading.className =
-    biasClass(
-      flow.bias
-    );
-
-
-  el("flow")
-    .innerHTML =
-
-      row(
-        "Delta Proxy",
-        num(
-          flow.delta,
-          2
+  const candidates =
+    [
+      [
+        "Delta",
+        pick(
+          flow,
+          [
+            "delta",
+            "volumeDelta",
+            "deltaProxy"
+          ]
         )
-      ) +
+      ],
 
-      row(
-        "CVD Proxy",
-        num(
-          flow.cvd,
-          2
+      [
+        "CVD",
+        pick(
+          flow,
+          [
+            "cvd",
+            "cumulativeDelta",
+            "cvdProxy"
+          ]
         )
-      ) +
+      ],
 
-      row(
+      [
         "Absorption",
-        flow.absorption ||
-        "NONE"
-      ) +
+        pick(
+          flow,
+          [
+            "absorption",
+            "absorptionScore",
+            "absorptionState"
+          ]
+        )
+      ],
 
-      row(
-        "Delta Divergence",
-        flow.divergence ||
-        "NONE"
-      );
+      [
+        "Divergence",
+        pick(
+          flow,
+          [
+            "divergence",
+            "deltaDivergence",
+            "cvdDivergence"
+          ]
+        )
+      ]
+    ];
+
+
+  el.innerHTML =
+    candidates
+
+      .map(
+        ([label, value]) => `
+          <div class="flowBox">
+
+            <span>
+              ${label}
+            </span>
+
+            <strong>
+              ${
+                typeof value === "object"
+                  ? objectSummary(value)
+                  : textValue(value)
+              }
+            </strong>
+
+          </div>
+        `
+      )
+
+      .join("");
+
 }
 
 
 /* ============================================================
-   DISPLACEMENT
+   SESSION
 ============================================================ */
 
-function renderDisplacement(
-  data
-){
+function renderSessions(
+  sessions
+) {
 
-  const m1 =
-    data.displacement
-      ?.M1;
-
-  const m5 =
-    data.displacement
-      ?.M5;
+  const el =
+    $("sessionGrid");
 
 
-  el("displacement")
-    .innerHTML =
+  const sessionNames =
+    [
+      "asia",
+      "london",
+      "newYork"
+    ];
 
-      row(
-        "M1",
-        m1?.active
-          ? `<span class="${biasClass(
-              m1.direction
-            )}">
-              ${m1.direction}
-            </span>`
-          : "NONE",
-        `Strength ${num(
-          m1?.strength,
-          1
-        )} · Expansion ${num(
-          m1?.expansion,
-          2
-        )}x`
-      ) +
 
-      row(
-        "M5",
-        m5?.active
-          ? `<span class="${biasClass(
-              m5.direction
-            )}">
-              ${m5.direction}
-            </span>`
-          : "NONE",
-        `Strength ${num(
-          m5?.strength,
-          1
-        )} · Expansion ${num(
-          m5?.expansion,
-          2
-        )}x`
-      );
+  const labels = {
+    asia: "ASIA",
+    london: "LONDON",
+    newYork: "NEW YORK"
+  };
+
+
+  el.innerHTML =
+    sessionNames
+
+      .map(
+        name => {
+
+          const session =
+            sessions?.[name] ??
+            sessions?.[
+              name.toUpperCase()
+            ] ??
+            sessions?.[
+              name === "newYork"
+                ? "new_york"
+                : name
+            ] ??
+            {};
+
+
+          const high =
+            pick(
+              session,
+              [
+                "high",
+                "sessionHigh"
+              ]
+            );
+
+
+          const low =
+            pick(
+              session,
+              [
+                "low",
+                "sessionLow"
+              ]
+            );
+
+
+          const state =
+            pick(
+              session,
+              [
+                "state",
+                "status",
+                "active"
+              ],
+              "MONITORING"
+            );
+
+
+          return `
+            <div class="session">
+
+              <div class="sessionName">
+                ${labels[name]}
+              </div>
+
+              <div class="sessionState">
+                ${textValue(state)}
+              </div>
+
+              <div class="sessionRange">
+
+                High
+                <strong>
+                  ${price(high)}
+                </strong>
+
+                <br>
+
+                Low
+                <strong>
+                  ${price(low)}
+                </strong>
+
+              </div>
+
+            </div>
+          `;
+
+        }
+      )
+
+      .join("");
+
 }
 
 
 /* ============================================================
-   INTERMARKET
+   LIQUIDITY MATRIX
 ============================================================ */
 
-function renderIntermarket(
+function renderZones(
+  zones
+) {
+
+  const el =
+    $("zoneList");
+
+
+  if (
+    !zones.length
+  ) {
+
+    el.innerHTML =
+      `
+        <div class="dataRow">
+          No liquidity zones detected.
+        </div>
+      `;
+
+    return;
+
+  }
+
+
+  el.innerHTML =
+    zones
+
+      .slice(
+        0,
+        24
+      )
+
+      .map(
+        (
+          zone,
+          index
+        ) => {
+
+          const score =
+            Math.round(
+              scoreOf(zone)
+            );
+
+
+          const level =
+            levelOf(zone);
+
+
+          const side =
+            zoneSide(zone) ||
+            "NEUTRAL";
+
+
+          return `
+            <div class="zoneRow">
+
+              <div class="zoneName">
+                ${index + 1}.
+                ${zoneName(zone)}
+              </div>
+
+              <div class="zoneValue">
+                ${price(level)}
+              </div>
+
+              <div class="zoneScore">
+                ${score}
+              </div>
+
+              <div
+                class="
+                  zoneSide
+                  ${
+                    side.includes("BUY")
+                      ? "down"
+                      : side.includes("SELL")
+                        ? "up"
+                        : "neutral"
+                  }
+                "
+              >
+                ${side}
+              </div>
+
+            </div>
+          `;
+
+        }
+      )
+
+      .join("");
+
+}
+
+
+/* ============================================================
+   LIQUIDITY LADDER
+============================================================ */
+
+function renderLadder(
+  elementId,
+  zones,
+  currentPrice
+) {
+
+  const el =
+    $(elementId);
+
+
+  if (!el) {
+    return;
+  }
+
+
+  const valid =
+    zones
+
+      .map(
+        zone => ({
+          zone,
+          level: levelOf(zone),
+          score: scoreOf(zone)
+        })
+      )
+
+      .filter(
+        item =>
+          Number.isFinite(item.level)
+      );
+
+
+  const spot =
+    finite(currentPrice);
+
+
+  if (
+    spot === null
+  ) {
+
+    el.innerHTML =
+      `
+        <div
+          style="
+            display:grid;
+            place-items:center;
+            height:100%;
+            color:#6f7784;
+            font-size:10px;
+          "
+        >
+          Waiting for price
+        </div>
+      `;
+
+    return;
+
+  }
+
+
+  const prices =
+    [
+      spot,
+      ...valid.map(
+        item =>
+          item.level
+      )
+    ];
+
+
+  let min =
+    Math.min(...prices);
+
+
+  let max =
+    Math.max(...prices);
+
+
+  let span =
+    max - min;
+
+
+  if (
+    span <= 0
+  ) {
+
+    span =
+      Math.max(
+        spot * 0.002,
+        10
+      );
+
+  }
+
+
+  min -=
+    span * 0.12;
+
+
+  max +=
+    span * 0.12;
+
+
+  const total =
+    max - min;
+
+
+  const y =
+    value =>
+      100 -
+      (
+        (value - min) /
+        total
+      ) *
+      100;
+
+
+  let html =
+    `
+      <div
+        class="ladderCenterLine"
+        style="
+          top:${y(spot)}%
+        "
+      ></div>
+
+      <div
+        class="currentPriceLabel"
+        style="
+          top:${y(spot)}%
+        "
+      >
+        ${price(spot)}
+      </div>
+    `;
+
+
+  for (
+    const item
+    of valid.slice(0, 20)
+  ) {
+
+    const zone =
+      item.zone;
+
+
+    const side =
+      zoneSide(zone);
+
+
+    const cssClass =
+      side.includes("BUY")
+        ? "buySide"
+        : side.includes("SELL")
+          ? "sellSide"
+          : "generic";
+
+
+    const width =
+      clamp(
+        35 +
+        item.score * 0.52,
+        35,
+        93
+      );
+
+
+    html +=
+      `
+        <div
+          class="
+            liquidityBand
+            ${cssClass}
+          "
+
+          style="
+            top:calc(
+              ${y(item.level)}%
+              - 10px
+            );
+
+            width:${width}%;
+          "
+        >
+          ${zoneName(zone)}
+          ·
+          ${price(item.level)}
+          ·
+          ${Math.round(item.score)}
+        </div>
+      `;
+
+  }
+
+
+  el.innerHTML =
+    html;
+
+}
+
+
+/* ============================================================
+   PRIMARY LIQUIDITY
+============================================================ */
+
+function primaryZone(
+  deepLiquidity,
+  zones
+) {
+
+  return (
+    deepLiquidity?.primaryLiquidity ||
+    deepLiquidity?.primary ||
+    deepLiquidity?.highestRanked ||
+    deepLiquidity?.highestRankedLiquidity ||
+    deepLiquidity?.topTarget ||
+    deepLiquidity?.focus ||
+    zones?.[0] ||
+    null
+  );
+
+}
+
+
+function renderFocus(
+  zone
+) {
+
+  if (!zone) {
+
+    $("focusName").textContent =
+      "No ranked target";
+
+    $("focusLevel").textContent =
+      "—";
+
+    $("raidScore").textContent =
+      "0";
+
+    $("raidRing")
+      .style
+      .setProperty(
+        "--score",
+        0
+      );
+
+    return;
+
+  }
+
+
+  const score =
+    clamp(
+      Math.round(
+        scoreOf(zone)
+      ),
+      0,
+      100
+    );
+
+
+  $("focusName").textContent =
+    zoneName(zone);
+
+
+  $("focusLevel").textContent =
+    price(
+      levelOf(zone)
+    );
+
+
+  $("raidScore").textContent =
+    score;
+
+
+  $("raidRing")
+    .style
+    .setProperty(
+      "--score",
+      score
+    );
+
+
+  const side =
+    zoneSide(zone);
+
+
+  $("focusDescription").textContent =
+    `${
+      side || "LIQUIDITY"
+    } · ${
+      score >= 80
+        ? "extreme priority"
+        : score >= 70
+          ? "high priority"
+          : score >= 55
+            ? "developing"
+            : "tracking"
+    }`;
+
+}
+
+
+/* ============================================================
+   CONSENSUS
+============================================================ */
+
+function renderConsensus(
+  consensus
+) {
+
+  renderObject(
+    "consensusList",
+    consensus,
+    12
+  );
+
+}
+
+
+/* ============================================================
+   HERO
+============================================================ */
+
+function renderHero(
   data
-){
+) {
 
   const market =
-    data.intermarket;
+    data.market || {};
 
 
-  const heading =
-    el(
-      "intermarketHeading"
+  const currentPrice =
+    market.price ??
+    data.price;
+
+
+  $("price").textContent =
+    price(currentPrice);
+
+
+  const percentChange =
+    finite(
+      market.percentChange
     );
 
 
-  heading.textContent =
-    `${market.bias} · ${signed(
-      market.score,
-      1
-    )}`;
-
-
-  heading.className =
-    biasClass(
-      market.bias
+  const change =
+    finite(
+      market.change
     );
 
 
-  el("intermarket")
-    .innerHTML =
-
-      (
-        market.markets ||
-        []
-      )
-      .map(
-        item =>
-
-          row(
-            item.label,
-
-            `<span class="${biasClass(
-              item.goldBias
-            )}">
-              ${signed(
-                item.goldContribution,
-                1
-              )}
-            </span>`,
-
-            `1H ${signed(
-              item.move1h,
-              3
-            )}% · 3H ${signed(
-              item.move3h,
-              3
-            )}% · 6H ${signed(
-              item.move6h,
-              3
-            )}% · 12H ${signed(
-              item.move12h,
-              3
-            )}%`
-          )
-      )
-      .join("");
-}
+  const changeEl =
+    $("priceChange");
 
 
-/* ============================================================
-   MACRO
-============================================================ */
-
-function renderMacro(
-  data
-){
-
-  const macro =
-    data.macro;
-
-
-  const heading =
-    el(
-      "macroHeading"
+  changeEl.className =
+    "priceChange " +
+    (
+      percentChange > 0
+        ? "up"
+        : percentChange < 0
+          ? "down"
+          : "neutral"
     );
 
 
-  heading.textContent =
-    `${macro.bias} · ${signed(
-      macro.score,
-      1
-    )}`;
+  changeEl.textContent =
+    `${
+      change !== null
+        ? (
+            change >= 0
+              ? "+"
+              : ""
+          ) +
+          number(change)
+        : ""
+    } ${
+      percentChange !== null
+        ? percent(percentChange)
+        : ""
+    }`;
 
 
-  heading.className =
-    biasClass(
-      macro.bias
+  const regime =
+    market?.regime?.regime ??
+    market?.regime?.state ??
+    market?.regime ??
+    "—";
+
+
+  $("regime").textContent =
+    textValue(regime);
+
+
+  $("vwap").textContent =
+    price(
+      market.vwap
     );
 
 
-  if (
-    !macro.enabled
-  ){
-
-    el("macro")
-      .innerHTML =
-
-        row(
-          "FRED",
-          "UNAVAILABLE",
-          macro.error ||
-          macro.reason ||
-          ""
-        );
-
-    return;
-  }
-
-
-  el("macro")
-    .innerHTML =
-
-      row(
-        "US 2Y Yield",
-        `${num(
-          macro.twoYear
-            ?.value,
-          3
-        )}%`,
-        `Δ ${signed(
-          macro.twoYear
-            ?.change,
-          3
-        )} · ${macro.twoYear
-            ?.date ||
-          "—"}`
-      ) +
-
-      row(
-        "US 10Y Yield",
-        `${num(
-          macro.tenYear
-            ?.value,
-          3
-        )}%`,
-        `Δ ${signed(
-          macro.tenYear
-            ?.change,
-          3
-        )} · ${macro.tenYear
-            ?.date ||
-          "—"}`
-      ) +
-
-      row(
-        "Fed Funds",
-        `${num(
-          macro.fedFunds
-            ?.value,
-          3
-        )}%`,
-        macro.fedFunds
-          ?.date ||
-        "—"
-      );
-}
-
-
-/* ============================================================
-   HISTORICAL CARD
-============================================================ */
-
-function historyCard(
-  name,
-  stat
-){
-
-  let badgeClass =
-    "";
-
-
-  if (
-    stat.confidence ===
-    "HIGH"
-  ){
-
-    badgeClass =
-      "good";
-
-  } else if (
-    stat.confidence ===
-    "MEDIUM"
-  ){
-
-    badgeClass =
-      "warn";
-  }
-
-
-  return `
-
-    <div class="history-card">
-
-      <div class="history-header">
-
-        <div>
-
-          <div class="history-name">
-            ${name}
-          </div>
-
-          <div class="history-rate">
-            ${num(
-              stat.sweepRate,
-              1
-            )}%
-          </div>
-
-          <div class="row-sub">
-            sweep rate
-          </div>
-
-        </div>
-
-
-        ${badge(
-          stat.confidence,
-          badgeClass
-        )}
-
-      </div>
-
-
-      ${row(
-        "Samples",
-        stat.samples
-      )}
-
-
-      ${row(
-        "Sweeps",
-        `${stat.swept} / ${stat.samples}`
-      )}
-
-
-      ${row(
-        "Returned",
-        `${num(
-          stat.returnRate,
-          1
-        )}%`
-      )}
-
-
-      ${row(
-        "Median Raid",
-        `${num(
-          stat.medianRaidATR,
-          2
-        )} ATR`
-      )}
-
-
-      ${row(
-        "P75 Raid",
-        `${num(
-          stat.p75RaidATR,
-          2
-        )} ATR`
-      )}
-
-
-      ${row(
-        "P90 Raid",
-        `${num(
-          stat.p90RaidATR,
-          2
-        )} ATR`
-      )}
-
-    </div>
-  `;
-}
-
-
-/* ============================================================
-   HISTORICAL
-============================================================ */
-
-function renderHistorical(
-  data
-){
-
-  const stats =
-    data.historicalLiquidity
-      ?.sessions;
-
-
-  if (!stats){
-    return;
-  }
-
-
-  el("historical")
-    .innerHTML =
-
-      historyCard(
-        "ASIA HIGH",
-        stats.ASIA.high
-      ) +
-
-      historyCard(
-        "ASIA LOW",
-        stats.ASIA.low
-      ) +
-
-      historyCard(
-        "LONDON HIGH",
-        stats.LONDON.high
-      ) +
-
-      historyCard(
-        "LONDON LOW",
-        stats.LONDON.low
-      ) +
-
-      historyCard(
-        "NEW YORK HIGH",
-        stats.NEW_YORK.high
-      ) +
-
-      historyCard(
-        "NEW YORK LOW",
-        stats.NEW_YORK.low
-      );
-}
-
-
-/* ============================================================
-   FVG
-============================================================ */
-
-function renderFVG(
-  data
-){
-
-  const gaps =
-    data.fairValueGaps ||
-    [];
-
-
-  if (!gaps.length){
-
-    el("fvg")
-      .innerHTML =
-        row(
-          "No recent imbalance",
-          "—"
-        );
-
-    return;
-  }
-
-
-  el("fvg")
-    .innerHTML =
-
-      gaps
-        .slice(
-          -8
+  $("engineName").textContent =
+    data.engine ||
+    "V8";
+
+
+  const generated =
+    data.generatedAt
+      ? new Date(
+          data.generatedAt
         )
-        .reverse()
-        .map(
-          gap =>
-
-            row(
-              `${gap.direction} FVG`,
-
-              `${num(
-                gap.low,
-                2
-              )} – ${num(
-                gap.high,
-                2
-              )}`,
-
-              `Mid ${num(
-                gap.midpoint,
-                2
-              )}`
-            )
-        )
-        .join("");
-}
+      : new Date();
 
 
-/* ============================================================
-   QUALITY
-============================================================ */
+  $("updateTime").textContent =
+    generated.toLocaleTimeString(
+      [],
+      {
+        hour: "2-digit",
+        minute: "2-digit"
+      }
+    );
 
-function renderQuality(
-  data
-){
-
-  const quality =
-    data.dataQuality;
-
-
-  if (
-    !quality.available
-  ){
-
-    el("quality")
-      .innerHTML =
-
-        row(
-          "Secondary XAU",
-          badge(
-            "UNAVAILABLE",
-            "warn"
-          )
-        );
-
-    return;
-  }
-
-
-  let qualityClass =
-    "warn";
-
-
-  if (
-    quality.status ===
-    "GOOD"
-  ){
-
-    qualityClass =
-      "good";
-  }
-
-
-  if (
-    quality.status ===
-    "DISAGREEMENT"
-  ){
-
-    qualityClass =
-      "bad";
-  }
-
-
-  el("quality")
-    .innerHTML =
-
-      row(
-        "Feed Status",
-        badge(
-          quality.status,
-          qualityClass
-        )
-      ) +
-
-      row(
-        "Primary XAU",
-        num(
-          quality.primary,
-          2
-        )
-      ) +
-
-      row(
-        "Secondary XAU",
-        num(
-          quality.secondary,
-          2
-        )
-      ) +
-
-      row(
-        "Difference",
-        `$${num(
-          quality.difference,
-          2
-        )}`,
-        `${num(
-          quality.differenceATR,
-          3
-        )} ATR`
-      );
 }
 
 
@@ -3815,224 +4435,238 @@ function renderQuality(
 
 function renderHealth(
   data
-){
+) {
 
-  const health =
-    data.health;
-
-
-  function connection(
-    enabled
-  ){
-
-    return (
-      enabled
-        ? badge(
-            "CONNECTED",
-            "good"
-          )
-        : badge(
-            "MISSING",
-            "bad"
-          )
-    );
-  }
+  const ok =
+    data.ok !== false;
 
 
-  el("health")
-    .innerHTML =
+  $("healthText").textContent =
+    ok
+      ? "LIVE"
+      : "DEGRADED";
 
-      row(
-        "API #1 · XAU LIVE",
-        connection(
-          health.api1
-        )
-      ) +
 
-      row(
-        "API #2 · HTF",
-        connection(
-          health.api2
-        )
-      ) +
+  $("healthDot").style.background =
+    ok
+      ? "var(--green)"
+      : "var(--red)";
 
-      row(
-        "API #3 · HISTORY",
-        connection(
-          health.api3
-        )
-      ) +
 
-      row(
-        "API #4 · INTERMARKET",
-        connection(
-          health.api4
-        )
-      ) +
+  renderObject(
+    "systemHealth",
+    data.health,
+    30
+  );
 
-      row(
-        "FRED",
-        connection(
-          health.fred
-        )
-      );
 }
 
 
 /* ============================================================
-   REASONS
-============================================================ */
-
-function renderReasons(
-  data
-){
-
-  el("reasons")
-    .innerHTML =
-
-      (
-        data.consensus
-          ?.reasons ||
-        []
-      )
-      .map(
-        reason =>
-          row(
-            reason,
-            ""
-          )
-      )
-      .join("");
-}
-
-
-/* ============================================================
-   MAIN RENDER
+   RENDER ALL
 ============================================================ */
 
 function render(
   data
-){
+) {
 
-  renderMarket(
+  DATA =
+    data;
+
+
+  const market =
+    data.market || {};
+
+
+  const spot =
+    market.price ??
+    data.price;
+
+
+  const zones =
+    collectCandidateZones(
+      data.deepLiquidity
+    );
+
+
+  const primary =
+    primaryZone(
+      data.deepLiquidity,
+      zones
+    );
+
+
+  renderHero(
     data
   );
 
-  renderConsensus(
-    data
-  );
-
-  renderDominantZone(
-    data
-  );
-
-  renderLiquidityPath(
-    data
-  );
-
-  renderZones(
-    data
-  );
-
-  renderSweepQuality(
-    data
-  );
-
-  renderDealingRange(
-    data
-  );
-
-  renderStructure(
-    data
-  );
-
-  renderSessions(
-    data
-  );
-
-  renderFlow(
-    data
-  );
-
-  renderDisplacement(
-    data
-  );
-
-  renderIntermarket(
-    data
-  );
-
-  renderMacro(
-    data
-  );
-
-  renderHistorical(
-    data
-  );
-
-  renderFVG(
-    data
-  );
-
-  renderQuality(
-    data
-  );
 
   renderHealth(
     data
   );
 
-  renderReasons(
-    data
+
+  renderFocus(
+    primary
   );
 
 
-  el("status")
-    .textContent =
-      data.cached
-        ? "LIVE · CACHE"
-        : "LIVE";
+  renderMarketMetrics(
+    market
+  );
 
 
-  const time =
-    new Date(
-      data.generatedAt
+  renderStructure(
+    "commandStructure",
+    data.structure
+  );
+
+
+  renderStructure(
+    "fullStructure",
+    data.structure
+  );
+
+
+  renderFlow(
+    "commandFlow",
+    data.flow
+  );
+
+
+  renderFlow(
+    "fullFlow",
+    data.flow
+  );
+
+
+  renderSessions(
+    data.sessions
+  );
+
+
+  renderZones(
+    zones
+  );
+
+
+  renderLadder(
+    "commandLadder",
+    zones,
+    spot
+  );
+
+
+  renderLadder(
+    "fullLadder",
+    zones,
+    spot
+  );
+
+
+  renderObject(
+    "primaryLiquidityData",
+    primary,
+    20
+  );
+
+
+  renderObject(
+    "equalLevels",
+    data.equalLevels,
+    25
+  );
+
+
+  renderObject(
+    "fvgData",
+    data.fairValueGaps,
+    25
+  );
+
+
+  renderObject(
+    "dealingRange",
+    data.dealingRange,
+    25
+  );
+
+
+  renderObject(
+    "displacementData",
+    data.displacement,
+    25
+  );
+
+
+  renderObject(
+    "previousDay",
+    data.previousDay,
+    20
+  );
+
+
+  renderObject(
+    "previousWeek",
+    data.previousWeek,
+    20
+  );
+
+
+  renderObject(
+    "intermarketData",
+    data.intermarket,
+    30
+  );
+
+
+  renderObject(
+    "historicalLiquidity",
+    data.historicalLiquidity,
+    30
+  );
+
+
+  renderObject(
+    "macroData",
+    data.macro,
+    35
+  );
+
+
+  renderObject(
+    "dataQuality",
+    data.dataQuality,
+    30
+  );
+
+
+  renderObject(
+    "apiArchitecture",
+    data.apiArchitecture,
+    30
+  );
+
+
+  renderObject(
+    "modelNotes",
+    data.modelNotes,
+    30
+  );
+
+
+  renderConsensus(
+    data.consensus
+  );
+
+
+  $("rawJson").textContent =
+    JSON.stringify(
+      data,
+      null,
+      2
     );
 
-
-  el("footer")
-    .innerHTML =
-
-      `Last analysis:
-      ${time.toLocaleTimeString()}
-
-      <br>
-
-      ${data.engine}
-
-      <br>
-
-      ${
-        data.deepLiquidity
-          ?.rawLevelCount ||
-        0
-      } raw liquidity levels
-
-      ·
-
-      ${
-        data.deepLiquidity
-          ?.zoneCount ||
-        0
-      } clustered zones
-
-      ·
-
-      ${
-        data.historicalLiquidity
-          ?.candleCount ||
-        0
-      } historical M5 candles`;
 }
 
 
@@ -4040,25 +4674,33 @@ function render(
    FETCH
 ============================================================ */
 
-async function load(){
+async function loadData(
+  manual = false
+) {
 
-  el("status")
-    .textContent =
-      "ANALYSING";
+  if (
+    manual
+  ) {
+
+    $("loadingOverlay")
+      .classList
+      .add("show");
+
+  }
 
 
-  try{
+  $("errorBanner")
+    .classList
+    .remove("show");
+
+
+  try {
 
     const response =
       await fetch(
-
-        API +
-        "?t=" +
-        Date.now(),
-
+        `/api/xau?t=${Date.now()}`,
         {
-          cache:
-            "no-store"
+          cache: "no-store"
         }
       );
 
@@ -4069,13 +4711,15 @@ async function load(){
 
     if (
       !response.ok ||
-      !data.ok
-    ){
+      data.ok === false
+    ) {
 
       throw new Error(
         data.error ||
-        "MKAYFX V8 analysis failed."
+        data.message ||
+        `HTTP ${response.status}`
       );
+
     }
 
 
@@ -4083,49 +4727,171 @@ async function load(){
       data
     );
 
-  }catch(
+
+    refreshRemaining =
+      refreshSeconds;
+
+  }
+
+  catch (
     error
-  ){
+  ) {
 
     console.error(
       error
     );
 
 
-    el("status")
-      .textContent =
-        "ERROR";
+    const banner =
+      $("errorBanner");
 
 
-    el("footer")
-      .innerHTML =
+    banner.textContent =
+      `ENGINE ERROR · ${error.message}`;
 
-        `<span class="error">
-          ${error.message}
-        </span>`;
+
+    banner.classList.add(
+      "show"
+    );
+
+
+    $("healthText").textContent =
+      "OFFLINE";
+
+
+    $("healthDot").style.background =
+      "var(--red)";
+
   }
+
+  finally {
+
+    $("loadingOverlay")
+      .classList
+      .remove("show");
+
+  }
+
 }
 
 
 /* ============================================================
-   EVENTS
+   NAVIGATION
 ============================================================ */
 
-el("refresh")
-  .addEventListener(
-    "click",
-    load
+function switchView(
+  view
+) {
+
+  document
+    .querySelectorAll(
+      ".view"
+    )
+    .forEach(
+      element =>
+        element
+          .classList
+          .remove(
+            "active"
+          )
+    );
+
+
+  document
+    .querySelectorAll(
+      "[data-view]"
+    )
+    .forEach(
+      button =>
+        button
+          .classList
+          .toggle(
+            "active",
+            button.dataset.view ===
+            view
+          )
+    );
+
+
+  const target =
+    $(view);
+
+
+  if (
+    target
+  ) {
+
+    target
+      .classList
+      .add(
+        "active"
+      );
+
+  }
+
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+}
+
+
+document
+  .querySelectorAll(
+    "[data-view]"
+  )
+  .forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () =>
+          switchView(
+            button.dataset.view
+          )
+      );
+
+    }
   );
 
 
-load();
-
+/* ============================================================
+   AUTO REFRESH
+============================================================ */
 
 setInterval(
-  load,
-  60 * 1000
+  () => {
+
+    refreshRemaining--;
+
+
+    if (
+      refreshRemaining <= 0
+    ) {
+
+      loadData(
+        false
+      );
+
+      refreshRemaining =
+        refreshSeconds;
+
+    }
+
+  },
+  1000
 );
 
+
+/* ============================================================
+   INITIAL LOAD
+============================================================ */
+
+loadData(
+  true
+);
 </script>
 
 </body>
