@@ -1,12 +1,10 @@
 /* ================================================================
-   MKAYFX GOLD INTELLIGENCE V8
+   MKAYFX GOLD INTELLIGENCE V8.2
    DEEP LIQUIDITY ZONE ENGINE
-   ---------------------------------------------------------------
+
    FILE:
    /api/xau.js
 
-   ARCHITECTURE
-   ---------------------------------------------------------------
    API #1
    TWELVE_DATA_API_KEY
    XAU/USD M1 + M5
@@ -30,61 +28,6 @@
 
    FRED
    FRED_API_KEY
-   US 2Y
-   US 10Y
-   Fed Funds
-
-   V8 DEEP LIQUIDITY FEATURES
-   ---------------------------------------------------------------
-   - Raw liquidity level discovery
-   - Liquidity clustering
-   - Multi-level liquidity zones
-   - Internal vs external liquidity
-   - Stop-pool estimation
-   - Zone density
-   - Zone freshness
-   - Touch history
-   - Sweep history
-   - Acceptance history
-   - Rejection history
-   - Approach direction
-   - Compression score
-   - Attack score
-   - Liquidity lifecycle
-   - Raid likelihood
-   - Reversal likelihood
-   - Continuation likelihood
-   - Projected raid depth
-   - Projected raid zone
-   - FVG overlap
-   - Session overlap
-   - H1 swing overlap
-   - Equal high / equal low overlap
-   - Previous day/week confluence
-   - Liquidity heat
-   - Liquidity path ranking
-   - Sweep/rejection quality
-   - M1/M5/M15/H1/H4 structure
-   - BOS / CHOCH
-   - Displacement
-   - Delta proxy
-   - CVD proxy
-   - Absorption proxy
-   - Delta divergence
-   - Historical session statistics
-   - Intermarket confirmation
-   - FRED yield pressure
-   - Secondary XAU feed validation
-   - Final consensus
-
-   IMPORTANT
-   ---------------------------------------------------------------
-   Model likelihood scores are heuristic scores, NOT guaranteed
-   probabilities.
-
-   Spot forex / metals volume is decentralized. Delta, CVD,
-   absorption and footprint-style calculations are proxies derived
-   from candle/activity data, not exchange bid/ask order flow.
 ================================================================ */
 
 
@@ -100,19 +43,24 @@ const FRED_BASE =
 
 
 const KEY_1 =
-  process.env.TWELVE_DATA_API_KEY || "";
+  process.env.TWELVE_DATA_API_KEY ||
+  "";
 
 const KEY_2 =
-  process.env.TWELVE_DATA_API_KEY_2 || KEY_1;
+  process.env.TWELVE_DATA_API_KEY_2 ||
+  KEY_1;
 
 const KEY_3 =
-  process.env.TWELVE_DATA_API_KEY_3 || KEY_1;
+  process.env.TWELVE_DATA_API_KEY_3 ||
+  KEY_1;
 
 const KEY_4 =
-  process.env.TWELVE_DATA_API_KEY_4 || KEY_1;
+  process.env.TWELVE_DATA_API_KEY_4 ||
+  KEY_1;
 
 const FRED_KEY =
-  process.env.FRED_API_KEY || "";
+  process.env.FRED_API_KEY ||
+  "";
 
 
 const SYMBOL =
@@ -141,35 +89,35 @@ const MAX_HISTORY =
 ================================================================ */
 
 let liveCache = {
-  time: 0,
-  value: null
+  time:0,
+  value:null
 };
 
 let historyCache = {
-  time: 0,
-  value: null
+  time:0,
+  value:null
 };
 
 let intermarketCache = {
-  time: 0,
-  value: null
+  time:0,
+  value:null
 };
 
 let macroCache = {
-  time: 0,
-  value: null
+  time:0,
+  value:null
 };
 
 
 /* ================================================================
-   BASIC HELPERS
+   HELPERS
 ================================================================ */
 
 function clamp(
   value,
   min,
   max
-) {
+){
 
   return Math.max(
     min,
@@ -184,7 +132,15 @@ function clamp(
 function safeNumber(
   value,
   fallback = 0
-) {
+){
+
+  if(
+    value === null ||
+    value === undefined ||
+    value === ""
+  ){
+    return fallback;
+  }
 
   const n =
     Number(value);
@@ -198,12 +154,12 @@ function safeNumber(
 function round(
   value,
   decimals = 2
-) {
+){
 
   const n =
     Number(value);
 
-  if (!Number.isFinite(n)) {
+  if(!Number.isFinite(n)){
     return null;
   }
 
@@ -212,25 +168,25 @@ function round(
 
   return (
     Math.round(
-      n * power
+      n *
+      power
     ) /
     power
   );
 }
 
 
-function mean(
-  values
-) {
+function mean(values){
 
-  if (!values.length) {
+  if(!values.length){
     return 0;
   }
 
   return (
     values.reduce(
-      (sum, value) =>
-        sum + value,
+      (sum,value) =>
+        sum +
+        value,
       0
     ) /
     values.length
@@ -238,60 +194,61 @@ function mean(
 }
 
 
-function median(
-  values
-) {
+function median(values){
 
-  if (!values.length) {
+  if(!values.length){
     return 0;
   }
 
   const sorted =
-    [...values].sort(
-      (a, b) =>
-        a - b
-    );
+    [...values]
+      .sort(
+        (a,b) =>
+          a -
+          b
+      );
 
   const middle =
     Math.floor(
-      sorted.length / 2
+      sorted.length /
+      2
     );
 
-  if (
-    sorted.length % 2
-  ) {
-
+  if(
+    sorted.length %
+    2
+  ){
     return sorted[middle];
   }
 
   return (
-    (
-      sorted[middle - 1] +
-      sorted[middle]
-    ) /
-    2
-  );
+    sorted[middle - 1] +
+    sorted[middle]
+  ) / 2;
 }
 
 
 function percentile(
   values,
   percentileValue
-) {
+){
 
-  if (!values.length) {
+  if(!values.length){
     return 0;
   }
 
   const sorted =
-    [...values].sort(
-      (a, b) =>
-        a - b
-    );
+    [...values]
+      .sort(
+        (a,b) =>
+          a -
+          b
+      );
 
   const index =
     (
-      sorted.length - 1
+      sorted.length -
+      1
     ) *
     percentileValue;
 
@@ -301,10 +258,7 @@ function percentile(
   const upper =
     Math.ceil(index);
 
-  if (
-    lower === upper
-  ) {
-
+  if(lower === upper){
     return sorted[lower];
   }
 
@@ -322,21 +276,20 @@ function percentile(
 }
 
 
-function last(
-  array
-) {
+function last(array){
 
-  return (
-    array[
-      array.length - 1
-    ]
-  );
+  if(!array?.length){
+    return null;
+  }
+
+  return array[
+    array.length -
+    1
+  ];
 }
 
 
-function unique(
-  values
-) {
+function unique(values){
 
   return [
     ...new Set(values)
@@ -344,35 +297,25 @@ function unique(
 }
 
 
-function isoDay(
-  timestamp
-) {
+function isoDay(timestamp){
 
-  return (
-    new Date(timestamp)
-      .toISOString()
-      .slice(
-        0,
-        10
-      )
-  );
+  return new Date(timestamp)
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
 }
 
 
-function utcHour(
-  timestamp
-) {
+function utcHour(timestamp){
 
-  return (
-    new Date(timestamp)
-      .getUTCHours()
-  );
+  return new Date(timestamp)
+    .getUTCHours();
 }
 
 
-function isoWeekKey(
-  timestamp
-) {
+function isoWeekKey(timestamp){
 
   const date =
     new Date(timestamp);
@@ -387,7 +330,8 @@ function isoWeekKey(
     );
 
   const day =
-    temp.getUTCDay() || 7;
+    temp.getUTCDay() ||
+    7;
 
   temp.setUTCDate(
     temp.getUTCDate() +
@@ -417,14 +361,54 @@ function isoWeekKey(
       7
     );
 
-  return (
-    `${temp.getUTCFullYear()}-W${String(
-      week
-    ).padStart(
-      2,
-      "0"
-    )}`
-  );
+  return `${temp.getUTCFullYear()}-W${String(
+    week
+  ).padStart(
+    2,
+    "0"
+  )}`;
+}
+
+
+/* ================================================================
+   SESSION NAME
+================================================================ */
+
+function sessionNameNow(){
+
+  const hour =
+    new Date()
+      .getUTCHours();
+
+  if(
+    hour >= 12 &&
+    hour < 16
+  ){
+    return "LONDON / NEW YORK";
+  }
+
+  if(
+    hour >= 7 &&
+    hour < 12
+  ){
+    return "LONDON";
+  }
+
+  if(
+    hour >= 16 &&
+    hour < 21
+  ){
+    return "NEW YORK";
+  }
+
+  if(
+    hour >= 0 &&
+    hour < 7
+  ){
+    return "ASIA";
+  }
+
+  return "TRANSITION";
 }
 
 
@@ -432,16 +416,14 @@ function isoWeekKey(
    TWELVE DATA PARSER
 ================================================================ */
 
-function parseTDValues(
-  json
-) {
+function parseTDValues(json){
 
-  if (
+  if(
     !json ||
     !Array.isArray(
       json.values
     )
-  ) {
+  ){
 
     throw new Error(
       json?.message ||
@@ -450,107 +432,94 @@ function parseTDValues(
   }
 
 
-  return (
-    json.values
+  return json.values
+    .map(
+      item => {
 
-      .map(
-        item => {
+        const raw =
+          String(
+            item.datetime
+          );
 
-          const raw =
-            String(
-              item.datetime
-            );
+        const formatted =
+          raw.includes("T")
+            ? raw
+            : raw.replace(
+                " ",
+                "T"
+              );
 
-          const formatted =
-            raw.includes("T")
-              ? raw
-              : raw.replace(
-                  " ",
-                  "T"
-                );
-
-          const timestamp =
-            Date.parse(
-              formatted.endsWith("Z")
-                ? formatted
-                : `${formatted}Z`
-            );
+        const timestamp =
+          Date.parse(
+            /[zZ]|[+-]\d\d:\d\d$/.test(
+              formatted
+            )
+              ? formatted
+              : `${formatted}Z`
+          );
 
 
-          return {
+        const open =
+          Number(item.open);
 
-            time:
-              timestamp,
+        const high =
+          Number(item.high);
 
-            open:
+        const low =
+          Number(item.low);
+
+        const close =
+          Number(item.close);
+
+
+        if(
+          !Number.isFinite(timestamp) ||
+          !Number.isFinite(open) ||
+          !Number.isFinite(high) ||
+          !Number.isFinite(low) ||
+          !Number.isFinite(close) ||
+          open <= 0 ||
+          high <= 0 ||
+          low <= 0 ||
+          close <= 0
+        ){
+          return null;
+        }
+
+
+        return {
+
+          time:timestamp,
+
+          open,
+          high,
+          low,
+          close,
+
+          volume:
+            Number.isFinite(
               Number(
-                item.open
-              ),
-
-            high:
-              Number(
-                item.high
-              ),
-
-            low:
-              Number(
-                item.low
-              ),
-
-            close:
-              Number(
-                item.close
-              ),
-
-            volume:
-              Number.isFinite(
-                Number(
+                item.volume
+              )
+            )
+              ? Number(
                   item.volume
                 )
-              )
-                ? Number(
-                    item.volume
-                  )
-                : 0
-          };
-        }
-      )
-
-      .filter(
-        candle =>
-
-          Number.isFinite(
-            candle.time
-          ) &&
-
-          Number.isFinite(
-            candle.open
-          ) &&
-
-          Number.isFinite(
-            candle.high
-          ) &&
-
-          Number.isFinite(
-            candle.low
-          ) &&
-
-          Number.isFinite(
-            candle.close
-          )
-      )
-
-      .sort(
-        (a, b) =>
-          a.time -
-          b.time
-      )
-  );
+              : 0
+        };
+      }
+    )
+    .filter(Boolean)
+    .sort(
+      (a,b) =>
+        a.time -
+        b.time
+    );
 }
 
 
 /* ================================================================
-   TWELVE DATA FETCH
+   TWELVE DATA
 ================================================================ */
 
 async function tdSeries({
@@ -558,9 +527,9 @@ async function tdSeries({
   interval,
   outputsize,
   apiKey
-}) {
+}){
 
-  if (!apiKey) {
+  if(!apiKey){
 
     throw new Error(
       "Missing Twelve Data API key."
@@ -572,13 +541,9 @@ async function tdSeries({
 
     `${TD_BASE}/time_series` +
 
-    `?symbol=${encodeURIComponent(
-      symbol
-    )}` +
+    `?symbol=${encodeURIComponent(symbol)}` +
 
-    `&interval=${encodeURIComponent(
-      interval
-    )}` +
+    `&interval=${encodeURIComponent(interval)}` +
 
     `&outputsize=${outputsize}` +
 
@@ -586,24 +551,22 @@ async function tdSeries({
 
     `&timezone=UTC` +
 
-    `&apikey=${encodeURIComponent(
-      apiKey
-    )}`;
+    `&apikey=${encodeURIComponent(apiKey)}`;
 
 
   const response =
     await fetch(
       url,
       {
-        headers: {
+        headers:{
           "User-Agent":
-            "MKAYFX-GOLD-V8"
+            "MKAYFX-GOLD-V8.2"
         }
       }
     );
 
 
-  if (!response.ok) {
+  if(!response.ok){
 
     throw new Error(
       `Twelve Data HTTP ${response.status}`
@@ -615,9 +578,10 @@ async function tdSeries({
     await response.json();
 
 
-  if (
-    json.status === "error"
-  ) {
+  if(
+    json.status ===
+    "error"
+  ){
 
     throw new Error(
       json.message ||
@@ -626,10 +590,8 @@ async function tdSeries({
   }
 
 
-  return (
-    parseTDValues(
-      json
-    )
+  return parseTDValues(
+    json
   );
 }
 
@@ -637,9 +599,9 @@ async function tdSeries({
 async function tdQuote({
   symbol,
   apiKey
-}) {
+}){
 
-  if (!apiKey) {
+  if(!apiKey){
     return null;
   }
 
@@ -648,20 +610,16 @@ async function tdQuote({
 
     `${TD_BASE}/quote` +
 
-    `?symbol=${encodeURIComponent(
-      symbol
-    )}` +
+    `?symbol=${encodeURIComponent(symbol)}` +
 
-    `&apikey=${encodeURIComponent(
-      apiKey
-    )}`;
+    `&apikey=${encodeURIComponent(apiKey)}`;
 
 
   const response =
     await fetch(url);
 
 
-  if (!response.ok) {
+  if(!response.ok){
 
     throw new Error(
       `Twelve Data quote HTTP ${response.status}`
@@ -673,9 +631,10 @@ async function tdQuote({
     await response.json();
 
 
-  if (
-    json.status === "error"
-  ) {
+  if(
+    json.status ===
+    "error"
+  ){
 
     throw new Error(
       json.message ||
@@ -684,29 +643,36 @@ async function tdQuote({
   }
 
 
+  const price =
+    safeNumber(
+      json.close ??
+      json.price,
+      null
+    );
+
+
   return {
 
     symbol,
 
-    price:
-      safeNumber(
-        json.close ||
-        json.price
-      ),
+    price,
 
     previousClose:
       safeNumber(
-        json.previous_close
+        json.previous_close,
+        null
       ),
 
     change:
       safeNumber(
-        json.change
+        json.change,
+        null
       ),
 
     percentChange:
       safeNumber(
-        json.percent_change
+        json.percent_change,
+        null
       )
   };
 }
@@ -719,12 +685,11 @@ async function tdQuote({
 function ema(
   values,
   period
-) {
+){
 
-  if (!values.length) {
+  if(!values.length){
     return [];
   }
-
 
   const multiplier =
     2 /
@@ -733,28 +698,23 @@ function ema(
       1
     );
 
-
   let current =
     values[0];
 
-
   const output = [];
 
-
-  for (
+  for(
     let i = 0;
     i < values.length;
     i++
-  ) {
+  ){
 
-    if (
-      i === 0
-    ) {
+    if(i === 0){
 
       current =
         values[i];
 
-    } else {
+    }else{
 
       current =
         values[i] *
@@ -766,12 +726,8 @@ function ema(
         );
     }
 
-
-    output.push(
-      current
-    );
+    output.push(current);
   }
-
 
   return output;
 }
@@ -784,27 +740,25 @@ function ema(
 function atrSeries(
   candles,
   period = 14
-) {
+){
 
-  if (
-    candles.length < 2
-  ) {
-
+  if(
+    candles.length <
+    2
+  ){
     return [];
   }
-
 
   const trueRanges = [
     candles[0].high -
     candles[0].low
   ];
 
-
-  for (
+  for(
     let i = 1;
     i < candles.length;
     i++
-  ) {
+  ){
 
     const candle =
       candles[i];
@@ -812,11 +766,8 @@ function atrSeries(
     const previous =
       candles[i - 1];
 
-
     trueRanges.push(
-
       Math.max(
-
         candle.high -
         candle.low,
 
@@ -833,12 +784,9 @@ function atrSeries(
     );
   }
 
-
-  return (
-    ema(
-      trueRanges,
-      period
-    )
+  return ema(
+    trueRanges,
+    period
   );
 }
 
@@ -846,7 +794,7 @@ function atrSeries(
 function atr(
   candles,
   period = 14
-) {
+){
 
   const values =
     atrSeries(
@@ -854,12 +802,9 @@ function atr(
       period
     );
 
-
-  return (
-    values.length
-      ? last(values)
-      : 0
-  );
+  return values.length
+    ? last(values)
+    : 0;
 }
 
 
@@ -870,22 +815,19 @@ function atr(
 function rsi(
   candles,
   period = 14
-) {
+){
 
-  if (
+  if(
     candles.length <
     period + 2
-  ) {
-
+  ){
     return 50;
   }
-
 
   let gains = 0;
   let losses = 0;
 
-
-  for (
+  for(
     let i =
       candles.length -
       period;
@@ -894,21 +836,18 @@ function rsi(
       candles.length;
 
     i++
-  ) {
+  ){
 
     const difference =
       candles[i].close -
       candles[i - 1].close;
 
-
-    if (
-      difference > 0
-    ) {
+    if(difference > 0){
 
       gains +=
         difference;
 
-    } else {
+    }else{
 
       losses +=
         Math.abs(
@@ -916,7 +855,6 @@ function rsi(
         );
     }
   }
-
 
   const averageGain =
     gains /
@@ -926,19 +864,13 @@ function rsi(
     losses /
     period;
 
-
-  if (
-    averageLoss === 0
-  ) {
-
+  if(averageLoss === 0){
     return 100;
   }
-
 
   const rs =
     averageGain /
     averageLoss;
-
 
   return (
     100 -
@@ -955,28 +887,25 @@ function rsi(
    MACD
 ================================================================ */
 
-function macd(
-  candles
-) {
+function macd(candles){
 
-  if (
-    candles.length < 35
-  ) {
+  if(
+    candles.length <
+    35
+  ){
 
     return {
-      macd: 0,
-      signal: 0,
-      histogram: 0
+      macd:0,
+      signal:0,
+      histogram:0
     };
   }
-
 
   const closes =
     candles.map(
       candle =>
         candle.close
     );
-
 
   const fast =
     ema(
@@ -990,14 +919,12 @@ function macd(
       26
     );
 
-
   const macdLine =
     closes.map(
-      (_, index) =>
+      (_,index) =>
         fast[index] -
         slow[index]
     );
-
 
   const signal =
     ema(
@@ -1005,26 +932,17 @@ function macd(
       9
     );
 
-
   return {
 
     macd:
-      last(
-        macdLine
-      ),
+      last(macdLine),
 
     signal:
-      last(
-        signal
-      ),
+      last(signal),
 
     histogram:
-      last(
-        macdLine
-      ) -
-      last(
-        signal
-      )
+      last(macdLine) -
+      last(signal)
   };
 }
 
@@ -1036,21 +954,17 @@ function macd(
 function roc(
   candles,
   lookback = 10
-) {
+){
 
-  if (
+  if(
     candles.length <=
     lookback
-  ) {
-
+  ){
     return 0;
   }
 
-
   const current =
-    last(
-      candles
-    ).close;
+    last(candles).close;
 
   const previous =
     candles[
@@ -1059,11 +973,9 @@ function roc(
       1
     ].close;
 
-
-  if (!previous) {
+  if(!previous){
     return 0;
   }
-
 
   return (
     (
@@ -1077,42 +989,34 @@ function roc(
 
 
 /* ================================================================
-   VWAP PROXY
+   VWAP
 ================================================================ */
 
 function vwapProxy(
   candles,
   lookback = 150
-) {
+){
 
   const data =
     candles.slice(
       -lookback
     );
 
-
-  if (!data.length) {
+  if(!data.length){
     return 0;
   }
-
 
   let pv = 0;
   let volume = 0;
 
-
-  for (
-    const candle
-    of data
-  ) {
+  for(const candle of data){
 
     const typical =
       (
         candle.high +
         candle.low +
         candle.close
-      ) /
-      3;
-
+      ) / 3;
 
     const activity =
       candle.volume > 0
@@ -1120,9 +1024,8 @@ function vwapProxy(
         : Math.max(
             candle.high -
             candle.low,
-            0.0001
+            .0001
           );
-
 
     pv +=
       typical *
@@ -1132,72 +1035,59 @@ function vwapProxy(
       activity;
   }
 
-
-  return (
-    volume > 0
-      ? pv /
-        volume
-      : last(
-          data
-        ).close
-  );
+  return volume > 0
+    ? pv /
+      volume
+    : last(data).close;
 }
 
 
 /* ================================================================
-   PIVOT DETECTION
+   PIVOTS
 ================================================================ */
 
 function pivotHigh(
   candles,
   index,
-  left = 3,
-  right = 3
-) {
+  leftCount = 3,
+  rightCount = 3
+){
 
-  if (
-    index < left ||
-    index + right >=
+  if(
+    index < leftCount ||
+    index +
+    rightCount >=
     candles.length
-  ) {
-
+  ){
     return false;
   }
-
 
   const level =
     candles[index].high;
 
-
-  for (
+  for(
     let i =
       index -
-      left;
+      leftCount;
 
     i <=
       index +
-      right;
+      rightCount;
 
     i++
-  ) {
+  ){
 
-    if (
-      i === index
-    ) {
-
+    if(i === index){
       continue;
     }
 
-
-    if (
+    if(
       candles[i].high >=
       level
-    ) {
-
+    ){
       return false;
     }
   }
-
 
   return true;
 }
@@ -1206,53 +1096,45 @@ function pivotHigh(
 function pivotLow(
   candles,
   index,
-  left = 3,
-  right = 3
-) {
+  leftCount = 3,
+  rightCount = 3
+){
 
-  if (
-    index < left ||
-    index + right >=
+  if(
+    index < leftCount ||
+    index +
+    rightCount >=
     candles.length
-  ) {
-
+  ){
     return false;
   }
-
 
   const level =
     candles[index].low;
 
-
-  for (
+  for(
     let i =
       index -
-      left;
+      leftCount;
 
     i <=
       index +
-      right;
+      rightCount;
 
     i++
-  ) {
+  ){
 
-    if (
-      i === index
-    ) {
-
+    if(i === index){
       continue;
     }
 
-
-    if (
+    if(
       candles[i].low <=
       level
-    ) {
-
+    ){
       return false;
     }
   }
-
 
   return true;
 }
@@ -1265,61 +1147,49 @@ function pivotLow(
 function swings(
   candles,
   lookback = 180
-) {
+){
 
   const data =
     candles.slice(
       -lookback
     );
 
-
   const highs = [];
   const lows = [];
 
-
-  for (
+  for(
     let i = 3;
     i <
       data.length - 3;
     i++
-  ) {
+  ){
 
-    if (
+    if(
       pivotHigh(
         data,
         i
       )
-    ) {
+    ){
 
       highs.push({
-
-        time:
-          data[i].time,
-
-        price:
-          data[i].high
+        time:data[i].time,
+        price:data[i].high
       });
     }
 
-
-    if (
+    if(
       pivotLow(
         data,
         i
       )
-    ) {
+    ){
 
       lows.push({
-
-        time:
-          data[i].time,
-
-        price:
-          data[i].low
+        time:data[i].time,
+        price:data[i].low
       });
     }
   }
-
 
   return {
     highs,
@@ -1329,52 +1199,33 @@ function swings(
 
 
 /* ================================================================
-   MARKET STRUCTURE
+   STRUCTURE
 ================================================================ */
 
-function structure(
-  candles
-) {
+function structure(candles){
 
-  if (
-    candles.length < 55
-  ) {
+  if(
+    candles.length <
+    55
+  ){
 
     return {
-
-      bias:
-        "NEUTRAL",
-
-      score:
-        0,
-
-      ema20:
-        null,
-
-      ema50:
-        null,
-
-      bos:
-        null,
-
-      choch:
-        null,
-
-      lastSwingHigh:
-        null,
-
-      lastSwingLow:
-        null
+      bias:"NEUTRAL",
+      score:0,
+      ema20:null,
+      ema50:null,
+      bos:null,
+      choch:null,
+      lastSwingHigh:null,
+      lastSwingLow:null
     };
   }
-
 
   const closes =
     candles.map(
       candle =>
         candle.close
     );
-
 
   const ema20 =
     last(
@@ -1384,7 +1235,6 @@ function structure(
       )
     );
 
-
   const ema50 =
     last(
       ema(
@@ -1393,19 +1243,14 @@ function structure(
       )
     );
 
-
   const price =
-    last(
-      candles
-    ).close;
-
+    last(candles).close;
 
   const swingData =
     swings(
       candles,
       140
     );
-
 
   const swingHigh =
     swingData.highs.length
@@ -1414,7 +1259,6 @@ function structure(
         )
       : null;
 
-
   const swingLow =
     swingData.lows.length
       ? last(
@@ -1422,47 +1266,28 @@ function structure(
         )
       : null;
 
-
   let score = 0;
 
-
-  if (
-    price >
-    ema20
-  ) {
-
+  if(price > ema20){
     score += 1;
-
-  } else {
-
+  }else{
     score -= 1;
   }
 
-
-  if (
-    ema20 >
-    ema50
-  ) {
-
+  if(ema20 > ema50){
     score += 1;
-
-  } else {
-
+  }else{
     score -= 1;
   }
-
 
   const recent =
-    candles.slice(
-      -10
-    );
+    candles.slice(-10);
 
   const previous =
     candles.slice(
       -20,
       -10
     );
-
 
   const recentHigh =
     Math.max(
@@ -1472,7 +1297,6 @@ function structure(
       )
     );
 
-
   const olderHigh =
     Math.max(
       ...previous.map(
@@ -1480,7 +1304,6 @@ function structure(
           candle.high
       )
     );
-
 
   const recentLow =
     Math.min(
@@ -1490,7 +1313,6 @@ function structure(
       )
     );
 
-
   const olderLow =
     Math.min(
       ...previous.map(
@@ -1499,81 +1321,64 @@ function structure(
       )
     );
 
-
-  if (
+  if(
     recentHigh >
-      olderHigh &&
+    olderHigh &&
     recentLow >
-      olderLow
-  ) {
-
+    olderLow
+  ){
     score += 2;
   }
 
-
-  if (
+  if(
     recentHigh <
-      olderHigh &&
+    olderHigh &&
     recentLow <
-      olderLow
-  ) {
-
+    olderLow
+  ){
     score -= 2;
   }
 
+  let bos = null;
+  let choch = null;
 
-  let bos =
-    null;
-
-  let choch =
-    null;
-
-
-  if (
+  if(
     swingHigh &&
     price >
-      swingHigh.price
-  ) {
-
+    swingHigh.price
+  ){
     bos =
       "BULLISH BOS";
   }
 
-
-  if (
+  if(
     swingLow &&
     price <
-      swingLow.price
-  ) {
-
+    swingLow.price
+  ){
     bos =
       "BEARISH BOS";
   }
 
-
-  if (
+  if(
     score <= -1 &&
     swingHigh &&
     price >
-      swingHigh.price
-  ) {
-
+    swingHigh.price
+  ){
     choch =
       "BULLISH CHOCH";
   }
 
-
-  if (
+  if(
     score >= 1 &&
     swingLow &&
     price <
-      swingLow.price
-  ) {
-
+    swingLow.price
+  ){
     choch =
       "BEARISH CHOCH";
   }
-
 
   return {
 
@@ -1599,7 +1404,6 @@ function structure(
       ),
 
     bos,
-
     choch,
 
     lastSwingHigh:
@@ -1610,7 +1414,6 @@ function structure(
                 swingHigh.price,
                 2
               ),
-
             time:
               swingHigh.time
           }
@@ -1624,7 +1427,6 @@ function structure(
                 swingLow.price,
                 2
               ),
-
             time:
               swingLow.time
           }
@@ -1637,33 +1439,21 @@ function structure(
    DISPLACEMENT
 ================================================================ */
 
-function displacement(
-  candles
-) {
+function displacement(candles){
 
-  if (
-    candles.length < 30
-  ) {
+  if(
+    candles.length <
+    30
+  ){
 
     return {
-
-      active:
-        false,
-
-      direction:
-        null,
-
-      strength:
-        0,
-
-      expansion:
-        0,
-
-      bodyRatio:
-        0
+      active:false,
+      direction:null,
+      strength:0,
+      expansion:0,
+      bodyRatio:0
     };
   }
-
 
   const ranges =
     candles
@@ -1677,26 +1467,18 @@ function displacement(
           candle.low
       );
 
-
   const averageRange =
-    mean(
-      ranges
-    );
-
+    mean(ranges);
 
   const candle =
-    last(
-      candles
-    );
-
+    last(candles);
 
   const range =
     Math.max(
       candle.high -
       candle.low,
-      0.00001
+      .00001
     );
-
 
   const body =
     Math.abs(
@@ -1704,11 +1486,9 @@ function displacement(
       candle.open
     );
 
-
   const bodyRatio =
     body /
     range;
-
 
   const expansion =
     averageRange > 0
@@ -1716,11 +1496,9 @@ function displacement(
         averageRange
       : 0;
 
-
   const active =
     expansion >= 1.5 &&
-    bodyRatio >= 0.65;
-
+    bodyRatio >= .65;
 
   return {
 
@@ -1764,72 +1542,63 @@ function displacement(
 
 
 /* ================================================================
-   SESSION DEFINITIONS
+   SESSIONS
 ================================================================ */
 
 const SESSION_DEFS = {
 
-  ASIA: {
-    start: 0,
-    end: 7
+  ASIA:{
+    start:0,
+    end:7
   },
 
-  LONDON: {
-    start: 7,
-    end: 16
+  LONDON:{
+    start:7,
+    end:16
   },
 
-  NEW_YORK: {
-    start: 12,
-    end: 21
+  NEW_YORK:{
+    start:12,
+    end:21
   }
 };
 
-
-/* ================================================================
-   SESSION RANGE
-================================================================ */
 
 function sessionRange(
   candles,
   day,
   definition
-) {
+){
 
   const data =
     candles.filter(
       candle => {
 
-        if (
+        if(
           isoDay(
             candle.time
           ) !== day
-        ) {
-
+        ){
           return false;
         }
-
 
         const hour =
           utcHour(
             candle.time
           );
 
-
         return (
           hour >=
-            definition.start &&
+          definition.start &&
           hour <
-            definition.end
+          definition.end
         );
       }
     );
 
-
-  if (!data.length) {
+  if(!data.length){
     return null;
   }
-
 
   return {
 
@@ -1853,17 +1622,13 @@ function sessionRange(
       data[0].open,
 
     close:
-      last(
-        data
-      ).close,
+      last(data).close,
 
     startTime:
       data[0].time,
 
     endTime:
-      last(
-        data
-      ).time,
+      last(data).time,
 
     bars:
       data.length
@@ -1871,40 +1636,25 @@ function sessionRange(
 }
 
 
-/* ================================================================
-   CURRENT SESSION LEVELS
-================================================================ */
+function currentSessions(candles){
 
-function currentSessions(
-  candles
-) {
-
-  if (!candles.length) {
+  if(!candles.length){
     return {};
   }
 
-
   const day =
     isoDay(
-      last(
-        candles
-      ).time
+      last(candles).time
     );
-
 
   const result = {};
 
-
-  for (
-    const [
-      name,
-      definition
-    ]
-    of
-    Object.entries(
+  for(
+    const [name,definition]
+    of Object.entries(
       SESSION_DEFS
     )
-  ) {
+  ){
 
     const range =
       sessionRange(
@@ -1913,11 +1663,9 @@ function currentSessions(
         definition
       );
 
-
     result[name] =
       range
         ? {
-
             high:
               round(
                 range.high,
@@ -1952,7 +1700,6 @@ function currentSessions(
         : null;
   }
 
-
   return result;
 }
 
@@ -1961,9 +1708,7 @@ function currentSessions(
    PREVIOUS DAY
 ================================================================ */
 
-function previousDayLevels(
-  candles
-) {
+function previousDayLevels(candles){
 
   const days =
     unique(
@@ -1975,21 +1720,15 @@ function previousDayLevels(
       )
     );
 
-
-  if (
-    days.length < 2
-  ) {
-
+  if(days.length < 2){
     return null;
   }
-
 
   const day =
     days[
       days.length -
       2
     ];
-
 
   const data =
     candles.filter(
@@ -1999,16 +1738,13 @@ function previousDayLevels(
         ) === day
     );
 
-
-  if (!data.length) {
+  if(!data.length){
     return null;
   }
 
-
   return {
 
-    date:
-      day,
+    date:day,
 
     high:
       round(
@@ -2039,9 +1775,7 @@ function previousDayLevels(
    PREVIOUS WEEK
 ================================================================ */
 
-function previousWeekLevels(
-  candles
-) {
+function previousWeekLevels(candles){
 
   const weeks =
     unique(
@@ -2053,21 +1787,15 @@ function previousWeekLevels(
       )
     );
 
-
-  if (
-    weeks.length < 2
-  ) {
-
+  if(weeks.length < 2){
     return null;
   }
-
 
   const week =
     weeks[
       weeks.length -
       2
     ];
-
 
   const data =
     candles.filter(
@@ -2077,11 +1805,9 @@ function previousWeekLevels(
         ) === week
     );
 
-
-  if (!data.length) {
+  if(!data.length){
     return null;
   }
-
 
   return {
 
@@ -2113,13 +1839,13 @@ function previousWeekLevels(
 
 
 /* ================================================================
-   EQUAL HIGHS / LOWS
+   EQUAL LEVELS
 ================================================================ */
 
 function detectEqualLevels(
   candles,
   atrValue
-) {
+){
 
   const swingData =
     swings(
@@ -2127,27 +1853,24 @@ function detectEqualLevels(
       220
     );
 
-
   const tolerance =
     Math.max(
       atrValue *
-      0.12,
-      0.05
+      .12,
+      .05
     );
-
 
   const highs = [];
   const lows = [];
 
-
-  for (
+  for(
     let i = 0;
     i <
       swingData.highs.length;
     i++
-  ) {
+  ){
 
-    for (
+    for(
       let j =
         i + 1;
 
@@ -2155,7 +1878,7 @@ function detectEqualLevels(
         swingData.highs.length;
 
       j++
-    ) {
+    ){
 
       const first =
         swingData.highs[i];
@@ -2163,14 +1886,13 @@ function detectEqualLevels(
       const second =
         swingData.highs[j];
 
-
-      if (
+      if(
         Math.abs(
           first.price -
           second.price
         ) <=
         tolerance
-      ) {
+      ){
 
         highs.push({
 
@@ -2178,8 +1900,7 @@ function detectEqualLevels(
             (
               first.price +
               second.price
-            ) /
-            2,
+            ) / 2,
 
           firstTime:
             first.time,
@@ -2191,15 +1912,14 @@ function detectEqualLevels(
     }
   }
 
-
-  for (
+  for(
     let i = 0;
     i <
       swingData.lows.length;
     i++
-  ) {
+  ){
 
-    for (
+    for(
       let j =
         i + 1;
 
@@ -2207,7 +1927,7 @@ function detectEqualLevels(
         swingData.lows.length;
 
       j++
-    ) {
+    ){
 
       const first =
         swingData.lows[i];
@@ -2215,14 +1935,13 @@ function detectEqualLevels(
       const second =
         swingData.lows[j];
 
-
-      if (
+      if(
         Math.abs(
           first.price -
           second.price
         ) <=
         tolerance
-      ) {
+      ){
 
         lows.push({
 
@@ -2230,8 +1949,7 @@ function detectEqualLevels(
             (
               first.price +
               second.price
-            ) /
-            2,
+            ) / 2,
 
           firstTime:
             first.time,
@@ -2243,18 +1961,14 @@ function detectEqualLevels(
     }
   }
 
-
   return {
 
     highs:
       highs
-        .slice(
-          -8
-        )
+        .slice(-8)
         .map(
           item => ({
             ...item,
-
             level:
               round(
                 item.level,
@@ -2265,13 +1979,10 @@ function detectEqualLevels(
 
     lows:
       lows
-        .slice(
-          -8
-        )
+        .slice(-8)
         .map(
           item => ({
             ...item,
-
             level:
               round(
                 item.level,
@@ -2284,23 +1995,22 @@ function detectEqualLevels(
 
 
 /* ================================================================
-   FAIR VALUE GAPS
+   FVG
 ================================================================ */
 
 function fairValueGaps(
   candles,
   maxResults = 14
-) {
+){
 
   const gaps = [];
 
-
-  for (
+  for(
     let i = 2;
     i <
       candles.length;
     i++
-  ) {
+  ){
 
     const first =
       candles[
@@ -2310,11 +2020,10 @@ function fairValueGaps(
     const third =
       candles[i];
 
-
-    if (
+    if(
       third.low >
       first.high
-    ) {
+    ){
 
       gaps.push({
 
@@ -2331,19 +2040,17 @@ function fairValueGaps(
           (
             first.high +
             third.low
-          ) /
-          2,
+          ) / 2,
 
         time:
           third.time
       });
     }
 
-
-    if (
+    if(
       third.high <
       first.low
-    ) {
+    ){
 
       gaps.push({
 
@@ -2360,8 +2067,7 @@ function fairValueGaps(
           (
             third.high +
             first.low
-          ) /
-          2,
+          ) / 2,
 
         time:
           third.time
@@ -2369,102 +2075,77 @@ function fairValueGaps(
     }
   }
 
+  return gaps
+    .slice(
+      -maxResults
+    )
+    .map(
+      gap => ({
 
-  return (
-    gaps
-      .slice(
-        -maxResults
-      )
-      .map(
-        gap => ({
+        direction:
+          gap.direction,
 
-          direction:
-            gap.direction,
+        low:
+          round(
+            gap.low,
+            2
+          ),
 
-          low:
-            round(
-              gap.low,
-              2
-            ),
+        high:
+          round(
+            gap.high,
+            2
+          ),
 
-          high:
-            round(
-              gap.high,
-              2
-            ),
+        midpoint:
+          round(
+            gap.midpoint,
+            2
+          ),
 
-          midpoint:
-            round(
-              gap.midpoint,
-              2
-            ),
-
-          time:
-            gap.time
-        })
-      )
-  );
+        time:
+          gap.time
+      })
+    );
 }
 
 
 /* ================================================================
-   DELTA / CVD / ABSORPTION PROXY
+   DELTA ENGINE
 ================================================================ */
 
-function deltaEngine(
-  candles
-) {
+function deltaEngine(candles){
 
-  if (!candles.length) {
+  if(!candles.length){
 
     return {
-
-      delta:
-        0,
-
-      cvd:
-        0,
-
-      bias:
-        "BALANCED",
-
-      absorption:
-        null,
-
-      divergence:
-        null
+      delta:0,
+      cvd:0,
+      bias:"BALANCED",
+      absorption:null,
+      divergence:null
     };
   }
 
-
   const data =
-    candles.slice(
-      -120
-    );
-
+    candles.slice(-120);
 
   let cvd = 0;
 
   const rows = [];
 
-
-  for (
-    const candle
-    of data
-  ) {
+  for(const candle of data){
 
     const range =
       Math.max(
         candle.high -
         candle.low,
-        0.00001
+        .00001
       );
-
 
     const body =
       candle.close -
       candle.open;
-
 
     const location =
       (
@@ -2477,12 +2158,10 @@ function deltaEngine(
       2 -
       1;
 
-
     const activity =
       candle.volume > 0
         ? candle.volume
         : range;
-
 
     const delta =
       activity *
@@ -2491,17 +2170,14 @@ function deltaEngine(
           body /
           range
         ) *
-        0.65 +
+        .65 +
         location *
-        0.35,
+        .35,
         -1,
         1
       );
 
-
-    cvd +=
-      delta;
-
+    cvd += delta;
 
     rows.push({
 
@@ -2512,9 +2188,7 @@ function deltaEngine(
         candle.close,
 
       delta,
-
       cvd,
-
       range,
 
       bodyRatio:
@@ -2525,30 +2199,19 @@ function deltaEngine(
     });
   }
 
-
   const recent =
-    rows.slice(
-      -12
-    );
-
+    rows.slice(-12);
 
   const recentDelta =
     recent.reduce(
-      (
-        sum,
-        row
-      ) =>
+      (sum,row) =>
         sum +
         row.delta,
       0
     );
 
-
   const latest =
-    last(
-      rows
-    );
-
+    last(rows);
 
   const averageRange =
     mean(
@@ -2563,25 +2226,21 @@ function deltaEngine(
         )
     );
 
+  let absorption = null;
 
-  let absorption =
-    null;
-
-
-  if (
+  if(
     latest &&
     averageRange > 0
-  ) {
+  ){
 
     const expansion =
       latest.range /
       averageRange;
 
-
-    if (
+    if(
       expansion >= 1.25 &&
-      latest.bodyRatio <= 0.35
-    ) {
+      latest.bodyRatio <= .35
+    ){
 
       absorption =
         latest.delta > 0
@@ -2592,14 +2251,9 @@ function deltaEngine(
     }
   }
 
+  let divergence = null;
 
-  let divergence =
-    null;
-
-
-  if (
-    rows.length >= 20
-  ) {
+  if(rows.length >= 20){
 
     const older =
       rows[
@@ -2607,43 +2261,33 @@ function deltaEngine(
         15
       ];
 
-
     const newer =
-      last(
-        rows
-      );
-
+      last(rows);
 
     const priceMove =
       newer.price -
       older.price;
 
-
     const cvdMove =
       newer.cvd -
       older.cvd;
 
-
-    if (
+    if(
       priceMove > 0 &&
       cvdMove < 0
-    ) {
-
+    ){
       divergence =
         "BEARISH DELTA DIVERGENCE";
     }
 
-
-    if (
+    if(
       priceMove < 0 &&
       cvdMove > 0
-    ) {
-
+    ){
       divergence =
         "BULLISH DELTA DIVERGENCE";
     }
   }
-
 
   return {
 
@@ -2667,7 +2311,6 @@ function deltaEngine(
           : "BALANCED",
 
     absorption,
-
     divergence,
 
     note:
@@ -2677,19 +2320,18 @@ function deltaEngine(
 
 
 /* ================================================================
-   HISTORICAL SESSION SWEEP STATS
+   HISTORICAL SESSION STATS
 ================================================================ */
 
 function historicalSessionStats(
   candles,
   sessionName
-) {
+){
 
   const definition =
     SESSION_DEFS[
       sessionName
     ];
-
 
   const days =
     unique(
@@ -2701,7 +2343,6 @@ function historicalSessionStats(
       )
     );
 
-
   let samples = 0;
 
   let highSweeps = 0;
@@ -2710,15 +2351,10 @@ function historicalSessionStats(
   let lowSweeps = 0;
   let lowReturns = 0;
 
-
   const highRaids = [];
   const lowRaids = [];
 
-
-  for (
-    const day
-    of days
-  ) {
+  for(const day of days){
 
     const session =
       sessionRange(
@@ -2727,35 +2363,26 @@ function historicalSessionStats(
         definition
       );
 
-
-    if (!session) {
+    if(!session){
       continue;
     }
-
 
     const future =
       candles.filter(
         candle =>
-
           candle.time >
-            session.endTime &&
-
+          session.endTime &&
           candle.time <=
-            session.endTime +
-            16 *
-            60 *
-            60 *
-            1000
+          session.endTime +
+          16 *
+          60 *
+          60 *
+          1000
       );
 
-
-    if (
-      future.length < 3
-    ) {
-
+    if(future.length < 3){
       continue;
     }
-
 
     const past =
       candles.filter(
@@ -2764,27 +2391,20 @@ function historicalSessionStats(
           session.endTime
       );
 
-
     const localATR =
       atr(
-        past.slice(
-          -100
-        ),
+        past.slice(-100),
         14
       );
 
-
-    if (
+    if(
       !localATR ||
       localATR <= 0
-    ) {
-
+    ){
       continue;
     }
 
-
     samples++;
-
 
     const futureHigh =
       Math.max(
@@ -2794,7 +2414,6 @@ function historicalSessionStats(
         )
       );
 
-
     const futureLow =
       Math.min(
         ...future.map(
@@ -2803,14 +2422,12 @@ function historicalSessionStats(
         )
       );
 
-
-    if (
+    if(
       futureHigh >
       session.high
-    ) {
+    ){
 
       highSweeps++;
-
 
       highRaids.push(
         clamp(
@@ -2824,7 +2441,6 @@ function historicalSessionStats(
         )
       );
 
-
       const firstSweep =
         future.findIndex(
           candle =>
@@ -2832,10 +2448,7 @@ function historicalSessionStats(
             session.high
         );
 
-
-      if (
-        firstSweep >= 0
-      ) {
+      if(firstSweep >= 0){
 
         const after =
           future.slice(
@@ -2843,28 +2456,24 @@ function historicalSessionStats(
             firstSweep + 18
           );
 
-
-        if (
+        if(
           after.some(
             candle =>
               candle.close <
               session.high
           )
-        ) {
-
+        ){
           highReturns++;
         }
       }
     }
 
-
-    if (
+    if(
       futureLow <
       session.low
-    ) {
+    ){
 
       lowSweeps++;
-
 
       lowRaids.push(
         clamp(
@@ -2878,7 +2487,6 @@ function historicalSessionStats(
         )
       );
 
-
       const firstSweep =
         future.findIndex(
           candle =>
@@ -2886,10 +2494,7 @@ function historicalSessionStats(
             session.low
         );
 
-
-      if (
-        firstSweep >= 0
-      ) {
+      if(firstSweep >= 0){
 
         const after =
           future.slice(
@@ -2897,15 +2502,13 @@ function historicalSessionStats(
             firstSweep + 18
           );
 
-
-        if (
+        if(
           after.some(
             candle =>
               candle.close >
               session.low
           )
-        ) {
-
+        ){
           lowReturns++;
         }
       }
@@ -2917,7 +2520,7 @@ function historicalSessionStats(
     swept,
     returned,
     raids
-  ) {
+  ){
 
     const sweepRate =
       samples > 0
@@ -2926,7 +2529,6 @@ function historicalSessionStats(
           100
         : 0;
 
-
     const returnRate =
       swept > 0
         ? returned /
@@ -2934,33 +2536,24 @@ function historicalSessionStats(
           100
         : 0;
 
-
     let confidence =
       "LOW";
 
-
-    if (
-      samples >= 40
-    ) {
+    if(samples >= 40){
 
       confidence =
         "HIGH";
 
-    } else if (
-      samples >= 20
-    ) {
+    }else if(samples >= 20){
 
       confidence =
         "MEDIUM";
     }
 
-
     return {
 
       samples,
-
       swept,
-
       returned,
 
       sweepRate:
@@ -2987,7 +2580,7 @@ function historicalSessionStats(
         round(
           percentile(
             raids,
-            0.75
+            .75
           ),
           2
         ),
@@ -2996,7 +2589,7 @@ function historicalSessionStats(
         round(
           percentile(
             raids,
-            0.90
+            .90
           ),
           2
         ),
@@ -3004,7 +2597,6 @@ function historicalSessionStats(
       confidence
     };
   }
-
 
   return {
 
@@ -3026,27 +2618,27 @@ function historicalSessionStats(
 
 
 /* ================================================================
-   HISTORICAL LOADER
+   HISTORY
 ================================================================ */
 
-async function loadHistory() {
+async function loadHistory(
+  force = false
+){
 
-  if (
+  if(
+    !force &&
     historyCache.value &&
     Date.now() -
-      historyCache.time <
-      HISTORY_CACHE_MS
-  ) {
-
+    historyCache.time <
+    HISTORY_CACHE_MS
+  ){
     return historyCache.value;
   }
-
 
   const candles =
     await tdSeries({
 
-      symbol:
-        SYMBOL,
+      symbol:SYMBOL,
 
       interval:
         "5min",
@@ -3057,7 +2649,6 @@ async function loadHistory() {
       apiKey:
         KEY_3
     });
-
 
   const result = {
 
@@ -3071,12 +2662,10 @@ async function loadHistory() {
 
     lastTimestamp:
       candles.length
-        ? last(
-            candles
-          ).time
+        ? last(candles).time
         : null,
 
-    statistics: {
+    statistics:{
 
       ASIA:
         historicalSessionStats(
@@ -3098,23 +2687,17 @@ async function loadHistory() {
     }
   };
 
-
   historyCache = {
-
-    time:
-      Date.now(),
-
-    value:
-      result
+    time:Date.now(),
+    value:result
   };
-
 
   return result;
 }
 
 
 /* ================================================================
-   RAW LIQUIDITY LEVELS
+   RAW LIQUIDITY
 ================================================================ */
 
 function buildRawLiquidityLevels({
@@ -3124,10 +2707,9 @@ function buildRawLiquidityLevels({
   h1,
   equalLevels,
   historicalStats
-}) {
+}){
 
   const levels = [];
-
 
   function add({
     name,
@@ -3136,31 +2718,25 @@ function buildRawLiquidityLevels({
     type,
     strength,
     historical = null
-  }) {
+  }){
 
-    if (
-      !Number.isFinite(
-        Number(
-          level
-        )
-      )
-    ) {
+    const n =
+      Number(level);
 
+    if(
+      !Number.isFinite(n) ||
+      n <= 0
+    ){
       return;
     }
-
 
     levels.push({
 
       name,
 
-      level:
-        Number(
-          level
-        ),
+      level:n,
 
       side,
-
       type,
 
       baseStrength:
@@ -3171,49 +2747,26 @@ function buildRawLiquidityLevels({
   }
 
 
-  if (
-    sessions.ASIA
-  ) {
+  if(sessions.ASIA){
 
     add({
-      name:
-        "ASIA HIGH",
-
-      level:
-        sessions.ASIA.high,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "SESSION",
-
-      strength:
-        68,
-
+      name:"ASIA HIGH",
+      level:sessions.ASIA.high,
+      side:"BUY_SIDE",
+      type:"SESSION",
+      strength:68,
       historical:
         historicalStats
           ?.ASIA
           ?.high
     });
 
-
     add({
-      name:
-        "ASIA LOW",
-
-      level:
-        sessions.ASIA.low,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "SESSION",
-
-      strength:
-        68,
-
+      name:"ASIA LOW",
+      level:sessions.ASIA.low,
+      side:"SELL_SIDE",
+      type:"SESSION",
+      strength:68,
       historical:
         historicalStats
           ?.ASIA
@@ -3222,49 +2775,26 @@ function buildRawLiquidityLevels({
   }
 
 
-  if (
-    sessions.LONDON
-  ) {
+  if(sessions.LONDON){
 
     add({
-      name:
-        "LONDON HIGH",
-
-      level:
-        sessions.LONDON.high,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "SESSION",
-
-      strength:
-        80,
-
+      name:"LONDON HIGH",
+      level:sessions.LONDON.high,
+      side:"BUY_SIDE",
+      type:"SESSION",
+      strength:80,
       historical:
         historicalStats
           ?.LONDON
           ?.high
     });
 
-
     add({
-      name:
-        "LONDON LOW",
-
-      level:
-        sessions.LONDON.low,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "SESSION",
-
-      strength:
-        80,
-
+      name:"LONDON LOW",
+      level:sessions.LONDON.low,
+      side:"SELL_SIDE",
+      type:"SESSION",
+      strength:80,
       historical:
         historicalStats
           ?.LONDON
@@ -3273,49 +2803,26 @@ function buildRawLiquidityLevels({
   }
 
 
-  if (
-    sessions.NEW_YORK
-  ) {
+  if(sessions.NEW_YORK){
 
     add({
-      name:
-        "NEW YORK HIGH",
-
-      level:
-        sessions.NEW_YORK.high,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "SESSION",
-
-      strength:
-        84,
-
+      name:"NEW YORK HIGH",
+      level:sessions.NEW_YORK.high,
+      side:"BUY_SIDE",
+      type:"SESSION",
+      strength:84,
       historical:
         historicalStats
           ?.NEW_YORK
           ?.high
     });
 
-
     add({
-      name:
-        "NEW YORK LOW",
-
-      level:
-        sessions.NEW_YORK.low,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "SESSION",
-
-      strength:
-        84,
-
+      name:"NEW YORK LOW",
+      level:sessions.NEW_YORK.low,
+      side:"SELL_SIDE",
+      type:"SESSION",
+      strength:84,
       historical:
         historicalStats
           ?.NEW_YORK
@@ -3324,84 +2831,42 @@ function buildRawLiquidityLevels({
   }
 
 
-  if (
-    previousDay
-  ) {
+  if(previousDay){
 
     add({
-      name:
-        "PREVIOUS DAY HIGH",
-
-      level:
-        previousDay.high,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "DAILY",
-
-      strength:
-        90
+      name:"PREVIOUS DAY HIGH",
+      level:previousDay.high,
+      side:"BUY_SIDE",
+      type:"DAILY",
+      strength:90
     });
 
-
     add({
-      name:
-        "PREVIOUS DAY LOW",
-
-      level:
-        previousDay.low,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "DAILY",
-
-      strength:
-        90
+      name:"PREVIOUS DAY LOW",
+      level:previousDay.low,
+      side:"SELL_SIDE",
+      type:"DAILY",
+      strength:90
     });
   }
 
 
-  if (
-    previousWeek
-  ) {
+  if(previousWeek){
 
     add({
-      name:
-        "PREVIOUS WEEK HIGH",
-
-      level:
-        previousWeek.high,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "WEEKLY",
-
-      strength:
-        96
+      name:"PREVIOUS WEEK HIGH",
+      level:previousWeek.high,
+      side:"BUY_SIDE",
+      type:"WEEKLY",
+      strength:96
     });
 
-
     add({
-      name:
-        "PREVIOUS WEEK LOW",
-
-      level:
-        previousWeek.low,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "WEEKLY",
-
-      strength:
-        96
+      name:"PREVIOUS WEEK LOW",
+      level:previousWeek.low,
+      side:"SELL_SIDE",
+      type:"WEEKLY",
+      strength:96
     });
   }
 
@@ -3413,133 +2878,81 @@ function buildRawLiquidityLevels({
     );
 
 
-  for (
+  for(
     const swing
-    of
-    h1Swings.highs.slice(
-      -5
-    )
-  ) {
+    of h1Swings.highs.slice(-5)
+  ){
 
     add({
-      name:
-        "H1 SWING HIGH",
-
-      level:
-        swing.price,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "H1_SWING",
-
-      strength:
-        76
+      name:"H1 SWING HIGH",
+      level:swing.price,
+      side:"BUY_SIDE",
+      type:"H1_SWING",
+      strength:76
     });
   }
 
 
-  for (
+  for(
     const swing
-    of
-    h1Swings.lows.slice(
-      -5
-    )
-  ) {
+    of h1Swings.lows.slice(-5)
+  ){
 
     add({
-      name:
-        "H1 SWING LOW",
-
-      level:
-        swing.price,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "H1_SWING",
-
-      strength:
-        76
+      name:"H1 SWING LOW",
+      level:swing.price,
+      side:"SELL_SIDE",
+      type:"H1_SWING",
+      strength:76
     });
   }
 
 
-  for (
+  for(
     const item
-    of
-    equalLevels.highs
-  ) {
+    of equalLevels.highs
+  ){
 
     add({
-      name:
-        "EQUAL HIGHS",
-
-      level:
-        item.level,
-
-      side:
-        "BUY_SIDE",
-
-      type:
-        "EQUAL_LEVEL",
-
-      strength:
-        88
+      name:"EQUAL HIGHS",
+      level:item.level,
+      side:"BUY_SIDE",
+      type:"EQUAL_LEVEL",
+      strength:88
     });
   }
 
 
-  for (
+  for(
     const item
-    of
-    equalLevels.lows
-  ) {
+    of equalLevels.lows
+  ){
 
     add({
-      name:
-        "EQUAL LOWS",
-
-      level:
-        item.level,
-
-      side:
-        "SELL_SIDE",
-
-      type:
-        "EQUAL_LEVEL",
-
-      strength:
-        88
+      name:"EQUAL LOWS",
+      level:item.level,
+      side:"SELL_SIDE",
+      type:"EQUAL_LEVEL",
+      strength:88
     });
   }
-
 
   return levels;
 }
 
 
 /* ================================================================
-   DEALING RANGE / INTERNAL VS EXTERNAL
+   DEALING RANGE
 ================================================================ */
 
-function dealingRange(
-  h1
-) {
+function dealingRange(h1){
 
   const data =
-    h1.slice(
-      -48
-    );
+    h1.slice(-48);
 
-
-  if (!data.length) {
-
+  if(!data.length){
     return null;
   }
-
 
   const high =
     Math.max(
@@ -3549,7 +2962,6 @@ function dealingRange(
       )
     );
 
-
   const low =
     Math.min(
       ...data.map(
@@ -3557,7 +2969,6 @@ function dealingRange(
           candle.low
       )
     );
-
 
   return {
 
@@ -3578,8 +2989,7 @@ function dealingRange(
         (
           high +
           low
-        ) /
-        2,
+        ) / 2,
         2
       ),
 
@@ -3594,7 +3004,7 @@ function dealingRange(
 
 
 /* ================================================================
-   ZONE TOUCH HISTORY
+   TOUCH HISTORY
 ================================================================ */
 
 function zoneTouchHistory({
@@ -3603,13 +3013,10 @@ function zoneTouchHistory({
   zoneHigh,
   side,
   atrValue
-}) {
+}){
 
   const data =
-    candles.slice(
-      -500
-    );
-
+    candles.slice(-500);
 
   let approaches = 0;
   let touches = 0;
@@ -3620,21 +3027,19 @@ function zoneTouchHistory({
   let lastTouchIndex =
     null;
 
-
   const approachDistance =
     atrValue *
-    0.20;
+    .20;
 
-
-  for (
+  for(
     let i = 0;
-    i < data.length;
+    i <
+      data.length;
     i++
-  ) {
+  ){
 
     const candle =
       data[i];
-
 
     const approached =
       side === "BUY_SIDE"
@@ -3649,25 +3054,17 @@ function zoneTouchHistory({
             approachDistance
           );
 
-
-    if (
-      approached
-    ) {
-
+    if(approached){
       approaches++;
     }
 
-
     const touched =
       candle.high >=
-        zoneLow &&
+      zoneLow &&
       candle.low <=
-        zoneHigh;
+      zoneHigh;
 
-
-    if (
-      touched
-    ) {
+    if(touched){
 
       touches++;
 
@@ -3675,57 +3072,48 @@ function zoneTouchHistory({
         i;
     }
 
+    if(
+      side ===
+      "BUY_SIDE"
+    ){
 
-    if (
-      side === "BUY_SIDE"
-    ) {
-
-      if (
+      if(
         candle.high >
         zoneHigh
-      ) {
+      ){
 
         sweeps++;
 
-
-        if (
+        if(
           candle.close <
           zoneHigh
-        ) {
-
+        ){
           rejections++;
-
-        } else {
-
+        }else{
           acceptances++;
         }
       }
 
-    } else {
+    }else{
 
-      if (
+      if(
         candle.low <
         zoneLow
-      ) {
+      ){
 
         sweeps++;
 
-
-        if (
+        if(
           candle.close >
           zoneLow
-        ) {
-
+        ){
           rejections++;
-
-        } else {
-
+        }else{
           acceptances++;
         }
       }
     }
   }
-
 
   const barsSinceTouch =
     lastTouchIndex === null
@@ -3733,7 +3121,6 @@ function zoneTouchHistory({
       : data.length -
         1 -
         lastTouchIndex;
-
 
   const freshnessScore =
     lastTouchIndex === null
@@ -3743,26 +3130,21 @@ function zoneTouchHistory({
           touches *
           13 +
           (
-            barsSinceTouch || 0
+            barsSinceTouch ||
+            0
           ) *
-          0.25,
+          .25,
           10,
           100
         );
 
-
   return {
 
     approaches,
-
     touches,
-
     sweeps,
-
     rejections,
-
     acceptances,
-
     barsSinceTouch,
 
     freshnessScore:
@@ -3784,41 +3166,31 @@ function zoneTouchHistory({
 
 
 /* ================================================================
-   APPROACH / COMPRESSION ENGINE
+   APPROACH
 ================================================================ */
 
 function analyzeApproach({
   candles,
   zone,
   atrValue
-}) {
+}){
 
   const data =
-    candles.slice(
-      -16
-    );
+    candles.slice(-16);
 
-
-  if (
-    data.length < 8
-  ) {
+  if(
+    data.length <
+    8
+  ){
 
     return {
-
-      label:
-        "UNKNOWN",
-
-      score:
-        0,
-
-      compression:
-        0,
-
-      directionality:
-        0
+      label:"UNKNOWN",
+      score:0,
+      compression:0,
+      directionality:0,
+      structure:0
     };
   }
-
 
   const closes =
     data.map(
@@ -3826,20 +3198,15 @@ function analyzeApproach({
         candle.close
     );
 
-
   const first =
     closes[0];
 
   const current =
-    last(
-      closes
-    );
-
+    last(closes);
 
   const netMove =
     current -
     first;
-
 
   const requiredDirection =
     zone.side ===
@@ -3847,11 +3214,9 @@ function analyzeApproach({
       ? 1
       : -1;
 
-
   const directionalMove =
     netMove *
     requiredDirection;
-
 
   const directionality =
     atrValue > 0
@@ -3864,43 +3229,27 @@ function analyzeApproach({
         )
       : 0;
 
-
-  const olderRanges =
-    data
-      .slice(
-        0,
-        8
-      )
-      .map(
-        candle =>
-          candle.high -
-          candle.low
-      );
-
-
-  const recentRanges =
-    data
-      .slice(
-        -8
-      )
-      .map(
-        candle =>
-          candle.high -
-          candle.low
-      );
-
-
   const olderRange =
     mean(
-      olderRanges
+      data
+        .slice(0,8)
+        .map(
+          candle =>
+            candle.high -
+            candle.low
+        )
     );
-
 
   const recentRange =
     mean(
-      recentRanges
+      data
+        .slice(-8)
+        .map(
+          candle =>
+            candle.high -
+            candle.low
+        )
     );
-
 
   const compression =
     olderRange > 0
@@ -3916,42 +3265,37 @@ function analyzeApproach({
         )
       : 0;
 
+  let directionalStructure = 0;
 
-  let directionalStructure =
-    0;
-
-
-  for (
+  for(
     let i = 1;
-    i < data.length;
+    i <
+      data.length;
     i++
-  ) {
+  ){
 
-    if (
+    if(
       zone.side ===
       "BUY_SIDE"
-    ) {
+    ){
 
-      if (
+      if(
         data[i].low >
         data[i - 1].low
-      ) {
-
+      ){
         directionalStructure++;
       }
 
-    } else {
+    }else{
 
-      if (
+      if(
         data[i].high <
         data[i - 1].high
-      ) {
-
+      ){
         directionalStructure++;
       }
     }
   }
-
 
   const structureScore =
     directionalStructure /
@@ -3961,57 +3305,53 @@ function analyzeApproach({
     ) *
     100;
 
-
   const score =
     clamp(
       directionality *
-      0.45 +
+      .45 +
       Math.max(
         compression,
         0
       ) *
-      0.25 +
+      .25 +
       structureScore *
-      0.30,
+      .30,
       0,
       100
     );
 
-
   let label =
     "DRIFTING";
 
-
-  if (
+  if(
     score >= 70 &&
     compression > 10
-  ) {
+  ){
 
     label =
       "COMPRESSING";
 
-  } else if (
+  }else if(
     score >= 55
-  ) {
+  ){
 
     label =
       "ATTACKING";
 
-  } else if (
+  }else if(
     score >= 35
-  ) {
+  ){
 
     label =
       "APPROACHING";
 
-  } else if (
+  }else if(
     directionality < 0
-  ) {
+  ){
 
     label =
       "MOVING AWAY";
   }
-
 
   return {
 
@@ -4045,7 +3385,7 @@ function analyzeApproach({
 
 
 /* ================================================================
-   LIQUIDITY LIFECYCLE
+   LIFECYCLE
 ================================================================ */
 
 function liquidityLifecycle({
@@ -4054,29 +3394,21 @@ function liquidityLifecycle({
   price,
   atrValue,
   approach
-}) {
+}){
 
   const recent =
-    m5.slice(
-      -4
-    );
-
+    m5.slice(-4);
 
   const current =
-    last(
-      m5
-    );
-
+    last(m5);
 
   const distance =
-
     zone.side ===
     "BUY_SIDE"
       ? zone.low -
         price
       : price -
         zone.high;
-
 
   const distanceATR =
     atrValue > 0
@@ -4087,41 +3419,32 @@ function liquidityLifecycle({
         atrValue
       : 0;
 
+  let beyondCount = 0;
 
-  let beyondCount =
-    0;
+  for(const candle of recent){
 
-
-  for (
-    const candle
-    of recent
-  ) {
-
-    if (
+    if(
       zone.side ===
       "BUY_SIDE"
-    ) {
+    ){
 
-      if (
+      if(
         candle.close >
         zone.high
-      ) {
-
+      ){
         beyondCount++;
       }
 
-    } else {
+    }else{
 
-      if (
+      if(
         candle.close <
         zone.low
-      ) {
-
+      ){
         beyondCount++;
       }
     }
   }
-
 
   const penetrated =
     zone.side ===
@@ -4130,7 +3453,6 @@ function liquidityLifecycle({
         zone.high
       : current.low <
         zone.low;
-
 
   const rejected =
     zone.side ===
@@ -4146,169 +3468,118 @@ function liquidityLifecycle({
           zone.low
         );
 
-
-  if (
+  if(
     beyondCount >= 2
-  ) {
+  ){
 
     return {
-
-      stage:
-        "ACCEPTING",
-
+      stage:"ACCEPTING",
       distanceATR:
         round(
           distanceATR,
           2
         ),
-
       penetrated,
-
       rejected
     };
   }
 
-
-  if (
-    rejected
-  ) {
+  if(rejected){
 
     return {
-
-      stage:
-        "REJECTING",
-
+      stage:"REJECTING",
       distanceATR:
         round(
           distanceATR,
           2
         ),
-
       penetrated,
-
       rejected
     };
   }
 
-
-  if (
-    penetrated
-  ) {
+  if(penetrated){
 
     return {
-
-      stage:
-        "RAIDING",
-
+      stage:"RAIDING",
       distanceATR:
         round(
           distanceATR,
           2
         ),
-
       penetrated,
-
       rejected
     };
   }
 
-
-  if (
-    distanceATR <= 0.20
-  ) {
+  if(
+    distanceATR <=
+    .20
+  ){
 
     return {
-
-      stage:
-        "ATTACKING",
-
+      stage:"ATTACKING",
       distanceATR:
         round(
           distanceATR,
           2
         ),
-
-      penetrated:
-        false,
-
-      rejected:
-        false
+      penetrated:false,
+      rejected:false
     };
   }
 
-
-  if (
+  if(
     approach.label ===
     "COMPRESSING" &&
-    distanceATR <= 0.75
-  ) {
+    distanceATR <=
+    .75
+  ){
 
     return {
-
-      stage:
-        "COMPRESSING",
-
+      stage:"COMPRESSING",
       distanceATR:
         round(
           distanceATR,
           2
         ),
-
-      penetrated:
-        false,
-
-      rejected:
-        false
+      penetrated:false,
+      rejected:false
     };
   }
 
-
-  if (
-    distanceATR <= 1.25
-  ) {
+  if(
+    distanceATR <=
+    1.25
+  ){
 
     return {
-
-      stage:
-        "APPROACHING",
-
+      stage:"APPROACHING",
       distanceATR:
         round(
           distanceATR,
           2
         ),
-
-      penetrated:
-        false,
-
-      rejected:
-        false
+      penetrated:false,
+      rejected:false
     };
   }
-
 
   return {
-
-    stage:
-      "TRACKING",
-
+    stage:"TRACKING",
     distanceATR:
       round(
         distanceATR,
         2
       ),
-
-    penetrated:
-      false,
-
-    rejected:
-      false
+    penetrated:false,
+    rejected:false
   };
 }
 
 
 /* ================================================================
-   CLUSTER RAW LIQUIDITY LEVELS
+   CLUSTER LIQUIDITY
 ================================================================ */
 
 function clusterLiquidityLevels({
@@ -4316,35 +3587,30 @@ function clusterLiquidityLevels({
   price,
   atrValue,
   m5,
-  m1,
   h1,
   fvgs
-}) {
+}){
 
-  if (!levels.length) {
+  if(!levels.length){
     return [];
   }
-
 
   const clusterDistance =
     Math.max(
       atrValue *
-      0.22,
-      0.25
+      .22,
+      .25
     );
-
 
   const grouped = [];
 
-
-  for (
+  for(
     const side
-    of
-    [
+    of [
       "BUY_SIDE",
       "SELL_SIDE"
     ]
-  ) {
+  ){
 
     const sideLevels =
       levels
@@ -4354,27 +3620,16 @@ function clusterLiquidityLevels({
             side
         )
         .sort(
-          (
-            a,
-            b
-          ) =>
+          (a,b) =>
             a.level -
             b.level
         );
 
-
     let currentCluster = [];
 
+    for(const level of sideLevels){
 
-    for (
-      const level
-      of
-      sideLevels
-    ) {
-
-      if (
-        !currentCluster.length
-      ) {
+      if(!currentCluster.length){
 
         currentCluster = [
           level
@@ -4382,7 +3637,6 @@ function clusterLiquidityLevels({
 
         continue;
       }
-
 
       const clusterAverage =
         mean(
@@ -4392,20 +3646,19 @@ function clusterLiquidityLevels({
           )
         );
 
-
-      if (
+      if(
         Math.abs(
           level.level -
           clusterAverage
         ) <=
         clusterDistance
-      ) {
+      ){
 
         currentCluster.push(
           level
         );
 
-      } else {
+      }else{
 
         grouped.push(
           currentCluster
@@ -4417,10 +3670,7 @@ function clusterLiquidityLevels({
       }
     }
 
-
-    if (
-      currentCluster.length
-    ) {
+    if(currentCluster.length){
 
       grouped.push(
         currentCluster
@@ -4428,30 +3678,25 @@ function clusterLiquidityLevels({
     }
   }
 
-
-  const range =
+  const dealing =
     dealingRange(
       h1
     );
 
-
   const zones = [];
 
-
-  for (
+  for(
     let index = 0;
     index <
       grouped.length;
     index++
-  ) {
+  ){
 
     const cluster =
       grouped[index];
 
-
     const side =
       cluster[0].side;
-
 
     const levelPrices =
       cluster.map(
@@ -4459,41 +3704,33 @@ function clusterLiquidityLevels({
           item.level
       );
 
-
     const rawLow =
       Math.min(
         ...levelPrices
       );
-
 
     const rawHigh =
       Math.max(
         ...levelPrices
       );
 
-
     const buffer =
       atrValue *
-      0.05;
-
+      .05;
 
     const zoneLow =
       rawLow -
       buffer;
 
-
     const zoneHigh =
       rawHigh +
       buffer;
-
 
     const center =
       (
         zoneLow +
         zoneHigh
-      ) /
-      2;
-
+      ) / 2;
 
     const distance =
       side ===
@@ -4509,13 +3746,17 @@ function clusterLiquidityLevels({
             0
           );
 
+    const absoluteDistance =
+      Math.abs(
+        center -
+        price
+      );
 
     const distanceATR =
       atrValue > 0
-        ? distance /
+        ? absoluteDistance /
           atrValue
         : 0;
-
 
     const proximity =
       clamp(
@@ -4526,10 +3767,8 @@ function clusterLiquidityLevels({
         100
       );
 
-
     const componentCount =
       cluster.length;
-
 
     const density =
       clamp(
@@ -4544,7 +3783,6 @@ function clusterLiquidityLevels({
         100
       );
 
-
     const structuralStrength =
       mean(
         cluster.map(
@@ -4553,17 +3791,13 @@ function clusterLiquidityLevels({
         )
       );
 
-
     const historicalItems =
       cluster
         .map(
           item =>
             item.historical
         )
-        .filter(
-          Boolean
-        );
-
+        .filter(Boolean);
 
     const historicalSweepRate =
       historicalItems.length
@@ -4575,7 +3809,6 @@ function clusterLiquidityLevels({
           )
         : null;
 
-
     const historicalReturnRate =
       historicalItems.length
         ? mean(
@@ -4586,7 +3819,6 @@ function clusterLiquidityLevels({
           )
         : null;
 
-
     const historicalMedianRaidATR =
       historicalItems.length
         ? mean(
@@ -4595,8 +3827,7 @@ function clusterLiquidityLevels({
                 item.medianRaidATR
             )
           )
-        : 0.25;
-
+        : .25;
 
     const historicalConfidence =
       historicalItems.some(
@@ -4615,123 +3846,89 @@ function clusterLiquidityLevels({
             ? "LOW"
             : "MODEL";
 
-
     const touchHistory =
       zoneTouchHistory({
-
-        candles:
-          m5,
-
+        candles:m5,
         zoneLow,
-
         zoneHigh,
-
         side,
-
         atrValue
       });
-
 
     const fvgOverlap =
       fvgs.filter(
         gap =>
           gap.high >=
-            zoneLow -
-            atrValue *
-            0.25 &&
+          zoneLow -
+          atrValue *
+          .25 &&
           gap.low <=
-            zoneHigh +
-            atrValue *
-            0.25
+          zoneHigh +
+          atrValue *
+          .25
       );
 
-
     const temporaryZone = {
-
       side,
-
-      low:
-        zoneLow,
-
-      high:
-        zoneHigh,
-
+      low:zoneLow,
+      high:zoneHigh,
       center
     };
 
-
     const approach =
       analyzeApproach({
-
-        candles:
-          m5,
-
-        zone:
-          temporaryZone,
-
+        candles:m5,
+        zone:temporaryZone,
         atrValue
       });
 
-
     const lifecycle =
       liquidityLifecycle({
-
-        zone:
-          temporaryZone,
-
+        zone:temporaryZone,
         m5,
-
         price,
-
         atrValue,
-
         approach
       });
-
 
     let liquidityClass =
       "INTERNAL";
 
-
-    if (
-      range &&
-      range.range > 0
-    ) {
+    if(
+      dealing &&
+      dealing.range > 0
+    ){
 
       const upperExternal =
-        range.high -
-        range.range *
-        0.15;
-
+        dealing.high -
+        dealing.range *
+        .15;
 
       const lowerExternal =
-        range.low +
-        range.range *
-        0.15;
+        dealing.low +
+        dealing.range *
+        .15;
 
-
-      if (
-        side === "BUY_SIDE" &&
+      if(
+        side ===
+        "BUY_SIDE" &&
         center >=
-          upperExternal
-      ) {
-
+        upperExternal
+      ){
         liquidityClass =
           "EXTERNAL";
       }
 
-
-      if (
-        side === "SELL_SIDE" &&
+      if(
+        side ===
+        "SELL_SIDE" &&
         center <=
-          lowerExternal
-      ) {
-
+        lowerExternal
+      ){
         liquidityClass =
           "EXTERNAL";
       }
     }
-
 
     const sessionCount =
       cluster.filter(
@@ -4739,7 +3936,6 @@ function clusterLiquidityLevels({
           item.type ===
           "SESSION"
       ).length;
-
 
     const majorCount =
       cluster.filter(
@@ -4753,7 +3949,6 @@ function clusterLiquidityLevels({
           )
       ).length;
 
-
     const sessionRelevance =
       clamp(
         sessionCount *
@@ -4764,76 +3959,56 @@ function clusterLiquidityLevels({
         100
       );
 
-
     const historicalScore =
       historicalSweepRate === null
         ? 45
         : historicalSweepRate;
 
-
     const heat =
       clamp(
-
         structuralStrength *
-          0.25 +
-
+        .25 +
         density *
-          0.20 +
-
+        .20 +
         touchHistory.freshnessScore *
-          0.15 +
-
+        .15 +
         historicalScore *
-          0.15 +
-
+        .15 +
         proximity *
-          0.10 +
-
+        .10 +
         sessionRelevance *
-          0.05 +
-
+        .05 +
         approach.score *
-          0.10,
-
+        .10,
         0,
         100
       );
-
 
     let raidLikelihood =
       clamp(
-
         heat *
-          0.45 +
-
+        .45 +
         proximity *
-          0.20 +
-
+        .20 +
         approach.score *
-          0.20 +
-
+        .20 +
         historicalScore *
-          0.15,
-
+        .15,
         0,
         100
       );
 
-
-    if (
+    if(
       lifecycle.stage ===
       "ATTACKING"
-    ) {
-
-      raidLikelihood +=
-        6;
+    ){
+      raidLikelihood += 6;
     }
 
-
-    if (
+    if(
       lifecycle.stage ===
       "RAIDING"
-    ) {
+    ){
 
       raidLikelihood =
         Math.max(
@@ -4842,7 +4017,6 @@ function clusterLiquidityLevels({
         );
     }
 
-
     raidLikelihood =
       clamp(
         raidLikelihood,
@@ -4850,29 +4024,23 @@ function clusterLiquidityLevels({
         100
       );
 
-
     let reversalLikelihood =
       clamp(
-
         (
           historicalReturnRate ??
           50
         ) *
-          0.35 +
-
+        .35 +
         touchHistory.freshnessScore *
-          0.18 +
-
+        .18 +
         (
           fvgOverlap.length
             ? 80
             : 45
         ) *
-          0.12 +
-
+        .12 +
         structuralStrength *
-          0.15 +
-
+        .15 +
         (
           lifecycle.stage ===
           "REJECTING"
@@ -4882,22 +4050,19 @@ function clusterLiquidityLevels({
               ? 60
               : 45
         ) *
-          0.20,
-
+        .20,
         0,
         100
       );
 
-
-    if (
+    if(
       lifecycle.stage ===
       "ACCEPTING"
-    ) {
+    ){
 
       reversalLikelihood *=
-        0.55;
+        .55;
     }
-
 
     const continuationLikelihood =
       clamp(
@@ -4913,24 +4078,20 @@ function clusterLiquidityLevels({
         100
       );
 
-
     const stopExtensionATR =
       clamp(
-        0.10 +
+        .10 +
         density /
         100 *
-        0.18,
-        0.10,
-        0.30
+        .18,
+        .10,
+        .30
       );
 
-
     const estimatedStopPool =
-
       side ===
       "BUY_SIDE"
         ? {
-
             low:
               round(
                 zoneHigh,
@@ -4945,9 +4106,7 @@ function clusterLiquidityLevels({
                 2
               )
           }
-
         : {
-
             low:
               round(
                 zoneLow -
@@ -4962,23 +4121,19 @@ function clusterLiquidityLevels({
                 2
               )
           };
-
 
     const raidDepthATR =
       clamp(
         historicalMedianRaidATR ||
-        0.25,
-        0.08,
+        .25,
+        .08,
         2
       );
 
-
     const projectedRaidZone =
-
       side ===
       "BUY_SIDE"
         ? {
-
             low:
               round(
                 zoneHigh,
@@ -4993,9 +4148,7 @@ function clusterLiquidityLevels({
                 2
               )
           }
-
         : {
-
             low:
               round(
                 zoneLow -
@@ -5010,7 +4163,6 @@ function clusterLiquidityLevels({
                 2
               )
           };
-
 
     const names =
       unique(
@@ -5020,7 +4172,6 @@ function clusterLiquidityLevels({
         )
       );
 
-
     const types =
       unique(
         cluster.map(
@@ -5028,7 +4179,6 @@ function clusterLiquidityLevels({
             item.type
         )
       );
-
 
     zones.push({
 
@@ -5038,13 +4188,15 @@ function clusterLiquidityLevels({
       name:
         componentCount >= 3
           ? (
-              side === "BUY_SIDE"
+              side ===
+              "BUY_SIDE"
                 ? "MAJOR BUY-SIDE CLUSTER"
                 : "MAJOR SELL-SIDE CLUSTER"
             )
           : componentCount === 2
             ? (
-                side === "BUY_SIDE"
+                side ===
+                "BUY_SIDE"
                   ? "BUY-SIDE CLUSTER"
                   : "SELL-SIDE CLUSTER"
               )
@@ -5053,6 +4205,37 @@ function clusterLiquidityLevels({
       side,
 
       liquidityClass,
+
+      /*
+         CANONICAL PRICE FIELDS.
+
+         Frontend now has several safe ways to get the actual
+         liquidity price and can never confuse a score for a price.
+      */
+
+      price:
+        round(
+          center,
+          2
+        ),
+
+      level:
+        round(
+          center,
+          2
+        ),
+
+      midpoint:
+        round(
+          center,
+          2
+        ),
+
+      center:
+        round(
+          center,
+          2
+        ),
 
       low:
         round(
@@ -5066,15 +4249,9 @@ function clusterLiquidityLevels({
           2
         ),
 
-      center:
-        round(
-          center,
-          2
-        ),
-
       distance:
         round(
-          distance,
+          absoluteDistance,
           2
         ),
 
@@ -5089,19 +4266,15 @@ function clusterLiquidityLevels({
       components:
         cluster.map(
           item => ({
-
             name:
               item.name,
-
             level:
               round(
                 item.level,
                 2
               ),
-
             type:
               item.type,
-
             strength:
               item.baseStrength
           })
@@ -5133,13 +4306,15 @@ function clusterLiquidityLevels({
 
       touchHistory,
 
-      historical: {
+      historical:{
 
         available:
-          historicalItems.length > 0,
+          historicalItems.length >
+          0,
 
         sweepRate:
-          historicalSweepRate === null
+          historicalSweepRate ===
+          null
             ? null
             : round(
                 historicalSweepRate,
@@ -5147,7 +4322,8 @@ function clusterLiquidityLevels({
               ),
 
         returnRate:
-          historicalReturnRate === null
+          historicalReturnRate ===
+          null
             ? null
             : round(
                 historicalReturnRate,
@@ -5165,7 +4341,8 @@ function clusterLiquidityLevels({
       },
 
       fvgOverlap:
-        fvgOverlap.length > 0,
+        fvgOverlap.length >
+        0,
 
       overlappingFVGs:
         fvgOverlap,
@@ -5187,6 +4364,18 @@ function clusterLiquidityLevels({
         ),
 
       raidLikelihood:
+        round(
+          raidLikelihood,
+          1
+        ),
+
+      raidScore:
+        round(
+          raidLikelihood,
+          1
+        ),
+
+      score:
         round(
           raidLikelihood,
           1
@@ -5216,23 +4405,11 @@ function clusterLiquidityLevels({
     });
   }
 
-
-  return (
-    zones
-      .filter(
-        zone => {
-
-          /*
-             Remove zones far beyond the useful local market map.
-          */
-
-          return (
-            zone.distanceATR <= 8 ||
-            zone.liquidityClass ===
-              "EXTERNAL"
-          );
-        }
-      )
+  return zones.filter(
+    zone =>
+      zone.distanceATR <= 8 ||
+      zone.liquidityClass ===
+      "EXTERNAL"
   );
 }
 
@@ -5247,168 +4424,120 @@ function evaluateSweepQuality({
   m5,
   delta,
   displacementM1
-}) {
+}){
 
   const checks = {
 
-    zonePenetrated:
-      false,
+    zonePenetrated:false,
 
-    closeBackInside:
-      false,
+    closeBackInside:false,
 
-    m1ReversalStructure:
-      false,
+    m1ReversalStructure:false,
 
-    displacementAway:
-      false,
+    displacementAway:false,
 
-    deltaDivergence:
-      false,
+    deltaDivergence:false,
 
-    absorption:
-      false
+    absorption:false
   };
 
-
   const latestM5 =
-    last(
-      m5
-    );
-
+    last(m5);
 
   const m1Structure =
-    structure(
-      m1
-    );
+    structure(m1);
 
-
-  if (
+  if(
     zone.side ===
     "BUY_SIDE"
-  ) {
+  ){
 
     checks.zonePenetrated =
       latestM5.high >
       zone.high;
 
-
     checks.closeBackInside =
       latestM5.close <
       zone.high;
 
-
     checks.m1ReversalStructure =
-      (
-        m1Structure.bias ===
-        "BEARISH"
-      ) ||
-      (
-        m1Structure.choch ===
-        "BEARISH CHOCH"
-      );
-
+      m1Structure.bias ===
+      "BEARISH" ||
+      m1Structure.choch ===
+      "BEARISH CHOCH";
 
     checks.displacementAway =
       displacementM1.active &&
       displacementM1.direction ===
-        "BEARISH";
-
+      "BEARISH";
 
     checks.deltaDivergence =
       delta.divergence ===
       "BEARISH DELTA DIVERGENCE";
 
-
     checks.absorption =
       delta.absorption ===
       "BUYING ABSORBED";
 
-  } else {
+  }else{
 
     checks.zonePenetrated =
       latestM5.low <
       zone.low;
 
-
     checks.closeBackInside =
       latestM5.close >
       zone.low;
 
-
     checks.m1ReversalStructure =
-      (
-        m1Structure.bias ===
-        "BULLISH"
-      ) ||
-      (
-        m1Structure.choch ===
-        "BULLISH CHOCH"
-      );
-
+      m1Structure.bias ===
+      "BULLISH" ||
+      m1Structure.choch ===
+      "BULLISH CHOCH";
 
     checks.displacementAway =
       displacementM1.active &&
       displacementM1.direction ===
-        "BULLISH";
-
+      "BULLISH";
 
     checks.deltaDivergence =
       delta.divergence ===
       "BULLISH DELTA DIVERGENCE";
-
 
     checks.absorption =
       delta.absorption ===
       "SELLING ABSORBED";
   }
 
-
   const weights = {
 
-    zonePenetrated:
-      20,
+    zonePenetrated:20,
 
-    closeBackInside:
-      20,
+    closeBackInside:20,
 
-    m1ReversalStructure:
-      20,
+    m1ReversalStructure:20,
 
-    displacementAway:
-      20,
+    displacementAway:20,
 
-    deltaDivergence:
-      10,
+    deltaDivergence:10,
 
-    absorption:
-      10
+    absorption:10
   };
-
 
   let score = 0;
 
-
-  for (
-    const [
-      name,
-      passed
-    ]
-    of
-    Object.entries(
+  for(
+    const [name,passed]
+    of Object.entries(
       checks
     )
-  ) {
+  ){
 
-    if (
-      passed
-    ) {
-
+    if(passed){
       score +=
         weights[name];
     }
   }
-
 
   return {
 
@@ -5438,101 +4567,84 @@ function evaluateSweepQuality({
    LIQUIDITY PATH
 ================================================================ */
 
-function buildLiquidityPath(
-  zones
-) {
+function buildLiquidityPath(zones){
 
-  return (
-    zones
+  return zones
+    .map(
+      zone => {
 
-      .map(
-        zone => {
+        const proximity =
+          clamp(
+            100 -
+            zone.distanceATR *
+            22,
+            0,
+            100
+          );
 
-          const proximity =
-            clamp(
-              100 -
-              zone.distanceATR *
-              22,
-              0,
-              100
-            );
+        let stageBonus = 0;
 
-
-          let stageBonus =
-            0;
-
-
-          if (
-            zone.lifecycle.stage ===
-            "COMPRESSING"
-          ) {
-
-            stageBonus =
-              8;
-          }
-
-
-          if (
-            zone.lifecycle.stage ===
-            "ATTACKING"
-          ) {
-
-            stageBonus =
-              12;
-          }
-
-
-          if (
-            zone.lifecycle.stage ===
-            "RAIDING"
-          ) {
-
-            stageBonus =
-              15;
-          }
-
-
-          const nextTargetScore =
-            clamp(
-
-              zone.raidLikelihood *
-                0.50 +
-
-              zone.heat *
-                0.25 +
-
-              proximity *
-                0.20 +
-
-              stageBonus,
-
-              0,
-              100
-            );
-
-
-          return {
-
-            ...zone,
-
-            nextTargetScore:
-              round(
-                nextTargetScore,
-                1
-              )
-          };
+        if(
+          zone.lifecycle.stage ===
+          "COMPRESSING"
+        ){
+          stageBonus = 8;
         }
-      )
 
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          b.nextTargetScore -
-          a.nextTargetScore
-      )
-  );
+        if(
+          zone.lifecycle.stage ===
+          "ATTACKING"
+        ){
+          stageBonus = 12;
+        }
+
+        if(
+          zone.lifecycle.stage ===
+          "RAIDING"
+        ){
+          stageBonus = 15;
+        }
+
+        const nextTargetScore =
+          clamp(
+            zone.raidLikelihood *
+            .50 +
+            zone.heat *
+            .25 +
+            proximity *
+            .20 +
+            stageBonus,
+            0,
+            100
+          );
+
+        return {
+
+          ...zone,
+
+          nextTargetScore:
+            round(
+              nextTargetScore,
+              1
+            ),
+
+          /*
+             Use raid likelihood as the chart/UI's actual RAID SCORE.
+          */
+
+          raidScore:
+            zone.raidLikelihood,
+
+          score:
+            zone.raidLikelihood
+        };
+      }
+    )
+    .sort(
+      (a,b) =>
+        b.nextTargetScore -
+        a.nextTargetScore
+    );
 }
 
 
@@ -5543,23 +4655,18 @@ function buildLiquidityPath(
 function percentageMove(
   candles,
   bars
-) {
+){
 
-  if (
+  if(
     !candles ||
     candles.length <=
-      bars
-  ) {
-
+    bars
+  ){
     return 0;
   }
 
-
   const current =
-    last(
-      candles
-    ).close;
-
+    last(candles).close;
 
   const previous =
     candles[
@@ -5568,11 +4675,9 @@ function percentageMove(
       1
     ].close;
 
-
-  if (!previous) {
+  if(!previous){
     return 0;
   }
-
 
   return (
     (
@@ -5585,21 +4690,21 @@ function percentageMove(
 }
 
 
-async function loadIntermarket() {
+async function loadIntermarket(
+  force = false
+){
 
-  if (
+  if(
+    !force &&
     intermarketCache.value &&
     Date.now() -
-      intermarketCache.time <
-      INTERMARKET_CACHE_MS
-  ) {
-
+    intermarketCache.time <
+    INTERMARKET_CACHE_MS
+  ){
     return intermarketCache.value;
   }
 
-
   const symbols = [
-
     "XAG/USD",
     "EUR/USD",
     "GBP/USD",
@@ -5607,25 +4712,15 @@ async function loadIntermarket() {
     "BTC/USD"
   ];
 
-
   const results =
     await Promise.all(
-
       symbols.map(
         symbol =>
-
           tdSeries({
-
             symbol,
-
-            interval:
-              "1h",
-
-            outputsize:
-              80,
-
-            apiKey:
-              KEY_4
+            interval:"1h",
+            outputsize:80,
+            apiKey:KEY_4
           })
           .catch(
             () => []
@@ -5633,116 +4728,70 @@ async function loadIntermarket() {
       )
     );
 
-
   const data = {};
 
-
   symbols.forEach(
-    (
-      symbol,
-      index
-    ) => {
-
+    (symbol,index) => {
       data[symbol] =
         results[index];
     }
   );
 
-
   const configs = {
 
-    "XAG/USD": {
-
-      label:
-        "SILVER",
-
-      weight:
-        0.36,
-
-      direction:
-        1
+    "XAG/USD":{
+      label:"SILVER",
+      weight:.36,
+      direction:1
     },
 
-    "EUR/USD": {
-
-      label:
-        "EUR/USD",
-
-      weight:
-        0.20,
-
-      direction:
-        1
+    "EUR/USD":{
+      label:"EUR/USD",
+      weight:.20,
+      direction:1
     },
 
-    "GBP/USD": {
-
-      label:
-        "GBP/USD",
-
-      weight:
-        0.12,
-
-      direction:
-        1
+    "GBP/USD":{
+      label:"GBP/USD",
+      weight:.12,
+      direction:1
     },
 
-    "USD/JPY": {
-
-      label:
-        "USD/JPY",
-
-      weight:
-        0.22,
-
-      direction:
-        -1
+    "USD/JPY":{
+      label:"USD/JPY",
+      weight:.22,
+      direction:-1
     },
 
-    "BTC/USD": {
-
-      label:
-        "BITCOIN",
-
-      weight:
-        0.10,
-
-      direction:
-        1
+    "BTC/USD":{
+      label:"BITCOIN",
+      weight:.10,
+      direction:1
     }
   };
 
-
   const markets = [];
-
 
   let weightedTotal = 0;
   let activeWeight = 0;
 
-
-  for (
-    const [
-      symbol,
-      config
-    ]
-    of
-    Object.entries(
+  for(
+    const [symbol,config]
+    of Object.entries(
       configs
     )
-  ) {
+  ){
 
     const candles =
       data[symbol];
 
-
-    if (
+    if(
       !candles ||
-      candles.length < 15
-    ) {
-
+      candles.length <
+      15
+    ){
       continue;
     }
-
 
     const move1 =
       percentageMove(
@@ -5750,13 +4799,11 @@ async function loadIntermarket() {
         1
       );
 
-
     const move3 =
       percentageMove(
         candles,
         3
       );
-
 
     const move6 =
       percentageMove(
@@ -5764,28 +4811,21 @@ async function loadIntermarket() {
         6
       );
 
-
     const move12 =
       percentageMove(
         candles,
         12
       );
 
-
     const combinedMove =
-
       move1 *
-        0.15 +
-
+      .15 +
       move3 *
-        0.25 +
-
+      .25 +
       move6 *
-        0.25 +
-
+      .25 +
       move12 *
-        0.35;
-
+      .35;
 
     const normalized =
       clamp(
@@ -5795,20 +4835,16 @@ async function loadIntermarket() {
         100
       );
 
-
     const contribution =
       normalized *
       config.direction;
-
 
     weightedTotal +=
       contribution *
       config.weight;
 
-
     activeWeight +=
       config.weight;
-
 
     markets.push({
 
@@ -5819,9 +4855,7 @@ async function loadIntermarket() {
 
       price:
         round(
-          last(
-            candles
-          ).close,
+          last(candles).close,
           symbol ===
           "BTC/USD"
             ? 1
@@ -5867,13 +4901,11 @@ async function loadIntermarket() {
     });
   }
 
-
   const score =
     activeWeight > 0
       ? weightedTotal /
         activeWeight
       : 0;
-
 
   const result = {
 
@@ -5891,22 +4923,15 @@ async function loadIntermarket() {
           : "NEUTRAL",
 
     strength:
-      Math.abs(
-        score
-      ) >= 60
+      Math.abs(score) >= 60
         ? "STRONG"
-        : Math.abs(
-            score
-          ) >= 30
+        : Math.abs(score) >= 30
           ? "MODERATE"
           : "WEAK",
 
     markets:
       markets.sort(
-        (
-          a,
-          b
-        ) =>
+        (a,b) =>
           Math.abs(
             b.goldContribution
           ) -
@@ -5916,16 +4941,10 @@ async function loadIntermarket() {
       )
   };
 
-
   intermarketCache = {
-
-    time:
-      Date.now(),
-
-    value:
-      result
+    time:Date.now(),
+    value:result
   };
-
 
   return result;
 }
@@ -5937,24 +4956,19 @@ async function loadIntermarket() {
 
 async function fredSeries(
   seriesId
-) {
+){
 
-  if (!FRED_KEY) {
+  if(!FRED_KEY){
     return [];
   }
-
 
   const url =
 
     `${FRED_BASE}/series/observations` +
 
-    `?series_id=${encodeURIComponent(
-      seriesId
-    )}` +
+    `?series_id=${encodeURIComponent(seriesId)}` +
 
-    `&api_key=${encodeURIComponent(
-      FRED_KEY
-    )}` +
+    `&api_key=${encodeURIComponent(FRED_KEY)}` +
 
     `&file_type=json` +
 
@@ -5967,7 +4981,7 @@ async function fredSeries(
     await fetch(url);
 
 
-  if (!response.ok) {
+  if(!response.ok){
 
     throw new Error(
       `FRED ${seriesId} HTTP ${response.status}`
@@ -5980,47 +4994,36 @@ async function fredSeries(
 
 
   return (
-    (
-      json.observations ||
-      []
-    )
-      .filter(
-        row =>
-          row.value !== "." &&
-          Number.isFinite(
-            Number(
-              row.value
-            )
-          )
+    json.observations ||
+    []
+  )
+  .filter(
+    row =>
+      row.value !== "." &&
+      Number.isFinite(
+        Number(
+          row.value
+        )
       )
-      .map(
-        row => ({
-
-          date:
-            row.date,
-
-          value:
-            Number(
-              row.value
-            )
-        })
-      )
+  )
+  .map(
+    row => ({
+      date:row.date,
+      value:Number(row.value)
+    })
   );
 }
 
 
-function fredChange(
-  series
-) {
+function fredChange(series){
 
-  if (
+  if(
     !series ||
-    series.length < 2
-  ) {
-
+    series.length <
+    2
+  ){
     return 0;
   }
-
 
   return (
     series[0].value -
@@ -6029,39 +5032,31 @@ function fredChange(
 }
 
 
-async function loadMacro() {
+async function loadMacro(
+  force = false
+){
 
-  if (
+  if(
+    !force &&
     macroCache.value &&
     Date.now() -
-      macroCache.time <
-      MACRO_CACHE_MS
-  ) {
-
+    macroCache.time <
+    MACRO_CACHE_MS
+  ){
     return macroCache.value;
   }
 
-
-  if (!FRED_KEY) {
+  if(!FRED_KEY){
 
     return {
-
-      enabled:
-        false,
-
-      score:
-        0,
-
-      bias:
-        "NEUTRAL",
-
-      reason:
-        "FRED_API_KEY missing."
+      enabled:false,
+      score:0,
+      bias:"NEUTRAL",
+      reason:"FRED_API_KEY missing."
     };
   }
 
-
-  try {
+  try{
 
     const [
       twoYear,
@@ -6070,54 +5065,41 @@ async function loadMacro() {
     ] =
       await Promise.all([
 
-        fredSeries(
-          "DGS2"
-        ),
+        fredSeries("DGS2"),
 
-        fredSeries(
-          "DGS10"
-        ),
+        fredSeries("DGS10"),
 
-        fredSeries(
-          "FEDFUNDS"
-        )
+        fredSeries("FEDFUNDS")
+
       ]);
-
 
     const change2 =
       fredChange(
         twoYear
       );
 
-
     const change10 =
       fredChange(
         tenYear
       );
 
-
     const score =
       clamp(
-
         (
           -change2 *
           320
         ) +
-
         (
           -change10 *
           260
         ),
-
         -100,
         100
       );
 
-
     const result = {
 
-      enabled:
-        true,
+      enabled:true,
 
       score:
         round(
@@ -6135,19 +5117,16 @@ async function loadMacro() {
       twoYear:
         twoYear.length
           ? {
-
               value:
                 round(
                   twoYear[0].value,
                   3
                 ),
-
               change:
                 round(
                   change2,
                   3
                 ),
-
               date:
                 twoYear[0].date
             }
@@ -6156,19 +5135,16 @@ async function loadMacro() {
       tenYear:
         tenYear.length
           ? {
-
               value:
                 round(
                   tenYear[0].value,
                   3
                 ),
-
               change:
                 round(
                   change10,
                   3
                 ),
-
               date:
                 tenYear[0].date
             }
@@ -6177,79 +5153,58 @@ async function loadMacro() {
       fedFunds:
         fedFunds.length
           ? {
-
               value:
                 round(
                   fedFunds[0].value,
                   3
                 ),
-
               date:
                 fedFunds[0].date
             }
           : null
     };
 
-
     macroCache = {
-
-      time:
-        Date.now(),
-
-      value:
-        result
+      time:Date.now(),
+      value:result
     };
-
 
     return result;
 
-  } catch (
-    error
-  ) {
+  }catch(error){
 
     return {
-
-      enabled:
-        false,
-
-      score:
-        0,
-
-      bias:
-        "UNAVAILABLE",
-
-      error:
-        error.message
+      enabled:false,
+      score:0,
+      bias:"UNAVAILABLE",
+      error:error.message
     };
   }
 }
 
 
 /* ================================================================
-   DATA FEED QUALITY
+   FEED VALIDATION
 ================================================================ */
 
 function feedValidation(
   primary,
   secondary,
   atrValue
-) {
+){
 
-  if (
-    !primary ||
-    !secondary
-  ) {
+  if(
+    !Number.isFinite(primary) ||
+    !Number.isFinite(secondary) ||
+    primary <= 0 ||
+    secondary <= 0
+  ){
 
     return {
-
-      available:
-        false,
-
-      status:
-        "SECONDARY UNAVAILABLE"
+      available:false,
+      status:"SECONDARY UNAVAILABLE"
     };
   }
-
 
   const difference =
     Math.abs(
@@ -6257,41 +5212,35 @@ function feedValidation(
       secondary
     );
 
-
   const differenceATR =
     atrValue > 0
       ? difference /
         atrValue
       : 0;
 
-
   let status =
     "GOOD";
 
-
-  if (
+  if(
     differenceATR >
-    0.25
-  ) {
+    .25
+  ){
 
     status =
       "DISAGREEMENT";
 
-  } else if (
+  }else if(
     differenceATR >
-    0.10
-  ) {
+    .10
+  ){
 
     status =
       "CAUTION";
   }
 
-
   return {
 
-    available:
-      true,
-
+    available:true,
     status,
 
     primary:
@@ -6322,50 +5271,36 @@ function feedValidation(
 
 
 /* ================================================================
-   MARKET REGIME
+   REGIME
 ================================================================ */
 
-function marketRegime(
-  candles
-) {
+function marketRegime(candles){
 
-  if (
-    candles.length < 50
-  ) {
+  if(
+    candles.length <
+    50
+  ){
 
     return {
-
-      regime:
-        "UNKNOWN",
-
-      volatility:
-        "UNKNOWN",
-
-      trendStrength:
-        0
+      regime:"UNKNOWN",
+      volatility:"UNKNOWN",
+      trendStrength:0
     };
   }
 
-
   const ranges =
     candles
-      .slice(
-        -40
-      )
+      .slice(-40)
       .map(
         candle =>
           candle.high -
           candle.low
       );
 
-
   const recent =
     mean(
-      ranges.slice(
-        -10
-      )
+      ranges.slice(-10)
     );
-
 
   const previous =
     mean(
@@ -6375,37 +5310,33 @@ function marketRegime(
       )
     );
 
-
   let volatility =
     "NORMAL";
 
-
-  if (
+  if(
     recent >
     previous *
     1.35
-  ) {
+  ){
 
     volatility =
       "EXPANDING";
 
-  } else if (
+  }else if(
     recent <
     previous *
-    0.72
-  ) {
+    .72
+  ){
 
     volatility =
       "CONTRACTING";
   }
-
 
   const closes =
     candles.map(
       candle =>
         candle.close
     );
-
 
   const e20 =
     last(
@@ -6415,7 +5346,6 @@ function marketRegime(
       )
     );
 
-
   const e50 =
     last(
       ema(
@@ -6424,13 +5354,11 @@ function marketRegime(
       )
     );
 
-
   const localATR =
     atr(
       candles,
       14
     );
-
 
   const trendStrength =
     localATR > 0
@@ -6441,34 +5369,32 @@ function marketRegime(
         localATR
       : 0;
 
-
   const bias =
     structure(
       candles
     ).bias;
 
-
   let regime =
     "RANGING";
 
-
-  if (
-    trendStrength >= 0.7
-  ) {
+  if(
+    trendStrength >=
+    .7
+  ){
 
     regime =
-      bias === "BULLISH"
+      bias ===
+      "BULLISH"
         ? "TRENDING UP"
-        : bias === "BEARISH"
+        : bias ===
+          "BEARISH"
           ? "TRENDING DOWN"
           : "TRANSITION";
   }
 
-
   return {
 
     regime,
-
     volatility,
 
     trendStrength:
@@ -6481,7 +5407,7 @@ function marketRegime(
 
 
 /* ================================================================
-   CONSENSUS MODEL
+   CONSENSUS
 ================================================================ */
 
 function buildConsensus({
@@ -6495,43 +5421,29 @@ function buildConsensus({
   delta,
   dominantSweepQuality,
   feedQuality
-}) {
+}){
 
   const s5 =
-    structure(
-      m5
-    );
+    structure(m5);
 
   const s15 =
-    structure(
-      m15
-    );
+    structure(m15);
 
   const s1 =
-    structure(
-      h1
-    );
+    structure(h1);
 
   const s4 =
-    structure(
-      h4
-    );
-
+    structure(h4);
 
   let technicalScore =
-
     s5.score *
-      9 +
-
+    9 +
     s15.score *
-      14 +
-
+    14 +
     s1.score *
-      18 +
-
+    18 +
     s4.score *
-      21;
-
+    21;
 
   technicalScore =
     clamp(
@@ -6540,19 +5452,13 @@ function buildConsensus({
       100
     );
 
-
   const dominant =
     liquidityPath[0] ||
     null;
 
+  let liquidityDraw = 0;
 
-  let liquidityDraw =
-    0;
-
-
-  if (
-    dominant
-  ) {
+  if(dominant){
 
     let direction =
       dominant.side ===
@@ -6560,36 +5466,25 @@ function buildConsensus({
         ? 1
         : -1;
 
-
-    /*
-       Once a zone is rejecting, the draw contribution flips because
-       the raid may have completed.
-    */
-
-    if (
+    if(
       dominant.lifecycle.stage ===
       "REJECTING"
-    ) {
+    ){
 
-      direction *=
-        -1;
+      direction *= -1;
     }
-
 
     liquidityDraw =
       dominant.nextTargetScore *
       direction;
   }
 
+  let flowScore = 0;
 
-  let flowScore =
-    0;
-
-
-  if (
+  if(
     delta.bias ===
     "BUYING PRESSURE"
-  ) {
+  ){
 
     flowScore =
       clamp(
@@ -6601,10 +5496,10 @@ function buildConsensus({
         100
       );
 
-  } else if (
+  }else if(
     delta.bias ===
     "SELLING PRESSURE"
-  ) {
+  ){
 
     flowScore =
       -clamp(
@@ -6617,82 +5512,60 @@ function buildConsensus({
       );
   }
 
+  let sweepReversalScore = 0;
 
-  let sweepReversalScore =
-    0;
-
-
-  if (
+  if(
     dominant &&
     dominant.lifecycle.stage ===
     "REJECTING"
-  ) {
+  ){
 
     sweepReversalScore =
-
       dominant.side ===
       "BUY_SIDE"
         ? -dominantSweepQuality.score
         : dominantSweepQuality.score;
   }
 
-
   const score =
     clamp(
-
       technicalScore *
-        0.27 +
-
+      .27 +
       liquidityDraw *
-        0.27 +
-
+      .27 +
       intermarket.score *
-        0.19 +
-
+      .19 +
       (
         macro.score ||
         0
       ) *
-        0.10 +
-
+      .10 +
       flowScore *
-        0.07 +
-
+      .07 +
       sweepReversalScore *
-        0.10,
-
+      .10,
       -100,
       100
     );
 
-
   let confidence =
-    Math.abs(
-      score
-    );
+    Math.abs(score);
 
-
-  if (
-    dominant
-  ) {
+  if(dominant){
 
     confidence =
       confidence *
-      0.70 +
+      .70 +
       dominant.heat *
-      0.30;
+      .30;
   }
 
-
-  if (
+  if(
     feedQuality.status ===
     "DISAGREEMENT"
-  ) {
-
-    confidence -=
-      20;
+  ){
+    confidence -= 20;
   }
-
 
   confidence =
     clamp(
@@ -6701,14 +5574,12 @@ function buildConsensus({
       100
     );
 
-
   const direction =
     score >= 20
       ? "BULLISH"
       : score <= -20
         ? "BEARISH"
         : "NEUTRAL";
-
 
   const liquidityDrawDirection =
     !dominant
@@ -6728,7 +5599,6 @@ function buildConsensus({
               : "DOWN TOWARD SELL-SIDE LIQUIDITY"
           );
 
-
   const reasons = [
 
     `M5 structure: ${s5.bias}`,
@@ -6743,13 +5613,14 @@ function buildConsensus({
 
   ];
 
-
-  if (
-    dominant
-  ) {
+  if(dominant){
 
     reasons.push(
       `Dominant liquidity: ${dominant.name}`
+    );
+
+    reasons.push(
+      `Target price: ${dominant.price}`
     );
 
     reasons.push(
@@ -6769,46 +5640,36 @@ function buildConsensus({
     );
   }
 
-
-  if (
-    macro.enabled
-  ) {
+  if(macro.enabled){
 
     reasons.push(
       `Macro: ${macro.bias} ${macro.score}`
     );
   }
 
-
-  if (
-    delta.divergence
-  ) {
+  if(delta.divergence){
 
     reasons.push(
       delta.divergence
     );
   }
 
-
-  if (
-    delta.absorption
-  ) {
+  if(delta.absorption){
 
     reasons.push(
       delta.absorption
     );
   }
 
-
-  if (
-    dominantSweepQuality.score > 0
-  ) {
+  if(
+    dominantSweepQuality.score >
+    0
+  ){
 
     reasons.push(
       `Sweep quality: ${dominantSweepQuality.quality} ${dominantSweepQuality.score}/100`
     );
   }
-
 
   return {
 
@@ -6828,7 +5689,7 @@ function buildConsensus({
 
     liquidityDrawDirection,
 
-    components: {
+    components:{
 
       technical:
         round(
@@ -6850,7 +5711,8 @@ function buildConsensus({
 
       macro:
         round(
-          macro.score || 0,
+          macro.score ||
+          0,
           1
         ),
 
@@ -6873,187 +5735,178 @@ function buildConsensus({
 
 
 /* ================================================================
-   MAIN INTELLIGENCE ENGINE
+   MAIN ENGINE
 ================================================================ */
 
-async function buildIntelligence() {
+async function buildIntelligence(
+  force = false
+){
 
-  if (
+  if(
+    !force &&
     liveCache.value &&
     Date.now() -
-      liveCache.time <
-      LIVE_CACHE_MS
-  ) {
+    liveCache.time <
+    LIVE_CACHE_MS
+  ){
 
     return {
-
       ...liveCache.value,
-
-      cached:
-        true
+      cached:true
     };
   }
 
-
-  if (!KEY_1) {
+  if(!KEY_1){
 
     throw new Error(
       "TWELVE_DATA_API_KEY is missing."
     );
   }
 
-
   const [
-
     m1,
     m5,
     m15,
     h1,
     h4,
-
     primaryQuote,
-
     history,
-
     intermarket,
-
     macro,
-
     secondaryQuote
-
   ] =
     await Promise.all([
 
       tdSeries({
-
-        symbol:
-          SYMBOL,
-
-        interval:
-          "1min",
-
-        outputsize:
-          500,
-
-        apiKey:
-          KEY_1
+        symbol:SYMBOL,
+        interval:"1min",
+        outputsize:500,
+        apiKey:KEY_1
       }),
-
 
       tdSeries({
-
-        symbol:
-          SYMBOL,
-
-        interval:
-          "5min",
-
-        outputsize:
-          1200,
-
-        apiKey:
-          KEY_1
+        symbol:SYMBOL,
+        interval:"5min",
+        outputsize:1200,
+        apiKey:KEY_1
       }),
-
 
       tdSeries({
-
-        symbol:
-          SYMBOL,
-
-        interval:
-          "15min",
-
-        outputsize:
-          700,
-
-        apiKey:
-          KEY_2
+        symbol:SYMBOL,
+        interval:"15min",
+        outputsize:700,
+        apiKey:KEY_2
       }),
-
 
       tdSeries({
-
-        symbol:
-          SYMBOL,
-
-        interval:
-          "1h",
-
-        outputsize:
-          700,
-
-        apiKey:
-          KEY_2
+        symbol:SYMBOL,
+        interval:"1h",
+        outputsize:700,
+        apiKey:KEY_2
       }),
-
 
       tdSeries({
-
-        symbol:
-          SYMBOL,
-
-        interval:
-          "4h",
-
-        outputsize:
-          400,
-
-        apiKey:
-          KEY_2
+        symbol:SYMBOL,
+        interval:"4h",
+        outputsize:400,
+        apiKey:KEY_2
       }),
-
 
       tdQuote({
-
-        symbol:
-          SYMBOL,
-
-        apiKey:
-          KEY_1
+        symbol:SYMBOL,
+        apiKey:KEY_1
       })
       .catch(
         () => null
       ),
 
+      loadHistory(force)
+        .catch(
+          error => ({
+            candleCount:0,
+            firstTimestamp:null,
+            lastTimestamp:null,
+            error:error.message,
+            statistics:{
+              ASIA:{
+                high:null,
+                low:null
+              },
+              LONDON:{
+                high:null,
+                low:null
+              },
+              NEW_YORK:{
+                high:null,
+                low:null
+              }
+            }
+          })
+        ),
 
-      loadHistory(),
+      loadIntermarket(force)
+        .catch(
+          error => ({
+            score:0,
+            bias:"UNAVAILABLE",
+            strength:"NONE",
+            error:error.message,
+            markets:[]
+          })
+        ),
 
-
-      loadIntermarket(),
-
-
-      loadMacro(),
-
+      loadMacro(force),
 
       tdQuote({
-
-        symbol:
-          SYMBOL,
-
-        apiKey:
-          KEY_4
+        symbol:SYMBOL,
+        apiKey:KEY_4
       })
       .catch(
         () => null
       )
+
     ]);
 
+  if(
+    !m1.length ||
+    !m5.length ||
+    !m15.length ||
+    !h1.length ||
+    !h4.length
+  ){
+
+    throw new Error(
+      "One or more required XAU/USD timeframe feeds returned no candles."
+    );
+  }
 
   const fallbackPrice =
-    last(
-      m1
-    )?.close ||
-    last(
-      m5
-    )?.close ||
+    last(m1)?.close ||
+    last(m5)?.close ||
     0;
 
+  const quotePrice =
+    Number(
+      primaryQuote?.price
+    );
 
   const price =
-    primaryQuote?.price ||
-    fallbackPrice;
+    Number.isFinite(
+      quotePrice
+    ) &&
+    quotePrice > 0
+      ? quotePrice
+      : fallbackPrice;
 
+  if(
+    !Number.isFinite(price) ||
+    price <= 0
+  ){
+
+    throw new Error(
+      "Could not determine a valid XAU/USD price."
+    );
+  }
 
   const atrM1 =
     atr(
@@ -7061,13 +5914,11 @@ async function buildIntelligence() {
       14
     );
 
-
   const atrM5 =
     atr(
       m5,
       14
     );
-
 
   const atrM15 =
     atr(
@@ -7075,24 +5926,20 @@ async function buildIntelligence() {
       14
     );
 
-
   const sessions =
     currentSessions(
       m5
     );
-
 
   const previousDay =
     previousDayLevels(
       m5
     );
 
-
   const previousWeek =
     previousWeekLevels(
       h1
     );
-
 
   const equalLevels =
     detectEqualLevels(
@@ -7100,13 +5947,11 @@ async function buildIntelligence() {
       atrM5
     );
 
-
   const fvgs =
     fairValueGaps(
       m15,
       14
     );
-
 
   const rawLiquidityLevels =
     buildRawLiquidityLevels({
@@ -7122,9 +5967,10 @@ async function buildIntelligence() {
       equalLevels,
 
       historicalStats:
-        history.statistics
-    });
+        history.statistics ||
+        {}
 
+    });
 
   const zones =
     clusterLiquidityLevels({
@@ -7139,115 +5985,89 @@ async function buildIntelligence() {
 
       m5,
 
-      m1,
-
       h1,
 
       fvgs
-    });
 
+    });
 
   const liquidityPath =
     buildLiquidityPath(
       zones
     );
 
-
   const dominantZone =
     liquidityPath[0] ||
     null;
-
 
   const delta =
     deltaEngine(
       m1
     );
 
-
   const displacementM1 =
     displacement(
       m1
     );
-
 
   const displacementM5 =
     displacement(
       m5
     );
 
-
   const dominantSweepQuality =
     dominantZone
       ? evaluateSweepQuality({
-
-          zone:
-            dominantZone,
-
+          zone:dominantZone,
           m1,
-
           m5,
-
           delta,
-
           displacementM1
         })
       : {
-
-          score:
-            0,
-
-          quality:
-            "NONE",
-
-          checks: {}
+          score:0,
+          quality:"NONE",
+          checks:{}
         };
 
+  const secondaryPrice =
+    Number(
+      secondaryQuote?.price
+    );
 
   const feedQuality =
     feedValidation(
-
       price,
-
-      secondaryQuote?.price,
-
+      Number.isFinite(
+        secondaryPrice
+      )
+        ? secondaryPrice
+        : null,
       atrM5
     );
-
 
   const structures = {
 
     M1:
-      structure(
-        m1
-      ),
+      structure(m1),
 
     M5:
-      structure(
-        m5
-      ),
+      structure(m5),
 
     M15:
-      structure(
-        m15
-      ),
+      structure(m15),
 
     H1:
-      structure(
-        h1
-      ),
+      structure(h1),
 
     H4:
-      structure(
-        h4
-      )
+      structure(h4)
   };
-
 
   const marketRegimeData =
     marketRegime(
       m5
     );
-
 
   const vwap =
     vwapProxy(
@@ -7255,28 +6075,18 @@ async function buildIntelligence() {
       150
     );
 
-
   const macdM5 =
-    macd(
-      m5
-    );
-
+    macd(m5);
 
   const macdM15 =
-    macd(
-      m15
-    );
-
+    macd(m15);
 
   const consensus =
     buildConsensus({
 
       m5,
-
       m15,
-
       h1,
-
       h4,
 
       liquidityPath,
@@ -7290,8 +6100,8 @@ async function buildIntelligence() {
       dominantSweepQuality,
 
       feedQuality
-    });
 
+    });
 
   const buyZones =
     liquidityPath
@@ -7299,8 +6109,12 @@ async function buildIntelligence() {
         zone =>
           zone.side ===
           "BUY_SIDE"
+      )
+      .sort(
+        (a,b) =>
+          a.distance -
+          b.distance
       );
-
 
   const sellZones =
     liquidityPath
@@ -7308,42 +6122,27 @@ async function buildIntelligence() {
         zone =>
           zone.side ===
           "SELL_SIDE"
+      )
+      .sort(
+        (a,b) =>
+          a.distance -
+          b.distance
       );
 
-
   const nearestBuyZone =
-    buyZones
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.distance -
-          b.distance
-      )[0] ||
-      null;
-
+    buyZones[0] ||
+    null;
 
   const nearestSellZone =
-    sellZones
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          a.distance -
-          b.distance
-      )[0] ||
-      null;
-
+    sellZones[0] ||
+    null;
 
   const result = {
 
-    ok:
-      true,
+    ok:true,
 
     engine:
-      "MKAYFX GOLD INTELLIGENCE V8",
+      "MKAYFX GOLD INTELLIGENCE V8.2",
 
     symbol:
       SYMBOL,
@@ -7352,11 +6151,10 @@ async function buildIntelligence() {
       new Date()
         .toISOString(),
 
-    cached:
-      false,
+    cached:false,
 
 
-    market: {
+    market:{
 
       price:
         round(
@@ -7366,23 +6164,29 @@ async function buildIntelligence() {
 
       previousClose:
         round(
-          primaryQuote?.previousClose,
+          primaryQuote
+            ?.previousClose,
           2
         ),
 
       change:
         round(
-          primaryQuote?.change,
+          primaryQuote
+            ?.change,
           2
         ),
 
       percentChange:
         round(
-          primaryQuote?.percentChange,
+          primaryQuote
+            ?.percentChange,
           3
         ),
 
-      atr: {
+      currentSession:
+        sessionNameNow(),
+
+      atr:{
 
         M1:
           round(
@@ -7403,7 +6207,7 @@ async function buildIntelligence() {
           )
       },
 
-      rsi: {
+      rsi:{
 
         M1:
           round(
@@ -7433,22 +6237,19 @@ async function buildIntelligence() {
           )
       },
 
-      macd: {
+      macd:{
 
-        M5: {
-
+        M5:{
           macd:
             round(
               macdM5.macd,
               3
             ),
-
           signal:
             round(
               macdM5.signal,
               3
             ),
-
           histogram:
             round(
               macdM5.histogram,
@@ -7456,20 +6257,17 @@ async function buildIntelligence() {
             )
         },
 
-        M15: {
-
+        M15:{
           macd:
             round(
               macdM15.macd,
               3
             ),
-
           signal:
             round(
               macdM15.signal,
               3
             ),
-
           histogram:
             round(
               macdM15.histogram,
@@ -7507,6 +6305,10 @@ async function buildIntelligence() {
     },
 
 
+    currentSession:
+      sessionNameNow(),
+
+
     sessions,
 
 
@@ -7526,7 +6328,7 @@ async function buildIntelligence() {
       structures,
 
 
-    displacement: {
+    displacement:{
 
       M1:
         displacementM1,
@@ -7547,7 +6349,24 @@ async function buildIntelligence() {
       fvgs,
 
 
-    deepLiquidity: {
+    /*
+       Explicit aliases make frontend extraction deterministic.
+    */
+
+    dominantLiquidity:
+      dominantZone,
+
+
+    liquidity:{
+
+      dominantZone,
+
+      zones:
+        liquidityPath
+    },
+
+
+    deepLiquidity:{
 
       rawLevelCount:
         rawLiquidityLevels.length,
@@ -7566,18 +6385,13 @@ async function buildIntelligence() {
 
       path:
         liquidityPath
-          .slice(
-            0,
-            8
-          )
+          .slice(0,8)
           .map(
-            (
-              zone,
-              index
-            ) => ({
+            (zone,index) => ({
 
               rank:
-                index + 1,
+                index +
+                1,
 
               id:
                 zone.id,
@@ -7588,11 +6402,15 @@ async function buildIntelligence() {
               side:
                 zone.side,
 
-              range: {
+              price:
+                zone.price,
 
+              level:
+                zone.level,
+
+              range:{
                 low:
                   zone.low,
-
                 high:
                   zone.high
               },
@@ -7606,8 +6424,14 @@ async function buildIntelligence() {
               raidLikelihood:
                 zone.raidLikelihood,
 
+              raidScore:
+                zone.raidLikelihood,
+
               nextTargetScore:
                 zone.nextTargetScore,
+
+              distance:
+                zone.distance,
 
               distanceATR:
                 zone.distanceATR
@@ -7618,7 +6442,7 @@ async function buildIntelligence() {
     },
 
 
-    historicalLiquidity: {
+    historicalLiquidity:{
 
       candleCount:
         history.candleCount,
@@ -7628,6 +6452,10 @@ async function buildIntelligence() {
 
       lastTimestamp:
         history.lastTimestamp,
+
+      error:
+        history.error ??
+        null,
 
       sessions:
         history.statistics
@@ -7647,36 +6475,44 @@ async function buildIntelligence() {
     consensus,
 
 
-    health: {
+    health:{
 
       api1:
-        Boolean(
-          KEY_1
-        ),
+        Boolean(KEY_1),
 
       api2:
-        Boolean(
-          KEY_2
-        ),
+        Boolean(KEY_2),
 
       api3:
-        Boolean(
-          KEY_3
-        ),
+        Boolean(KEY_3),
 
       api4:
-        Boolean(
-          KEY_4
-        ),
+        Boolean(KEY_4),
 
       fred:
-        Boolean(
-          FRED_KEY
-        )
+        Boolean(FRED_KEY),
+
+      xauM1Bars:
+        m1.length,
+
+      xauM5Bars:
+        m5.length,
+
+      xauM15Bars:
+        m15.length,
+
+      xauH1Bars:
+        h1.length,
+
+      xauH4Bars:
+        h4.length,
+
+      liquidityZones:
+        liquidityPath.length
     },
 
 
-    apiArchitecture: {
+    apiArchitecture:{
 
       api1:
         "XAU M1 + M5 execution intelligence",
@@ -7695,7 +6531,7 @@ async function buildIntelligence() {
     },
 
 
-    modelNotes: {
+    modelNotes:{
 
       liquidityLikelihood:
         "Raid/reversal/continuation scores are heuristic model likelihoods, not guaranteed probabilities.",
@@ -7705,41 +6541,33 @@ async function buildIntelligence() {
     }
   };
 
-
   liveCache = {
-
-    time:
-      Date.now(),
-
-    value:
-      result
+    time:Date.now(),
+    value:result
   };
-
 
   return result;
 }
 
 
 /* ================================================================
-   VERCEL HANDLER
+   HANDLER
 ================================================================ */
 
 export default async function handler(
   req,
   res
-) {
+){
 
   res.setHeader(
     "Cache-Control",
     "no-store, max-age=0"
   );
 
-
   res.setHeader(
     "Access-Control-Allow-Origin",
     "*"
   );
-
 
   res.setHeader(
     "Access-Control-Allow-Methods",
@@ -7747,82 +6575,74 @@ export default async function handler(
   );
 
 
-  if (
+  if(
     req.method ===
     "OPTIONS"
-  ) {
+  ){
 
-    return (
-      res
-        .status(204)
-        .end()
-    );
+    return res
+      .status(204)
+      .end();
   }
 
 
-  if (
+  if(
     req.method !==
     "GET"
-  ) {
+  ){
 
-    return (
-      res
-        .status(405)
-        .json({
-
-          ok:
-            false,
-
-          error:
-            "Method not allowed."
-        })
-    );
+    return res
+      .status(405)
+      .json({
+        ok:false,
+        error:"Method not allowed."
+      });
   }
 
 
-  try {
+  try{
+
+    const force =
+      String(
+        req.query?.force ||
+        ""
+      ) === "1";
+
 
     const result =
-      await buildIntelligence();
+      await buildIntelligence(
+        force
+      );
 
 
-    return (
-      res
-        .status(200)
-        .json(
-          result
-        )
-    );
+    return res
+      .status(200)
+      .json(result);
 
-  } catch (
-    error
-  ) {
+  }catch(error){
 
     console.error(
-      "MKAYFX V8 ERROR:",
+      "MKAYFX V8.2 ERROR:",
       error
     );
 
 
-    return (
-      res
-        .status(500)
-        .json({
+    return res
+      .status(500)
+      .json({
 
-          ok:
-            false,
+        ok:false,
 
-          engine:
-            "MKAYFX GOLD INTELLIGENCE V8",
+        engine:
+          "MKAYFX GOLD INTELLIGENCE V8.2",
 
-          error:
-            error?.message ||
-            "Unknown server error.",
+        error:
+          error?.message ||
+          "Unknown server error.",
 
-          generatedAt:
-            new Date()
-              .toISOString()
-        })
-    );
+        generatedAt:
+          new Date()
+            .toISOString()
+      });
   }
 }
