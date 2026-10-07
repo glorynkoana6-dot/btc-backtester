@@ -1,104 +1,137 @@
 /* ================================================================
    MKAYFX GOLD INTELLIGENCE V9
    LIQUIDITY WARFARE ENGINE
+
+   FILE
    ---------------------------------------------------------------
-   FILE: /api/xau.js
+   /api/xau.js
 
-   DATA
-   ----
-   API #1  TWELVE_DATA_API_KEY
-           XAU/USD M1 + M5
+   DATA ARCHITECTURE
+   ---------------------------------------------------------------
+   API KEY 1
+   TWELVE_DATA_API_KEY
+   -> M1 / latest price
 
-   API #2  TWELVE_DATA_API_KEY_2
-           XAU/USD M15 + H1 + H4
+   API KEY 2
+   TWELVE_DATA_API_KEY_2
+   -> M15 / H1 / H4 structure
 
-   API #3  TWELVE_DATA_API_KEY_3
-           Deep historical XAU/USD M5
+   API KEY 3
+   TWELVE_DATA_API_KEY_3
+   -> Deep M5 / historical memory
 
-   API #4  TWELVE_DATA_API_KEY_4
-           Intermarket confirmation
+   API KEY 4
+   TWELVE_DATA_API_KEY_4
+   -> Optional fallback
 
-   MACRO   FRED_API_KEY
-           Optional US macro pressure
-
-   DESIGN
-   ------
-   REST ONLY.
-   NO WEBSOCKET REQUIRED.
-
-   FEATURES
-   --------
-   - Live XAU/USD price
-   - M1 / M5 / M15 / H1 / H4
-   - EMA 20 / 50 / 200 context
-   - RSI
-   - ATR
-   - VWAP proxy
-   - Asia high / low
-   - London high / low
-   - New York high / low
-   - Previous day high / low
-   - Previous week high / low
-   - H1 swing liquidity
-   - Equal highs / equal lows
-   - FVG detection
-   - BOS
-   - CHOCH
-   - Buy-side liquidity
-   - Sell-side liquidity
-   - Liquidity strength
-   - Raid score
-   - Sweep detection
-   - Rejection detection
-   - Delta proxy
-   - CVD proxy
-   - Absorption
-   - Delta divergence
-   - Historical raid behavior
-   - Intermarket intelligence
-   - Optional FRED macro intelligence
-   - Trade idea
-   - Entry / SL / TP1 / TP2
-   - Liquidity path projection
-   - Chart payload
+   MACRO
+   ---------------------------------------------------------------
+   FRED_API_KEY
+   -> real yields
+   -> nominal yields
+   -> Fed Funds
+   -> CPI
 
    IMPORTANT
-   ---------
-   Liquidity scores, raid scores, scenario scores and trade
-   confluence are heuristic model outputs. They are NOT
-   guaranteed probabilities.
+   ---------------------------------------------------------------
+   Scores are heuristic model scores.
+
+   Historical percentages are calculated from matched historical
+   samples and are not guarantees or true future probabilities.
 ================================================================ */
 
 
-const TD_BASE =
-  "https://api.twelvedata.com/time_series";
-
-const FRED_BASE =
-  "https://api.stlouisfed.org/fred/series/observations";
+/* ================================================================
+   CONFIG
+================================================================ */
 
 const SYMBOL =
   "XAU/USD";
 
 
-/* ================================================================
-   CACHE
-================================================================ */
-
-const CACHE_MS =
-  25_000;
-
-const MACRO_CACHE_MS =
-  15 * 60_000;
+const TD_BASE =
+  "https://api.twelvedata.com";
 
 
-let engineCache = {
-  at: 0,
-  data: null
-};
+const FRED_BASE =
+  "https://api.stlouisfed.org/fred/series/observations";
 
-let macroCache = {
-  at: 0,
-  data: null
+
+const CONFIG = {
+
+  outputs: {
+
+    m1: 360,
+
+    m5: 3000,
+
+    m15: 800,
+
+    h1: 600,
+
+    h4: 400
+
+  },
+
+
+  sessionsUTC: {
+
+    asia: [
+      0,
+      7
+    ],
+
+    london: [
+      7,
+      12
+    ],
+
+    newYork: [
+      12,
+      17
+    ]
+
+  },
+
+
+  pivots: {
+
+    h1: 3,
+
+    equal: 3
+
+  },
+
+
+  levels: {
+
+    mergeAtr: 0.28,
+
+    equalAtr: 0.18,
+
+    touchAtr: 0.14,
+
+    sweepMinAtr: 0.04,
+
+    sweepMaxAtr: 1.8
+
+  },
+
+
+  historical: {
+
+    forwardBars: 12,
+
+    topK: 80,
+
+    minSimilarity: 58,
+
+    targetAtr: 1.5,
+
+    stopAtr: 1.0
+
+  }
+
 };
 
 
@@ -106,70 +139,247 @@ let macroCache = {
    BASIC HELPERS
 ================================================================ */
 
-const clamp = (n, a, b) =>
-  Math.max(a, Math.min(b, n));
+const clamp = (
+  value,
+  min,
+  max
+) =>
+  Math.max(
+    min,
+    Math.min(
+      max,
+      value
+    )
+  );
 
 
-const round = (n, d = 2) =>
-  Number.isFinite(n)
-    ? Number(n.toFixed(d))
-    : null;
+const round = (
+  value,
+  decimals = 2
+) => {
+
+  const number =
+    Number(
+      value
+    );
+
+  if (
+    !Number.isFinite(
+      number
+    )
+  ) {
+
+    return null;
+
+  }
+
+  const multiplier =
+    10 ** decimals;
+
+  return (
+    Math.round(
+      number *
+      multiplier
+    ) /
+    multiplier
+  );
+
+};
 
 
-const pct = (a, b) =>
-  b
-    ? ((a - b) / b) * 100
-    : 0;
+const mean =
+  array => {
+
+    if (
+      !array.length
+    ) {
+
+      return 0;
+
+    }
+
+    return (
+      array.reduce(
+        (
+          total,
+          value
+        ) =>
+          total +
+          value,
+        0
+      ) /
+      array.length
+    );
+
+  };
 
 
-const mean = arr =>
-  arr.length
-    ? arr.reduce((s, x) => s + x, 0) / arr.length
-    : 0;
+const median =
+  array => {
+
+    if (
+      !array.length
+    ) {
+
+      return 0;
+
+    }
+
+    const sorted =
+      [
+        ...array
+      ].sort(
+        (
+          a,
+          b
+        ) =>
+          a -
+          b
+      );
+
+    const middle =
+      Math.floor(
+        sorted.length /
+        2
+      );
+
+    if (
+      sorted.length %
+      2
+    ) {
+
+      return sorted[
+        middle
+      ];
+
+    }
+
+    return (
+      sorted[
+        middle -
+        1
+      ] +
+      sorted[
+        middle
+      ]
+    ) /
+    2;
+
+  };
 
 
-function safeNum(v) {
+const sum =
+  array =>
+    array.reduce(
+      (
+        total,
+        value
+      ) =>
+        total +
+        value,
+      0
+    );
 
-  const n =
-    Number(v);
 
-  return Number.isFinite(n)
-    ? n
-    : null;
+const safeDiv = (
+  a,
+  b,
+  fallback = 0
+) => {
+
+  if (
+    Number.isFinite(
+      a
+    ) &&
+    Number.isFinite(
+      b
+    ) &&
+    b !== 0
+  ) {
+
+    return (
+      a /
+      b
+    );
+
+  }
+
+  return fallback;
+
+};
+
+
+/* ================================================================
+   JSON RESPONSE
+================================================================ */
+
+function json(
+  data,
+  status = 200,
+  cache =
+    "no-store"
+) {
+
+  return new Response(
+    JSON.stringify(
+      data
+    ),
+    {
+
+      status,
+
+      headers: {
+
+        "content-type":
+          "application/json; charset=utf-8",
+
+        "cache-control":
+          cache,
+
+        "access-control-allow-origin":
+          "*"
+
+      }
+
+    }
+  );
+
 }
 
 
 /* ================================================================
-   API KEYS
+   API KEY MANAGEMENT
 ================================================================ */
 
-function keyPool() {
+function apiKeys() {
 
-  const k1 =
-    process.env.TWELVE_DATA_API_KEY || "";
+  return [
 
-  const k2 =
-    process.env.TWELVE_DATA_API_KEY_2 ||
-    k1;
+    process.env
+      .TWELVE_DATA_API_KEY,
 
-  const k3 =
-    process.env.TWELVE_DATA_API_KEY_3 ||
-    k2 ||
-    k1;
+    process.env
+      .TWELVE_DATA_API_KEY_2,
 
-  const k4 =
-    process.env.TWELVE_DATA_API_KEY_4 ||
-    k3 ||
-    k2 ||
-    k1;
+    process.env
+      .TWELVE_DATA_API_KEY_3,
 
+    process.env
+      .TWELVE_DATA_API_KEY_4
 
-  return {
-    k1,
-    k2,
-    k3,
-    k4
-  };
+  ].filter(
+    (
+      value,
+      index,
+      array
+    ) =>
+      value &&
+      array.indexOf(
+        value
+      ) ===
+      index
+  );
+
 }
 
 
@@ -179,81 +389,131 @@ function keyPool() {
 
 async function fetchJson(
   url,
-  timeoutMs = 11_000
+  timeoutMs = 14000
 ) {
 
   const controller =
     new AbortController();
 
+
   const timer =
     setTimeout(
-      () => controller.abort(),
+      () =>
+        controller.abort(),
       timeoutMs
     );
 
 
   try {
 
-    const r =
+    const response =
       await fetch(
         url,
         {
+
           signal:
             controller.signal,
 
           headers: {
-            "User-Agent":
-              "MKAYFX-Gold-Intelligence/9.0"
-          },
 
-          cache:
-            "no-store"
+            "user-agent":
+              "MKAYFX-Gold-Intelligence-V9/9.0"
+
+          }
+
         }
       );
 
 
-    if (!r.ok) {
+    const text =
+      await response.text();
+
+
+    let data;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          text
+        );
+
+    }
+
+    catch {
 
       throw new Error(
-        `HTTP ${r.status}`
+        `Non-JSON response (${response.status})`
       );
+
     }
 
 
-    return await r.json();
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data?.message ||
+        `HTTP ${response.status}`
+      );
+
+    }
+
+
+    return data;
 
   }
+
   finally {
 
-    clearTimeout(timer);
+    clearTimeout(
+      timer
+    );
+
   }
+
 }
 
 
 /* ================================================================
-   TWELVE DATA
+   TWELVE DATA REQUEST WITH KEY FALLBACK
 ================================================================ */
 
-async function fetchTD(
-  symbol,
-  interval,
-  outputsize,
-  preferredKey,
-  fallbackKeys = []
+async function tdRequest(
+  endpoint,
+  params,
+  preferredKey = 0
 ) {
 
-  const keys = [
-    preferredKey,
-    ...fallbackKeys
-  ].filter(Boolean);
+  const keys =
+    apiKeys();
 
 
-  if (!keys.length) {
+  if (
+    !keys.length
+  ) {
 
     throw new Error(
-      "Missing Twelve Data API key"
+      "Missing TWELVE_DATA_API_KEY environment variable."
     );
+
   }
+
+
+  const order =
+    keys.map(
+      (
+        _,
+        index
+      ) =>
+        (
+          preferredKey +
+          index
+        ) %
+        keys.length
+    );
 
 
   let lastError =
@@ -261,300 +521,427 @@ async function fetchTD(
 
 
   for (
-    const key
-    of [...new Set(keys)]
+    const index
+    of order
   ) {
 
     try {
 
-      const q =
-        new URLSearchParams({
-          symbol,
-          interval,
-
-          outputsize:
-            String(outputsize),
-
-          order:
-            "asc",
-
-          timezone:
-            "UTC",
-
-          apikey:
-            key
-        });
-
-
-      const json =
-        await fetchJson(
-          `${TD_BASE}?${q}`
+      const url =
+        new URL(
+          `${TD_BASE}/${endpoint}`
         );
 
 
-      if (
-        json?.status === "error" ||
-        !Array.isArray(json?.values)
-      ) {
-
-        throw new Error(
-          json?.message ||
-          `No ${symbol} ${interval} data`
-        );
-      }
-
-
-      const candles =
-        json.values
-        .map(v => {
-
-          const datetime =
-            String(v.datetime)
-            .replace(
-              " ",
-              "T"
-            );
-
-
-          return {
-
-            time:
-              Math.floor(
-                new Date(
-                  `${datetime}Z`
-                ).getTime() /
-                1000
-              ),
-
-            datetime:
-              v.datetime,
-
-            open:
-              safeNum(v.open),
-
-            high:
-              safeNum(v.high),
-
-            low:
-              safeNum(v.low),
-
-            close:
-              safeNum(v.close),
-
-            volume:
-              safeNum(v.volume) ||
-              0
-          };
-
-        })
-        .filter(c =>
-          [
-            c.time,
-            c.open,
-            c.high,
-            c.low,
-            c.close
-          ]
-          .every(
-            Number.isFinite
-          )
-        );
-
-
-      if (
-        candles.length <
-        Math.min(
-          30,
-          outputsize / 3
+      for (
+        const [
+          key,
+          value
+        ]
+        of Object.entries(
+          params
         )
       ) {
 
-        throw new Error(
-          `Too few ${symbol} ${interval} candles`
-        );
+        if (
+          value !==
+            undefined &&
+          value !==
+            null
+        ) {
+
+          url.searchParams.set(
+            key,
+            String(
+              value
+            )
+          );
+
+        }
+
       }
 
 
-      return candles;
+      url.searchParams.set(
+        "apikey",
+        keys[
+          index
+        ]
+      );
+
+
+      const data =
+        await fetchJson(
+          url.toString()
+        );
+
+
+      if (
+        data?.status ===
+          "error" ||
+        data?.code ||
+        data?.message
+          ?.toLowerCase?.()
+          .includes(
+            "credits"
+          )
+      ) {
+
+        throw new Error(
+          data?.message ||
+          "Twelve Data returned an error."
+        );
+
+      }
+
+
+      return {
+
+        data,
+
+        keySlot:
+          index +
+          1
+
+      };
 
     }
-    catch (e) {
+
+    catch (
+      error
+    ) {
 
       lastError =
-        e;
+        error;
+
     }
+
   }
 
 
   throw (
     lastError ||
     new Error(
-      `Failed ${symbol} ${interval}`
+      "All Twelve Data keys failed."
     )
   );
+
 }
 
 
 /* ================================================================
-   EMA
+   TIME PARSER
 ================================================================ */
 
-function ema(
-  values,
-  period
-) {
-
-  if (!values.length)
-    return [];
-
-
-  const k =
-    2 /
-    (
-      period + 1
-    );
-
-
-  const out =
-    [
-      values[0]
-    ];
-
-
-  for (
-    let i = 1;
-    i < values.length;
-    i++
-  ) {
-
-    out.push(
-      values[i] *
-      k +
-      out[i - 1] *
-      (
-        1 - k
-      )
-    );
-  }
-
-
-  return out;
-}
-
-
-/* ================================================================
-   RSI
-================================================================ */
-
-function rsi(
-  candles,
-  period = 14
+function parseTdTime(
+  value
 ) {
 
   if (
-    candles.length <
-    period + 2
+    !value
   ) {
 
-    return 50;
+    return 0;
+
   }
 
 
-  const closes =
-    candles.map(
-      c => c.close
+  if (
+    /^\d{4}-\d{2}-\d{2}$/
+      .test(
+        value
+      )
+  ) {
+
+    return Math.floor(
+      Date.parse(
+        `${value}T00:00:00Z`
+      ) /
+      1000
+    );
+
+  }
+
+
+  const normalized =
+    value.includes(
+      "T"
+    )
+      ?
+      value
+      :
+      value.replace(
+        " ",
+        "T"
+      );
+
+
+  return Math.floor(
+    Date.parse(
+      normalized.endsWith(
+        "Z"
+      )
+        ?
+        normalized
+        :
+        `${normalized}Z`
+    ) /
+    1000
+  );
+
+}
+
+
+/* ================================================================
+   CANDLE NORMALIZER
+================================================================ */
+
+function normalizeCandles(
+  values = []
+) {
+
+  return values
+
+    .map(
+      value => ({
+
+        time:
+          parseTdTime(
+            value.datetime
+          ),
+
+        open:
+          Number(
+            value.open
+          ),
+
+        high:
+          Number(
+            value.high
+          ),
+
+        low:
+          Number(
+            value.low
+          ),
+
+        close:
+          Number(
+            value.close
+          ),
+
+        volume:
+          Number(
+            value.volume ||
+            0
+          )
+
+      })
+    )
+
+    .filter(
+      candle =>
+        candle.time &&
+        [
+          candle.open,
+          candle.high,
+          candle.low,
+          candle.close
+        ].every(
+          Number.isFinite
+        )
+    )
+
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.time -
+        b.time
+    );
+
+}
+
+
+/* ================================================================
+   FETCH TIME SERIES
+================================================================ */
+
+async function fetchSeries(
+  interval,
+  outputsize,
+  preferredKey
+) {
+
+  const started =
+    Date.now();
+
+
+  const {
+    data,
+    keySlot
+  } =
+    await tdRequest(
+      "time_series",
+      {
+
+        symbol:
+          SYMBOL,
+
+        interval,
+
+        outputsize,
+
+        timezone:
+          "UTC",
+
+        order:
+          "desc",
+
+        format:
+          "JSON"
+
+      },
+      preferredKey
     );
 
 
-  let gains = 0;
+  const candles =
+    normalizeCandles(
+      data?.values ||
+      []
+    );
 
-  let losses = 0;
 
-
-  for (
-    let i = 1;
-    i <= period;
-    i++
+  if (
+    candles.length <
+    20
   ) {
 
-    const d =
-      closes[i] -
-      closes[i - 1];
+    throw new Error(
+      `${interval}: insufficient candles (${candles.length})`
+    );
 
-
-    if (d >= 0)
-      gains += d;
-
-    else
-      losses -= d;
   }
 
 
-  let ag =
-    gains /
-    period;
+  return {
 
-  let al =
-    losses /
-    period;
+    candles,
 
+    keySlot,
 
-  for (
-    let i = period + 1;
-    i < closes.length;
-    i++
-  ) {
+    ms:
+      Date.now() -
+      started
 
-    const d =
-      closes[i] -
-      closes[i - 1];
+  };
+
+}
 
 
-    ag =
-      (
-        ag *
-        (
-          period - 1
-        ) +
-        Math.max(
-          d,
-          0
-        )
-      ) /
-      period;
+/* ================================================================
+   LATEST PRICE
+================================================================ */
+
+async function fetchLatestPrice() {
+
+  const started =
+    Date.now();
 
 
-    al =
-      (
-        al *
-        (
-          period - 1
-        ) +
-        Math.max(
-          -d,
-          0
-        )
-      ) /
-      period;
-  }
+  const {
+    data,
+    keySlot
+  } =
+    await tdRequest(
+      "price",
+      {
+
+        symbol:
+          SYMBOL,
+
+        dp:
+          5
+
+      },
+      0
+    );
 
 
-  if (al === 0)
-    return 100;
+  const price =
+    Number(
+      data?.price
+    );
 
 
-  const rs =
-    ag /
-    al;
-
-
-  return (
-    100 -
-    100 /
-    (
-      1 + rs
+  if (
+    !Number.isFinite(
+      price
     )
+  ) {
+
+    throw new Error(
+      "Invalid latest price response."
+    );
+
+  }
+
+
+  return {
+
+    price,
+
+    keySlot,
+
+    ms:
+      Date.now() -
+      started
+
+  };
+
+}
+
+
+/* ================================================================
+   TRUE RANGE
+================================================================ */
+
+function trueRange(
+  candle,
+  previous
+) {
+
+  if (
+    !previous
+  ) {
+
+    return (
+      candle.high -
+      candle.low
+    );
+
+  }
+
+
+  return Math.max(
+
+    candle.high -
+      candle.low,
+
+    Math.abs(
+      candle.high -
+      previous.close
+    ),
+
+    Math.abs(
+      candle.low -
+      previous.close
+    )
+
   );
+
 }
 
 
@@ -562,669 +949,446 @@ function rsi(
    ATR
 ================================================================ */
 
-function atr(
+function atrArray(
   candles,
   period = 14
 ) {
 
+  const tr =
+    candles.map(
+      (
+        candle,
+        index
+      ) =>
+        trueRange(
+          candle,
+          candles[
+            index -
+            1
+          ]
+        )
+    );
+
+
+  const result =
+    Array(
+      candles.length
+    ).fill(
+      null
+    );
+
+
   if (
     candles.length <
-    2
+    period
   ) {
 
-    return 0;
+    return result;
+
   }
 
 
-  const trs =
-    [];
-
-
-  for (
-    let i = 1;
-    i < candles.length;
-    i++
-  ) {
-
-    const c =
-      candles[i];
-
-    const p =
-      candles[i - 1];
-
-
-    trs.push(
-      Math.max(
-        c.high -
-        c.low,
-
-        Math.abs(
-          c.high -
-          p.close
-        ),
-
-        Math.abs(
-          c.low -
-          p.close
-        )
+  let current =
+    mean(
+      tr.slice(
+        0,
+        period
       )
     );
-  }
 
 
-  return mean(
-    trs.slice(
-      -period
-    )
-  );
-}
-
-
-/* ================================================================
-   VWAP PROXY
-================================================================ */
-
-function vwap(
-  candles,
-  lookback = 96
-) {
-
-  const a =
-    candles.slice(
-      -lookback
-    );
-
-
-  let pv = 0;
-
-  let vol = 0;
+  result[
+    period -
+    1
+  ] =
+    current;
 
 
   for (
-    const c
-    of a
+    let index =
+      period;
+    index <
+      tr.length;
+    index++
   ) {
 
-    const typical =
+    current =
       (
-        c.high +
-        c.low +
-        c.close
+        current *
+          (
+            period -
+            1
+          ) +
+        tr[
+          index
+        ]
       ) /
-      3;
+      period;
 
 
-    const weight =
-      c.volume > 0
-        ? c.volume
-        : Math.max(
-            c.high -
-            c.low,
-            0.0001
-          );
+    result[
+      index
+    ] =
+      current;
 
-
-    pv +=
-      typical *
-      weight;
-
-
-    vol +=
-      weight;
   }
 
 
-  return vol
-    ? pv / vol
-    : (
-        a.at(-1)?.close ||
-        0
-      );
+  return result;
+
 }
 
 
 /* ================================================================
-   TIMEFRAME TREND
+   EMA
 ================================================================ */
 
-function trendFrame(
-  candles
+function emaArray(
+  candles,
+  period,
+  field =
+    "close"
 ) {
 
-  const closes =
-    candles.map(
-      c => c.close
+  const result =
+    Array(
+      candles.length
+    ).fill(
+      null
     );
 
 
-  const e20 =
-    ema(
-      closes,
-      20
-    ).at(-1) ||
-    closes.at(-1);
-
-
-  const e50 =
-    ema(
-      closes,
-      50
-    ).at(-1) ||
-    e20;
-
-
-  const e200 =
-    ema(
-      closes,
-      200
-    ).at(-1) ||
-    e50;
-
-
-  const price =
-    closes.at(-1);
-
-
-  let bias =
-    "NEUTRAL";
-
-
-  let score =
-    0;
-
-
   if (
-    price > e20 &&
-    e20 > e50
+    !candles.length
   ) {
 
-    score += 1;
+    return result;
+
   }
 
 
-  if (
-    e50 > e200
-  ) {
-
-    score += 1;
-  }
-
-
-  if (
-    price < e20 &&
-    e20 < e50
-  ) {
-
-    score -= 1;
-  }
-
-
-  if (
-    e50 < e200
-  ) {
-
-    score -= 1;
-  }
-
-
-  if (
-    score >= 2
-  ) {
-
-    bias =
-      "BULLISH";
-  }
-
-  else if (
-    score <= -2
-  ) {
-
-    bias =
-      "BEARISH";
-  }
-
-
-  return {
-
-    bias,
-
-    price:
-      round(price),
-
-    ema20:
-      round(e20),
-
-    ema50:
-      round(e50),
-
-    ema200:
-      round(e200),
-
-    rsi:
-      round(
-        rsi(candles),
-        1
-      ),
-
-    atr:
-      round(
-        atr(candles),
-        3
-      )
-  };
-}
-
-
-/* ================================================================
-   PIVOTS
-================================================================ */
-
-function pivots(
-  candles,
-  len = 5
-) {
-
-  const highs =
-    [];
-
-  const lows =
-    [];
-
-
-  for (
-    let i = len;
-    i <
-    candles.length -
-    len;
-    i++
-  ) {
-
-    let hi =
-      true;
-
-    let lo =
-      true;
-
-
-    for (
-      let j = i - len;
-      j <= i + len;
-      j++
-    ) {
-
-      if (
-        j === i
-      ) {
-
-        continue;
-      }
-
-
-      if (
-        candles[j].high >=
-        candles[i].high
-      ) {
-
-        hi =
-          false;
-      }
-
-
-      if (
-        candles[j].low <=
-        candles[i].low
-      ) {
-
-        lo =
-          false;
-      }
-
-
-      if (
-        !hi &&
-        !lo
-      ) {
-
-        break;
-      }
-    }
-
-
-    if (hi) {
-
-      highs.push({
-
-        price:
-          candles[i].high,
-
-        time:
-          candles[i].time,
-
-        index:
-          i
-      });
-    }
-
-
-    if (lo) {
-
-      lows.push({
-
-        price:
-          candles[i].low,
-
-        time:
-          candles[i].time,
-
-        index:
-          i
-      });
-    }
-  }
-
-
-  return {
-    highs,
-    lows
-  };
-}
-
-
-/* ================================================================
-   EQUAL HIGHS / LOWS
-================================================================ */
-
-function equalLevels(
-  candles,
-  p,
-  tolerance
-) {
-
-  const out =
-    [];
-
-
-  const sets =
-    [
-
-      [
-        "EQH",
-        "BUY_SIDE",
-        p.highs.slice(-14)
-      ],
-
-      [
-        "EQL",
-        "SELL_SIDE",
-        p.lows.slice(-14)
-      ]
+  const multiplier =
+    2 /
+    (
+      period +
+      1
+    );
+
+
+  let current =
+    candles[
+      0
+    ][
+      field
     ];
 
 
+  result[
+    0
+  ] =
+    current;
+
+
   for (
-    const [
-      type,
-      side,
-      arr
-    ]
-    of sets
+    let index =
+      1;
+    index <
+      candles.length;
+    index++
   ) {
 
-    for (
-      let i = 0;
-      i < arr.length;
-      i++
-    ) {
-
-      const matches =
-        arr.filter(
-          (
-            x,
-            j
-          ) =>
-            j !== i &&
-            Math.abs(
-              x.price -
-              arr[i].price
-            ) <=
-            tolerance
+    current =
+      candles[
+        index
+      ][
+        field
+      ] *
+        multiplier +
+      current *
+        (
+          1 -
+          multiplier
         );
 
 
-      if (
-        matches.length
-      ) {
+    result[
+      index
+    ] =
+      current;
 
-        const prices =
-          [
-            arr[i].price,
-            ...matches.map(
-              x => x.price
-            )
-          ];
-
-
-        out.push({
-
-          type,
-
-          side,
-
-          price:
-            mean(prices),
-
-          touches:
-            prices.length,
-
-          time:
-            arr[i].time
-        });
-      }
-    }
   }
 
 
-  const uniq =
-    [];
+  return result;
 
-
-  for (
-    const l
-    of out.sort(
-      (
-        a,
-        b
-      ) =>
-        b.touches -
-        a.touches
-    )
-  ) {
-
-    if (
-      !uniq.some(
-        x =>
-          x.type === l.type &&
-          Math.abs(
-            x.price -
-            l.price
-          ) <=
-          tolerance
-      )
-    ) {
-
-      uniq.push(l);
-    }
-  }
-
-
-  return uniq.slice(
-    0,
-    8
-  );
 }
 
 
 /* ================================================================
-   DAY HELPERS
+   RSI
 ================================================================ */
 
-function utcDayKey(t) {
-
-  const d =
-    new Date(
-      t * 1000
-    );
-
-
-  return (
-    `${d.getUTCFullYear()}-` +
-    `${String(
-      d.getUTCMonth() + 1
-    ).padStart(
-      2,
-      "0"
-    )}-` +
-    `${String(
-      d.getUTCDate()
-    ).padStart(
-      2,
-      "0"
-    )}`
-  );
-}
-
-
-/* ================================================================
-   PREVIOUS DAY
-================================================================ */
-
-function previousDayLevels(
-  candles
+function rsiArray(
+  candles,
+  period = 14
 ) {
 
-  const groups =
-    new Map();
-
-
-  for (
-    const c
-    of candles
-  ) {
-
-    const k =
-      utcDayKey(
-        c.time
-      );
-
-
-    if (
-      !groups.has(k)
-    ) {
-
-      groups.set(
-        k,
-        []
-      );
-    }
-
-
-    groups
-    .get(k)
-    .push(c);
-  }
-
-
-  const keys =
-    [
-      ...groups.keys()
-    ];
+  const result =
+    Array(
+      candles.length
+    ).fill(
+      null
+    );
 
 
   if (
-    keys.length < 2
+    candles.length <=
+    period
   ) {
 
-    return {
-      pdh: null,
-      pdl: null,
-      day: null
-    };
+    return result;
+
   }
 
 
-  const prevKey =
-    keys[
-      keys.length -
-      2
-    ];
+  let gain =
+    0;
 
 
-  const a =
-    groups.get(
-      prevKey
-    );
+  let loss =
+    0;
 
 
-  return {
+  for (
+    let index =
+      1;
+    index <=
+      period;
+    index++
+  ) {
 
-    pdh:
+    const difference =
+      candles[
+        index
+      ].close -
+      candles[
+        index -
+        1
+      ].close;
+
+
+    gain +=
       Math.max(
-        ...a.map(
-          x => x.high
-        )
-      ),
+        difference,
+        0
+      );
 
-    pdl:
-      Math.min(
-        ...a.map(
-          x => x.low
-        )
-      ),
 
-    day:
-      prevKey
-  };
+    loss +=
+      Math.max(
+        -difference,
+        0
+      );
+
+  }
+
+
+  let averageGain =
+    gain /
+    period;
+
+
+  let averageLoss =
+    loss /
+    period;
+
+
+  result[
+    period
+  ] =
+    averageLoss ===
+    0
+      ?
+      100
+      :
+      100 -
+      100 /
+      (
+        1 +
+        averageGain /
+        averageLoss
+      );
+
+
+  for (
+    let index =
+      period +
+      1;
+    index <
+      candles.length;
+    index++
+  ) {
+
+    const difference =
+      candles[
+        index
+      ].close -
+      candles[
+        index -
+        1
+      ].close;
+
+
+    averageGain =
+      (
+        averageGain *
+          (
+            period -
+            1
+          ) +
+        Math.max(
+          difference,
+          0
+        )
+      ) /
+      period;
+
+
+    averageLoss =
+      (
+        averageLoss *
+          (
+            period -
+            1
+          ) +
+        Math.max(
+          -difference,
+          0
+        )
+      ) /
+      period;
+
+
+    result[
+      index
+    ] =
+      averageLoss ===
+      0
+        ?
+        100
+        :
+        100 -
+        100 /
+        (
+          1 +
+          averageGain /
+          averageLoss
+        );
+
+  }
+
+
+  return result;
+
 }
 
 
 /* ================================================================
-   ISO WEEK
+   ROLLING MEAN
 ================================================================ */
 
-function isoWeekKey(t) {
+function rollingMean(
+  array,
+  end,
+  count
+) {
 
-  const d =
-    new Date(
-      t * 1000
+  const start =
+    Math.max(
+      0,
+      end -
+        count +
+        1
     );
 
 
-  const x =
+  const values =
+    array
+      .slice(
+        start,
+        end +
+          1
+      )
+      .filter(
+        Number.isFinite
+      );
+
+
+  return mean(
+    values
+  );
+
+}
+
+
+/* ================================================================
+   DATE HELPERS
+================================================================ */
+
+function utcDateKey(
+  timestamp
+) {
+
+  return new Date(
+    timestamp *
+    1000
+  )
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
+
+}
+
+
+function isoWeekKey(
+  timestamp
+) {
+
+  const date =
+    new Date(
+      timestamp *
+      1000
+    );
+
+
+  const copy =
     new Date(
       Date.UTC(
-        d.getUTCFullYear(),
-        d.getUTCMonth(),
-        d.getUTCDate()
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate()
       )
     );
 
 
   const day =
-    x.getUTCDay() ||
+    copy.getUTCDay() ||
     7;
 
 
-  x.setUTCDate(
-    x.getUTCDate() +
+  copy.setUTCDate(
+    copy.getUTCDate() +
     4 -
     day
   );
 
 
-  const y0 =
+  const yearStart =
     new Date(
       Date.UTC(
-        x.getUTCFullYear(),
+        copy.getUTCFullYear(),
         0,
         1
       )
@@ -1235,12 +1399,10 @@ function isoWeekKey(t) {
     Math.ceil(
       (
         (
-          (
-            x -
-            y0
-          ) /
-          86400000
-        ) +
+          copy -
+          yearStart
+        ) /
+        86400000 +
         1
       ) /
       7
@@ -1248,1724 +1410,4327 @@ function isoWeekKey(t) {
 
 
   return (
-    `${x.getUTCFullYear()}-W` +
-    `${String(
+    `${copy.getUTCFullYear()}-W${String(
       week
     ).padStart(
       2,
       "0"
     )}`
   );
+
 }
 
 
 /* ================================================================
-   PREVIOUS WEEK
+   HIGH LOW GROUPING
 ================================================================ */
 
-function previousWeekLevels(
-  candles
+function groupHighLow(
+  candles,
+  keyFunction
 ) {
 
-  const groups =
+  const map =
     new Map();
 
 
   for (
-    const c
+    const candle
     of candles
   ) {
 
-    const k =
-      isoWeekKey(
-        c.time
+    const key =
+      keyFunction(
+        candle.time
       );
 
 
-    if (
-      !groups.has(k)
-    ) {
+    const existing =
+      map.get(
+        key
+      ) ||
+      {
 
-      groups.set(
-        k,
-        []
-      );
-    }
+        key,
 
+        high:
+          -Infinity,
 
-    groups
-    .get(k)
-    .push(c);
-  }
+        low:
+          Infinity,
 
+        open:
+          candle.open,
 
-  const keys =
-    [
-      ...groups.keys()
-    ];
+        close:
+          candle.close,
 
+        count:
+          0
 
-  if (
-    keys.length < 2
-  ) {
-
-    return {
-      pwh: null,
-      pwl: null,
-      week: null
-    };
-  }
+      };
 
 
-  const k =
-    keys[
-      keys.length -
-      2
-    ];
-
-
-  const a =
-    groups.get(k);
-
-
-  return {
-
-    pwh:
+    existing.high =
       Math.max(
-        ...a.map(
-          x => x.high
-        )
-      ),
+        existing.high,
+        candle.high
+      );
 
-    pwl:
+
+    existing.low =
       Math.min(
-        ...a.map(
-          x => x.low
-        )
-      ),
+        existing.low,
+        candle.low
+      );
 
-    week:
-      k
-  };
+
+    existing.close =
+      candle.close;
+
+
+    existing.count++;
+
+
+    map.set(
+      key,
+      existing
+    );
+
+  }
+
+
+  return [
+    ...map.values()
+  ];
+
 }
 
 
 /* ================================================================
-   SESSION LIQUIDITY
+   PREVIOUS COMPLETED GROUP
 ================================================================ */
 
-function sessionLevels(
-  candles
+function previousCompletedGroup(
+  groups
 ) {
 
-  const today =
-    utcDayKey(
-      candles.at(-1).time
-    );
+  if (
+    groups.length <
+    2
+  ) {
+
+    return null;
+
+  }
 
 
-  const rows =
-    candles.filter(
-      c =>
-        utcDayKey(
-          c.time
-        ) ===
-        today
-    );
+  return groups[
+    groups.length -
+    2
+  ];
+
+}
 
 
-  const definitions =
-    [
+/* ================================================================
+   SESSION RANGE
+================================================================ */
 
-      {
-        name:
-          "ASIA",
+function sessionRange(
+  candles,
+  startHour,
+  endHour,
+  label
+) {
 
-        from:
-          0,
-
-        to:
-          8
-      },
-
-      {
-        name:
-          "LONDON",
-
-        from:
-          7,
-
-        to:
-          16
-      },
-
-      {
-        name:
-          "NEW_YORK",
-
-        from:
-          12,
-
-        to:
-          21
-      }
-    ];
-
-
-  const out =
-    {};
+  const byDate =
+    new Map();
 
 
   for (
-    const session
-    of definitions
+    const candle
+    of candles
   ) {
 
-    const a =
-      rows.filter(
-        c => {
-
-          const h =
-            new Date(
-              c.time *
-              1000
-            )
-            .getUTCHours();
-
-
-          return (
-            h >=
-            session.from &&
-            h <
-            session.to
-          );
-        }
+    const date =
+      new Date(
+        candle.time *
+        1000
       );
 
 
-    out[
-      session.name
-    ] =
-      a.length
-        ? {
+    const hour =
+      date.getUTCHours();
 
-            high:
-              Math.max(
-                ...a.map(
-                  x => x.high
-                )
-              ),
 
-            low:
-              Math.min(
-                ...a.map(
-                  x => x.low
-                )
-              ),
+    const inside =
+      startHour <
+      endHour
+        ?
+        (
+          hour >=
+            startHour &&
+          hour <
+            endHour
+        )
+        :
+        (
+          hour >=
+            startHour ||
+          hour <
+            endHour
+        );
 
-            open:
-              a[0].open,
 
-            close:
-              a.at(-1).close,
+    if (
+      !inside
+    ) {
 
-            bars:
-              a.length
-          }
+      continue;
 
-        : null;
+    }
+
+
+    const key =
+      utcDateKey(
+        candle.time
+      );
+
+
+    const current =
+      byDate.get(
+        key
+      ) ||
+      {
+
+        date:
+          key,
+
+        high:
+          -Infinity,
+
+        low:
+          Infinity,
+
+        open:
+          candle.open,
+
+        close:
+          candle.close,
+
+        count:
+          0,
+
+        start:
+          candle.time,
+
+        end:
+          candle.time
+
+      };
+
+
+    current.high =
+      Math.max(
+        current.high,
+        candle.high
+      );
+
+
+    current.low =
+      Math.min(
+        current.low,
+        candle.low
+      );
+
+
+    current.close =
+      candle.close;
+
+
+    current.end =
+      candle.time;
+
+
+    current.count++;
+
+
+    byDate.set(
+      key,
+      current
+    );
+
   }
 
 
-  return out;
+  const ranges =
+    [
+      ...byDate.values()
+    ].filter(
+      item =>
+        item.count >=
+        2
+    );
+
+
+  const latest =
+    ranges[
+      ranges.length -
+      1
+    ];
+
+
+  return latest
+    ?
+    {
+
+      ...latest,
+
+      label
+
+    }
+    :
+    null;
+
 }
 
 
 /* ================================================================
-   FAIR VALUE GAPS
+   PIVOT DETECTOR
 ================================================================ */
 
-function fvgZones(
+function pivots(
   candles,
-  max = 10
+  length = 3
 ) {
 
-  const zones =
+  const highs =
+    [];
+
+
+  const lows =
     [];
 
 
   for (
-    let i = 2;
-    i < candles.length;
-    i++
+    let index =
+      length;
+    index <
+      candles.length -
+        length;
+    index++
   ) {
 
-    const a =
+    let pivotHigh =
+      true;
+
+
+    let pivotLow =
+      true;
+
+
+    for (
+      let compare =
+        index -
+        length;
+      compare <=
+        index +
+          length;
+      compare++
+    ) {
+
+      if (
+        compare ===
+        index
+      ) {
+
+        continue;
+
+      }
+
+
+      if (
+        candles[
+          compare
+        ].high >=
+        candles[
+          index
+        ].high
+      ) {
+
+        pivotHigh =
+          false;
+
+      }
+
+
+      if (
+        candles[
+          compare
+        ].low <=
+        candles[
+          index
+        ].low
+      ) {
+
+        pivotLow =
+          false;
+
+      }
+
+
+      if (
+        !pivotHigh &&
+        !pivotLow
+      ) {
+
+        break;
+
+      }
+
+    }
+
+
+    if (
+      pivotHigh
+    ) {
+
+      highs.push(
+        {
+
+          index,
+
+          time:
+            candles[
+              index
+            ].time,
+
+          price:
+            candles[
+              index
+            ].high
+
+        }
+      );
+
+    }
+
+
+    if (
+      pivotLow
+    ) {
+
+      lows.push(
+        {
+
+          index,
+
+          time:
+            candles[
+              index
+            ].time,
+
+          price:
+            candles[
+              index
+            ].low
+
+        }
+      );
+
+    }
+
+  }
+
+
+  return {
+
+    highs,
+
+    lows
+
+  };
+
+}
+
+
+/* ================================================================
+   EQUAL HIGHS / LOWS
+================================================================ */
+
+function findEqualLevels(
+  candles,
+  tolerance,
+  pivotLength = 3,
+  lookback = 260
+) {
+
+  const start =
+    Math.max(
+      0,
+      candles.length -
+      lookback
+    );
+
+
+  const slice =
+    candles.slice(
+      start
+    );
+
+
+  const detected =
+    pivots(
+      slice,
+      pivotLength
+    );
+
+
+  const output =
+    [];
+
+
+  for (
+    const [
+      kind,
+      levels
+    ]
+    of [
+      [
+        "EQH",
+        detected.highs
+      ],
+      [
+        "EQL",
+        detected.lows
+      ]
+    ]
+  ) {
+
+    for (
+      let index =
+        0;
+      index <
+        levels.length;
+      index++
+    ) {
+
+      const matches =
+        [
+          levels[
+            index
+          ]
+        ];
+
+
+      for (
+        let compare =
+          index +
+          1;
+        compare <
+          levels.length;
+        compare++
+      ) {
+
+        if (
+          Math.abs(
+            levels[
+              compare
+            ].price -
+            levels[
+              index
+            ].price
+          ) <=
+          tolerance
+        ) {
+
+          matches.push(
+            levels[
+              compare
+            ]
+          );
+
+        }
+
+      }
+
+
+      if (
+        matches.length >=
+        2
+      ) {
+
+        output.push(
+          {
+
+            name:
+              `${kind} ×${matches.length}`,
+
+            kind,
+
+            side:
+              kind ===
+              "EQH"
+                ?
+                "BSL"
+                :
+                "SSL",
+
+            price:
+              mean(
+                matches.map(
+                  item =>
+                    item.price
+                )
+              ),
+
+            touches:
+              matches.length,
+
+            time:
+              matches[
+                matches.length -
+                1
+              ].time,
+
+            weight:
+              88 +
+              Math.min(
+                8,
+                (
+                  matches.length -
+                  2
+                ) *
+                3
+              ),
+
+            timeframe:
+              "M15",
+
+            source:
+              "equal-liquidity"
+
+          }
+        );
+
+      }
+
+    }
+
+  }
+
+
+  const deduplicated =
+    [];
+
+
+  for (
+    const item
+    of output.sort(
+      (
+        a,
+        b
+      ) =>
+        b.time -
+        a.time
+    )
+  ) {
+
+    const exists =
+      deduplicated.some(
+        existing =>
+          existing.side ===
+            item.side &&
+          Math.abs(
+            existing.price -
+            item.price
+          ) <=
+          tolerance
+      );
+
+
+    if (
+      !exists
+    ) {
+
+      deduplicated.push(
+        item
+      );
+
+    }
+
+  }
+
+
+  return deduplicated.slice(
+    0,
+    6
+  );
+
+}
+
+
+/* ================================================================
+   M15 FAIR VALUE GAPS
+================================================================ */
+
+function findFvgs(
+  candles,
+  atrNow,
+  lookback = 160
+) {
+
+  const output =
+    [];
+
+
+  const start =
+    Math.max(
+      2,
+      candles.length -
+      lookback
+    );
+
+
+  for (
+    let index =
+      start;
+    index <
+      candles.length;
+    index++
+  ) {
+
+    const first =
       candles[
-        i - 2
+        index -
+        2
       ];
 
 
-    const c =
-      candles[i];
+    const third =
+      candles[
+        index
+      ];
 
 
     if (
-      c.low >
-      a.high
+      third.low >
+      first.high
     ) {
 
-      zones.push({
+      const low =
+        first.high;
 
-        type:
-          "BULLISH_FVG",
 
-        side:
-          "SUPPORT",
+      const high =
+        third.low;
 
-        low:
-          a.high,
 
-        high:
-          c.low,
+      if (
+        high -
+          low >=
+        atrNow *
+          0.08
+      ) {
 
-        time:
-          c.time
-      });
+        const filled =
+          candles
+            .slice(
+              index +
+              1
+            )
+            .some(
+              candle =>
+                candle.low <=
+                low
+            );
+
+
+        if (
+          !filled
+        ) {
+
+          output.push(
+            {
+
+              type:
+                "BULLISH_FVG",
+
+              low,
+
+              high,
+
+              mid:
+                (
+                  low +
+                  high
+                ) /
+                2,
+
+              time:
+                third.time,
+
+              timeframe:
+                "M15"
+
+            }
+          );
+
+        }
+
+      }
+
     }
 
 
     if (
-      c.high <
-      a.low
+      third.high <
+      first.low
     ) {
 
-      zones.push({
+      const low =
+        third.high;
 
-        type:
-          "BEARISH_FVG",
 
-        side:
-          "RESISTANCE",
+      const high =
+        first.low;
 
-        low:
-          c.high,
 
-        high:
-          a.low,
+      if (
+        high -
+          low >=
+        atrNow *
+          0.08
+      ) {
 
-        time:
-          c.time
-      });
+        const filled =
+          candles
+            .slice(
+              index +
+              1
+            )
+            .some(
+              candle =>
+                candle.high >=
+                high
+            );
+
+
+        if (
+          !filled
+        ) {
+
+          output.push(
+            {
+
+              type:
+                "BEARISH_FVG",
+
+              low,
+
+              high,
+
+              mid:
+                (
+                  low +
+                  high
+                ) /
+                2,
+
+              time:
+                third.time,
+
+              timeframe:
+                "M15"
+
+            }
+          );
+
+        }
+
+      }
+
     }
+
   }
 
 
-  return zones.slice(
-    -max
-  );
+  return output
+    .slice(
+      -8
+    )
+    .reverse();
+
 }
 
 
 /* ================================================================
-   STRUCTURE
+   LEVEL TOUCH COUNTER
 ================================================================ */
 
-function structureState(
+function countTouches(
   candles,
-  p
+  price,
+  tolerance,
+  lookback = 240
 ) {
 
-  const price =
-    candles.at(-1).close;
+  let touches =
+    0;
 
 
-  const lastH =
-    p.highs.at(-1);
-
-  const prevH =
-    p.highs.at(-2);
-
-  const lastL =
-    p.lows.at(-1);
-
-  const prevL =
-    p.lows.at(-2);
-
-
-  let state =
-    "RANGE";
-
-
-  let bos =
-    null;
-
-
-  let choch =
-    null;
-
-
-  if (
-    lastH &&
-    prevH &&
-    lastL &&
-    prevL
-  ) {
-
-    const hh =
-      lastH.price >
-      prevH.price;
-
-
-    const hl =
-      lastL.price >
-      prevL.price;
-
-
-    const lh =
-      lastH.price <
-      prevH.price;
-
-
-    const ll =
-      lastL.price <
-      prevL.price;
-
-
-    if (
-      hh &&
-      hl
-    ) {
-
-      state =
-        "BULLISH";
-    }
-
-    else if (
-      lh &&
-      ll
-    ) {
-
-      state =
-        "BEARISH";
-    }
-
-
-    if (
-      price >
-      lastH.price
-    ) {
-
-      bos =
-        "BULLISH_BOS";
-    }
-
-
-    if (
-      price <
-      lastL.price
-    ) {
-
-      bos =
-        "BEARISH_BOS";
-    }
-
-
-    if (
-      state ===
-        "BEARISH" &&
-      price >
-        lastH.price
-    ) {
-
-      choch =
-        "BULLISH_CHOCH";
-    }
-
-
-    if (
-      state ===
-        "BULLISH" &&
-      price <
-        lastL.price
-    ) {
-
-      choch =
-        "BEARISH_CHOCH";
-    }
-  }
-
-
-  return {
-
-    state,
-
-    bos,
-
-    choch,
-
-    lastSwingHigh:
-      lastH?.price ||
-      null,
-
-    lastSwingLow:
-      lastL?.price ||
-      null
-  };
-}
-
-
-/* ================================================================
-   ORDER FLOW / DELTA PROXY
-================================================================ */
-
-function deltaProxy(
-  candles,
-  lookback = 40
-) {
-
-  const a =
-    candles.slice(
-      -lookback
+  const start =
+    Math.max(
+      0,
+      candles.length -
+      lookback
     );
 
 
-  let delta =
-    0;
-
-
-  let cvd =
-    0;
-
-
-  const cvdSeries =
-    [];
+  let lastTouch =
+    -10;
 
 
   for (
-    const c
-    of a
+    let index =
+      start;
+    index <
+      candles.length;
+    index++
   ) {
 
-    const range =
-      Math.max(
-        c.high -
-        c.low,
-        1e-9
-      );
+    if (
+      candles[
+        index
+      ].low -
+        tolerance <=
+        price &&
+      candles[
+        index
+      ].high +
+        tolerance >=
+        price
+    ) {
 
-
-    const pressure =
-      (
-        (
-          c.close -
-          c.open
-        ) /
-        range
-      ) *
-      (
-        c.volume ||
-        range
-      );
-
-
-    delta +=
-      pressure;
-
-
-    cvd +=
-      pressure;
-
-
-    cvdSeries.push(
-      cvd
-    );
-  }
-
-
-  const recent =
-    a.slice(-5);
-
-
-  const wickReject =
-    mean(
-      recent.map(
-        c => {
-
-          const range =
-            Math.max(
-              c.high -
-              c.low,
-              1e-9
-            );
-
-
-          const body =
-            Math.abs(
-              c.close -
-              c.open
-            );
-
-
-          return (
-            1 -
-            body /
-            range
-          );
-        }
-      )
-    );
-
-
-  const priceMove =
-    a.length > 1
-      ? (
-          a.at(-1).close -
-          a[0].close
-        )
-      : 0;
-
-
-  const cvdMove =
-    cvdSeries.length > 1
-      ? (
-          cvdSeries.at(-1) -
-          cvdSeries[0]
-        )
-      : 0;
-
-
-  const divergence =
-    priceMove > 0 &&
-    cvdMove < 0
-
-      ? "BEARISH"
-
-      : priceMove < 0 &&
-        cvdMove > 0
-
-        ? "BULLISH"
-
-        : "NONE";
-
-
-  let absorption =
-    "LOW";
-
-
-  if (
-    wickReject >
-    0.62
-  ) {
-
-    absorption =
-      "ELEVATED";
-  }
-
-  else if (
-    wickReject >
-    0.48
-  ) {
-
-    absorption =
-      "MODERATE";
-  }
-
-
-  return {
-
-    delta:
-      round(
-        delta,
+      if (
+        index -
+          lastTouch >
         2
-      ),
+      ) {
 
-    cvd:
-      round(
-        cvd,
-        2
-      ),
+        touches++;
 
-    divergence,
+      }
 
-    absorption
-  };
+
+      lastTouch =
+        index;
+
+    }
+
+  }
+
+
+  return touches;
+
 }
 
 
 /* ================================================================
-   BUILD LIQUIDITY MAP
+   LIQUIDITY LEVEL ENGINE
 ================================================================ */
 
-function buildLiquidityLevels({
+function buildLiquidityLevels(
   m5,
+  m15,
   h1,
-  hist,
-  sessions,
-  day,
-  week,
-  fvg
-}) {
-
-  const currentAtr =
-    atr(m5) ||
-    1;
-
-
-  const hp =
-    pivots(
-      h1,
-      4
-    );
-
-
-  const mp =
-    pivots(
-      m5,
-      5
-    );
-
-
-  const eq =
-    equalLevels(
-      m5,
-      mp,
-      currentAtr *
-      0.18
-    );
-
+  atr5,
+  atr15
+) {
 
   const levels =
     [];
 
 
-  const add = (
+  const daily =
+    groupHighLow(
+      m15,
+      timestamp =>
+        utcDateKey(
+          timestamp
+        )
+    );
+
+
+  const weekly =
+    groupHighLow(
+      h1,
+      timestamp =>
+        isoWeekKey(
+          timestamp
+        )
+    );
+
+
+  const previousDay =
+    previousCompletedGroup(
+      daily
+    );
+
+
+  const previousWeek =
+    previousCompletedGroup(
+      weekly
+    );
+
+
+  function push(
     name,
-    price,
     side,
-    type,
-    weight = 50,
-    meta = {}
-  ) => {
+    price,
+    weight,
+    timeframe,
+    source,
+    touches = 1,
+    time = null
+  ) {
 
     if (
-      Number.isFinite(
+      !Number.isFinite(
         price
       )
     ) {
 
-      levels.push({
+      return;
+
+    }
+
+
+    levels.push(
+      {
 
         name,
 
-        price,
-
         side,
 
-        type,
+        price,
 
         weight,
 
-        ...meta
-      });
-    }
-  };
+        timeframe,
 
+        source,
 
-  add(
-    "Previous Day High",
-    day.pdh,
-    "BUY_SIDE",
-    "PDH",
-    92
-  );
+        touches,
 
+        time
 
-  add(
-    "Previous Day Low",
-    day.pdl,
-    "SELL_SIDE",
-    "PDL",
-    92
-  );
-
-
-  add(
-    "Previous Week High",
-    week.pwh,
-    "BUY_SIDE",
-    "PWH",
-    96
-  );
-
-
-  add(
-    "Previous Week Low",
-    week.pwl,
-    "SELL_SIDE",
-    "PWL",
-    96
-  );
-
-
-  if (
-    sessions.ASIA
-  ) {
-
-    add(
-      "Asia High",
-      sessions.ASIA.high,
-      "BUY_SIDE",
-      "ASIA_HIGH",
-      82
+      }
     );
 
-
-    add(
-      "Asia Low",
-      sessions.ASIA.low,
-      "SELL_SIDE",
-      "ASIA_LOW",
-      82
-    );
   }
 
 
   if (
-    sessions.LONDON
+    previousDay
   ) {
 
-    add(
-      "London High",
-      sessions.LONDON.high,
-      "BUY_SIDE",
-      "LONDON_HIGH",
-      86
+    push(
+      "Previous Day High",
+      "BSL",
+      previousDay.high,
+      96,
+      "D1",
+      "PDH"
     );
 
 
-    add(
-      "London Low",
-      sessions.LONDON.low,
-      "SELL_SIDE",
-      "LONDON_LOW",
-      86
+    push(
+      "Previous Day Low",
+      "SSL",
+      previousDay.low,
+      96,
+      "D1",
+      "PDL"
     );
+
   }
 
 
   if (
-    sessions.NEW_YORK
+    previousWeek
   ) {
 
-    add(
-      "New York High",
-      sessions.NEW_YORK.high,
-      "BUY_SIDE",
-      "NY_HIGH",
-      84
+    push(
+      "Previous Week High",
+      "BSL",
+      previousWeek.high,
+      100,
+      "W1",
+      "PWH"
     );
 
 
-    add(
-      "New York Low",
-      sessions.NEW_YORK.low,
-      "SELL_SIDE",
-      "NY_LOW",
-      84
+    push(
+      "Previous Week Low",
+      "SSL",
+      previousWeek.low,
+      100,
+      "W1",
+      "PWL"
     );
+
   }
 
 
-  hp.highs
-  .slice(-4)
-  .forEach(
-    (
-      x,
-      i
-    ) => {
-
-      add(
-        `H1 Swing High ${i + 1}`,
-        x.price,
-        "BUY_SIDE",
-        "H1_SWING_HIGH",
-        78 -
-        i *
-        3,
-        {
-          time:
-            x.time
-        }
-      );
-    }
-  );
+  const asia =
+    sessionRange(
+      m5,
+      ...CONFIG
+        .sessionsUTC
+        .asia,
+      "Asia"
+    );
 
 
-  hp.lows
-  .slice(-4)
-  .forEach(
-    (
-      x,
-      i
-    ) => {
-
-      add(
-        `H1 Swing Low ${i + 1}`,
-        x.price,
-        "SELL_SIDE",
-        "H1_SWING_LOW",
-        78 -
-        i *
-        3,
-        {
-          time:
-            x.time
-        }
-      );
-    }
-  );
+  const london =
+    sessionRange(
+      m5,
+      ...CONFIG
+        .sessionsUTC
+        .london,
+      "London"
+    );
 
 
-  eq.forEach(
-    (
-      x,
-      i
-    ) => {
-
-      add(
-
-        x.type === "EQH"
-          ? `Equal Highs ${i + 1}`
-          : `Equal Lows ${i + 1}`,
-
-        x.price,
-
-        x.side,
-
-        x.type,
-
-        clamp(
-          62 +
-          x.touches *
-          7,
-          0,
-          90
-        ),
-
-        {
-          touches:
-            x.touches,
-
-          time:
-            x.time
-        }
-      );
-    }
-  );
+  const newYork =
+    sessionRange(
+      m5,
+      ...CONFIG
+        .sessionsUTC
+        .newYork,
+      "New York"
+    );
 
 
-  fvg
-  .slice(-6)
-  .forEach(
-    (
-      z,
-      i
-    ) => {
+  for (
+    const session
+    of [
+      asia,
+      london,
+      newYork
+    ].filter(
+      Boolean
+    )
+  ) {
 
-      add(
-
-        `${z.type.replaceAll(
-          "_",
-          " "
-        )} ${i + 1}`,
-
-        (
-          z.low +
-          z.high
-        ) /
-        2,
-
-        z.side ===
-        "SUPPORT"
-
-          ? "SELL_SIDE"
-
-          : "BUY_SIDE",
-
-        z.type,
-
-        55,
-
-        {
-          low:
-            z.low,
-
-          high:
-            z.high,
-
-          time:
-            z.time
-        }
-      );
-    }
-  );
+    const weight =
+      session.label ===
+      "London"
+        ?
+        84
+        :
+        session.label ===
+        "Asia"
+          ?
+          80
+          :
+          78;
 
 
-  const histP =
+    push(
+      `${session.label} High`,
+      "BSL",
+      session.high,
+      weight,
+      "M5",
+      `${session.label.toUpperCase()}_HIGH`
+    );
+
+
+    push(
+      `${session.label} Low`,
+      "SSL",
+      session.low,
+      weight,
+      "M5",
+      `${session.label.toUpperCase()}_LOW`
+    );
+
+  }
+
+
+  const h1Pivots =
     pivots(
-      hist,
-      7
+      h1.slice(
+        -220
+      ),
+      CONFIG
+        .pivots
+        .h1
     );
 
 
-  histP.highs
-  .slice(-2)
-  .forEach(
-    (
-      x,
-      i
-    ) => {
+  h1Pivots
+    .highs
+    .slice(
+      -4
+    )
+    .forEach(
+      (
+        level,
+        index
+      ) => {
 
-      add(
-        `Historical Swing High ${i + 1}`,
-        x.price,
-        "BUY_SIDE",
-        "HIST_HIGH",
-        67 -
-        i *
-        4,
-        {
-          time:
-            x.time
-        }
-      );
-    }
+        push(
+          `H1 Swing High ${4 - index}`,
+          "BSL",
+          level.price,
+          76,
+          "H1",
+          "H1_SWING_HIGH",
+          1,
+          level.time
+        );
+
+      }
+    );
+
+
+  h1Pivots
+    .lows
+    .slice(
+      -4
+    )
+    .forEach(
+      (
+        level,
+        index
+      ) => {
+
+        push(
+          `H1 Swing Low ${4 - index}`,
+          "SSL",
+          level.price,
+          76,
+          "H1",
+          "H1_SWING_LOW",
+          1,
+          level.time
+        );
+
+      }
+    );
+
+
+  levels.push(
+    ...findEqualLevels(
+      m15,
+      atr15 *
+        CONFIG
+          .levels
+          .equalAtr,
+      CONFIG
+        .pivots
+        .equal
+    )
   );
 
 
-  histP.lows
-  .slice(-2)
-  .forEach(
-    (
-      x,
-      i
-    ) => {
+  for (
+    const level
+    of levels
+  ) {
 
-      add(
-        `Historical Swing Low ${i + 1}`,
-        x.price,
-        "SELL_SIDE",
-        "HIST_LOW",
-        67 -
-        i *
-        4,
-        {
-          time:
-            x.time
-        }
+    level.touches =
+      Math.max(
+
+        level.touches ||
+        1,
+
+        countTouches(
+          m5,
+          level.price,
+          atr5 *
+            CONFIG
+              .levels
+              .touchAtr
+        )
+
       );
-    }
-  );
+
+  }
 
 
-  const unique =
+  const deduplicated =
     [];
 
 
+  const tolerance =
+    atr5 *
+    0.08;
+
+
   for (
-    const l
+    const level
     of levels.sort(
       (
-        x,
-        y
+        a,
+        b
       ) =>
-        y.weight -
-        x.weight
+        b.weight -
+        a.weight
     )
   ) {
+
+    const duplicate =
+      deduplicated.some(
+        existing =>
+          existing.side ===
+            level.side &&
+          Math.abs(
+            existing.price -
+            level.price
+          ) <=
+            tolerance &&
+          existing.source ===
+            level.source
+      );
+
 
     if (
-      !unique.some(
-        u =>
-          u.side ===
-            l.side &&
-          Math.abs(
-            u.price -
-            l.price
-          ) <=
-          currentAtr *
-          0.10
-      )
+      !duplicate
     ) {
 
-      unique.push(l);
-    }
-  }
-
-
-  return unique.slice(
-    0,
-    24
-  );
-}
-
-
-/* ================================================================
-   HISTORICAL RAID STATS
-================================================================ */
-
-function historicalRaidStats(
-  hist,
-  levels,
-  currentAtr
-) {
-
-  const results =
-    {};
-
-
-  const majorTypes =
-    [
-      "PDH",
-      "PDL",
-      "PWH",
-      "PWL",
-      "ASIA_HIGH",
-      "ASIA_LOW"
-    ];
-
-
-  for (
-    const type
-    of majorTypes
-  ) {
-
-    results[type] = {
-
-      samples:
-        0,
-
-      reversals:
-        0,
-
-      continuations:
-        0,
-
-      reversalRate:
-        null
-    };
-  }
-
-
-  if (
-    hist.length <
-    100
-  ) {
-
-    return results;
-  }
-
-
-  const tolerance =
-    Math.max(
-      currentAtr *
-      0.12,
-      0.15
-    );
-
-
-  for (
-    const l
-    of levels.filter(
-      x =>
-        majorTypes.includes(
-          x.type
-        )
-    )
-  ) {
-
-    const stat =
-      results[
-        l.type
-      ];
-
-
-    for (
-      let i = 20;
-      i <
-      hist.length -
-      8;
-      i++
-    ) {
-
-      const c =
-        hist[i];
-
-
-      const prev =
-        hist[
-          i - 1
-        ];
-
-
-      let swept =
-        false;
-
-
-      let returned =
-        false;
-
-
-      if (
-        l.side ===
-        "BUY_SIDE"
-      ) {
-
-        swept =
-          c.high >
-            l.price +
-            tolerance *
-            0.1 &&
-          prev.close <=
-            l.price;
-
-
-        returned =
-          c.close <
-          l.price;
-      }
-
-      else {
-
-        swept =
-          c.low <
-            l.price -
-            tolerance *
-            0.1 &&
-          prev.close >=
-            l.price;
-
-
-        returned =
-          c.close >
-          l.price;
-      }
-
-
-      if (
-        !swept
-      ) {
-
-        continue;
-      }
-
-
-      stat.samples++;
-
-
-      const future =
-        hist.slice(
-          i + 1,
-          i + 7
-        );
-
-
-      if (
-        !future.length
-      ) {
-
-        continue;
-      }
-
-
-      const maxUp =
-        Math.max(
-          ...future.map(
-            x => x.high
-          )
-        ) -
-        c.close;
-
-
-      const maxDown =
-        c.close -
-        Math.min(
-          ...future.map(
-            x => x.low
-          )
-        );
-
-
-      const reversed =
-        l.side ===
-        "BUY_SIDE"
-
-          ? (
-              maxDown >
-              currentAtr *
-              0.65
-            )
-
-          : (
-              maxUp >
-              currentAtr *
-              0.65
-            );
-
-
-      if (
-        returned &&
-        reversed
-      ) {
-
-        stat.reversals++;
-      }
-
-      else {
-
-        stat.continuations++;
-      }
-    }
-
-
-    stat.reversalRate =
-      stat.samples
-
-        ? round(
-            stat.reversals /
-            stat.samples *
-            100,
-            1
-          )
-
-        : null;
-  }
-
-
-  return results;
-}
-
-
-/* ================================================================
-   RAID SCORE
-================================================================ */
-
-function evaluateLevel(
-  level,
-  price,
-  currentAtr,
-  recent,
-  delta,
-  historical
-) {
-
-  const distance =
-    Math.abs(
-      price -
-      level.price
-    );
-
-
-  const distanceAtr =
-    currentAtr
-      ? distance /
-        currentAtr
-      : 99;
-
-
-  const last =
-    recent.at(-1);
-
-
-  const prev =
-    recent.at(-2) ||
-    last;
-
-
-  const buffer =
-    currentAtr *
-    0.12;
-
-
-  let swept =
-    false;
-
-
-  let rejected =
-    false;
-
-
-  if (
-    level.side ===
-    "BUY_SIDE"
-  ) {
-
-    swept =
-      recent
-      .slice(-4)
-      .some(
-        c =>
-          c.high >
-          level.price +
-          buffer *
-          0.1
+      deduplicated.push(
+        level
       );
 
+    }
 
-    rejected =
-      swept &&
-      last.close <
-        level.price &&
-      last.high >
-        level.price;
-  }
-
-  else {
-
-    swept =
-      recent
-      .slice(-4)
-      .some(
-        c =>
-          c.low <
-          level.price -
-          buffer *
-          0.1
-      );
-
-
-    rejected =
-      swept &&
-      last.close >
-        level.price &&
-      last.low <
-        level.price;
-  }
-
-
-  const approaching =
-    distanceAtr <=
-    1.4;
-
-
-  const touched =
-    distanceAtr <=
-    0.22 ||
-    (
-      last.low <=
-        level.price &&
-      last.high >=
-        level.price
-    );
-
-
-  const momentumToward =
-    level.side ===
-    "BUY_SIDE"
-
-      ? (
-          last.close >=
-          prev.close
-        )
-
-      : (
-          last.close <=
-          prev.close
-        );
-
-
-  const hist =
-    historical[
-      level.type
-    ];
-
-
-  const histBoost =
-    hist?.reversalRate != null
-
-      ? (
-          hist.reversalRate -
-          50
-        ) *
-        0.18
-
-      : 0;
-
-
-  const deltaConfirm =
-    level.side ===
-    "BUY_SIDE"
-
-      ? (
-          delta.divergence ===
-          "BEARISH"
-        )
-
-      : (
-          delta.divergence ===
-          "BULLISH"
-        );
-
-
-  let raid =
-    level.weight *
-    0.42;
-
-
-  raid +=
-    clamp(
-      32 -
-      distanceAtr *
-      13,
-      0,
-      32
-    );
-
-
-  if (
-    approaching
-  ) {
-
-    raid +=
-      7;
-  }
-
-
-  if (
-    touched
-  ) {
-
-    raid +=
-      9;
-  }
-
-
-  if (
-    swept
-  ) {
-
-    raid +=
-      10;
-  }
-
-
-  if (
-    rejected
-  ) {
-
-    raid +=
-      15;
-  }
-
-
-  if (
-    momentumToward &&
-    !rejected
-  ) {
-
-    raid +=
-      4;
-  }
-
-
-  if (
-    deltaConfirm
-  ) {
-
-    raid +=
-      7;
-  }
-
-
-  raid +=
-    histBoost;
-
-
-  let stage =
-    "DISTANT";
-
-
-  if (
-    approaching
-  ) {
-
-    stage =
-      "TRACKING";
-  }
-
-
-  if (
-    touched
-  ) {
-
-    stage =
-      "AT_LIQUIDITY";
-  }
-
-
-  if (
-    swept
-  ) {
-
-    stage =
-      "RAIDED";
-  }
-
-
-  if (
-    rejected
-  ) {
-
-    stage =
-      "REJECTION";
   }
 
 
   return {
 
-    ...level,
+    levels:
+      deduplicated,
 
-    price:
-      round(
-        level.price
-      ),
+    sessions: {
 
-    distance:
-      round(
-        distance,
-        2
-      ),
+      asia,
 
-    distanceAtr:
-      round(
-        distanceAtr,
-        2
-      ),
+      london,
 
-    liquidityStrength:
-      clamp(
-        Math.round(
-          level.weight
-        ),
-        0,
-        100
-      ),
+      newYork
 
-    raidScore:
-      clamp(
-        Math.round(
-          raid
-        ),
-        0,
-        100
-      ),
+    },
 
-    stage,
+    previousDay,
 
-    swept,
+    previousWeek
 
-    rejected,
-
-    zoneLow:
-      round(
-        level.price -
-        currentAtr *
-        0.20
-      ),
-
-    zoneHigh:
-      round(
-        level.price +
-        currentAtr *
-        0.20
-      ),
-
-    historicalReversalRate:
-      hist?.reversalRate ??
-      null,
-
-    historicalSamples:
-      hist?.samples ??
-      0
   };
+
 }
 
 
 /* ================================================================
-   FRED
+   TREND DETECTOR
+================================================================ */
+
+function detectTrend(
+  candles
+) {
+
+  const ema20 =
+    emaArray(
+      candles,
+      20
+    );
+
+
+  const ema50 =
+    emaArray(
+      candles,
+      50
+    );
+
+
+  const atr =
+    atrArray(
+      candles,
+      14
+    );
+
+
+  const index =
+    candles.length -
+    1;
+
+
+  const currentAtr =
+    atr[
+      index
+    ] ||
+    candles[
+      index
+    ].close *
+    0.001;
+
+
+  const spread =
+    safeDiv(
+
+      ema20[
+        index
+      ] -
+      ema50[
+        index
+      ],
+
+      currentAtr,
+
+      0
+
+    );
+
+
+  const slope =
+    index >
+    6
+      ?
+      safeDiv(
+
+        ema20[
+          index
+        ] -
+        ema20[
+          index -
+          6
+        ],
+
+        currentAtr,
+
+        0
+
+      )
+      :
+      0;
+
+
+  const score =
+    spread *
+      0.75 +
+    slope *
+      0.45;
+
+
+  return {
+
+    bias:
+      score >
+      0.35
+        ?
+        "BULLISH"
+        :
+        score <
+          -0.35
+          ?
+          "BEARISH"
+          :
+          "NEUTRAL",
+
+    score:
+      round(
+        score,
+        2
+      ),
+
+    ema20:
+      round(
+        ema20[
+          index
+        ],
+        3
+      ),
+
+    ema50:
+      round(
+        ema50[
+          index
+        ],
+        3
+      )
+
+  };
+
+}
+
+
+/* ================================================================
+   MARKET REGIME
+================================================================ */
+
+function detectRegime(
+  m15,
+  h1
+) {
+
+  const trend =
+    detectTrend(
+      h1
+    );
+
+
+  const atr15 =
+    atrArray(
+      m15,
+      14
+    );
+
+
+  const ranges =
+    m15.map(
+      candle =>
+        candle.high -
+        candle.low
+    );
+
+
+  const index =
+    m15.length -
+    1;
+
+
+  const recentRange =
+    rollingMean(
+      ranges,
+      index,
+      12
+    );
+
+
+  const baseRange =
+    rollingMean(
+      ranges,
+      Math.max(
+        0,
+        index -
+        12
+      ),
+      36
+    ) ||
+    recentRange;
+
+
+  const expansion =
+    safeDiv(
+      recentRange,
+      baseRange,
+      1
+    );
+
+
+  const h1Atr =
+    atrArray(
+      h1,
+      14
+    );
+
+
+  const h1Index =
+    h1.length -
+    1;
+
+
+  const ema20 =
+    emaArray(
+      h1,
+      20
+    );
+
+
+  const ema50 =
+    emaArray(
+      h1,
+      50
+    );
+
+
+  const trendStrength =
+    Math.abs(
+      safeDiv(
+
+        ema20[
+          h1Index
+        ] -
+        ema50[
+          h1Index
+        ],
+
+        h1Atr[
+          h1Index
+        ] ||
+        1,
+
+        0
+
+      )
+    );
+
+
+  let label =
+    "RANGE";
+
+
+  if (
+    expansion >=
+    1.32
+  ) {
+
+    label =
+      "VOLATILITY EXPANSION";
+
+  }
+
+  else if (
+    expansion <=
+    0.72
+  ) {
+
+    label =
+      "COMPRESSION";
+
+  }
+
+  else if (
+    trendStrength >=
+    0.75
+  ) {
+
+    label =
+      trend.bias ===
+      "BULLISH"
+        ?
+        "BULLISH TREND"
+        :
+        "BEARISH TREND";
+
+  }
+
+
+  return {
+
+    label,
+
+    trend:
+      trend.bias,
+
+    trendStrength:
+      round(
+        clamp(
+          trendStrength *
+          55,
+          0,
+          100
+        ),
+        1
+      ),
+
+    volatilityRatio:
+      round(
+        expansion,
+        2
+      ),
+
+    atrM15:
+      round(
+        atr15[
+          index
+        ],
+        3
+      )
+
+  };
+
+}
+
+
+/* ================================================================
+   LIQUIDITY CLUSTER ENGINE
+================================================================ */
+
+function clusterLiquidity(
+  levels,
+  currentPrice,
+  atr5,
+  trendBias =
+    "NEUTRAL"
+) {
+
+  const mergeDistance =
+    Math.max(
+
+      atr5 *
+        CONFIG
+          .levels
+          .mergeAtr,
+
+      currentPrice *
+        0.00008
+
+    );
+
+
+  const result =
+    [];
+
+
+  for (
+    const side
+    of [
+      "BSL",
+      "SSL"
+    ]
+  ) {
+
+    const levelsForSide =
+      levels
+        .filter(
+          level =>
+            level.side ===
+            side
+        )
+        .sort(
+          (
+            a,
+            b
+          ) =>
+            a.price -
+            b.price
+        );
+
+
+    let cluster =
+      [];
+
+
+    const flush =
+      () => {
+
+        if (
+          !cluster.length
+        ) {
+
+          return;
+
+        }
+
+
+        const weights =
+          cluster.map(
+            level =>
+              level.weight
+          );
+
+
+        const weightedCenter =
+          safeDiv(
+
+            sum(
+              cluster.map(
+                (
+                  level,
+                  index
+                ) =>
+                  level.price *
+                  weights[
+                    index
+                  ]
+              )
+            ),
+
+            sum(
+              weights
+            ),
+
+            mean(
+              cluster.map(
+                level =>
+                  level.price
+              )
+            )
+
+          );
+
+
+        const touches =
+          Math.max(
+            ...cluster.map(
+              level =>
+                level.touches ||
+                1
+            )
+          );
+
+
+        const timeframeBonus =
+          cluster.some(
+            level =>
+              level.timeframe ===
+              "W1"
+          )
+            ?
+            12
+            :
+            cluster.some(
+              level =>
+                level.timeframe ===
+                "D1"
+            )
+              ?
+              9
+              :
+              cluster.some(
+                level =>
+                  level.timeframe ===
+                  "H1"
+              )
+                ?
+                5
+                :
+                2;
+
+
+        const rawStrength =
+          sum(
+            weights.map(
+              weight =>
+                weight *
+                0.38
+            )
+          ) +
+          Math.min(
+            12,
+            touches *
+              2.5
+          ) +
+          timeframeBonus;
+
+
+        let strength =
+          clamp(
+            rawStrength,
+            0,
+            100
+          );
+
+
+        if (
+          cluster.length >=
+          2
+        ) {
+
+          strength =
+            clamp(
+              strength +
+                8,
+              0,
+              100
+            );
+
+        }
+
+
+        const padding =
+          atr5 *
+          0.08;
+
+
+        const low =
+          Math.min(
+            ...cluster.map(
+              level =>
+                level.price
+            )
+          ) -
+          padding;
+
+
+        const high =
+          Math.max(
+            ...cluster.map(
+              level =>
+                level.price
+            )
+          ) +
+          padding;
+
+
+        const distance =
+          Math.abs(
+            weightedCenter -
+            currentPrice
+          );
+
+
+        const distanceAtr =
+          safeDiv(
+            distance,
+            atr5,
+            99
+          );
+
+
+        const freshnessBonus =
+          touches <=
+          2
+            ?
+            8
+            :
+            touches <=
+            4
+              ?
+              4
+              :
+              -3;
+
+
+        const directionalBonus =
+          trendBias ===
+          "BULLISH"
+            ?
+            (
+              side ===
+              "BSL"
+                ?
+                7
+                :
+                -3
+            )
+            :
+            trendBias ===
+            "BEARISH"
+              ?
+              (
+                side ===
+                "SSL"
+                  ?
+                  7
+                  :
+                  -3
+              )
+              :
+              0;
+
+
+        const magnetScore =
+          clamp(
+
+            strength +
+            freshnessBonus +
+            directionalBonus -
+            distanceAtr *
+              5.5,
+
+            0,
+
+            100
+
+          );
+
+
+        result.push(
+          {
+
+            id:
+              `${side}-${round(
+                weightedCenter,
+                2
+              )}`,
+
+            side,
+
+            low:
+              round(
+                low,
+                3
+              ),
+
+            high:
+              round(
+                high,
+                3
+              ),
+
+            center:
+              round(
+                weightedCenter,
+                3
+              ),
+
+            strength:
+              round(
+                strength,
+                1
+              ),
+
+            magnetScore:
+              round(
+                magnetScore,
+                1
+              ),
+
+            distance:
+              round(
+                distance,
+                3
+              ),
+
+            distanceAtr:
+              round(
+                distanceAtr,
+                2
+              ),
+
+            touches,
+
+            sources:
+              cluster.map(
+                level => ({
+
+                  name:
+                    level.name,
+
+                  timeframe:
+                    level.timeframe,
+
+                  price:
+                    round(
+                      level.price,
+                      3
+                    ),
+
+                  weight:
+                    level.weight
+
+                })
+              )
+
+          }
+        );
+
+
+        cluster =
+          [];
+
+      };
+
+
+    for (
+      const level
+      of levelsForSide
+    ) {
+
+      if (
+        !cluster.length
+      ) {
+
+        cluster.push(
+          level
+        );
+
+      }
+
+      else {
+
+        const center =
+          mean(
+            cluster.map(
+              item =>
+                item.price
+            )
+          );
+
+
+        if (
+          Math.abs(
+            level.price -
+            center
+          ) <=
+          mergeDistance
+        ) {
+
+          cluster.push(
+            level
+          );
+
+        }
+
+        else {
+
+          flush();
+
+          cluster.push(
+            level
+          );
+
+        }
+
+      }
+
+    }
+
+
+    flush();
+
+  }
+
+
+  return result.sort(
+    (
+      a,
+      b
+    ) =>
+      b.magnetScore -
+      a.magnetScore
+  );
+
+}
+
+
+/* ================================================================
+   RAID DETECTOR
+================================================================ */
+
+function detectRaidForCluster(
+  cluster,
+  m5,
+  atr5
+) {
+
+  const start =
+    Math.max(
+      1,
+      m5.length -
+      90
+    );
+
+
+  const minimumPenetration =
+    atr5 *
+    CONFIG
+      .levels
+      .sweepMinAtr;
+
+
+  const maximumPenetration =
+    atr5 *
+    CONFIG
+      .levels
+      .sweepMaxAtr;
+
+
+  let best =
+    null;
+
+
+  for (
+    let index =
+      start;
+    index <
+      m5.length -
+      1;
+    index++
+  ) {
+
+    const candle =
+      m5[
+        index
+      ];
+
+
+    const range =
+      Math.max(
+        candle.high -
+        candle.low,
+        0.000000001
+      );
+
+
+    let swept =
+      false;
+
+
+    let penetration =
+      0;
+
+
+    let wickRatio =
+      0;
+
+
+    let rejection =
+      0;
+
+
+    if (
+      cluster.side ===
+      "BSL"
+    ) {
+
+      penetration =
+        candle.high -
+        cluster.high;
+
+
+      swept =
+        penetration >=
+          minimumPenetration &&
+        penetration <=
+          maximumPenetration &&
+        candle.close <
+          cluster.high;
+
+
+      wickRatio =
+        safeDiv(
+
+          candle.high -
+          Math.max(
+            candle.open,
+            candle.close
+          ),
+
+          range,
+
+          0
+
+        );
+
+
+      rejection =
+        safeDiv(
+
+          cluster.high -
+          candle.close,
+
+          atr5,
+
+          0
+
+        );
+
+    }
+
+    else {
+
+      penetration =
+        cluster.low -
+        candle.low;
+
+
+      swept =
+        penetration >=
+          minimumPenetration &&
+        penetration <=
+          maximumPenetration &&
+        candle.close >
+          cluster.low;
+
+
+      wickRatio =
+        safeDiv(
+
+          Math.min(
+            candle.open,
+            candle.close
+          ) -
+          candle.low,
+
+          range,
+
+          0
+
+        );
+
+
+      rejection =
+        safeDiv(
+
+          candle.close -
+          cluster.low,
+
+          atr5,
+
+          0
+
+        );
+
+    }
+
+
+    if (
+      !swept
+    ) {
+
+      continue;
+
+    }
+
+
+    const next =
+      m5.slice(
+        index +
+          1,
+        Math.min(
+          m5.length,
+          index +
+            5
+        )
+      );
+
+
+    let displacement =
+      0;
+
+
+    if (
+      cluster.side ===
+      "BSL"
+    ) {
+
+      displacement =
+        safeDiv(
+
+          candle.close -
+          Math.min(
+            ...next.map(
+              item =>
+                item.low
+            )
+          ),
+
+          atr5,
+
+          0
+
+        );
+
+    }
+
+    else {
+
+      displacement =
+        safeDiv(
+
+          Math.max(
+            ...next.map(
+              item =>
+                item.high
+            )
+          ) -
+          candle.close,
+
+          atr5,
+
+          0
+
+        );
+
+    }
+
+
+    const penetrationQuality =
+      clamp(
+
+        1 -
+        Math.abs(
+          safeDiv(
+            penetration,
+            atr5,
+            0
+          ) -
+          0.25
+        ),
+
+        0,
+
+        1
+
+      );
+
+
+    const quality =
+      clamp(
+
+        35 +
+
+        wickRatio *
+          28 +
+
+        clamp(
+          rejection,
+          0,
+          1.5
+        ) *
+          13 +
+
+        clamp(
+          displacement,
+          0,
+          2.5
+        ) *
+          12 +
+
+        penetrationQuality *
+          10 +
+
+        cluster.strength *
+          0.12,
+
+        0,
+
+        100
+
+      );
+
+
+    const reversalEvidence =
+      clamp(
+
+        quality +
+
+        clamp(
+          displacement -
+          0.5,
+          0,
+          2
+        ) *
+          8,
+
+        0,
+
+        100
+
+      );
+
+
+    const continuationEvidence =
+      clamp(
+
+        100 -
+        reversalEvidence *
+          0.82,
+
+        0,
+
+        100
+
+      );
+
+
+    const candidate =
+      {
+
+        status:
+          "CONFIRMED",
+
+        side:
+          cluster.side,
+
+        directionAfterRaid:
+          cluster.side ===
+          "SSL"
+            ?
+            "BULLISH"
+            :
+            "BEARISH",
+
+        clusterId:
+          cluster.id,
+
+        level:
+          cluster.center,
+
+        time:
+          candle.time,
+
+        barsAgo:
+          m5.length -
+          1 -
+          index,
+
+        penetrationAtr:
+          round(
+            safeDiv(
+              penetration,
+              atr5,
+              0
+            ),
+            2
+          ),
+
+        wickRatio:
+          round(
+            wickRatio,
+            2
+          ),
+
+        displacementAtr:
+          round(
+            displacement,
+            2
+          ),
+
+        quality:
+          round(
+            quality,
+            1
+          ),
+
+        reversalEvidence:
+          round(
+            reversalEvidence,
+            1
+          ),
+
+        continuationEvidence:
+          round(
+            continuationEvidence,
+            1
+          ),
+
+        raidHigh:
+          round(
+            candle.high,
+            3
+          ),
+
+        raidLow:
+          round(
+            candle.low,
+            3
+          )
+
+      };
+
+
+    if (
+      !best ||
+      candidate.time >
+      best.time ||
+      candidate.quality >
+      best.quality
+    ) {
+
+      best =
+        candidate;
+
+    }
+
+  }
+
+
+  return best;
+
+}
+
+
+/* ================================================================
+   LIQUIDITY APPROACH VELOCITY
+================================================================ */
+
+function approachVelocity(
+  m1,
+  target
+) {
+
+  const candles =
+    m1.slice(
+      -8
+    );
+
+
+  if (
+    candles.length <
+    3
+  ) {
+
+    return {
+
+      perMinute:
+        0,
+
+      toward:
+        false,
+
+      etaMinutes:
+        null
+
+    };
+
+  }
+
+
+  const minutes =
+    Math.max(
+
+      1,
+
+      (
+        candles[
+          candles.length -
+          1
+        ].time -
+        candles[
+          0
+        ].time
+      ) /
+      60
+
+    );
+
+
+  const slope =
+    (
+      candles[
+        candles.length -
+        1
+      ].close -
+      candles[
+        0
+      ].close
+    ) /
+    minutes;
+
+
+  const currentPrice =
+    candles[
+      candles.length -
+      1
+    ].close;
+
+
+  const targetDirection =
+    Math.sign(
+      target -
+      currentPrice
+    );
+
+
+  const movingToward =
+    Math.sign(
+      slope
+    ) ===
+      targetDirection &&
+    Math.abs(
+      slope
+    ) >
+      0;
+
+
+  const eta =
+    movingToward
+      ?
+      Math.abs(
+        target -
+        currentPrice
+      ) /
+      Math.abs(
+        slope
+      )
+      :
+      null;
+
+
+  return {
+
+    perMinute:
+      round(
+        slope,
+        3
+      ),
+
+    toward:
+      movingToward,
+
+    etaMinutes:
+      eta &&
+      eta <
+      999
+        ?
+        round(
+          eta,
+          1
+        )
+        :
+        null
+
+  };
+
+}
+
+
+/* ================================================================
+   RAID STATE ENGINE
+================================================================ */
+
+function buildRaidState(
+  clusters,
+  m5,
+  m1,
+  atr5,
+  currentPrice
+) {
+
+  const raids =
+    clusters
+      .map(
+        cluster =>
+          detectRaidForCluster(
+            cluster,
+            m5,
+            atr5
+          )
+      )
+      .filter(
+        Boolean
+      );
+
+
+  const latest =
+    raids
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.time -
+          a.time
+      )[
+        0
+      ] ||
+    null;
+
+
+  const nearest =
+    [
+      ...clusters
+    ].sort(
+      (
+        a,
+        b
+      ) =>
+        a.distance -
+        b.distance
+    )[
+      0
+    ] ||
+    null;
+
+
+  let tracking =
+    null;
+
+
+  if (
+    nearest
+  ) {
+
+    const velocity =
+      approachVelocity(
+        m1,
+        nearest.center
+      );
+
+
+    const proximity =
+      clamp(
+
+        100 -
+        nearest.distanceAtr *
+          45,
+
+        0,
+
+        100
+
+      );
+
+
+    const pressure =
+      clamp(
+
+        proximity *
+          0.55 +
+
+        nearest.strength *
+          0.30 +
+
+        (
+          velocity.toward
+            ?
+            15
+            :
+            0
+        ),
+
+        0,
+
+        100
+
+      );
+
+
+    tracking =
+      {
+
+        clusterId:
+          nearest.id,
+
+        side:
+          nearest.side,
+
+        level:
+          nearest.center,
+
+        distance:
+          round(
+            Math.abs(
+              nearest.center -
+              currentPrice
+            ),
+            3
+          ),
+
+        distanceAtr:
+          nearest.distanceAtr,
+
+        pressure:
+          round(
+            pressure,
+            1
+          ),
+
+        velocity,
+
+        stage:
+          nearest.distanceAtr <
+          0.25
+            ?
+            "CONTACT"
+            :
+            nearest.distanceAtr <
+            0.8
+              ?
+              "APPROACHING"
+              :
+              "TRACKING"
+
+      };
+
+  }
+
+
+  return {
+
+    latestConfirmed:
+      latest,
+
+    confirmed:
+      raids.slice(
+        0,
+        6
+      ),
+
+    tracking
+
+  };
+
+}
+
+
+/* ================================================================
+   TRAP ENGINE
+================================================================ */
+
+function detectTrap(
+  raid,
+  m5,
+  atr5
+) {
+
+  if (
+    !raid ||
+    raid.status !==
+    "CONFIRMED"
+  ) {
+
+    return {
+
+      active:
+        false,
+
+      type:
+        "NONE",
+
+      strength:
+        0,
+
+      reason:
+        "No confirmed liquidity sweep."
+
+    };
+
+  }
+
+
+  const index =
+    m5.findIndex(
+      candle =>
+        candle.time ===
+        raid.time
+    );
+
+
+  if (
+    index <
+    0
+  ) {
+
+    return {
+
+      active:
+        false,
+
+      type:
+        "NONE",
+
+      strength:
+        0,
+
+      reason:
+        "Raid candle not found."
+
+    };
+
+  }
+
+
+  const after =
+    m5.slice(
+
+      index +
+        1,
+
+      Math.min(
+        m5.length,
+        index +
+          6
+      )
+
+    );
+
+
+  if (
+    !after.length
+  ) {
+
+    return {
+
+      active:
+        false,
+
+      type:
+        "NONE",
+
+      strength:
+        0,
+
+      reason:
+        "Waiting for post-raid confirmation."
+
+    };
+
+  }
+
+
+  const raidCandle =
+    m5[
+      index
+    ];
+
+
+  let followThrough =
+    0;
+
+
+  if (
+    raid.side ===
+    "BSL"
+  ) {
+
+    followThrough =
+      safeDiv(
+
+        raidCandle.close -
+        Math.min(
+          ...after.map(
+            candle =>
+              candle.low
+          )
+        ),
+
+        atr5,
+
+        0
+
+      );
+
+  }
+
+  else {
+
+    followThrough =
+      safeDiv(
+
+        Math.max(
+          ...after.map(
+            candle =>
+              candle.high
+          )
+        ) -
+        raidCandle.close,
+
+        atr5,
+
+        0
+
+      );
+
+  }
+
+
+  const strength =
+    clamp(
+
+      raid.quality *
+        0.62 +
+
+      clamp(
+        followThrough,
+        0,
+        2.5
+      ) *
+        16,
+
+      0,
+
+      100
+
+    );
+
+
+  return {
+
+    active:
+      strength >=
+      62,
+
+    type:
+      raid.side ===
+      "BSL"
+        ?
+        "BUYER TRAP"
+        :
+        "SELLER TRAP",
+
+    strength:
+      round(
+        strength,
+        1
+      ),
+
+    direction:
+      raid.side ===
+      "BSL"
+        ?
+        "BEARISH"
+        :
+        "BULLISH",
+
+    reason:
+      raid.side ===
+      "BSL"
+        ?
+        "Buy-side liquidity was swept and price rejected back below the cluster."
+        :
+        "Sell-side liquidity was swept and price reclaimed back above the cluster."
+
+  };
+
+}
+
+
+/* ================================================================
+   MARKET PHASE STATE MACHINE
+================================================================ */
+
+function detectMarketPhase(
+  m5,
+  raid,
+  regime
+) {
+
+  const atr =
+    atrArray(
+      m5,
+      14
+    );
+
+
+  const index =
+    m5.length -
+    1;
+
+
+  const currentAtr =
+    atr[
+      index
+    ] ||
+    1;
+
+
+  const ranges =
+    m5.map(
+      candle =>
+        candle.high -
+        candle.low
+    );
+
+
+  const recentRange =
+    rollingMean(
+      ranges,
+      index,
+      8
+    );
+
+
+  const baselineRange =
+    rollingMean(
+      ranges,
+      Math.max(
+        0,
+        index -
+        8
+      ),
+      30
+    ) ||
+    recentRange;
+
+
+  const compression =
+    safeDiv(
+      recentRange,
+      baselineRange,
+      1
+    );
+
+
+  const last =
+    m5[
+      index
+    ];
+
+
+  const body =
+    Math.abs(
+      last.close -
+      last.open
+    );
+
+
+  const displacement =
+    safeDiv(
+      last.high -
+      last.low,
+      currentAtr,
+      0
+    ) >=
+      1.45 &&
+    safeDiv(
+      body,
+      last.high -
+      last.low,
+      0
+    ) >=
+      0.58;
+
+
+  if (
+    raid &&
+    raid.barsAgo <=
+    3
+  ) {
+
+    return {
+
+      phase:
+        "RAID",
+
+      score:
+        round(
+          raid.quality,
+          1
+        ),
+
+      detail:
+        "A recent liquidity cluster has been swept and reclaimed."
+
+    };
+
+  }
+
+
+  if (
+    displacement
+  ) {
+
+    return {
+
+      phase:
+        "DISPLACEMENT",
+
+      score:
+        round(
+
+          clamp(
+
+            (
+              last.high -
+              last.low
+            ) /
+            currentAtr *
+            45,
+
+            0,
+
+            100
+
+          ),
+
+          1
+
+        ),
+
+      detail:
+        "A large directional candle is expanding away from recent balance."
+
+    };
+
+  }
+
+
+  if (
+    regime.label ===
+    "VOLATILITY EXPANSION"
+  ) {
+
+    return {
+
+      phase:
+        "EXPANSION",
+
+      score:
+        round(
+
+          clamp(
+            regime.volatilityRatio *
+            55,
+            0,
+            100
+          ),
+
+          1
+
+        ),
+
+      detail:
+        "Short-term range is expanding relative to its recent baseline."
+
+    };
+
+  }
+
+
+  if (
+    compression <
+    0.72
+  ) {
+
+    return {
+
+      phase:
+        "LIQUIDITY BUILDUP",
+
+      score:
+        round(
+
+          clamp(
+            (
+              1 -
+              compression
+            ) *
+            180,
+            0,
+            100
+          ),
+
+          1
+
+        ),
+
+      detail:
+        "Price is compressing, increasing the chance of liquidity building around the range."
+
+    };
+
+  }
+
+
+  const ema20 =
+    emaArray(
+      m5,
+      20
+    );
+
+
+  const distance =
+    Math.abs(
+      last.close -
+      ema20[
+        index
+      ]
+    );
+
+
+  if (
+    regime.trend !==
+      "NEUTRAL" &&
+    distance <
+      currentAtr *
+      0.35
+  ) {
+
+    return {
+
+      phase:
+        "RETRACEMENT",
+
+      score:
+        66,
+
+      detail:
+        "Price is pulling back toward its short-term mean inside a directional regime."
+
+    };
+
+  }
+
+
+  return {
+
+    phase:
+      "ACCUMULATION",
+
+    score:
+      55,
+
+    detail:
+      "No confirmed raid or displacement; price is rotating and building structure."
+
+  };
+
+}
+
+
+/* ================================================================
+   HISTORICAL FEATURE ENGINE
+================================================================ */
+
+function historicalFeatures(
+  candles,
+  index,
+  ema20,
+  ema50,
+  atr14,
+  atr50,
+  rsi14
+) {
+
+  if (
+    index <
+      55 ||
+    !atr14[
+      index
+    ] ||
+    !atr50[
+      index
+    ] ||
+    !rsi14[
+      index
+    ]
+  ) {
+
+    return null;
+
+  }
+
+
+  const candle =
+    candles[
+      index
+    ];
+
+
+  const start =
+    Math.max(
+      0,
+      index -
+      47
+    );
+
+
+  const window =
+    candles.slice(
+      start,
+      index +
+      1
+    );
+
+
+  const highest =
+    Math.max(
+      ...window.map(
+        item =>
+          item.high
+      )
+    );
+
+
+  const lowest =
+    Math.min(
+      ...window.map(
+        item =>
+          item.low
+      )
+    );
+
+
+  const priceRange =
+    Math.max(
+      highest -
+      lowest,
+      0.000000001
+    );
+
+
+  const body =
+    Math.abs(
+      candle.close -
+      candle.open
+    );
+
+
+  const candleRange =
+    Math.max(
+      candle.high -
+      candle.low,
+      0.000000001
+    );
+
+
+  const return5 =
+    safeDiv(
+
+      candle.close -
+      candles[
+        index -
+        5
+      ].close,
+
+      atr14[
+        index
+      ],
+
+      0
+
+    );
+
+
+  return [
+
+    safeDiv(
+
+      ema20[
+        index
+      ] -
+      ema50[
+        index
+      ],
+
+      atr14[
+        index
+      ],
+
+      0
+
+    ),
+
+
+    (
+      rsi14[
+        index
+      ] -
+      50
+    ) /
+    25,
+
+
+    safeDiv(
+
+      atr14[
+        index
+      ],
+
+      atr50[
+        index
+      ],
+
+      1
+
+    ) -
+    1,
+
+
+    (
+      (
+        candle.close -
+        lowest
+      ) /
+      priceRange -
+      0.5
+    ) *
+    2,
+
+
+    clamp(
+      return5 /
+      2,
+      -2,
+      2
+    ),
+
+
+    safeDiv(
+      body,
+      candleRange,
+      0
+    ) *
+    Math.sign(
+      candle.close -
+      candle.open
+    )
+
+  ];
+
+}
+
+
+/* ================================================================
+   HISTORICAL SIMILARITY
+================================================================ */
+
+function similarity(
+  a,
+  b
+) {
+
+  if (
+    !a ||
+    !b
+  ) {
+
+    return 0;
+
+  }
+
+
+  const weights =
+    [
+      1.2,
+      0.9,
+      0.8,
+      1.0,
+      0.9,
+      0.7
+    ];
+
+
+  let distance =
+    0;
+
+
+  let weightTotal =
+    0;
+
+
+  for (
+    let index =
+      0;
+    index <
+      a.length;
+    index++
+  ) {
+
+    distance +=
+      Math.abs(
+        a[
+          index
+        ] -
+        b[
+          index
+        ]
+      ) *
+      weights[
+        index
+      ];
+
+
+    weightTotal +=
+      weights[
+        index
+      ];
+
+  }
+
+
+  const averageDistance =
+    distance /
+    weightTotal;
+
+
+  return (
+    100 /
+    (
+      1 +
+      averageDistance *
+      1.35
+    )
+  );
+
+}
+
+
+/* ================================================================
+   HISTORICAL MEMORY ENGINE
+================================================================ */
+
+function historicalMemory(
+  m5
+) {
+
+  const length =
+    m5.length;
+
+
+  const ema20 =
+    emaArray(
+      m5,
+      20
+    );
+
+
+  const ema50 =
+    emaArray(
+      m5,
+      50
+    );
+
+
+  const atr14 =
+    atrArray(
+      m5,
+      14
+    );
+
+
+  const atr50 =
+    atrArray(
+      m5,
+      50
+    );
+
+
+  const rsi14 =
+    rsiArray(
+      m5,
+      14
+    );
+
+
+  const currentIndex =
+    length -
+    1;
+
+
+  const current =
+    historicalFeatures(
+
+      m5,
+
+      currentIndex,
+
+      ema20,
+
+      ema50,
+
+      atr14,
+
+      atr50,
+
+      rsi14
+
+    );
+
+
+  if (
+    !current
+  ) {
+
+    return {
+
+      matches:
+        0,
+
+      message:
+        "Not enough history."
+
+    };
+
+  }
+
+
+  const candidates =
+    [];
+
+
+  const forward =
+    CONFIG
+      .historical
+      .forwardBars;
+
+
+  for (
+    let index =
+      70;
+    index <
+      length -
+        forward -
+        20;
+    index +=
+      2
+  ) {
+
+    const features =
+      historicalFeatures(
+
+        m5,
+
+        index,
+
+        ema20,
+
+        ema50,
+
+        atr14,
+
+        atr50,
+
+        rsi14
+
+      );
+
+
+    const match =
+      similarity(
+        current,
+        features
+      );
+
+
+    if (
+      match <
+      CONFIG
+        .historical
+        .minSimilarity
+    ) {
+
+      continue;
+
+    }
+
+
+    const entry =
+      m5[
+        index
+      ].close;
+
+
+    const currentAtr =
+      atr14[
+        index
+      ] ||
+      1;
+
+
+    let longResult =
+      0;
+
+
+    let shortResult =
+      0;
+
+
+    let longFinished =
+      false;
+
+
+    let shortFinished =
+      false;
+
+
+    let maxUp =
+      0;
+
+
+    let maxDown =
+      0;
+
+
+    for (
+      let future =
+        index +
+        1;
+      future <=
+        index +
+          forward;
+      future++
+    ) {
+
+      const bar =
+        m5[
+          future
+        ];
+
+
+      maxUp =
+        Math.max(
+
+          maxUp,
+
+          (
+            bar.high -
+            entry
+          ) /
+          currentAtr
+
+        );
+
+
+      maxDown =
+        Math.max(
+
+          maxDown,
+
+          (
+            entry -
+            bar.low
+          ) /
+          currentAtr
+
+        );
+
+
+      if (
+        !longFinished
+      ) {
+
+        const stopHit =
+          bar.low <=
+          entry -
+          CONFIG
+            .historical
+            .stopAtr *
+          currentAtr;
+
+
+        const targetHit =
+          bar.high >=
+          entry +
+          CONFIG
+            .historical
+            .targetAtr *
+          currentAtr;
+
+
+        if (
+          stopHit ||
+          targetHit
+        ) {
+
+          longResult =
+            stopHit
+              ?
+              -CONFIG
+                .historical
+                .stopAtr
+              :
+              CONFIG
+                .historical
+                .targetAtr;
+
+
+          longFinished =
+            true;
+
+        }
+
+      }
+
+
+      if (
+        !shortFinished
+      ) {
+
+        const stopHit =
+          bar.high >=
+          entry +
+          CONFIG
+            .historical
+            .stopAtr *
+          currentAtr;
+
+
+        const targetHit =
+          bar.low <=
+          entry -
+          CONFIG
+            .historical
+            .targetAtr *
+          currentAtr;
+
+
+        if (
+          stopHit ||
+          targetHit
+        ) {
+
+          shortResult =
+            stopHit
+              ?
+              -CONFIG
+                .historical
+                .stopAtr
+              :
+              CONFIG
+                .historical
+                .targetAtr;
+
+
+          shortFinished =
+            true;
+
+        }
+
+      }
+
+    }
+
+
+    if (
+      !longFinished
+    ) {
+
+      longResult =
+        (
+          m5[
+            index +
+            forward
+          ].close -
+          entry
+        ) /
+        currentAtr;
+
+    }
+
+
+    if (
+      !shortFinished
+    ) {
+
+      shortResult =
+        (
+          entry -
+          m5[
+            index +
+            forward
+          ].close
+        ) /
+        currentAtr;
+
+    }
+
+
+    candidates.push(
+      {
+
+        sim:
+          match,
+
+        time:
+          m5[
+            index
+          ].time,
+
+        longResult,
+
+        shortResult,
+
+        maxUp,
+
+        maxDown
+
+      }
+    );
+
+  }
+
+
+  const top =
+    candidates
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.sim -
+          a.sim
+      )
+      .slice(
+        0,
+        CONFIG
+          .historical
+          .topK
+      );
+
+
+  if (
+    !top.length
+  ) {
+
+    return {
+
+      matches:
+        0,
+
+      message:
+        "No sufficiently similar historical samples."
+
+    };
+
+  }
+
+
+  const longWins =
+    top.filter(
+      match =>
+        match.longResult >=
+        CONFIG
+          .historical
+          .targetAtr
+    ).length;
+
+
+  const shortWins =
+    top.filter(
+      match =>
+        match.shortResult >=
+        CONFIG
+          .historical
+          .targetAtr
+    ).length;
+
+
+  const averageLong =
+    mean(
+      top.map(
+        match =>
+          match.longResult
+      )
+    );
+
+
+  const averageShort =
+    mean(
+      top.map(
+        match =>
+          match.shortResult
+      )
+    );
+
+
+  const bias =
+    averageLong -
+      averageShort >
+    0.2
+      ?
+      "BULLISH"
+      :
+      averageShort -
+        averageLong >
+      0.2
+        ?
+        "BEARISH"
+        :
+        "NEUTRAL";
+
+
+  return {
+
+    matches:
+      top.length,
+
+    averageSimilarity:
+      round(
+        mean(
+          top.map(
+            match =>
+              match.sim
+          )
+        ),
+        1
+      ),
+
+    medianSimilarity:
+      round(
+        median(
+          top.map(
+            match =>
+              match.sim
+          )
+        ),
+        1
+      ),
+
+    bullishTargetHitPct:
+      round(
+        longWins /
+        top.length *
+        100,
+        1
+      ),
+
+    bearishTargetHitPct:
+      round(
+        shortWins /
+        top.length *
+        100,
+        1
+      ),
+
+    averageLongR:
+      round(
+        averageLong,
+        2
+      ),
+
+    averageShortR:
+      round(
+        averageShort,
+        2
+      ),
+
+    medianMaxUpAtr:
+      round(
+        median(
+          top.map(
+            match =>
+              match.maxUp
+          )
+        ),
+        2
+      ),
+
+    medianMaxDownAtr:
+      round(
+        median(
+          top.map(
+            match =>
+              match.maxDown
+          )
+        ),
+        2
+      ),
+
+    bias,
+
+    examples:
+      top
+        .slice(
+          0,
+          5
+        )
+        .map(
+          match => ({
+
+            time:
+              match.time,
+
+            similarity:
+              round(
+                match.sim,
+                1
+              ),
+
+            longR:
+              round(
+                match.longResult,
+                2
+              ),
+
+            shortR:
+              round(
+                match.shortResult,
+                2
+              )
+
+          })
+        )
+
+  };
+
+}
+
+
+/* ================================================================
+   FRED SERIES
 ================================================================ */
 
 async function fredSeries(
-  id,
-  key,
-  limit = 4
+  seriesId,
+  limit = 16
 ) {
 
-  const q =
-    new URLSearchParams({
-
-      series_id:
-        id,
-
-      api_key:
-        key,
-
-      file_type:
-        "json",
-
-      sort_order:
-        "desc",
-
-      limit:
-        String(limit)
-    });
+  const apiKey =
+    process.env
+      .FRED_API_KEY;
 
 
-  const j =
+  if (
+    !apiKey
+  ) {
+
+    return null;
+
+  }
+
+
+  const url =
+    new URL(
+      FRED_BASE
+    );
+
+
+  url.searchParams.set(
+    "series_id",
+    seriesId
+  );
+
+
+  url.searchParams.set(
+    "api_key",
+    apiKey
+  );
+
+
+  url.searchParams.set(
+    "file_type",
+    "json"
+  );
+
+
+  url.searchParams.set(
+    "sort_order",
+    "desc"
+  );
+
+
+  url.searchParams.set(
+    "limit",
+    String(
+      limit
+    )
+  );
+
+
+  const data =
     await fetchJson(
-      `${FRED_BASE}?${q}`,
-      9_000
+      url.toString(),
+      10000
     );
 
 
   return (
-    j?.observations ||
+    data?.observations ||
     []
   )
-  .map(
-    x => ({
+    .map(
+      observation => ({
 
-      date:
-        x.date,
+        date:
+          observation.date,
 
-      value:
-        safeNum(
-          x.value
+        value:
+          Number(
+            observation.value
+          )
+
+      })
+    )
+    .filter(
+      observation =>
+        Number.isFinite(
+          observation.value
         )
-    })
-  )
-  .filter(
-    x =>
-      Number.isFinite(
-        x.value
-      )
-  );
+    );
+
 }
 
 
 /* ================================================================
-   MACRO PRESSURE
+   MACRO ENGINE
 ================================================================ */
 
-async function macroPressure() {
-
-  const key =
-    process.env.FRED_API_KEY;
-
+async function macroContext() {
 
   if (
-    !key
+    !process.env
+      .FRED_API_KEY
   ) {
 
     return {
@@ -2973,523 +5738,366 @@ async function macroPressure() {
       enabled:
         false,
 
-      usdScore:
-        0,
-
-      goldScore:
+      score:
         0,
 
       bias:
         "NEUTRAL",
 
-      drivers:
-        []
+      evidence:
+        [
+          "FRED_API_KEY not configured."
+        ],
+
+      data:
+        {}
+
     };
+
   }
 
 
-  if (
-    macroCache.data &&
-    Date.now() -
-    macroCache.at <
-    MACRO_CACHE_MS
+  try {
+
+    const [
+      real10,
+      nominal10,
+      fed,
+      cpi
+    ] =
+      await Promise.all(
+        [
+
+          fredSeries(
+            "DFII10",
+            10
+          ),
+
+          fredSeries(
+            "DGS10",
+            10
+          ),
+
+          fredSeries(
+            "DFF",
+            10
+          ),
+
+          fredSeries(
+            "CPIAUCSL",
+            16
+          )
+
+        ]
+      );
+
+
+    const newest =
+      array =>
+        array?.[
+          0
+        ]?.value ??
+        null;
+
+
+    const older =
+      (
+        array,
+        index = 4
+      ) =>
+        array?.[
+          Math.min(
+            index,
+            (
+              array?.length ||
+              1
+            ) -
+            1
+          )
+        ]?.value ??
+        null;
+
+
+    const realChange =
+      newest(
+        real10
+      ) != null &&
+      older(
+        real10
+      ) != null
+        ?
+        newest(
+          real10
+        ) -
+        older(
+          real10
+        )
+        :
+        0;
+
+
+    const nominalChange =
+      newest(
+        nominal10
+      ) != null &&
+      older(
+        nominal10
+      ) != null
+        ?
+        newest(
+          nominal10
+        ) -
+        older(
+          nominal10
+        )
+        :
+        0;
+
+
+    const fedChange =
+      newest(
+        fed
+      ) != null &&
+      older(
+        fed
+      ) != null
+        ?
+        newest(
+          fed
+        ) -
+        older(
+          fed
+        )
+        :
+        0;
+
+
+    const cpiYoY =
+      cpi?.length >=
+      13
+        ?
+        (
+          cpi[
+            0
+          ].value /
+          cpi[
+            12
+          ].value -
+          1
+        ) *
+        100
+        :
+        null;
+
+
+    let score =
+      0;
+
+
+    score +=
+      clamp(
+        -realChange *
+        45,
+        -35,
+        35
+      );
+
+
+    score +=
+      clamp(
+        -nominalChange *
+        22,
+        -20,
+        20
+      );
+
+
+    score +=
+      clamp(
+        -fedChange *
+        18,
+        -15,
+        15
+      );
+
+
+    if (
+      Number.isFinite(
+        cpiYoY
+      )
+    ) {
+
+      score +=
+        clamp(
+          (
+            cpiYoY -
+            2
+          ) *
+          4,
+          -8,
+          12
+        );
+
+    }
+
+
+    score =
+      clamp(
+        score,
+        -100,
+        100
+      );
+
+
+    const evidence =
+      [];
+
+
+    evidence.push(
+      `10Y real yield change: ${round(
+        realChange,
+        3
+      )} pts`
+    );
+
+
+    evidence.push(
+      `10Y nominal yield change: ${round(
+        nominalChange,
+        3
+      )} pts`
+    );
+
+
+    evidence.push(
+      `Fed effective rate change: ${round(
+        fedChange,
+        3
+      )} pts`
+    );
+
+
+    if (
+      Number.isFinite(
+        cpiYoY
+      )
+    ) {
+
+      evidence.push(
+        `Approx CPI YoY: ${round(
+          cpiYoY,
+          2
+        )}%`
+      );
+
+    }
+
+
+    return {
+
+      enabled:
+        true,
+
+      score:
+        round(
+          score,
+          1
+        ),
+
+      bias:
+        score >=
+        12
+          ?
+          "BULLISH_GOLD"
+          :
+          score <=
+          -12
+            ?
+            "BEARISH_GOLD"
+            :
+            "NEUTRAL",
+
+      evidence,
+
+      data: {
+
+        real10Y:
+          newest(
+            real10
+          ),
+
+        nominal10Y:
+          newest(
+            nominal10
+          ),
+
+        fedFunds:
+          newest(
+            fed
+          ),
+
+        cpiYoY:
+          round(
+            cpiYoY,
+            2
+          )
+
+      }
+
+    };
+
+  }
+
+  catch (
+    error
   ) {
 
-    return macroCache.data;
+    return {
+
+      enabled:
+        false,
+
+      score:
+        0,
+
+      bias:
+        "NEUTRAL",
+
+      evidence:
+        [
+          `FRED unavailable: ${error.message}`
+        ],
+
+      data:
+        {}
+
+    };
+
   }
 
-
-  const defs =
-    [
-
-      [
-        "FEDFUNDS",
-        "Fed Funds",
-        1
-      ],
-
-      [
-        "UNRATE",
-        "Unemployment",
-        -1
-      ],
-
-      [
-        "CPIAUCSL",
-        "CPI",
-        1
-      ],
-
-      [
-        "PCEPI",
-        "PCE",
-        1
-      ],
-
-      [
-        "PAYEMS",
-        "Payrolls",
-        1
-      ]
-    ];
-
-
-  const rows =
-    await Promise.all(
-
-      defs.map(
-
-        async (
-          [
-            id,
-            name,
-            usdDir
-          ]
-        ) => {
-
-          try {
-
-            const s =
-              await fredSeries(
-                id,
-                key,
-                3
-              );
-
-
-            const latest =
-              s[0]?.value;
-
-
-            const prev =
-              s[1]?.value;
-
-
-            const change =
-              Number.isFinite(
-                latest
-              ) &&
-              Number.isFinite(
-                prev
-              )
-
-                ? (
-                    latest -
-                    prev
-                  )
-
-                : 0;
-
-
-            const sign =
-              change === 0
-
-                ? 0
-
-                : (
-                    Math.sign(
-                      change
-                    ) *
-                    usdDir
-                  );
-
-
-            return {
-
-              id,
-
-              name,
-
-              latest,
-
-              previous:
-                prev,
-
-              change:
-                round(
-                  change,
-                  3
-                ),
-
-              usdImpulse:
-                sign *
-                12
-            };
-
-          }
-          catch {
-
-            return {
-
-              id,
-
-              name,
-
-              latest:
-                null,
-
-              previous:
-                null,
-
-              change:
-                null,
-
-              usdImpulse:
-                0
-            };
-          }
-        }
-      )
-    );
-
-
-  const usdScore =
-    clamp(
-
-      Math.round(
-
-        rows.reduce(
-          (
-            s,
-            x
-          ) =>
-            s +
-            x.usdImpulse,
-          0
-        )
-      ),
-
-      -100,
-      100
-    );
-
-
-  const goldScore =
-    -usdScore;
-
-
-  const data = {
-
-    enabled:
-      true,
-
-    usdScore,
-
-    goldScore,
-
-    bias:
-      goldScore > 15
-
-        ? "GOLD_BULLISH"
-
-        : goldScore < -15
-
-          ? "GOLD_BEARISH"
-
-          : "NEUTRAL",
-
-    drivers:
-      rows
-  };
-
-
-  macroCache = {
-
-    at:
-      Date.now(),
-
-    data
-  };
-
-
-  return data;
 }
 
 
 /* ================================================================
-   INTERMARKET ENGINE
+   DIRECTIONAL ENGINE
 ================================================================ */
 
-async function intermarket(
-  k4,
-  fallbacks
-) {
-
-  const specs =
-    [
-
-      [
-        "XAG/USD",
-        "SILVER",
-        1
-      ],
-
-      [
-        "EUR/USD",
-        "EURUSD",
-        0.65
-      ],
-
-      [
-        "USD/JPY",
-        "USDJPY",
-        -0.55
-      ],
-
-      [
-        "BTC/USD",
-        "BTCUSD",
-        0.25
-      ]
-    ];
-
-
-  const rows =
-    await Promise.all(
-
-      specs.map(
-
-        async (
-          [
-            symbol,
-            name,
-            weight
-          ]
-        ) => {
-
-          try {
-
-            const c =
-              await fetchTD(
-                symbol,
-                "15min",
-                64,
-                k4,
-                fallbacks
-              );
-
-
-            const now =
-              c.at(-1).close;
-
-
-            const prev =
-              c[
-                Math.max(
-                  0,
-                  c.length -
-                  13
-                )
-              ].close;
-
-
-            const changePct =
-              pct(
-                now,
-                prev
-              );
-
-
-            return {
-
-              symbol,
-
-              name,
-
-              changePct:
-                round(
-                  changePct,
-                  3
-                ),
-
-              contribution:
-                clamp(
-                  changePct *
-                  18 *
-                  weight,
-                  -22,
-                  22
-                )
-            };
-
-          }
-          catch (e) {
-
-            return {
-
-              symbol,
-
-              name,
-
-              changePct:
-                null,
-
-              contribution:
-                0,
-
-              error:
-                e.message
-            };
-          }
-        }
-      )
-    );
-
-
-  const goldScore =
-    clamp(
-
-      Math.round(
-
-        rows.reduce(
-          (
-            s,
-            x
-          ) =>
-            s +
-            x.contribution,
-          0
-        )
-      ),
-
-      -100,
-      100
-    );
-
-
-  return {
-
-    goldScore,
-
-    bias:
-      goldScore > 12
-
-        ? "BULLISH"
-
-        : goldScore < -12
-
-          ? "BEARISH"
-
-          : "NEUTRAL",
-
-    markets:
-      rows
-  };
-}
-
-
-/* ================================================================
-   TRADE IDEA
-================================================================ */
-
-function buildTradeIdea({
-
-  price,
-
-  a,
-
-  evaluated,
-
-  frames,
-
-  structure,
-
-  delta,
-
+function directionalBias({
+  h1Trend,
+  regime,
+  raid,
+  history,
   macro,
-
-  inter
-
+  clusters,
+  price
 }) {
 
-  const buyTarget =
-    evaluated
-
-    .filter(
-      x =>
-        x.side ===
-          "BUY_SIDE" &&
-        x.price >
-          price
-    )
-
-    .sort(
-      (
-        x,
-        y
-      ) =>
-        x.distance -
-        y.distance
-    )[0];
-
-
-  const sellTarget =
-    evaluated
-
-    .filter(
-      x =>
-        x.side ===
-          "SELL_SIDE" &&
-        x.price <
-          price
-    )
-
-    .sort(
-      (
-        x,
-        y
-      ) =>
-        x.distance -
-        y.distance
-    )[0];
-
-
-  const sellRaid =
-    evaluated
-
-    .filter(
-      x =>
-        x.side ===
-          "BUY_SIDE" &&
-        x.rejected
-    )
-
-    .sort(
-      (
-        x,
-        y
-      ) =>
-        y.raidScore -
-        x.raidScore
-    )[0];
-
-
-  const buyRaid =
-    evaluated
-
-    .filter(
-      x =>
-        x.side ===
-          "SELL_SIDE" &&
-        x.rejected
-    )
-
-    .sort(
-      (
-        x,
-        y
-      ) =>
-        y.raidScore -
-        x.raidScore
-    )[0];
-
-
   let buy =
-    0;
+    50;
 
 
   let sell =
-    0;
+    50;
 
 
   const reasonsBuy =
@@ -3500,308 +6108,269 @@ function buildTradeIdea({
     [];
 
 
-  const add = (
-    side,
-    pts,
-    reason
-  ) => {
+  if (
+    h1Trend.bias ===
+    "BULLISH"
+  ) {
+
+    buy +=
+      15;
+
+
+    reasonsBuy.push(
+      "H1 trend bullish"
+    );
+
+  }
+
+
+  if (
+    h1Trend.bias ===
+    "BEARISH"
+  ) {
+
+    sell +=
+      15;
+
+
+    reasonsSell.push(
+      "H1 trend bearish"
+    );
+
+  }
+
+
+  if (
+    regime.trend ===
+    "BULLISH"
+  ) {
+
+    buy +=
+      6;
+
+  }
+
+
+  if (
+    regime.trend ===
+    "BEARISH"
+  ) {
+
+    sell +=
+      6;
+
+  }
+
+
+  if (
+    raid?.latestConfirmed
+  ) {
+
+    const currentRaid =
+      raid.latestConfirmed;
+
+
+    const boost =
+      12 +
+      currentRaid.quality *
+      0.18;
+
 
     if (
-      side ===
-      "BUY"
+      currentRaid.directionAfterRaid ===
+      "BULLISH"
     ) {
 
       buy +=
-        pts;
+        boost;
+
 
       reasonsBuy.push(
-        reason
+        `Sell-side raid ${currentRaid.quality}/100`
       );
+
     }
 
     else {
 
       sell +=
-        pts;
+        boost;
+
 
       reasonsSell.push(
-        reason
+        `Buy-side raid ${currentRaid.quality}/100`
       );
+
     }
-  };
+
+  }
 
 
   if (
-    frames.h1.bias ===
+    history?.bias ===
     "BULLISH"
   ) {
 
-    add(
-      "BUY",
-      12,
-      "H1 trend bullish"
+    buy +=
+      10;
+
+
+    reasonsBuy.push(
+      "Historical analogues favor upside"
     );
+
   }
 
 
   if (
-    frames.h1.bias ===
+    history?.bias ===
     "BEARISH"
   ) {
 
-    add(
-      "SELL",
-      12,
-      "H1 trend bearish"
+    sell +=
+      10;
+
+
+    reasonsSell.push(
+      "Historical analogues favor downside"
     );
+
   }
 
 
   if (
-    frames.h4.bias ===
-    "BULLISH"
+    macro?.score >
+    0
   ) {
 
-    add(
-      "BUY",
-      11,
-      "H4 macro structure bullish"
+    buy +=
+      Math.min(
+        12,
+        macro.score *
+        0.18
+      );
+
+
+    reasonsBuy.push(
+      "Macro pressure supportive for gold"
     );
+
   }
 
 
   if (
-    frames.h4.bias ===
-    "BEARISH"
+    macro?.score <
+    0
   ) {
 
-    add(
-      "SELL",
-      11,
-      "H4 macro structure bearish"
+    sell +=
+      Math.min(
+        12,
+        -macro.score *
+        0.18
+      );
+
+
+    reasonsSell.push(
+      "Macro pressure restrictive for gold"
     );
+
   }
 
 
-  if (
-    frames.m15.bias ===
-    "BULLISH"
-  ) {
-
-    add(
-      "BUY",
-      8,
-      "M15 momentum bullish"
-    );
-  }
-
-
-  if (
-    frames.m15.bias ===
-    "BEARISH"
-  ) {
-
-    add(
-      "SELL",
-      8,
-      "M15 momentum bearish"
-    );
-  }
+  const above =
+    clusters
+      .filter(
+        cluster =>
+          cluster.center >
+          price
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.magnetScore -
+          a.magnetScore
+      )[
+        0
+      ];
 
 
-  if (
-    structure.state ===
-      "BULLISH" ||
-    structure.choch ===
-      "BULLISH_CHOCH"
-  ) {
-
-    add(
-      "BUY",
-      12,
-      "Structure supports upside"
-    );
-  }
+  const below =
+    clusters
+      .filter(
+        cluster =>
+          cluster.center <
+          price
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.magnetScore -
+          a.magnetScore
+      )[
+        0
+      ];
 
 
   if (
-    structure.state ===
-      "BEARISH" ||
-    structure.choch ===
-      "BEARISH_CHOCH"
+    above &&
+    below
   ) {
 
-    add(
-      "SELL",
-      12,
-      "Structure supports downside"
-    );
-  }
+    const difference =
+      above.magnetScore -
+      below.magnetScore;
 
 
-  if (
-    buyRaid
-  ) {
+    if (
+      difference >
+      8
+    ) {
 
-    add(
-
-      "BUY",
-
-      clamp(
-        buyRaid.raidScore *
-        0.34,
-        10,
-        30
-      ),
-
-      `${buyRaid.name} sell-side raid rejected`
-    );
-  }
+      buy +=
+        Math.min(
+          12,
+          difference *
+          0.25
+        );
 
 
-  if (
-    sellRaid
-  ) {
+      reasonsBuy.push(
+        "Stronger liquidity magnet above price"
+      );
 
-    add(
-
-      "SELL",
-
-      clamp(
-        sellRaid.raidScore *
-        0.34,
-        10,
-        30
-      ),
-
-      `${sellRaid.name} buy-side raid rejected`
-    );
-  }
+    }
 
 
-  if (
-    delta.divergence ===
-    "BULLISH"
-  ) {
+    if (
+      difference <
+      -8
+    ) {
 
-    add(
-      "BUY",
-      8,
-      "Bullish delta divergence"
-    );
-  }
-
-
-  if (
-    delta.divergence ===
-    "BEARISH"
-  ) {
-
-    add(
-      "SELL",
-      8,
-      "Bearish delta divergence"
-    );
-  }
+      sell +=
+        Math.min(
+          12,
+          -difference *
+          0.25
+        );
 
 
-  if (
-    macro.goldScore >
-    12
-  ) {
+      reasonsSell.push(
+        "Stronger liquidity magnet below price"
+      );
 
-    add(
+    }
 
-      "BUY",
-
-      clamp(
-        Math.abs(
-          macro.goldScore
-        ) *
-        0.16,
-        3,
-        12
-      ),
-
-      "Macro pressure supports gold"
-    );
-  }
-
-
-  if (
-    macro.goldScore <
-    -12
-  ) {
-
-    add(
-
-      "SELL",
-
-      clamp(
-        Math.abs(
-          macro.goldScore
-        ) *
-        0.16,
-        3,
-        12
-      ),
-
-      "Macro pressure weighs on gold"
-    );
-  }
-
-
-  if (
-    inter.goldScore >
-    10
-  ) {
-
-    add(
-
-      "BUY",
-
-      clamp(
-        Math.abs(
-          inter.goldScore
-        ) *
-        0.18,
-        3,
-        10
-      ),
-
-      "Intermarket confirmation bullish"
-    );
-  }
-
-
-  if (
-    inter.goldScore <
-    -10
-  ) {
-
-    add(
-
-      "SELL",
-
-      clamp(
-        Math.abs(
-          inter.goldScore
-        ) *
-        0.18,
-        3,
-        10
-      ),
-
-      "Intermarket confirmation bearish"
-    );
   }
 
 
   buy =
     clamp(
-      Math.round(
-        buy
-      ),
+      buy,
       0,
       100
     );
@@ -3809,300 +6378,1076 @@ function buildTradeIdea({
 
   sell =
     clamp(
-      Math.round(
-        sell
-      ),
+      sell,
       0,
       100
     );
 
 
-  const gap =
-    Math.abs(
-      buy -
-      sell
+  const difference =
+    buy -
+    sell;
+
+
+  const direction =
+    difference >=
+    8
+      ?
+      "BULLISH"
+      :
+      difference <=
+      -8
+        ?
+        "BEARISH"
+        :
+        "NEUTRAL";
+
+
+  return {
+
+    direction,
+
+    buyScore:
+      round(
+        buy,
+        1
+      ),
+
+    sellScore:
+      round(
+        sell,
+        1
+      ),
+
+    gap:
+      round(
+        Math.abs(
+          difference
+        ),
+        1
+      ),
+
+    reasonsBuy,
+
+    reasonsSell
+
+  };
+
+}
+
+
+/* ================================================================
+   CONFLUENCE ENGINE
+================================================================ */
+
+function confluenceScore({
+  direction,
+  clusters,
+  raid,
+  trap,
+  history,
+  macro,
+  regime
+}) {
+
+  const nearest =
+    [
+      ...clusters
+    ].sort(
+      (
+        a,
+        b
+      ) =>
+        a.distance -
+        b.distance
+    )[
+      0
+    ];
+
+
+  const liquidity =
+    nearest
+      ?
+      nearest.strength
+      :
+      45;
+
+
+  const structure =
+    direction.direction ===
+    "NEUTRAL"
+      ?
+      48
+      :
+      clamp(
+        55 +
+        direction.gap *
+        1.25,
+        0,
+        100
+      );
+
+
+  const displacement =
+    raid.latestConfirmed
+      ?
+      raid
+        .latestConfirmed
+        .reversalEvidence
+      :
+      45;
+
+
+  const historical =
+    history.matches
+      ?
+      Math.max(
+        history
+          .bullishTargetHitPct ||
+        0,
+        history
+          .bearishTargetHitPct ||
+        0
+      )
+      :
+      45;
+
+
+  const sessionHour =
+    new Date()
+      .getUTCHours();
+
+
+  const session =
+    sessionHour >=
+      7 &&
+    sessionHour <
+      17
+      ?
+      82
+      :
+      sessionHour <
+      7
+        ?
+        66
+        :
+        55;
+
+
+  const macroAligned =
+    direction.direction ===
+    "BULLISH"
+      ?
+      clamp(
+        50 +
+        macro.score *
+        0.5,
+        0,
+        100
+      )
+      :
+      direction.direction ===
+      "BEARISH"
+        ?
+        clamp(
+          50 -
+          macro.score *
+          0.5,
+          0,
+          100
+        )
+        :
+        50;
+
+
+  const regimeScore =
+    regime.label.includes(
+      "TREND"
+    ) ||
+    regime.label.includes(
+      "EXPANSION"
+    )
+      ?
+      78
+      :
+      regime.label ===
+      "COMPRESSION"
+        ?
+        60
+        :
+        55;
+
+
+  const trapScore =
+    trap.active
+      ?
+      trap.strength
+      :
+      45;
+
+
+  const components =
+    {
+
+      liquidity:
+        round(
+          liquidity,
+          1
+        ),
+
+      structure:
+        round(
+          structure,
+          1
+        ),
+
+      displacement:
+        round(
+          displacement,
+          1
+        ),
+
+      session:
+        round(
+          session,
+          1
+        ),
+
+      historical:
+        round(
+          historical,
+          1
+        ),
+
+      macro:
+        round(
+          macroAligned,
+          1
+        ),
+
+      regime:
+        round(
+          regimeScore,
+          1
+        ),
+
+      trap:
+        round(
+          trapScore,
+          1
+        )
+
+    };
+
+
+  const weights =
+    {
+
+      liquidity:
+        0.18,
+
+      structure:
+        0.18,
+
+      displacement:
+        0.16,
+
+      session:
+        0.08,
+
+      historical:
+        0.16,
+
+      macro:
+        0.08,
+
+      regime:
+        0.09,
+
+      trap:
+        0.07
+
+    };
+
+
+  const total =
+    Object
+      .keys(
+        weights
+      )
+      .reduce(
+        (
+          result,
+          key
+        ) =>
+          result +
+          components[
+            key
+          ] *
+          weights[
+            key
+          ],
+        0
+      );
+
+
+  return {
+
+    total:
+      round(
+        total,
+        1
+      ),
+
+    components
+
+  };
+
+}
+
+
+/* ================================================================
+   TARGET SELECTOR
+================================================================ */
+
+function selectTargets(
+  clusters,
+  price,
+  direction
+) {
+
+  if (
+    direction ===
+    "BULLISH"
+  ) {
+
+    return clusters
+      .filter(
+        cluster =>
+          cluster.center >
+            price &&
+          cluster.side ===
+            "BSL"
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.magnetScore -
+          a.magnetScore
+      );
+
+  }
+
+
+  if (
+    direction ===
+    "BEARISH"
+  ) {
+
+    return clusters
+      .filter(
+        cluster =>
+          cluster.center <
+            price &&
+          cluster.side ===
+            "SSL"
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.magnetScore -
+          a.magnetScore
+      );
+
+  }
+
+
+  return [];
+
+}
+
+
+/* ================================================================
+   TRADE CONSTRUCTION
+================================================================ */
+
+function tradeIdea({
+  price,
+  atr5,
+  direction,
+  confluence,
+  raid,
+  clusters
+}) {
+
+  if (
+    direction.direction ===
+      "NEUTRAL" ||
+    confluence.total <
+      66
+  ) {
+
+    return {
+
+      status:
+        "NO_TRADE",
+
+      direction:
+        "NEUTRAL",
+
+      reason:
+        "Directional agreement or confluence is below the execution threshold."
+
+    };
+
+  }
+
+
+  const directionalMultiplier =
+    direction.direction ===
+    "BULLISH"
+      ?
+      1
+      :
+      -1;
+
+
+  const targets =
+    selectTargets(
+      clusters,
+      price,
+      direction.direction
     );
 
 
-  let signal =
-    "WAIT";
+  const confirmed =
+    raid.latestConfirmed &&
+    raid
+      .latestConfirmed
+      .directionAfterRaid ===
+      direction.direction &&
+    raid
+      .latestConfirmed
+      .barsAgo <=
+      12;
 
 
-  if (
-    Math.max(
-      buy,
-      sell
-    ) >=
-      55 &&
-    gap >=
-      10
-  ) {
-
-    signal =
-      buy > sell
-        ? "BUY"
-        : "SELL";
-  }
+  const status =
+    confirmed &&
+    confluence.total >=
+    72
+      ?
+      "READY"
+      :
+      "WATCH";
 
 
-  if (
-    Math.max(
-      buy,
-      sell
-    ) >=
-      72 &&
-    gap >=
-      15
-  ) {
-
-    signal =
-      buy > sell
-        ? "STRONG_BUY"
-        : "STRONG_SELL";
-  }
+  const entryLow =
+    price -
+    atr5 *
+    0.12;
 
 
-  const dir =
-    buy > sell
-      ? 1
-      : -1;
-
-
-  const side =
-    dir === 1
-      ? "BUY"
-      : "SELL";
+  const entryHigh =
+    price +
+    atr5 *
+    0.12;
 
 
   const entry =
     price;
 
 
-  const stop =
-    dir === 1
+  let stop;
 
-      ? (
-          price -
-          a *
-          1.15
+
+  if (
+    confirmed
+  ) {
+
+    stop =
+      directionalMultiplier >
+      0
+        ?
+        Math.min(
+
+          raid
+            .latestConfirmed
+            .raidLow -
+          atr5 *
+            0.18,
+
+          entry -
+          atr5 *
+            0.8
+
         )
+        :
+        Math.max(
 
-      : (
-          price +
-          a *
-          1.15
+          raid
+            .latestConfirmed
+            .raidHigh +
+          atr5 *
+            0.18,
+
+          entry +
+          atr5 *
+            0.8
+
         );
+
+  }
+
+  else {
+
+    stop =
+      entry -
+      directionalMultiplier *
+      atr5 *
+      1.05;
+
+  }
 
 
   const risk =
-    Math.abs(
-      entry -
-      stop
+    Math.max(
+
+      Math.abs(
+        entry -
+        stop
+      ),
+
+      atr5 *
+      0.65
+
     );
 
 
-  const tp1Default =
-    dir === 1
-
-      ? (
-          entry +
-          risk *
-          1.5
-        )
-
-      : (
-          entry -
-          risk *
-          1.5
-        );
-
-
-  const tp2Default =
-    dir === 1
-
-      ? (
-          entry +
-          risk *
-          2.5
-        )
-
-      : (
-          entry -
-          risk *
-          2.5
-        );
-
-
-  const targetLiquidity =
-    dir === 1
-      ? buyTarget
-      : sellTarget;
-
-
   const tp1 =
-    targetLiquidity &&
-    Math.abs(
-      targetLiquidity.price -
-      entry
-    ) >
+    entry +
+    directionalMultiplier *
     risk *
-    0.65
+    1.5;
 
-      ? targetLiquidity.price
 
-      : tp1Default;
+  let tp2 =
+    entry +
+    directionalMultiplier *
+    risk *
+    2.5;
+
+
+  const liquidityTarget =
+    targets[
+      0
+    ]?.center ??
+    null;
+
+
+  if (
+    liquidityTarget !=
+    null
+  ) {
+
+    const targetR =
+      Math.abs(
+        liquidityTarget -
+        entry
+      ) /
+      risk;
+
+
+    const validDirection =
+      directionalMultiplier >
+      0
+        ?
+        liquidityTarget >
+        entry
+        :
+        liquidityTarget <
+        entry;
+
+
+    if (
+      validDirection &&
+      targetR >=
+      1.8
+    ) {
+
+      tp2 =
+        liquidityTarget;
+
+    }
+
+  }
 
 
   return {
 
-    signal,
+    status,
 
-    preferredSide:
-      side,
+    direction:
+      direction.direction,
 
-    buyScore:
-      buy,
+    entryZone:
+      [
 
-    sellScore:
-      sell,
+        round(
+          Math.min(
+            entryLow,
+            entryHigh
+          ),
+          3
+        ),
 
-    agreement:
+        round(
+          Math.max(
+            entryLow,
+            entryHigh
+          ),
+          3
+        )
+
+      ],
+
+    referenceEntry:
       round(
-        (
-          Math.max(
-            buy,
-            sell
-          ) /
-          Math.max(
-            1,
-            buy +
-            sell
-          )
-        ) *
-        100,
-        1
+        entry,
+        3
       ),
 
-    entry:
+    stop:
       round(
-        entry
-      ),
-
-    stopLoss:
-      round(
-        stop
+        stop,
+        3
       ),
 
     tp1:
       round(
-        tp1
+        tp1,
+        3
       ),
 
     tp2:
       round(
-        tp2Default
+        tp2,
+        3
       ),
+
+    liquidityTarget:
+      liquidityTarget !=
+      null
+        ?
+        round(
+          liquidityTarget,
+          3
+        )
+        :
+        null,
 
     riskDistance:
       round(
-        risk
+        risk,
+        3
       ),
 
-    riskRewardTP2:
-      2.5,
+    rrToTp1:
+      1.5,
 
-    targetLiquidity:
-      targetLiquidity
-        ? {
-
-            name:
-              targetLiquidity.name,
-
-            price:
-              targetLiquidity.price,
-
-            raidScore:
-              targetLiquidity.raidScore
-          }
-
-        : null,
-
-    reasons:
-      (
-        side === "BUY"
-          ? reasonsBuy
-          : reasonsSell
-      )
-      .slice(
-        0,
-        6
+    rrToTp2:
+      round(
+        Math.abs(
+          tp2 -
+          entry
+        ) /
+        risk,
+        2
       ),
 
-    warning:
-      signal === "WAIT"
+    confidenceScore:
+      confluence.total,
 
-        ? "Confluence is not strong enough for a directional trade idea."
+    reason:
+      confirmed
+        ?
+        "Confirmed liquidity raid aligns with the directional engine."
+        :
+        "Strong confluence, but waiting for a cleaner raid/retest confirmation."
 
-        : "Heuristic setup only. Confirm execution conditions before trading."
   };
+
 }
 
 
 /* ================================================================
-   SCENARIO ENGINE
+   SCENARIO WEIGHT NORMALIZER
 ================================================================ */
 
-function buildScenarios(
-  price,
-  evaluated,
-  trade
+function normalizeWeights(
+  raw
 ) {
 
-  const above =
-    evaluated
-
-    .filter(
-      x =>
-        x.price >
-        price
-    )
-
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.distance -
-        b.distance
-    )
-
-    .slice(
-      0,
-      3
+  const exponential =
+    raw.map(
+      value =>
+        Math.exp(
+          value /
+          18
+        )
     );
 
 
+  const total =
+    sum(
+      exponential
+    ) ||
+    1;
+
+
+  return exponential.map(
+    value =>
+      value /
+      total *
+      100
+  );
+
+}
+
+
+/* ================================================================
+   SCENARIO PROJECTION
+================================================================ */
+
+function scenarioProjection({
+  price,
+  atr5,
+  direction,
+  clusters,
+  raid,
+  confluence,
+  lastTime
+}) {
+
+  const above =
+    clusters
+      .filter(
+        cluster =>
+          cluster.center >
+          price
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.magnetScore -
+          a.magnetScore
+      )[
+        0
+      ];
+
+
   const below =
-    evaluated
+    clusters
+      .filter(
+        cluster =>
+          cluster.center <
+          price
+      )
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          b.magnetScore -
+          a.magnetScore
+      )[
+        0
+      ];
 
-    .filter(
-      x =>
-        x.price <
-        price
-    )
 
-    .sort(
+  const primaryDirection =
+    direction.direction ===
+    "BEARISH"
+      ?
+      -1
+      :
+      direction.direction ===
+      "BULLISH"
+        ?
+        1
+        :
+        (
+          (
+            above?.magnetScore ||
+            0
+          ) >=
+          (
+            below?.magnetScore ||
+            0
+          )
+            ?
+            1
+            :
+            -1
+        );
+
+
+  const primaryTarget =
+    primaryDirection >
+    0
+      ?
       (
-        a,
-        b
-      ) =>
-        a.distance -
-        b.distance
-    )
+        above?.center ??
+        price +
+        atr5 *
+        2.4
+      )
+      :
+      (
+        below?.center ??
+        price -
+        atr5 *
+        2.4
+      );
 
-    .slice(
-      0,
-      3
+
+  const oppositeTarget =
+    primaryDirection >
+    0
+      ?
+      (
+        below?.center ??
+        price -
+        atr5 *
+        1.5
+      )
+      :
+      (
+        above?.center ??
+        price +
+        atr5 *
+        1.5
+      );
+
+
+  const primaryRaw =
+    55 +
+    confluence.total *
+    0.35 +
+    (
+      raid.latestConfirmed
+        ?
+        8
+        :
+        0
+    );
+
+
+  const reversalRaw =
+    45 +
+    (
+      raid.tracking
+        ?.pressure ||
+      0
+    ) *
+    0.25 +
+    (
+      primaryDirection >
+      0
+        ?
+        (
+          below?.strength ||
+          40
+        )
+        :
+        (
+          above?.strength ||
+          40
+        )
+    ) *
+    0.18;
+
+
+  const rangeRaw =
+    55 +
+    (
+      direction.direction ===
+      "NEUTRAL"
+        ?
+        18
+        :
+        0
+    ) +
+    (
+      confluence.total <
+      65
+        ?
+        10
+        :
+        0
+    );
+
+
+  const weights =
+    normalizeWeights(
+      [
+
+        primaryRaw,
+
+        reversalRaw,
+
+        rangeRaw
+
+      ]
+    );
+
+
+  const step =
+    5 *
+    60;
+
+
+  const buildPath =
+    values =>
+      values.map(
+        (
+          value,
+          index
+        ) => ({
+
+          time:
+            lastTime +
+            step *
+            (
+              index +
+              1
+            ),
+
+          value:
+            round(
+              value,
+              3
+            )
+
+        })
+      );
+
+
+  const primary =
+    buildPath(
+      [
+
+        price -
+        primaryDirection *
+        atr5 *
+        0.18,
+
+        price +
+        primaryDirection *
+        atr5 *
+        0.22,
+
+        price +
+        (
+          primaryTarget -
+          price
+        ) *
+        0.35,
+
+        price +
+        (
+          primaryTarget -
+          price
+        ) *
+        0.62,
+
+        price +
+        (
+          primaryTarget -
+          price
+        ) *
+        0.82,
+
+        primaryTarget
+
+      ]
+    );
+
+
+  const reversal =
+    buildPath(
+      [
+
+        price +
+        primaryDirection *
+        atr5 *
+        0.35,
+
+        price +
+        primaryDirection *
+        atr5 *
+        0.65,
+
+        price,
+
+        price +
+        (
+          oppositeTarget -
+          price
+        ) *
+        0.35,
+
+        price +
+        (
+          oppositeTarget -
+          price
+        ) *
+        0.70,
+
+        oppositeTarget
+
+      ]
+    );
+
+
+  const rangeHigh =
+    price +
+    atr5 *
+    0.75;
+
+
+  const rangeLow =
+    price -
+    atr5 *
+    0.75;
+
+
+  const range =
+    buildPath(
+      [
+
+        rangeHigh,
+
+        price,
+
+        rangeLow,
+
+        price,
+
+        rangeHigh *
+          0.15 +
+        price *
+          0.85,
+
+        price
+
+      ]
     );
 
 
@@ -4110,484 +7455,708 @@ function buildScenarios(
 
     {
 
+      id:
+        "A",
+
       name:
-        "UPSIDE LIQUIDITY PATH",
+        primaryDirection >
+        0
+          ?
+          "Primary bullish expansion"
+          :
+          "Primary bearish expansion",
 
-      probabilityScore:
-        clamp(
-
-          Math.round(
-
-            50 +
-            (
-              trade.buyScore -
-              trade.sellScore
-            ) *
-            0.45
-          ),
-
-          5,
-          95
+      modelWeightPct:
+        round(
+          weights[
+            0
+          ],
+          1
         ),
 
-      path:
-        above.map(
-          x => ({
+      target:
+        round(
+          primaryTarget,
+          3
+        ),
 
-            name:
-              x.name,
+      description:
+        "Directional confluence carries price toward the strongest aligned liquidity magnet.",
 
-            price:
-              x.price,
+      points:
+        primary
 
-            raidScore:
-              x.raidScore
-          })
-        )
     },
 
 
     {
 
+      id:
+        "B",
+
       name:
-        "DOWNSIDE LIQUIDITY PATH",
+        "Liquidity fakeout / reversal",
 
-      probabilityScore:
-        clamp(
-
-          Math.round(
-
-            50 +
-            (
-              trade.sellScore -
-              trade.buyScore
-            ) *
-            0.45
-          ),
-
-          5,
-          95
+      modelWeightPct:
+        round(
+          weights[
+            1
+          ],
+          1
         ),
 
-      path:
-        below.map(
-          x => ({
+      target:
+        round(
+          oppositeTarget,
+          3
+        ),
 
-            name:
-              x.name,
+      description:
+        "Price first runs the near-side liquidity, fails, then rotates toward the opposing pool.",
 
-            price:
-              x.price,
+      points:
+        reversal
 
-            raidScore:
-              x.raidScore
-          })
-        )
+    },
+
+
+    {
+
+      id:
+        "C",
+
+      name:
+        "Range continuation",
+
+      modelWeightPct:
+        round(
+          weights[
+            2
+          ],
+          1
+        ),
+
+      target:
+        round(
+          price,
+          3
+        ),
+
+      description:
+        "No clean displacement develops and price continues rotating around current value.",
+
+      points:
+        range
+
     }
-  ];
+
+  ].sort(
+    (
+      a,
+      b
+    ) =>
+      b.modelWeightPct -
+      a.modelWeightPct
+  );
+
 }
 
 
 /* ================================================================
-   MAIN ENGINE
+   SESSION NARRATIVE
 ================================================================ */
 
-async function runEngine() {
+function sessionNarrative({
+  sessions,
+  price,
+  clusters,
+  raid,
+  direction
+}) {
 
-  const {
-    k1,
-    k2,
-    k3,
-    k4
-  } =
-    keyPool();
+  const parts =
+    [];
 
 
-  if (
-    !k1
+  const sessionList =
+    [
+
+      sessions.asia,
+
+      sessions.london,
+
+      sessions.newYork
+
+    ].filter(
+      Boolean
+    );
+
+
+  for (
+    const session
+    of sessionList
   ) {
 
-    throw new Error(
-      "TWELVE_DATA_API_KEY is missing in Vercel Environment Variables"
+    const above =
+      price >
+      session.high;
+
+
+    const below =
+      price <
+      session.low;
+
+
+    parts.push(
+
+      `${session.label}: ${
+        above
+          ?
+          "price is above its high"
+          :
+          below
+            ?
+            "price is below its low"
+            :
+            "price remains inside its range"
+      }.`
+
     );
+
   }
 
 
+  if (
+    raid.latestConfirmed
+  ) {
+
+    parts.push(
+
+      `${
+        raid
+          .latestConfirmed
+          .side ===
+        "BSL"
+          ?
+          "Buy-side"
+          :
+          "Sell-side"
+      } liquidity was recently swept; reversal evidence is ${
+        raid
+          .latestConfirmed
+          .reversalEvidence
+      }/100.`
+
+    );
+
+  }
+
+
+  const best =
+    clusters[
+      0
+    ];
+
+
+  if (
+    best
+  ) {
+
+    parts.push(
+
+      `Highest-ranked remaining magnet is ${best.side} near ${best.center} with a ${best.magnetScore}/100 magnet score.`
+
+    );
+
+  }
+
+
+  parts.push(
+
+    `Directional engine is ${direction.direction.toLowerCase()} (${direction.buyScore} buy / ${direction.sellScore} sell).`
+
+  );
+
+
+  return parts.join(
+    " "
+  );
+
+}
+
+
+/* ================================================================
+   LIQUIDITY HIERARCHY
+================================================================ */
+
+function liquidityHierarchy(
+  levels,
+  currentPrice
+) {
+
+  const timeframeRank =
+    {
+
+      W1:
+        5,
+
+      D1:
+        4,
+
+      H4:
+        3.5,
+
+      H1:
+        3,
+
+      M15:
+        2,
+
+      M5:
+        1
+
+    };
+
+
+  return [
+    ...levels
+  ]
+
+    .map(
+      level => ({
+
+        ...level,
+
+        hierarchyScore:
+          round(
+
+            clamp(
+
+              level.weight *
+                0.75 +
+
+              (
+                timeframeRank[
+                  level.timeframe
+                ] ||
+                1
+              ) *
+                5 +
+
+              Math.min(
+                10,
+                (
+                  level.touches ||
+                  1
+                ) *
+                2
+              ),
+
+              0,
+
+              100
+
+            ),
+
+            1
+
+          ),
+
+        distance:
+          round(
+
+            Math.abs(
+              level.price -
+              currentPrice
+            ),
+
+            3
+
+          )
+
+      })
+    )
+
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        b.hierarchyScore -
+        a.hierarchyScore
+    )
+
+    .slice(
+      0,
+      16
+    );
+
+}
+
+
+/* ================================================================
+   MAIN INTELLIGENCE BUILD
+================================================================ */
+
+async function buildFull() {
+
+  const started =
+    Date.now();
+
+
   const [
-
-    m1,
-
-    m5,
-
-    m15,
-
-    h1,
-
-    h4,
-
-    hist,
-
-    macro,
-
-    inter
-
+    m1Result,
+    m5Result,
+    m15Result,
+    h1Result,
+    h4Result,
+    macro
   ] =
-    await Promise.all([
+    await Promise.all(
+      [
 
+        fetchSeries(
+          "1min",
+          CONFIG
+            .outputs
+            .m1,
+          0
+        ),
 
-      /* API 1 */
+        fetchSeries(
+          "5min",
+          CONFIG
+            .outputs
+            .m5,
+          2
+        ),
 
-      fetchTD(
-        SYMBOL,
-        "1min",
-        360,
-        k1,
-        [
-          k2,
-          k3,
-          k4
-        ]
-      ),
+        fetchSeries(
+          "15min",
+          CONFIG
+            .outputs
+            .m15,
+          1
+        ),
 
+        fetchSeries(
+          "1h",
+          CONFIG
+            .outputs
+            .h1,
+          1
+        ),
 
-      fetchTD(
-        SYMBOL,
-        "5min",
-        520,
-        k1,
-        [
-          k2,
-          k3,
-          k4
-        ]
-      ),
+        fetchSeries(
+          "4h",
+          CONFIG
+            .outputs
+            .h4,
+          1
+        ),
 
+        macroContext()
 
-      /* API 2 */
-
-      fetchTD(
-        SYMBOL,
-        "15min",
-        360,
-        k2,
-        [
-          k1,
-          k3,
-          k4
-        ]
-      ),
-
-
-      fetchTD(
-        SYMBOL,
-        "1h",
-        420,
-        k2,
-        [
-          k1,
-          k3,
-          k4
-        ]
-      ),
-
-
-      fetchTD(
-        SYMBOL,
-        "4h",
-        260,
-        k2,
-        [
-          k1,
-          k3,
-          k4
-        ]
-      ),
-
-
-      /* API 3 */
-
-      fetchTD(
-        SYMBOL,
-        "5min",
-        3000,
-        k3,
-        [
-          k2,
-          k1,
-          k4
-        ]
-      ),
-
-
-      /* MACRO */
-
-      macroPressure()
-
-      .catch(
-        () => ({
-
-          enabled:
-            false,
-
-          usdScore:
-            0,
-
-          goldScore:
-            0,
-
-          bias:
-            "NEUTRAL",
-
-          drivers:
-            []
-        })
-      ),
-
-
-      /* API 4 */
-
-      intermarket(
-        k4 ||
-        k1,
-        [
-          k3,
-          k2,
-          k1
-        ]
-      )
-
-      .catch(
-        () => ({
-
-          goldScore:
-            0,
-
-          bias:
-            "NEUTRAL",
-
-          markets:
-            []
-        })
-      )
-
-    ]);
-
-
-  const price =
-    m1.at(-1).close;
-
-
-  const a5 =
-    atr(m5) ||
-    Math.max(
-      price *
-      0.0008,
-      0.5
+      ]
     );
 
 
-  const sessions =
-    sessionLevels(
+  const m1 =
+    m1Result.candles;
+
+
+  const m5 =
+    m5Result.candles;
+
+
+  const m15 =
+    m15Result.candles;
+
+
+  const h1 =
+    h1Result.candles;
+
+
+  const h4 =
+    h4Result.candles;
+
+
+  const price =
+    m1[
+      m1.length -
+      1
+    ].close;
+
+
+  const atr5Array =
+    atrArray(
+      m5,
+      14
+    );
+
+
+  const atr15Array =
+    atrArray(
+      m15,
+      14
+    );
+
+
+  const atr5 =
+    atr5Array[
+      atr5Array.length -
+      1
+    ] ||
+    price *
+    0.001;
+
+
+  const atr15 =
+    atr15Array[
+      atr15Array.length -
+      1
+    ] ||
+    atr5 *
+    2;
+
+
+  const h1Trend =
+    detectTrend(
+      h1
+    );
+
+
+  const h4Trend =
+    detectTrend(
+      h4
+    );
+
+
+  const regime =
+    detectRegime(
+      m15,
+      h1
+    );
+
+
+  const liquidity =
+    buildLiquidityLevels(
+
+      m5,
+
+      m15,
+
+      h1,
+
+      atr5,
+
+      atr15
+
+    );
+
+
+  const combinedTrend =
+    h1Trend.bias ===
+    h4Trend.bias
+      ?
+      h1Trend.bias
+      :
+      h1Trend.bias;
+
+
+  const clusters =
+    clusterLiquidity(
+
+      liquidity.levels,
+
+      price,
+
+      atr5,
+
+      combinedTrend
+
+    );
+
+
+  const raid =
+    buildRaidState(
+
+      clusters,
+
+      m5,
+
+      m1,
+
+      atr5,
+
+      price
+
+    );
+
+
+  const trap =
+    detectTrap(
+
+      raid.latestConfirmed,
+
+      m5,
+
+      atr5
+
+    );
+
+
+  const phase =
+    detectMarketPhase(
+
+      m5,
+
+      raid.latestConfirmed,
+
+      regime
+
+    );
+
+
+  const history =
+    historicalMemory(
       m5
     );
 
 
-  const day =
-    previousDayLevels(
-      hist
+  const direction =
+    directionalBias(
+      {
+
+        h1Trend,
+
+        regime,
+
+        raid,
+
+        history,
+
+        macro,
+
+        clusters,
+
+        price
+
+      }
     );
 
 
-  const week =
-    previousWeekLevels(
-      hist
+  const confluence =
+    confluenceScore(
+      {
+
+        direction,
+
+        clusters,
+
+        raid,
+
+        trap,
+
+        history,
+
+        macro,
+
+        regime
+
+      }
     );
-
-
-  const fvg =
-    fvgZones(
-      m15,
-      12
-    );
-
-
-  const mp =
-    pivots(
-      m5,
-      5
-    );
-
-
-  const structure =
-    structureState(
-      m5,
-      mp
-    );
-
-
-  const delta =
-    deltaProxy(
-      m1,
-      60
-    );
-
-
-  const rawLevels =
-    buildLiquidityLevels({
-
-      m5,
-
-      h1,
-
-      hist,
-
-      sessions,
-
-      day,
-
-      week,
-
-      fvg
-    });
-
-
-  const historical =
-    historicalRaidStats(
-
-      hist,
-
-      rawLevels,
-
-      a5
-    );
-
-
-  const evaluated =
-    rawLevels
-
-    .map(
-      l =>
-        evaluateLevel(
-
-          l,
-
-          price,
-
-          a5,
-
-          m1.slice(-20),
-
-          delta,
-
-          historical
-        )
-    )
-
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        b.raidScore -
-        a.raidScore
-    );
-
-
-  const frames =
-    {
-
-      m1:
-        trendFrame(
-          m1
-        ),
-
-      m5:
-        trendFrame(
-          m5
-        ),
-
-      m15:
-        trendFrame(
-          m15
-        ),
-
-      h1:
-        trendFrame(
-          h1
-        ),
-
-      h4:
-        trendFrame(
-          h4
-        )
-    };
 
 
   const trade =
-    buildTradeIdea({
+    tradeIdea(
+      {
 
-      price,
+        price,
 
-      a:
-        a5,
+        atr5,
 
-      evaluated,
+        direction,
 
-      frames,
+        confluence,
 
-      structure,
+        raid,
 
-      delta,
+        clusters
 
-      macro,
-
-      inter
-    });
+      }
+    );
 
 
-  const dominant =
-    evaluated[0] ||
-    null;
+  const scenarios =
+    scenarioProjection(
+      {
+
+        price,
+
+        atr5,
+
+        direction,
+
+        clusters,
+
+        raid,
+
+        confluence,
+
+        lastTime:
+          m5[
+            m5.length -
+            1
+          ].time
+
+      }
+    );
 
 
-  const nearestAbove =
-    evaluated
-
-    .filter(
-      x =>
-        x.price >
-        price
-    )
-
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.distance -
-        b.distance
-    )[0] ||
-    null;
+  const fvgs =
+    findFvgs(
+      m15,
+      atr15
+    );
 
 
-  const nearestBelow =
-    evaluated
+  const hierarchy =
+    liquidityHierarchy(
+      liquidity.levels,
+      price
+    );
 
-    .filter(
-      x =>
-        x.price <
-        price
-    )
 
-    .sort(
-      (
-        a,
-        b
-      ) =>
-        a.distance -
-        b.distance
-    )[0] ||
-    null;
+  const rsi5 =
+    rsiArray(
+      m5,
+      14
+    );
+
+
+  const rsi15 =
+    rsiArray(
+      m15,
+      14
+    );
+
+
+  const freshnessSeconds =
+    Math.max(
+
+      0,
+
+      Math.floor(
+        Date.now() /
+        1000
+      ) -
+      m1[
+        m1.length -
+        1
+      ].time
+
+    );
 
 
   return {
@@ -4598,397 +8167,425 @@ async function runEngine() {
     engine:
       "MKAYFX GOLD INTELLIGENCE V9",
 
-    mode:
-      "LIQUIDITY WARFARE / REST",
+    version:
+      "9.0.0",
 
     symbol:
-      "XAU/USD",
+      SYMBOL,
 
     generatedAt:
       new Date()
-      .toISOString(),
+        .toISOString(),
 
-    price:
-      round(
-        price
-      ),
+    computationMs:
+      Date.now() -
+      started,
 
-    quoteTime:
-      new Date(
-        m1.at(-1).time *
-        1000
-      )
-      .toISOString(),
 
-    staleSeconds:
-      Math.max(
-        0,
-        Math.round(
-          Date.now() /
-          1000 -
-          m1.at(-1).time
+    data: {
+
+      price:
+        round(
+          price,
+          3
+        ),
+
+      lastCandleTime:
+        m1[
+          m1.length -
+          1
+        ].time,
+
+      freshnessSeconds,
+
+      atrM5:
+        round(
+          atr5,
+          3
+        ),
+
+      atrM15:
+        round(
+          atr15,
+          3
+        ),
+
+      rsiM5:
+        round(
+          rsi5[
+            rsi5.length -
+            1
+          ],
+          1
+        ),
+
+      rsiM15:
+        round(
+          rsi15[
+            rsi15.length -
+            1
+          ],
+          1
         )
-      ),
+
+    },
 
 
-    volatility:
-      {
+    source: {
 
-        atrM5:
-          round(
-            a5,
-            3
-          ),
+      provider:
+        "Twelve Data",
 
-        atrM15:
-          round(
-            atr(m15),
-            3
-          ),
+      keySlots: {
 
-        atrH1:
-          round(
-            atr(h1),
-            3
-          ),
+        m1:
+          m1Result.keySlot,
 
-        vwapM5:
-          round(
-            vwap(m5)
-          ),
+        m5:
+          m5Result.keySlot,
 
-        vwapM1:
-          round(
-            vwap(m1)
-          )
+        m15:
+          m15Result.keySlot,
+
+        h1:
+          h1Result.keySlot,
+
+        h4:
+          h4Result.keySlot
+
       },
 
+      fetchMs: {
 
-    frames,
+        m1:
+          m1Result.ms,
 
+        m5:
+          m5Result.ms,
 
-    structure,
+        m15:
+          m15Result.ms,
 
+        h1:
+          h1Result.ms,
 
-    sessions:
-      Object.fromEntries(
+        h4:
+          h4Result.ms
 
-        Object.entries(
-          sessions
-        )
+      }
 
-        .map(
-          (
-            [
-              k,
-              v
-            ]
-          ) => [
-
-            k,
-
-            v
-
-              ? {
-
-                  ...v,
-
-                  high:
-                    round(
-                      v.high
-                    ),
-
-                  low:
-                    round(
-                      v.low
-                    ),
-
-                  open:
-                    round(
-                      v.open
-                    ),
-
-                  close:
-                    round(
-                      v.close
-                    )
-                }
-
-              : null
-          ]
-        )
-      ),
+    },
 
 
-    externalLiquidity:
-      {
+    bias:
+      direction,
 
-        pdh:
-          round(
-            day.pdh
-          ),
 
-        pdl:
-          round(
-            day.pdl
-          ),
+    regime,
 
-        pwh:
-          round(
-            week.pwh
-          ),
 
-        pwl:
-          round(
-            week.pwl
+    phase,
+
+
+    trend: {
+
+      h1:
+        h1Trend,
+
+      h4:
+        h4Trend
+
+    },
+
+
+    confluence,
+
+
+    liquidity: {
+
+      clusters:
+        clusters.slice(
+          0,
+          12
+        ),
+
+      hierarchy,
+
+      rawLevels:
+        liquidity
+          .levels
+          .slice(
+            0,
+            24
           )
-      },
+          .map(
+            level => ({
+
+              ...level,
+
+              price:
+                round(
+                  level.price,
+                  3
+                )
+
+            })
+          ),
+
+      sessions:
+        liquidity.sessions,
+
+      previousDay:
+        liquidity.previousDay,
+
+      previousWeek:
+        liquidity.previousWeek,
+
+      fvgs
+
+    },
 
 
-    orderFlow:
-      delta,
+    raid,
+
+
+    trap,
+
+
+    historical:
+      history,
 
 
     macro,
 
 
-    intermarket:
-      inter,
+    trade,
 
 
-    dominantLiquidity:
-      dominant,
+    scenarios,
 
 
-    nearestLiquidity:
-      {
+    narrative:
+      sessionNarrative(
+        {
 
-        above:
-          nearestAbove,
+          sessions:
+            liquidity.sessions,
 
-        below:
-          nearestBelow
-      },
+          price,
 
+          clusters,
 
-    liquidity:
-      evaluated,
+          raid,
 
+          direction
 
-    fvg:
-      fvg.map(
-        z => ({
-
-          ...z,
-
-          low:
-            round(
-              z.low
-            ),
-
-          high:
-            round(
-              z.high
-            )
-        })
+        }
       ),
 
 
-    historicalRaidStats:
-      historical,
+    chart: {
 
+      candles:
+        m5
+          .slice(
+            -520
+          )
+          .map(
+            candle => ({
 
-    tradeIdea:
-      trade,
+              time:
+                candle.time,
 
+              open:
+                round(
+                  candle.open,
+                  3
+                ),
 
-    scenarios:
-      buildScenarios(
-        price,
-        evaluated,
-        trade
-      ),
+              high:
+                round(
+                  candle.high,
+                  3
+                ),
 
+              low:
+                round(
+                  candle.low,
+                  3
+                ),
 
-    chart:
-      m5
-      .slice(-300)
-      .map(
-        c => ({
+              close:
+                round(
+                  candle.close,
+                  3
+                )
 
-          time:
-            c.time,
+            })
+          ),
 
-          open:
-            c.open,
+      importantClusters:
+        clusters.slice(
+          0,
+          6
+        )
 
-          high:
-            c.high,
-
-          low:
-            c.low,
-
-          close:
-            c.close
-        })
-      ),
+    },
 
 
     disclaimer:
-      "Liquidity, raid, confluence and scenario scores are heuristic model outputs, not guaranteed probabilities or financial advice."
+      "Heuristic market intelligence for research. Scores are not guaranteed probabilities or financial advice."
+
   };
+
 }
 
 
 /* ================================================================
-   VERCEL HANDLER
+   VERCEL FUNCTION
 ================================================================ */
 
-export default async function handler(
-  req,
-  res
-) {
+export default {
 
-  res.setHeader(
-    "Cache-Control",
-    "no-store, max-age=0"
-  );
-
-
-  res.setHeader(
-    "Access-Control-Allow-Origin",
-    "*"
-  );
-
-
-  if (
-    req.method ===
-    "OPTIONS"
+  async fetch(
+    request
   ) {
-
-    return res
-      .status(204)
-      .end();
-  }
-
-
-  if (
-    req.method !==
-    "GET"
-  ) {
-
-    return res
-      .status(405)
-      .json({
-
-        ok:
-          false,
-
-        error:
-          "GET only"
-      });
-  }
-
-
-  try {
-
-    const force =
-      String(
-        req.query?.force ||
-        ""
-      ) ===
-      "1";
-
 
     if (
-      !force &&
-      engineCache.data &&
-      Date.now() -
-      engineCache.at <
-      CACHE_MS
+      request.method ===
+      "OPTIONS"
     ) {
 
-      return res
-      .status(200)
-      .json({
+      return new Response(
+        null,
+        {
 
-        ...engineCache.data,
+          status:
+            204,
 
-        cache:
-          {
+          headers: {
 
-            hit:
-              true,
+            "access-control-allow-origin":
+              "*",
 
-            ageSeconds:
-              Math.round(
-                (
-                  Date.now() -
-                  engineCache.at
-                ) /
-                1000
-              )
+            "access-control-allow-methods":
+              "GET, OPTIONS",
+
+            "access-control-allow-headers":
+              "content-type"
+
           }
-      });
+
+        }
+      );
+
     }
 
 
-    const data =
-      await runEngine();
+    try {
+
+      const url =
+        new URL(
+          request.url
+        );
 
 
-    engineCache =
-      {
+      const mode =
+        url
+          .searchParams
+          .get(
+            "mode"
+          ) ||
+        "full";
 
-        at:
-          Date.now(),
 
-        data
-      };
+      /* ==========================================================
+         FAST PRICE MODE
+      ========================================================== */
+
+      if (
+        mode ===
+        "quote"
+      ) {
+
+        const quote =
+          await fetchLatestPrice();
 
 
-    return res
-    .status(200)
-    .json({
+        return json(
+          {
 
-      ...data,
+            ok:
+              true,
 
-      cache:
+            symbol:
+              SYMBOL,
+
+            price:
+              round(
+                quote.price,
+                3
+              ),
+
+            generatedAt:
+              new Date()
+                .toISOString(),
+
+            keySlot:
+              quote.keySlot,
+
+            fetchMs:
+              quote.ms
+
+          },
+          200,
+          "no-store"
+        );
+
+      }
+
+
+      /* ==========================================================
+         FULL INTELLIGENCE MODE
+      ========================================================== */
+
+      const result =
+        await buildFull();
+
+
+      return json(
+        result,
+        200,
+        "public, s-maxage=45, stale-while-revalidate=20"
+      );
+
+    }
+
+    catch (
+      error
+    ) {
+
+      return json(
         {
 
-          hit:
+          ok:
             false,
 
-          ageSeconds:
-            0
-        }
-    });
+          error:
+            error?.message ||
+            "Unknown server error",
+
+          generatedAt:
+            new Date()
+              .toISOString()
+
+        },
+        500,
+        "no-store"
+      );
+
+    }
 
   }
-  catch (e) {
 
-    console.error(
-      "MKAYFX V9 error",
-      e
-    );
-
-
-    return res
-    .status(500)
-    .json({
-
-      ok:
-        false,
-
-      engine:
-        "MKAYFX GOLD INTELLIGENCE V9",
-
-      error:
-        e?.message ||
-        "Engine failure",
-
-      hint:
-        "Check TWELVE_DATA_API_KEY, TWELVE_DATA_API_KEY_2, TWELVE_DATA_API_KEY_3 and TWELVE_DATA_API_KEY_4 in Vercel. FRED_API_KEY is optional."
-    });
-  }
-}
+};
