@@ -2,13 +2,7 @@
   "version": 2,
   "functions": {
     "api/xau.js": {
-      "maxDuration": 60
-    },
-    "api/chart.js": {
       "maxDuration": 30
-    },
-    "api/price.js": {
-      "maxDuration": 10
     }
   },
   "headers": [
@@ -18,6 +12,10 @@
         {
           "key": "Cache-Control",
           "value": "no-store, max-age=0"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
         }
       ]
     }
