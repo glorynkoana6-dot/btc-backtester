@@ -27,106 +27,103 @@
 
 <meta
   name="apple-mobile-web-app-title"
-  content="MKAYFX V9"
+  content="MKAYFX Gold"
 >
 
 <title>
-  MKAYFX Gold Intelligence V9
+  MKAYFX Gold Intelligence V9.2
 </title>
-
-
-<script
-  src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"
-></script>
 
 
 <style>
 
-/* =========================================================
-   RESET
-========================================================= */
-
-*{
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
-
-
 :root{
 
   --bg:#05070b;
-  --bg2:#080c13;
+  --bg2:#090d13;
 
-  --panel:#0a0f18;
-  --panel2:#0d1420;
+  --card:rgba(15,20,29,.84);
+  --card2:rgba(10,14,21,.92);
 
-  --border:rgba(255,255,255,.075);
+  --line:rgba(255,255,255,.08);
+  --line2:rgba(255,255,255,.14);
 
-  --text:#f6f8fb;
-  --muted:#7e8999;
-  --dim:#4b5665;
+  --text:#f4f7fb;
+  --muted:#7f8999;
+  --soft:#aeb7c5;
 
-  --gold:#f7c948;
-  --gold2:#b88a13;
+  --gold:#f6c453;
+  --gold2:#a97715;
 
-  --green:#21d69b;
-  --red:#ff5b6e;
+  --green:#44e1a6;
+  --red:#ff6b7a;
 
-  --blue:#55a8ff;
-  --violet:#9d7bff;
-  --cyan:#45d8e6;
+  --blue:#70a7ff;
+  --cyan:#61d7ff;
+  --purple:#ae8cff;
 
   --shadow:
-    0 20px 70px
-    rgba(0,0,0,.34);
+    0 18px 70px rgba(0,0,0,.38);
 
 }
 
 
-html{
-  background:var(--bg);
+*{
+
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+
+}
+
+
+html,
+body{
+
+  margin:0;
+
+  min-height:100%;
+
+  background:
+    var(--bg);
+
+  color:
+    var(--text);
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
 }
 
 
 body{
 
-  margin:0;
-
-  color:var(--text);
-
   background:
 
     radial-gradient(
-      circle at 18% -5%,
-      rgba(247,201,72,.09),
-      transparent 26%
+      circle at 84% -10%,
+      rgba(246,196,83,.14),
+      transparent 28%
     ),
 
     radial-gradient(
-      circle at 88% 8%,
-      rgba(85,168,255,.07),
-      transparent 24%
+      circle at 0% 20%,
+      rgba(97,215,255,.09),
+      transparent 22%
     ),
 
     linear-gradient(
       180deg,
       #05070b 0%,
-      #070b11 55%,
+      #070a10 45%,
       #05070b 100%
     );
 
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    "Segoe UI",
-    Inter,
-    Arial,
-    sans-serif;
-
-  min-height:100vh;
-
-  letter-spacing:.01em;
+  overflow-x:hidden;
 
 }
 
@@ -141,61 +138,65 @@ body:before{
 
   pointer-events:none;
 
-  opacity:.16;
+  opacity:.22;
 
   background-image:
 
     linear-gradient(
-      rgba(255,255,255,.018) 1px,
+      rgba(255,255,255,.015) 1px,
       transparent 1px
     ),
 
     linear-gradient(
       90deg,
-      rgba(255,255,255,.018) 1px,
+      rgba(255,255,255,.015) 1px,
       transparent 1px
     );
 
   background-size:
-    28px 28px;
+    32px 32px;
 
   mask-image:
     linear-gradient(
       to bottom,
       black,
-      transparent 78%
+      transparent 80%
     );
 
 }
 
 
 button{
+
   font:inherit;
+
 }
 
 
-/* =========================================================
-   MAIN SHELL
-========================================================= */
+.app{
 
-.shell{
-
-  width:min(
-    1540px,
-    100%
-  );
+  width:
+    min(
+      1500px,
+      100%
+    );
 
   margin:auto;
 
   padding:
-    18px 18px 70px;
+    18px
+    18px
+    calc(
+      40px +
+      env(safe-area-inset-bottom)
+    );
 
 }
 
 
-/* =========================================================
+/* ================================================================
    HEADER
-========================================================= */
+================================================================ */
 
 .topbar{
 
@@ -205,9 +206,30 @@ button{
 
   justify-content:space-between;
 
-  gap:16px;
+  gap:14px;
 
-  margin-bottom:14px;
+  margin-bottom:18px;
+
+  position:sticky;
+
+  top:0;
+
+  z-index:30;
+
+  padding:
+    10px 0 12px;
+
+  backdrop-filter:
+    blur(14px);
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(5,7,11,.96),
+      rgba(5,7,11,.72),
+      transparent
+    );
 
 }
 
@@ -225,32 +247,44 @@ button{
 }
 
 
-.logo{
+.brandmark{
 
-  width:43px;
+  width:42px;
 
-  height:43px;
+  height:42px;
 
-  border-radius:14px;
+  border-radius:13px;
 
   display:grid;
 
   place-items:center;
 
   background:
+
     linear-gradient(
-      145deg,
-      #f9dc7a,
-      #9f7310
+      135deg,
+      #2b210e,
+      #0c0d10 70%
     );
 
-  color:#080808;
-
-  font-weight:950;
+  border:
+    1px solid
+    rgba(246,196,83,.35);
 
   box-shadow:
-    0 8px 30px
-    rgba(247,201,72,.18);
+
+    inset 0 0 28px
+    rgba(246,196,83,.07),
+
+    0 0 34px
+    rgba(246,196,83,.08);
+
+  font-weight:900;
+
+  color:
+    var(--gold);
+
+  letter-spacing:-1px;
 
 }
 
@@ -259,324 +293,278 @@ button{
 
   font-size:15px;
 
+  line-height:1.1;
+
   margin:0;
 
-  letter-spacing:.12em;
-
-  font-weight:850;
+  white-space:nowrap;
 
 }
 
 
-.brand p{
+.brand small{
+
+  display:block;
+
+  margin-top:4px;
+
+  color:
+    var(--muted);
 
   font-size:10px;
 
-  margin:
-    3px 0 0;
-
-  color:var(--muted);
-
-  letter-spacing:.16em;
+  letter-spacing:.12em;
 
   text-transform:uppercase;
 
 }
 
 
-.top-actions{
+.actions{
+
+  display:flex;
+
+  gap:8px;
+
+  align-items:center;
+
+}
+
+
+.pill,
+.refresh{
+
+  height:38px;
+
+  border:
+    1px solid
+    var(--line);
+
+  background:
+    rgba(255,255,255,.035);
+
+  color:
+    var(--soft);
+
+  border-radius:12px;
+
+  padding:
+    0 12px;
 
   display:flex;
 
   align-items:center;
 
   gap:8px;
-
-}
-
-
-/* =========================================================
-   PILLS
-========================================================= */
-
-.status-pill,
-.chip,
-.btn{
-
-  border:
-    1px solid
-    var(--border);
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      .035
-    );
-
-  backdrop-filter:
-    blur(12px);
-
-  border-radius:
-    999px;
-
-  color:
-    var(--muted);
-
-  font-size:
-    11px;
-
-  padding:
-    9px 11px;
-
-  white-space:
-    nowrap;
-
-}
-
-
-.status-pill{
-
-  display:flex;
-
-  gap:7px;
-
-  align-items:center;
 
 }
 
 
 .dot{
 
-  width:7px;
+  width:8px;
 
-  height:7px;
+  height:8px;
 
-  border-radius:
-    50%;
+  border-radius:50%;
+
+  background:
+    var(--muted);
+
+  box-shadow:
+    0 0 0 4px
+    rgba(255,255,255,.03);
+
+}
+
+
+.dot.live{
 
   background:
     var(--green);
 
   box-shadow:
-    0 0 16px
-    var(--green);
+
+    0 0 0 4px
+    rgba(68,225,166,.08),
+
+    0 0 18px
+    rgba(68,225,166,.35);
 
 }
 
 
-.btn{
+.refresh{
 
   cursor:pointer;
 
-  color:#dce4ee;
-
-  padding:
-    9px 13px;
+  color:
+    var(--text);
 
 }
 
 
-.btn:active{
-  transform:scale(.98);
+.refresh:active{
+
+  transform:
+    scale(.98);
+
 }
 
 
-/* =========================================================
-   HERO
-========================================================= */
+/* ================================================================
+   PANELS
+================================================================ */
 
-.hero{
+.panel{
+
+  position:relative;
+
+  background:
+
+    linear-gradient(
+      180deg,
+      rgba(15,20,29,.9),
+      rgba(8,12,18,.92)
+    );
 
   border:
     1px solid
-    var(--border);
+    var(--line);
 
-  background:
-    linear-gradient(
-      140deg,
-      rgba(16,23,34,.94),
-      rgba(8,12,18,.94)
-    );
-
-  border-radius:
-    24px;
+  border-radius:20px;
 
   box-shadow:
     var(--shadow);
 
-  padding:
-    20px;
-
-  margin-bottom:
-    14px;
-
-  overflow:
-    hidden;
-
-  position:
-    relative;
+  overflow:hidden;
 
 }
 
 
-.hero:after{
+.panel:after{
 
   content:"";
 
   position:absolute;
 
-  width:380px;
-
-  height:380px;
-
-  border-radius:50%;
-
-  right:-190px;
-
-  top:-250px;
-
-  background:
-    radial-gradient(
-      circle,
-      rgba(247,201,72,.16),
-      transparent 67%
-    );
+  inset:0;
 
   pointer-events:none;
+
+  background:
+
+    linear-gradient(
+      120deg,
+      rgba(255,255,255,.025),
+      transparent 22%,
+      transparent 72%,
+      rgba(246,196,83,.025)
+    );
 
 }
 
 
-.hero-grid{
+/* ================================================================
+   HERO
+================================================================ */
+
+.hero{
 
   display:grid;
 
   grid-template-columns:
-    minmax(0,1.3fr)
-    minmax(300px,.7fr);
+    minmax(0,1.5fr)
+    minmax(280px,.75fr);
 
-  gap:20px;
+  gap:14px;
 
-  align-items:end;
+  margin-bottom:14px;
+
+}
+
+
+.pricePanel{
+
+  padding:20px;
 
 }
 
 
 .eyebrow{
 
+  font-size:10px;
+
+  letter-spacing:.15em;
+
   text-transform:uppercase;
 
   color:
     var(--muted);
 
-  font-size:
-    10px;
-
-  letter-spacing:
-    .19em;
-
-  font-weight:
-    750;
-
 }
 
 
-.symbol-row{
+.priceRow{
 
   display:flex;
 
-  align-items:end;
+  align-items:flex-end;
 
-  gap:15px;
+  justify-content:space-between;
+
+  gap:14px;
 
   margin-top:8px;
-
-  flex-wrap:wrap;
-
-}
-
-
-.symbol{
-
-  font-size:28px;
-
-  font-weight:900;
-
-  letter-spacing:-.04em;
 
 }
 
 
 .price{
 
-  font-size:52px;
+  font-size:
+    clamp(
+      36px,
+      6vw,
+      68px
+    );
 
-  font-weight:900;
+  font-weight:800;
 
-  line-height:.92;
+  letter-spacing:-.05em;
 
-  letter-spacing:-.055em;
-
-}
-
-
-.price small{
-
-  font-size:13px;
-
-  color:var(--muted);
-
-  font-weight:650;
-
-  letter-spacing:.04em;
+  line-height:.95;
 
 }
 
 
-.bias-badge{
+.priceMeta{
 
-  align-self:center;
+  text-align:right;
 
-  border-radius:999px;
+}
 
-  padding:8px 11px;
+
+.priceMeta strong{
+
+  display:block;
+
+  font-size:12px;
+
+}
+
+
+.priceMeta span{
 
   font-size:11px;
 
-  font-weight:900;
-
-  letter-spacing:.08em;
-
-  border:
-    1px solid
-    var(--border);
+  color:
+    var(--muted);
 
 }
 
 
-.bull{
-  color:var(--green);
-}
-
-
-.bear{
-  color:var(--red);
-}
-
-
-.neutral{
-  color:#c2cad5;
-}
-
-
-.gold{
-  color:var(--gold);
-}
-
-
-.hero-meta{
+.chips{
 
   display:flex;
 
@@ -584,163 +572,59 @@ button{
 
   gap:7px;
 
-  margin-top:15px;
+  margin-top:16px;
 
 }
 
 
-.hero-meta .chip{
+.chip{
+
+  border:
+    1px solid
+    var(--line);
+
+  background:
+    rgba(255,255,255,.03);
+
+  border-radius:999px;
 
   padding:
     7px 9px;
 
-}
-
-
-/* =========================================================
-   HERO DECISION GRID
-========================================================= */
-
-.decision{
-
-  display:grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
-  gap:9px;
-
-}
-
-
-.decision-card{
-
-  padding:14px;
-
-  border:
-    1px solid
-    var(--border);
-
-  border-radius:
-    17px;
-
-  background:
-    rgba(
-      255,
-      255,
-      255,
-      .028
-    );
-
-}
-
-
-.decision-card .k{
+  font-size:10px;
 
   color:
-    var(--muted);
-
-  font-size:
-    9px;
-
-  text-transform:
-    uppercase;
-
-  letter-spacing:
-    .16em;
+    var(--soft);
 
 }
 
 
-.decision-card .v{
-
-  font-size:
-    22px;
-
-  font-weight:
-    900;
-
-  margin-top:
-    7px;
-
-  letter-spacing:
-    -.03em;
-
-}
-
-
-.decision-card .s{
-
-  font-size:
-    10px;
+.chip b{
 
   color:
-    var(--muted);
-
-  margin-top:
-    4px;
+    var(--text);
 
 }
 
 
-/* =========================================================
-   MAIN LAYOUT
-========================================================= */
+/* ================================================================
+   BIAS
+================================================================ */
 
-.layout{
+.biasPanel{
 
-  display:grid;
+  padding:18px;
 
-  grid-template-columns:
-    minmax(0,1.75fr)
-    minmax(330px,.75fr);
+  display:flex;
 
-  gap:14px;
+  flex-direction:column;
 
-  align-items:start;
+  justify-content:space-between;
 
 }
 
 
-.stack{
-
-  display:grid;
-
-  gap:14px;
-
-}
-
-
-/* =========================================================
-   PANELS
-========================================================= */
-
-.panel{
-
-  border:
-    1px solid
-    var(--border);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(12,18,27,.94),
-      rgba(8,12,18,.96)
-    );
-
-  border-radius:
-    21px;
-
-  box-shadow:
-    0 14px 44px
-    rgba(0,0,0,.2);
-
-  overflow:hidden;
-
-}
-
-
-.panel-head{
+.biasTitle{
 
   display:flex;
 
@@ -748,471 +632,173 @@ button{
 
   align-items:center;
 
-  padding:
-    15px 16px;
+}
 
-  border-bottom:
-    1px solid
-    var(--border);
 
-  gap:12px;
+.biasDirection{
+
+  font-size:28px;
+
+  font-weight:800;
+
+  letter-spacing:-.03em;
+
+  margin-top:10px;
 
 }
 
 
-.panel-title{
+.biasDirection.bull{
 
-  font-size:11px;
-
-  font-weight:850;
-
-  text-transform:uppercase;
-
-  letter-spacing:.15em;
+  color:
+    var(--green);
 
 }
 
 
-.panel-sub{
+.biasDirection.bear{
 
-  font-size:10px;
-
-  color:var(--muted);
-
-  margin-top:3px;
+  color:
+    var(--red);
 
 }
 
 
-.panel-body{
+.biasDirection.neutral{
 
-  padding:
-    15px 16px;
+  color:
+    var(--gold);
 
 }
 
 
-/* =========================================================
-   CHART
-========================================================= */
+.scorebar{
 
-.chart-wrap{
+  height:12px;
 
-  height:590px;
+  border-radius:999px;
+
+  background:
+
+    linear-gradient(
+      90deg,
+      rgba(255,107,122,.9)
+      0 50%,
+      rgba(68,225,166,.9)
+      50% 100%
+    );
 
   position:relative;
 
-  background:
-    linear-gradient(
-      180deg,
-      rgba(2,5,8,.42),
-      rgba(7,10,16,.15)
-    );
+  margin:
+    20px 0 8px;
+
+  box-shadow:
+
+    inset 0 0 0 1px
+    rgba(255,255,255,.08);
 
 }
 
 
-.chart{
+.scoreMarker{
 
   position:absolute;
 
-  inset:0;
+  top:-5px;
+
+  width:4px;
+
+  height:22px;
+
+  border-radius:3px;
+
+  background:white;
+
+  box-shadow:
+    0 0 14px
+    rgba(255,255,255,.55);
+
+  transform:
+    translateX(-50%);
 
 }
 
 
-.zones{
-
-  position:absolute;
-
-  inset:0;
-
-  pointer-events:none;
-
-  overflow:hidden;
-
-  z-index:3;
-
-}
-
-
-.zone{
-
-  position:absolute;
-
-  left:0;
-
-  right:66px;
-
-  border-top:
-    1px solid;
-
-  border-bottom:
-    1px solid;
-
-  opacity:.26;
-
-}
-
-
-.zone.bsl{
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(255,91,110,.11)
-    );
-
-  border-color:
-    rgba(255,91,110,.65);
-
-}
-
-
-.zone.ssl{
-
-  background:
-    linear-gradient(
-      90deg,
-      transparent,
-      rgba(33,214,155,.11)
-    );
-
-  border-color:
-    rgba(33,214,155,.65);
-
-}
-
-
-.chart-labels{
-
-  position:absolute;
-
-  top:12px;
-
-  left:12px;
-
-  z-index:5;
+.scoreLabels{
 
   display:flex;
 
-  gap:6px;
+  justify-content:space-between;
 
-  flex-wrap:wrap;
+  font-size:11px;
 
-  pointer-events:none;
-
-}
-
-
-.chart-labels .chip{
-
-  font-size:9px;
-
-  background:
-    rgba(5,7,11,.76);
+  color:
+    var(--muted);
 
 }
 
 
-.chart-note{
-
-  position:absolute;
-
-  left:14px;
-
-  bottom:11px;
-
-  z-index:5;
-
-  font-size:9px;
-
-  color:#667180;
-
-  background:
-    rgba(5,7,11,.74);
-
-  padding:
-    6px 8px;
-
-  border-radius:
-    8px;
-
-  border:
-    1px solid
-    var(--border);
-
-  pointer-events:none;
-
-}
-
-
-/* =========================================================
+/* ================================================================
    METRICS
-========================================================= */
+================================================================ */
 
-.metric-grid{
+.metrics{
 
   display:grid;
 
   grid-template-columns:
-    repeat(4,1fr);
+    repeat(
+      6,
+      minmax(0,1fr)
+    );
 
   gap:10px;
+
+  margin-bottom:14px;
 
 }
 
 
 .metric{
 
-  padding:13px;
-
-  border-radius:
-    16px;
-
-  border:
-    1px solid
-    var(--border);
-
-  background:
-    rgba(255,255,255,.022);
+  padding:
+    14px 14px 13px;
 
 }
 
 
-.metric .label{
+.metric .k{
 
-  font-size:9px;
-
-  color:var(--muted);
+  font-size:10px;
 
   text-transform:uppercase;
 
-  letter-spacing:.13em;
-
-}
-
-
-.metric .value{
-
-  font-size:20px;
-
-  font-weight:880;
-
-  margin-top:7px;
-
-  letter-spacing:-.03em;
-
-}
-
-
-.metric .foot{
-
-  font-size:9px;
-
-  color:var(--dim);
-
-  margin-top:3px;
-
-}
-
-
-/* =========================================================
-   SCORE BARS
-========================================================= */
-
-.bar-row{
-  margin:11px 0;
-}
-
-
-.bar-top{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  gap:12px;
-
-  font-size:10px;
-
-}
-
-
-.bar-top span:first-child{
-  color:#aab4c0;
-}
-
-
-.bar-top strong{
-  font-size:10px;
-}
-
-
-.track{
-
-  height:5px;
-
-  background:
-    rgba(255,255,255,.055);
-
-  border-radius:
-    99px;
-
-  margin-top:
-    6px;
-
-  overflow:hidden;
-
-}
-
-
-.fill{
-
-  height:100%;
-
-  border-radius:
-    99px;
-
-  background:
-    linear-gradient(
-      90deg,
-      var(--gold2),
-      var(--gold)
-    );
-
-}
-
-
-.fill.green{
-
-  background:
-    linear-gradient(
-      90deg,
-      #168965,
-      var(--green)
-    );
-
-}
-
-
-.fill.red{
-
-  background:
-    linear-gradient(
-      90deg,
-      #9e3240,
-      var(--red)
-    );
-
-}
-
-
-.fill.blue{
-
-  background:
-    linear-gradient(
-      90deg,
-      #275f9d,
-      var(--blue)
-    );
-
-}
-
-
-.fill.violet{
-
-  background:
-    linear-gradient(
-      90deg,
-      #5d48a8,
-      var(--violet)
-    );
-
-}
-
-
-/* =========================================================
-   LIQUIDITY LIST
-========================================================= */
-
-.liquidity-list{
-
-  display:grid;
-
-  gap:8px;
-
-}
-
-
-.liq{
-
-  display:grid;
-
-  grid-template-columns:
-    40px 1fr auto;
-
-  gap:10px;
-
-  align-items:center;
-
-  border:
-    1px solid
-    var(--border);
-
-  background:
-    rgba(255,255,255,.02);
-
-  padding:
-    11px;
-
-  border-radius:
-    15px;
-
-}
-
-
-.rank{
-
-  width:34px;
-
-  height:34px;
-
-  border-radius:
-    11px;
-
-  display:grid;
-
-  place-items:center;
-
-  background:
-    rgba(247,201,72,.08);
+  letter-spacing:.1em;
 
   color:
-    var(--gold);
-
-  font-size:10px;
-
-  font-weight:900;
+    var(--muted);
 
 }
 
 
-.liq .name{
+.metric .v{
 
-  font-size:11px;
+  font-size:21px;
 
   font-weight:800;
 
+  margin-top:7px;
+
 }
 
 
-.liq .desc{
+.metric .s{
 
-  font-size:9px;
+  font-size:10px;
 
-  color:var(--muted);
+  color:
+    var(--muted);
 
   margin-top:4px;
 
@@ -1222,240 +808,34 @@ button{
 
   text-overflow:ellipsis;
 
-  max-width:250px;
-
 }
 
 
-.liq .num{
-  text-align:right;
-}
+/* ================================================================
+   MAIN GRID
+================================================================ */
 
-
-.liq .num strong{
-
-  display:block;
-
-  font-size:13px;
-
-}
-
-
-.liq .num span{
-
-  font-size:9px;
-
-  color:var(--muted);
-
-}
-
-
-/* =========================================================
-   SCORE RING
-========================================================= */
-
-.big-score{
+.gridMain{
 
   display:grid;
 
   grid-template-columns:
-    88px 1fr;
+    minmax(0,1.65fr)
+    minmax(330px,.75fr);
 
   gap:14px;
 
-  align-items:center;
+}
+
+
+.chartPanel{
+
+  padding:16px;
 
 }
 
 
-.score-ring{
-
-  width:84px;
-
-  height:84px;
-
-  border-radius:
-    50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:
-    conic-gradient(
-      var(--gold)
-      calc(
-        var(--score) *
-        1%
-      ),
-      rgba(255,255,255,.055)
-      0
-    );
-
-  position:relative;
-
-}
-
-
-.score-ring:after{
-
-  content:"";
-
-  position:absolute;
-
-  inset:7px;
-
-  border-radius:50%;
-
-  background:#0a0f18;
-
-}
-
-
-.score-ring strong{
-
-  position:relative;
-
-  z-index:1;
-
-  font-size:23px;
-
-}
-
-
-.score-ring span{
-
-  font-size:8px;
-
-  color:var(--muted);
-
-  display:block;
-
-  text-align:center;
-
-}
-
-
-.headline{
-
-  font-size:17px;
-
-  font-weight:900;
-
-  letter-spacing:-.02em;
-
-}
-
-
-.copy{
-
-  font-size:11px;
-
-  line-height:1.55;
-
-  color:#939dac;
-
-  margin-top:6px;
-
-}
-
-
-/* =========================================================
-   SESSION GRID
-========================================================= */
-
-.session-grid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(3,1fr);
-
-  gap:8px;
-
-}
-
-
-.session{
-
-  border:
-    1px solid
-    var(--border);
-
-  border-radius:
-    14px;
-
-  padding:11px;
-
-  background:
-    rgba(255,255,255,.02);
-
-}
-
-
-.session .n{
-
-  font-size:10px;
-
-  font-weight:850;
-
-}
-
-
-.session .row{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  font-size:9px;
-
-  color:var(--muted);
-
-  margin-top:7px;
-
-}
-
-
-.session strong{
-
-  color:#dfe7ef;
-
-  font-size:10px;
-
-}
-
-
-/* =========================================================
-   SCENARIOS
-========================================================= */
-
-.scenario{
-
-  border:
-    1px solid
-    var(--border);
-
-  padding:12px;
-
-  border-radius:
-    15px;
-
-  background:
-    rgba(255,255,255,.02);
-
-  margin-bottom:
-    8px;
-
-}
-
-
-.scenario:last-child{
-  margin-bottom:0;
-}
-
-
-.scenario-top{
+.sectionHead{
 
   display:flex;
 
@@ -1465,462 +845,845 @@ button{
 
   gap:10px;
 
+  margin-bottom:12px;
+
 }
 
 
-.scenario-id{
+.sectionHead h2{
 
-  font-size:9px;
+  font-size:13px;
 
-  font-weight:900;
+  margin:0;
+
+}
+
+
+.sectionHead span{
+
+  font-size:10px;
 
   color:
-    var(--gold);
+    var(--muted);
+
+}
+
+
+/* ================================================================
+   CHART
+================================================================ */
+
+.chartWrap{
+
+  height:480px;
 
   border:
     1px solid
-    rgba(247,201,72,.18);
+    var(--line);
 
-  padding:
-    5px 7px;
-
-  border-radius:
-    8px;
-
-}
-
-
-.scenario-name{
-
-  font-size:11px;
-
-  font-weight:850;
-
-  flex:1;
-
-}
-
-
-.scenario-weight{
-
-  font-size:11px;
-
-  font-weight:900;
-
-}
-
-
-.scenario p{
-
-  font-size:9px;
-
-  color:var(--muted);
-
-  line-height:1.45;
-
-  margin:
-    7px 0 0;
-
-}
-
-
-/* =========================================================
-   TRADE PANEL
-========================================================= */
-
-.trade{
-
-  border-radius:
-    18px;
-
-  padding:
-    15px;
-
-  border:
-    1px solid
-    var(--border);
+  border-radius:16px;
 
   background:
+
     linear-gradient(
-      145deg,
-      rgba(247,201,72,.055),
-      rgba(255,255,255,.018)
+      180deg,
+      rgba(4,7,11,.98),
+      rgba(7,10,15,.98)
     );
 
-}
+  overflow:hidden;
 
-
-.trade.ready{
-
-  border-color:
-    rgba(33,214,155,.25);
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(33,214,155,.07),
-      rgba(255,255,255,.018)
-    );
+  position:relative;
 
 }
 
 
-.trade.watch{
+.chartWrap canvas{
 
-  border-color:
-    rgba(247,201,72,.22);
+  width:100%;
 
-}
-
-
-.trade.no_trade{
-  opacity:.8;
-}
-
-
-.trade-head{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  align-items:center;
-
-}
-
-
-.trade-status{
-
-  font-size:9px;
-
-  font-weight:900;
-
-  padding:
-    6px 8px;
-
-  border:
-    1px solid
-    var(--border);
-
-  border-radius:
-    8px;
-
-}
-
-
-.trade-dir{
-
-  font-size:22px;
-
-  font-weight:950;
-
-  margin-top:10px;
-
-}
-
-
-.trade-grid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(2,1fr);
-
-  gap:8px;
-
-  margin-top:
-    12px;
-
-}
-
-
-.trade-cell{
-
-  padding:9px;
-
-  border-radius:
-    11px;
-
-  background:
-    rgba(0,0,0,.2);
-
-}
-
-
-.trade-cell span{
-
-  display:block;
-
-  font-size:8px;
-
-  color:var(--muted);
-
-  text-transform:uppercase;
-
-  letter-spacing:.1em;
-
-}
-
-
-.trade-cell strong{
-
-  font-size:12px;
-
-  margin-top:4px;
+  height:100%;
 
   display:block;
 
 }
 
 
-/* =========================================================
-   GENERAL
-========================================================= */
+.legend{
 
-.narrative{
+  position:absolute;
 
-  font-size:12px;
+  left:12px;
 
-  line-height:1.7;
-
-  color:#bac3ce;
-
-}
-
-
-.tiny{
-
-  font-size:9px;
-
-  color:var(--muted);
-
-  line-height:1.45;
-
-}
-
-
-.divider{
-
-  height:1px;
-
-  background:
-    var(--border);
-
-  margin:
-    13px 0;
-
-}
-
-
-.empty{
-
-  font-size:11px;
-
-  color:var(--muted);
-
-  padding:
-    8px 0;
-
-}
-
-
-/* =========================================================
-   FOOTER
-========================================================= */
-
-.footer{
+  top:12px;
 
   display:flex;
 
-  justify-content:space-between;
+  gap:7px;
 
-  gap:12px;
-
-  align-items:center;
-
-  margin-top:18px;
-
-  color:#596474;
-
-  font-size:9px;
-
-  line-height:1.5;
-
-}
-
-
-.footer a{
-
-  color:#7f8a98;
-
-  text-decoration:none;
-
-}
-
-
-.footer strong{
-  color:#8f99a7;
-}
-
-
-/* =========================================================
-   LOADER
-========================================================= */
-
-.loading{
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:100;
-
-  background:
-    rgba(4,6,9,.88);
-
-  backdrop-filter:
-    blur(15px);
-
-  display:grid;
-
-  place-items:center;
-
-  transition:.3s;
-
-}
-
-
-.loading.hidden{
-
-  opacity:0;
+  flex-wrap:wrap;
 
   pointer-events:none;
 
 }
 
 
-.loader-box{
-  text-align:center;
-}
-
-
-.loader{
-
-  width:52px;
-
-  height:52px;
-
-  border-radius:50%;
-
-  border:
-    2px solid
-    rgba(255,255,255,.08);
-
-  border-top-color:
-    var(--gold);
-
-  margin:auto;
-
-  animation:
-    spin .8s linear infinite;
-
-}
-
-
-@keyframes spin{
-
-  to{
-    transform:rotate(360deg);
-  }
-
-}
-
-
-.loader-box strong{
-
-  display:block;
-
-  margin-top:14px;
-
-  font-size:12px;
-
-  letter-spacing:.12em;
-
-}
-
-
-.loader-box span{
-
-  display:block;
-
-  color:var(--muted);
+.legend span{
 
   font-size:9px;
 
-  margin-top:5px;
+  padding:
+    5px 7px;
 
-}
+  border-radius:999px;
 
-
-/* =========================================================
-   ERROR
-========================================================= */
-
-.error-banner{
-
-  display:none;
-
-  margin-bottom:
-    14px;
+  background:
+    rgba(5,7,11,.72);
 
   border:
     1px solid
-    rgba(255,91,110,.2);
+    var(--line);
 
-  background:
-    rgba(255,91,110,.06);
+  backdrop-filter:
+    blur(8px);
 
-  color:#ff9aa6;
+}
+
+
+/* ================================================================
+   SIDE STACK
+================================================================ */
+
+.sideStack{
+
+  display:grid;
+
+  gap:14px;
+
+}
+
+
+.tradeCard{
+
+  padding:18px;
+
+}
+
+
+.status{
+
+  display:inline-flex;
+
+  align-items:center;
+
+  gap:7px;
 
   padding:
-    11px 13px;
+    7px 9px;
 
-  border-radius:
-    14px;
+  border-radius:10px;
 
-  font-size:
-    10px;
+  border:
+    1px solid
+    var(--line);
+
+  font-size:10px;
+
+  font-weight:800;
+
+  letter-spacing:.08em;
 
 }
 
 
-.error-banner.show{
+.status.ready{
+
+  color:
+    var(--green);
+
+  border-color:
+    rgba(68,225,166,.28);
+
+  background:
+    rgba(68,225,166,.08);
+
+}
+
+
+.status.armed{
+
+  color:
+    var(--gold);
+
+  border-color:
+    rgba(246,196,83,.28);
+
+  background:
+    rgba(246,196,83,.08);
+
+}
+
+
+.status.no{
+
+  color:
+    var(--muted);
+
+}
+
+
+.tradeDir{
+
+  font-size:30px;
+
+  font-weight:850;
+
+  margin:
+    12px 0 4px;
+
+}
+
+
+.tradeDir.bull{
+
+  color:
+    var(--green);
+
+}
+
+
+.tradeDir.bear{
+
+  color:
+    var(--red);
+
+}
+
+
+.tradeReason{
+
+  font-size:11px;
+
+  line-height:1.55;
+
+  color:
+    var(--muted);
+
+}
+
+
+.tradeGrid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      1fr
+    );
+
+  gap:8px;
+
+  margin-top:14px;
+
+}
+
+
+.tradeCell{
+
+  padding:10px;
+
+  border-radius:12px;
+
+  background:
+    rgba(255,255,255,.028);
+
+  border:
+    1px solid
+    var(--line);
+
+}
+
+
+.tradeCell span{
+
+  font-size:9px;
+
+  color:
+    var(--muted);
+
+  text-transform:uppercase;
+
+  letter-spacing:.08em;
+
+}
+
+
+.tradeCell b{
+
   display:block;
+
+  margin-top:5px;
+
+  font-size:13px;
+
 }
 
 
-/* =========================================================
+/* ================================================================
+   STRONG ZONES
+================================================================ */
+
+.zonePanel{
+
+  margin-top:14px;
+
+  padding:16px;
+
+}
+
+
+.zoneSummary{
+
+  display:flex;
+
+  gap:8px;
+
+  flex-wrap:wrap;
+
+  margin-bottom:12px;
+
+}
+
+
+.zoneSummary .chip{
+
+  background:
+    rgba(246,196,83,.04);
+
+}
+
+
+.zones{
+
+  display:grid;
+
+  gap:8px;
+
+}
+
+
+.zone{
+
+  display:grid;
+
+  grid-template-columns:
+    56px
+    minmax(0,1fr)
+    90px
+    72px;
+
+  gap:10px;
+
+  align-items:center;
+
+  padding:12px;
+
+  border-radius:14px;
+
+  background:
+    rgba(255,255,255,.026);
+
+  border:
+    1px solid
+    var(--line);
+
+  position:relative;
+
+  overflow:hidden;
+
+}
+
+
+.zone:before{
+
+  content:"";
+
+  position:absolute;
+
+  left:0;
+
+  top:0;
+
+  bottom:0;
+
+  width:3px;
+
+  background:
+    var(--gold);
+
+}
+
+
+.zone.ssl:before{
+
+  background:
+    var(--red);
+
+}
+
+
+.zone.bsl:before{
+
+  background:
+    var(--green);
+
+}
+
+
+.grade{
+
+  font-size:18px;
+
+  font-weight:900;
+
+  color:
+    var(--gold);
+
+}
+
+
+.zoneName b{
+
+  display:block;
+
+  font-size:12px;
+
+}
+
+
+.zoneName span{
+
+  font-size:10px;
+
+  color:
+    var(--muted);
+
+  display:block;
+
+  margin-top:4px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+
+}
+
+
+.zonePrice{
+
+  text-align:right;
+
+}
+
+
+.zonePrice b{
+
+  display:block;
+
+  font-size:13px;
+
+}
+
+
+.zonePrice span{
+
+  font-size:9px;
+
+  color:
+    var(--muted);
+
+}
+
+
+.zoneScore{
+
+  text-align:right;
+
+}
+
+
+.zoneScore b{
+
+  font-size:14px;
+
+}
+
+
+.zoneScore span{
+
+  display:block;
+
+  font-size:9px;
+
+  color:
+    var(--muted);
+
+}
+
+
+/* ================================================================
+   LOWER PANELS
+================================================================ */
+
+.twoCol{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap:14px;
+
+  margin-top:14px;
+
+}
+
+
+.infoPanel{
+
+  padding:16px;
+
+}
+
+
+.bigState{
+
+  font-size:24px;
+
+  font-weight:850;
+
+  margin-top:8px;
+
+}
+
+
+.subtext{
+
+  font-size:11px;
+
+  color:
+    var(--muted);
+
+  line-height:1.55;
+
+  margin-top:6px;
+
+}
+
+
+.progress{
+
+  height:7px;
+
+  background:
+    rgba(255,255,255,.055);
+
+  border-radius:999px;
+
+  margin-top:12px;
+
+  overflow:hidden;
+
+}
+
+
+.progress i{
+
+  display:block;
+
+  height:100%;
+
+  background:
+
+    linear-gradient(
+      90deg,
+      var(--gold2),
+      var(--gold)
+    );
+
+  border-radius:inherit;
+
+}
+
+
+.kv{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr auto;
+
+  gap:8px;
+
+  padding:
+    8px 0;
+
+  border-bottom:
+    1px solid
+    rgba(255,255,255,.055);
+
+  font-size:11px;
+
+}
+
+
+.kv:last-child{
+
+  border-bottom:0;
+
+}
+
+
+.kv span{
+
+  color:
+    var(--muted);
+
+}
+
+
+.kv b{
+
+  font-weight:700;
+
+}
+
+
+/* ================================================================
+   SCENARIOS
+================================================================ */
+
+.scenarios{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap:10px;
+
+}
+
+
+.scenario{
+
+  padding:14px;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:14px;
+
+  background:
+    rgba(255,255,255,.025);
+
+}
+
+
+.scenarioTop{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:8px;
+
+  align-items:flex-start;
+
+}
+
+
+.scenarioTop b{
+
+  font-size:11px;
+
+}
+
+
+.weight{
+
+  font-size:14px;
+
+  font-weight:850;
+
+  color:
+    var(--gold);
+
+}
+
+
+.scenario p{
+
+  font-size:10px;
+
+  line-height:1.45;
+
+  color:
+    var(--muted);
+
+  margin:
+    8px 0 0;
+
+}
+
+
+.target{
+
+  margin-top:10px;
+
+  font-size:11px;
+
+}
+
+
+.target b{
+
+  font-size:15px;
+
+}
+
+
+/* ================================================================
+   NARRATIVE
+================================================================ */
+
+.narrative{
+
+  padding:16px;
+
+  margin-top:14px;
+
+}
+
+
+.narrative p{
+
+  margin:
+    8px 0 0;
+
+  color:#c4cbd6;
+
+  font-size:12px;
+
+  line-height:1.65;
+
+}
+
+
+.footer{
+
+  color:
+    var(--muted);
+
+  font-size:10px;
+
+  line-height:1.5;
+
+  text-align:center;
+
+  padding:
+    18px 6px 0;
+
+}
+
+
+/* ================================================================
+   ERROR
+================================================================ */
+
+.error{
+
+  padding:16px;
+
+  border:
+    1px solid
+    rgba(255,107,122,.28);
+
+  background:
+    rgba(255,107,122,.07);
+
+  border-radius:14px;
+
+  color:#ffc1c7;
+
+  font-size:12px;
+
+  display:none;
+
+  margin-bottom:14px;
+
+}
+
+
+/* ================================================================
    RESPONSIVE
-========================================================= */
+================================================================ */
 
 @media(
-  max-width:1050px
+  max-width:1100px
 ){
 
-  .layout{
-    grid-template-columns:1fr;
+  .metrics{
+
+    grid-template-columns:
+      repeat(
+        3,
+        1fr
+      );
+
   }
 
-  .chart-wrap{
-    height:520px;
+
+  .gridMain{
+
+    grid-template-columns:
+      1fr;
+
   }
 
-  .hero-grid{
-    grid-template-columns:1fr;
+
+  .sideStack{
+
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(0,1fr)
+      );
+
   }
 
-  .decision{
-    grid-template-columns:repeat(4,1fr);
+
+  .zonePanel{
+
+    margin-top:0;
+
+  }
+
+
+  .chartWrap{
+
+    height:430px;
+
   }
 
 }
@@ -1930,108 +1693,196 @@ button{
   max-width:720px
 ){
 
-  .shell{
-    padding:11px 10px 55px;
+  .app{
+
+    padding:
+      12px
+      12px
+      34px;
+
   }
+
 
   .topbar{
-    align-items:flex-start;
+
+    padding-top:8px;
+
   }
 
-  .status-pill{
+
+  .brand small{
+
     display:none;
+
   }
+
+
+  .pill span:last-child{
+
+    display:none;
+
+  }
+
 
   .hero{
-    padding:16px;
-    border-radius:19px;
+
+    grid-template-columns:
+      1fr;
+
   }
+
+
+  .pricePanel{
+
+    padding:16px;
+
+  }
+
+
+  .biasPanel{
+
+    padding:15px;
+
+  }
+
+
+  .metrics{
+
+    grid-template-columns:
+      repeat(
+        2,
+        1fr
+      );
+
+  }
+
+
+  .metric{
+
+    padding:12px;
+
+  }
+
+
+  .gridMain{
+
+    display:block;
+
+  }
+
+
+  .chartPanel{
+
+    padding:12px;
+
+  }
+
+
+  .chartWrap{
+
+    height:390px;
+
+  }
+
+
+  .sideStack{
+
+    display:grid;
+
+    grid-template-columns:
+      1fr;
+
+    margin-top:14px;
+
+  }
+
+
+  .twoCol{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .scenarios{
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .zone{
+
+    grid-template-columns:
+      46px
+      minmax(0,1fr)
+      78px;
+
+  }
+
+
+  .zoneScore{
+
+    display:none;
+
+  }
+
+
+  .priceMeta{
+
+    max-width:120px;
+
+  }
+
 
   .price{
-    font-size:42px;
-  }
 
-  .symbol{
-    font-size:23px;
-  }
+    font-size:46px;
 
-  .decision{
-    grid-template-columns:1fr 1fr;
-  }
-
-  .metric-grid{
-    grid-template-columns:1fr 1fr;
-  }
-
-  .chart-wrap{
-    height:460px;
-  }
-
-  .panel{
-    border-radius:18px;
-  }
-
-  .session-grid{
-    grid-template-columns:1fr 1fr 1fr;
-  }
-
-  .footer{
-    display:block;
-  }
-
-  .footer div + div{
-    margin-top:8px;
-  }
-
-  .liq .desc{
-    max-width:170px;
   }
 
 }
 
 
 @media(
-  max-width:430px
+  max-width:410px
 ){
 
-  .brand p{
-    display:none;
-  }
-
-  .logo{
-    width:39px;
-    height:39px;
-  }
-
-  .top-actions .btn{
-    font-size:10px;
-    padding:8px 10px;
-  }
-
-  .chart-wrap{
-    height:420px;
-  }
-
-  .panel-head,
-  .panel-body{
-    padding-left:13px;
-    padding-right:13px;
-  }
-
-  .session-grid{
-    grid-template-columns:1fr;
-  }
-
-  .liq{
-    grid-template-columns:34px 1fr auto;
-  }
-
-  .liq .desc{
-    max-width:145px;
-  }
-
   .price{
-    font-size:38px;
+
+    font-size:41px;
+
+  }
+
+
+  .actions .pill{
+
+    display:none;
+
+  }
+
+
+  .chartWrap{
+
+    height:350px;
+
+  }
+
+
+  .tradeGrid{
+
+    grid-template-columns:
+      1fr 1fr;
+
+  }
+
+
+  .zone{
+
+    padding:10px;
+
   }
 
 }
@@ -2043,37 +1894,14 @@ button{
 
 <body>
 
-
-<div
-  id="loading"
-  class="loading"
->
-
-  <div class="loader-box">
-
-    <div class="loader"></div>
-
-    <strong>
-      MKAYFX V9
-    </strong>
-
-    <span>
-      Mapping institutional liquidity...
-    </span>
-
-  </div>
-
-</div>
-
-
-<main class="shell">
+<div class="app">
 
 
 <header class="topbar">
 
   <div class="brand">
 
-    <div class="logo">
+    <div class="brandmark">
       M
     </div>
 
@@ -2083,25 +1911,25 @@ button{
         MKAYFX GOLD INTELLIGENCE
       </h1>
 
-      <p>
-        Liquidity Warfare Engine · V9
-      </p>
+      <small>
+        V9.2 · Strong Liquidity Warfare
+      </small>
 
     </div>
 
   </div>
 
 
-  <div class="top-actions">
+  <div class="actions">
 
-    <div class="status-pill">
+    <div class="pill">
 
       <span
-        id="statusDot"
+        id="liveDot"
         class="dot"
       ></span>
 
-      <span id="connectionText">
+      <span id="feedLabel">
         CONNECTING
       </span>
 
@@ -2109,8 +1937,8 @@ button{
 
 
     <button
+      class="refresh"
       id="refreshBtn"
-      class="btn"
     >
       ↻ Refresh
     </button>
@@ -2121,646 +1949,613 @@ button{
 
 
 <div
-  id="errorBanner"
-  class="error-banner"
+  id="errorBox"
+  class="error"
 ></div>
 
 
-<!-- =======================================================
-     HERO
-======================================================= -->
-
 <section class="hero">
 
-<div class="hero-grid">
 
+  <div class="panel pricePanel">
 
-<div>
-
-  <div class="eyebrow">
-    XAU / USD · Institutional Liquidity Map
-  </div>
-
-
-  <div class="symbol-row">
-
-    <div class="symbol">
-      GOLD
+    <div class="eyebrow">
+      XAU / USD · LIVE REFERENCE
     </div>
 
 
-    <div
-      id="price"
-      class="price"
-    >
-      —
-      <small>
-        USD
-      </small>
+    <div class="priceRow">
+
+      <div
+        id="price"
+        class="price"
+      >
+        —
+      </div>
+
+
+      <div class="priceMeta">
+
+        <strong id="engineVersion">
+          V9.2
+        </strong>
+
+        <span id="updatedAt">
+          Waiting for data
+        </span>
+
+      </div>
+
     </div>
 
 
-    <div
-      id="biasBadge"
-      class="bias-badge neutral"
-    >
-      NEUTRAL
-    </div>
+    <div class="chips">
 
-  </div>
+      <div class="chip">
+        ATR M5
+        <b id="atr5">—</b>
+      </div>
 
+      <div class="chip">
+        ATR M15
+        <b id="atr15">—</b>
+      </div>
 
-  <div class="hero-meta">
+      <div class="chip">
+        RSI M5
+        <b id="rsi5">—</b>
+      </div>
 
-    <span
-      id="freshness"
-      class="chip"
-    >
-      Data —
-    </span>
+      <div class="chip">
+        RSI M15
+        <b id="rsi15">—</b>
+      </div>
 
-    <span
-      id="atrChip"
-      class="chip"
-    >
-      M5 ATR —
-    </span>
+      <div class="chip">
+        Strong zones
+        <b id="zoneCount">—</b>
+      </div>
 
-    <span
-      id="rsiChip"
-      class="chip"
-    >
-      RSI —
-    </span>
+      <div class="chip">
+        Rejected noise
+        <b id="rejectedCount">—</b>
+      </div>
 
-    <span
-      id="engineChip"
-      class="chip"
-    >
-      Engine —
-    </span>
-
-  </div>
-
-</div>
-
-
-<div class="decision">
-
-
-<div class="decision-card">
-
-  <div class="k">
-    Market Phase
-  </div>
-
-  <div
-    id="phase"
-    class="v"
-  >
-    —
-  </div>
-
-  <div
-    id="phaseScore"
-    class="s"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="decision-card">
-
-  <div class="k">
-    Regime
-  </div>
-
-  <div
-    id="regime"
-    class="v"
-  >
-    —
-  </div>
-
-  <div
-    id="regimeSub"
-    class="s"
-  >
-    —
-  </div>
-
-</div>
-
-
-<div class="decision-card">
-
-  <div class="k">
-    Confluence
-  </div>
-
-  <div
-    id="confluenceHero"
-    class="v gold"
-  >
-    —
-  </div>
-
-  <div class="s">
-    Weighted engine score
-  </div>
-
-</div>
-
-
-<div class="decision-card">
-
-  <div class="k">
-    Raid Pressure
-  </div>
-
-  <div
-    id="raidPressureHero"
-    class="v"
-  >
-    —
-  </div>
-
-  <div
-    id="raidStageHero"
-    class="s"
-  >
-    —
-  </div>
-
-</div>
-
-
-</div>
-
-</div>
-
-</section>
-
-
-<!-- =======================================================
-     MAIN LAYOUT
-======================================================= -->
-
-<div class="layout">
-
-
-<div class="stack">
-
-
-<!-- CHART -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Live Liquidity Map
-    </div>
-
-    <div class="panel-sub">
-      M5 candles · clusters · trade levels · scenario paths
     </div>
 
   </div>
 
-  <span
-    id="chartTime"
-    class="chip"
-  >
-    —
-  </span>
 
-</div>
-
-
-<div
-  class="chart-wrap"
-  id="chartWrap"
->
-
-  <div
-    id="chart"
-    class="chart"
-  ></div>
-
-  <div
-    id="zones"
-    class="zones"
-  ></div>
-
-  <div
-    id="chartLabels"
-    class="chart-labels"
-  ></div>
-
-  <div class="chart-note">
-    Dashed paths = model scenarios, not guaranteed forecasts.
-  </div>
-
-</div>
-
-</section>
-
-
-<!-- MARKET MATRIX -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Market Intelligence Matrix
-    </div>
-
-    <div class="panel-sub">
-      Structure, volatility and multi-timeframe context
-    </div>
-
-  </div>
-
-</div>
-
-
-<div class="panel-body">
-
-  <div
-    id="metricGrid"
-    class="metric-grid"
-  ></div>
-
-</div>
-
-</section>
-
-
-<!-- LIQUIDITY MAGNETS -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Liquidity Magnet Ranking
-    </div>
-
-    <div class="panel-sub">
-      Strongest pools ranked by strength, distance and directional context
-    </div>
-
-  </div>
-
-</div>
-
-
-<div class="panel-body">
-
-  <div
-    id="liquidityList"
-    class="liquidity-list"
-  ></div>
-
-</div>
-
-</section>
-
-
-<!-- SESSION MAP -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Session Battle Map
-    </div>
-
-    <div class="panel-sub">
-      Asia · London · New York range structure
-    </div>
-
-  </div>
-
-</div>
-
-
-<div class="panel-body">
-
-  <div
-    id="sessionGrid"
-    class="session-grid"
-  ></div>
-
-  <div class="divider"></div>
-
-  <div
-    id="narrative"
-    class="narrative"
-  ></div>
-
-</div>
-
-</section>
-
-
-</div>
-
-
-<!-- =====================================================
-     RIGHT SIDE
-===================================================== -->
-
-<aside class="stack">
-
-
-<!-- CONFLUENCE -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Institutional Confluence
-    </div>
-
-    <div class="panel-sub">
-      Why the engine likes or rejects the setup
-    </div>
-
-  </div>
-
-</div>
-
-
-<div class="panel-body">
-
-
-<div class="big-score">
-
-  <div
-    id="scoreRing"
-    class="score-ring"
-    style="--score:0"
-  >
+  <div class="panel biasPanel">
 
     <div>
 
-      <strong id="scoreValue">
-        0
-      </strong>
+      <div class="biasTitle">
+
+        <span class="eyebrow">
+          Directional engine
+        </span>
+
+        <span
+          id="biasGap"
+          class="eyebrow"
+        >
+          GAP —
+        </span>
+
+      </div>
+
+
+      <div
+        id="biasDirection"
+        class="biasDirection neutral"
+      >
+        NEUTRAL
+      </div>
+
+    </div>
+
+
+    <div>
+
+      <div class="scorebar">
+
+        <i
+          id="scoreMarker"
+          class="scoreMarker"
+          style="left:50%"
+        ></i>
+
+      </div>
+
+
+      <div class="scoreLabels">
+
+        <span id="sellScore">
+          SELL —
+        </span>
+
+        <span id="buyScore">
+          BUY —
+        </span>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="metrics">
+
+  <div class="panel metric">
+
+    <div class="k">
+      Confluence
+    </div>
+
+    <div
+      id="confluence"
+      class="v"
+    >
+      —
+    </div>
+
+    <div class="s">
+      Strong-zone weighted
+    </div>
+
+  </div>
+
+
+  <div class="panel metric">
+
+    <div class="k">
+      Market phase
+    </div>
+
+    <div
+      id="phase"
+      class="v"
+    >
+      —
+    </div>
+
+    <div
+      id="phaseDetail"
+      class="s"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="panel metric">
+
+    <div class="k">
+      Regime
+    </div>
+
+    <div
+      id="regime"
+      class="v"
+    >
+      —
+    </div>
+
+    <div
+      id="trendStrength"
+      class="s"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="panel metric">
+
+    <div class="k">
+      H1 trend
+    </div>
+
+    <div
+      id="h1Trend"
+      class="v"
+    >
+      —
+    </div>
+
+    <div
+      id="h1Score"
+      class="s"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="panel metric">
+
+    <div class="k">
+      H4 trend
+    </div>
+
+    <div
+      id="h4Trend"
+      class="v"
+    >
+      —
+    </div>
+
+    <div
+      id="h4Score"
+      class="s"
+    >
+      —
+    </div>
+
+  </div>
+
+
+  <div class="panel metric">
+
+    <div class="k">
+      Feed age
+    </div>
+
+    <div
+      id="freshness"
+      class="v"
+    >
+      —
+    </div>
+
+    <div
+      id="computeMs"
+      class="s"
+    >
+      —
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="gridMain">
+
+
+  <div class="panel chartPanel">
+
+    <div class="sectionHead">
+
+      <h2>
+        Strong Liquidity Map
+      </h2>
 
       <span>
-        /100
+        Only accepted zones are drawn
       </span>
 
     </div>
 
+
+    <div class="chartWrap">
+
+      <canvas id="chart"></canvas>
+
+
+      <div class="legend">
+
+        <span>
+          BSL strong zone
+        </span>
+
+        <span>
+          SSL strong zone
+        </span>
+
+        <span>
+          Live price
+        </span>
+
+      </div>
+
+    </div>
+
   </div>
 
 
-  <div>
+  <div class="sideStack">
+
+
+    <div class="panel tradeCard">
+
+      <div class="sectionHead">
+
+        <h2>
+          Execution State
+        </h2>
+
+        <span id="tradeConfidence">
+          —
+        </span>
+
+      </div>
+
+
+      <span
+        id="tradeStatus"
+        class="status no"
+      >
+        NO TRADE
+      </span>
+
+
+      <div
+        id="tradeDirection"
+        class="tradeDir neutral"
+      >
+        NEUTRAL
+      </div>
+
+
+      <div
+        id="tradeReason"
+        class="tradeReason"
+      >
+        Waiting for full intelligence.
+      </div>
+
+
+      <div class="tradeGrid">
+
+
+        <div class="tradeCell">
+
+          <span>
+            Entry
+          </span>
+
+          <b id="entry">
+            —
+          </b>
+
+        </div>
+
+
+        <div class="tradeCell">
+
+          <span>
+            Stop
+          </span>
+
+          <b id="stop">
+            —
+          </b>
+
+        </div>
+
+
+        <div class="tradeCell">
+
+          <span>
+            TP1
+          </span>
+
+          <b id="tp1">
+            —
+          </b>
+
+        </div>
+
+
+        <div class="tradeCell">
+
+          <span>
+            TP2
+          </span>
+
+          <b id="tp2">
+            —
+          </b>
+
+        </div>
+
+
+      </div>
+
+    </div>
+
+
+    <div class="panel zonePanel">
+
+      <div class="sectionHead">
+
+        <h2>
+          Institutional-Grade Zones
+        </h2>
+
+        <span id="zoneFilter">
+          Quality ≥ 76
+        </span>
+
+      </div>
+
+
+      <div class="zoneSummary">
+
+        <div class="chip">
+          Mode
+          <b>STRONG ONLY</b>
+        </div>
+
+        <div class="chip">
+          Consumed
+          <b>REMOVED</b>
+        </div>
+
+      </div>
+
+
+      <div
+        id="zones"
+        class="zones"
+      >
+
+        <div class="subtext">
+          Loading strong liquidity zones…
+        </div>
+
+      </div>
+
+    </div>
+
+
+  </div>
+
+</section>
+
+
+<section class="twoCol">
+
+
+  <div class="panel infoPanel">
+
+    <div class="sectionHead">
+
+      <h2>
+        Raid Radar
+      </h2>
+
+      <span>
+        Strong zones only
+      </span>
+
+    </div>
+
 
     <div
-      id="directionHeadline"
-      class="headline"
+      id="raidState"
+      class="bigState"
     >
-      WAITING FOR DATA
+      NO RAID
     </div>
+
 
     <div
-      id="directionCopy"
-      class="copy"
+      id="raidText"
+      class="subtext"
     >
-      Building multi-timeframe context.
+      No strong-zone sweep confirmed yet.
     </div>
+
+
+    <div class="progress">
+
+      <i
+        id="raidProgress"
+        style="width:0%"
+      ></i>
+
+    </div>
+
+
+    <div
+      id="raidRows"
+      style="margin-top:10px"
+    ></div>
 
   </div>
 
-</div>
+
+  <div class="panel infoPanel">
+
+    <div class="sectionHead">
+
+      <h2>
+        Macro + Historical
+      </h2>
+
+      <span>
+        Context, not prediction
+      </span>
+
+    </div>
 
 
-<div class="divider"></div>
+    <div id="macroRows"></div>
 
+    <div id="historyRows"></div>
 
-<div id="confluenceBars">
-</div>
+  </div>
 
-
-</div>
 
 </section>
 
 
-<!-- RAID -->
+<section
+  class="panel infoPanel"
+  style="margin-top:14px"
+>
 
-<section class="panel">
+  <div class="sectionHead">
 
-<div class="panel-head">
+    <h2>
+      Scenario Engine
+    </h2>
 
-  <div>
-
-    <div class="panel-title">
-      Raid & Trap Engine
-    </div>
-
-    <div class="panel-sub">
-      Sweep quality, rejection and trapped positioning
-    </div>
+    <span>
+      Model weights are heuristic
+    </span>
 
   </div>
 
-</div>
 
-
-<div
-  class="panel-body"
-  id="raidPanel"
-></div>
+  <div
+    id="scenarios"
+    class="scenarios"
+  ></div>
 
 </section>
 
 
-<!-- TRADE -->
+<section class="panel narrative">
 
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Trade Construction
-    </div>
-
-    <div class="panel-sub">
-      Only activates when directional agreement is strong enough
-    </div>
-
+  <div class="eyebrow">
+    Session intelligence narrative
   </div>
 
-</div>
-
-
-<div
-  class="panel-body"
-  id="tradePanel"
-></div>
+  <p id="narrative">
+    Waiting for intelligence engine…
+  </p>
 
 </section>
 
 
-<!-- SCENARIOS -->
+<div class="footer">
 
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Scenario Projection
-    </div>
-
-    <div class="panel-sub">
-      Relative model weights — not true probabilities
-    </div>
-
-  </div>
+  Research dashboard only.
+  “Strong” means the zone passed this model's filters;
+  it does not mean price must react there or that a trade
+  will be profitable.
 
 </div>
 
 
-<div
-  class="panel-body"
-  id="scenarioPanel"
-></div>
-
-</section>
-
-
-<!-- HISTORICAL -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Historical Pattern Memory
-    </div>
-
-    <div class="panel-sub">
-      Current setup compared with deep M5 analogues
-    </div>
-
-  </div>
-
 </div>
-
-
-<div
-  class="panel-body"
-  id="historyPanel"
-></div>
-
-</section>
-
-
-<!-- MACRO -->
-
-<section class="panel">
-
-<div class="panel-head">
-
-  <div>
-
-    <div class="panel-title">
-      Macro Pressure
-    </div>
-
-    <div class="panel-sub">
-      Optional FRED context for gold
-    </div>
-
-  </div>
-
-</div>
-
-
-<div
-  class="panel-body"
-  id="macroPanel"
-></div>
-
-</section>
-
-
-</aside>
-
-
-</div>
-
-
-<footer class="footer">
-
-<div>
-
-  <strong>
-    MKAYFX V9
-  </strong>
-
-  · Research intelligence only. Heuristic scores are not guaranteed probabilities or financial advice.
-
-</div>
-
-
-<div>
-
-  Charting powered by
-
-  <a
-    href="https://www.tradingview.com/"
-    target="_blank"
-    rel="noopener"
-  >
-    TradingView Lightweight Charts™
-  </a>.
-
-</div>
-
-</footer>
-
-
-</main>
 
 
 <script>
 
-(() => {
-
-"use strict";
-
-
-/* =========================================================
+/* ================================================================
    HELPERS
-========================================================= */
+================================================================ */
 
 const $ =
   id =>
@@ -2773,47 +2568,40 @@ const fmt =
   (
     value,
     decimals = 2
-  ) => {
-
-    if (
-      !Number.isFinite(
-        Number(
-          value
-        )
+  ) =>
+    Number.isFinite(
+      Number(
+        value
       )
-    ) {
+    )
+      ?
+      Number(
+        value
+      ).toLocaleString(
+        undefined,
+        {
 
-      return "—";
+          minimumFractionDigits:
+            decimals,
 
-    }
+          maximumFractionDigits:
+            decimals
 
-    return Number(
-      value
-    ).toLocaleString(
-      undefined,
-      {
-
-        minimumFractionDigits:
-          decimals,
-
-        maximumFractionDigits:
-          decimals
-
-      }
-    );
-
-  };
+        }
+      )
+      :
+      "—";
 
 
-const esc =
+const escapeHtml =
   value =>
     String(
       value ??
       ""
     ).replace(
       /[&<>'"]/g,
-      character =>
-        ({
+      character => (
+        {
 
           "&":
             "&amp;",
@@ -2830,979 +2618,444 @@ const esc =
           "\"":
             "&quot;"
 
-        })[
+        }[
           character
         ]
+      )
     );
 
-
-const clsFor =
-  value => {
-
-    if (
-      value ===
-        "BULLISH" ||
-      value ===
-        "BULLISH_GOLD"
-    ) {
-
-      return "bull";
-
-    }
-
-
-    if (
-      value ===
-        "BEARISH" ||
-      value ===
-        "BEARISH_GOLD"
-    ) {
-
-      return "bear";
-
-    }
-
-
-    return "neutral";
-
-  };
-
-
-const ago =
-  seconds => {
-
-    if (
-      seconds <
-      60
-    ) {
-
-      return `${seconds}s old`;
-
-    }
-
-
-    if (
-      seconds <
-      3600
-    ) {
-
-      return `${Math.floor(
-        seconds /
-        60
-      )}m old`;
-
-    }
-
-
-    return `${(
-      seconds /
-      3600
-    ).toFixed(
-      1
-    )}h old`;
-
-  };
-
-
-/* =========================================================
-   STATE
-========================================================= */
 
 let state =
   null;
 
 
-let lastFullAt =
-  0;
+let quoteTimer =
+  null;
 
 
-let busy =
-  false;
+let fullTimer =
+  null;
 
 
-let chart;
+let resizeTimer =
+  null;
 
 
-let candleSeries;
+/* ================================================================
+   FEED STATE
+================================================================ */
 
-
-let scenarioSeries =
-  [];
-
-
-let priceLines =
-  [];
-
-
-let resizeObserver;
-
-
-/* =========================================================
-   CONNECTION STATE
-========================================================= */
-
-function setConnection(
+function setFeed(
   ok,
-  text
+  label
 ) {
 
-  $("connectionText")
+  $("liveDot")
+    .classList
+    .toggle(
+      "live",
+      !!ok
+    );
+
+
+  $("feedLabel")
     .textContent =
-      text;
-
-
-  $("statusDot")
-    .style
-    .background =
-      ok
-        ?
-        "var(--green)"
-        :
-        "var(--red)";
-
-
-  $("statusDot")
-    .style
-    .boxShadow =
-      ok
-        ?
-        "0 0 16px var(--green)"
-        :
-        "0 0 16px var(--red)";
+      label;
 
 }
 
 
-/* =========================================================
+/* ================================================================
    ERROR
-========================================================= */
+================================================================ */
 
 function showError(
   message
 ) {
 
-  $("errorBanner")
-    .textContent =
-      message;
+  const box =
+    $("errorBox");
 
-
-  $("errorBanner")
-    .classList
-    .add(
-      "show"
-    );
-
-
-  setConnection(
-    false,
-    "API ERROR"
-  );
-
-}
-
-
-function clearError() {
-
-  $("errorBanner")
-    .classList
-    .remove(
-      "show"
-    );
-
-}
-
-
-/* =========================================================
-   CHART INITIALIZATION
-========================================================= */
-
-function initChart() {
 
   if (
-    !window
-      .LightweightCharts
+    !message
+  ) {
+
+    box.style.display =
+      "none";
+
+    box.textContent =
+      "";
+
+    return;
+
+  }
+
+
+  box.style.display =
+    "block";
+
+
+  box.textContent =
+    message;
+
+}
+
+
+/* ================================================================
+   CLASS HELPERS
+================================================================ */
+
+function biasClass(
+  value
+) {
+
+  return value ===
+    "BULLISH"
+      ?
+      "bull"
+      :
+      value ===
+      "BEARISH"
+        ?
+        "bear"
+        :
+        "neutral";
+
+}
+
+
+function statusClass(
+  value
+) {
+
+  return value ===
+    "READY"
+      ?
+      "ready"
+      :
+      value ===
+      "ARMED"
+        ?
+        "armed"
+        :
+        "no";
+
+}
+
+
+/* ================================================================
+   API FETCH
+================================================================ */
+
+async function fetchJSON(
+  url
+) {
+
+  const response =
+    await fetch(
+      url,
+      {
+
+        cache:
+          "no-store"
+
+      }
+    );
+
+
+  const data =
+    await response.json();
+
+
+  if (
+    !response.ok ||
+    !data.ok
   ) {
 
     throw new Error(
-      "TradingView Lightweight Charts failed to load."
+      data.error ||
+      `Request failed (${response.status})`
     );
 
   }
 
 
-  const wrap =
-    $("chartWrap");
-
-
-  chart =
-    LightweightCharts
-      .createChart(
-        $("chart"),
-        {
-
-          width:
-            wrap.clientWidth,
-
-          height:
-            wrap.clientHeight,
-
-
-          layout: {
-
-            background: {
-
-              type:
-                LightweightCharts
-                  .ColorType
-                  .Solid,
-
-              color:
-                "#070b11"
-
-            },
-
-            textColor:
-              "#697586",
-
-            fontFamily:
-              '-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif',
-
-            fontSize:
-              10
-
-          },
-
-
-          grid: {
-
-            vertLines: {
-
-              color:
-                "rgba(255,255,255,.035)"
-
-            },
-
-            horzLines: {
-
-              color:
-                "rgba(255,255,255,.035)"
-
-            }
-
-          },
-
-
-          rightPriceScale: {
-
-            borderColor:
-              "rgba(255,255,255,.06)",
-
-            scaleMargins: {
-
-              top:
-                .08,
-
-              bottom:
-                .08
-
-            }
-
-          },
-
-
-          timeScale: {
-
-            borderColor:
-              "rgba(255,255,255,.06)",
-
-            timeVisible:
-              true,
-
-            secondsVisible:
-              false,
-
-            rightOffset:
-              6,
-
-            barSpacing:
-              7
-
-          },
-
-
-          crosshair: {
-
-            vertLine: {
-
-              color:
-                "rgba(247,201,72,.28)",
-
-              labelBackgroundColor:
-                "#8c6b16"
-
-            },
-
-            horzLine: {
-
-              color:
-                "rgba(247,201,72,.22)",
-
-              labelBackgroundColor:
-                "#8c6b16"
-
-            }
-
-          },
-
-
-          handleScale:
-            true,
-
-          handleScroll:
-            true
-
-        }
-      );
-
-
-  candleSeries =
-    chart.addSeries(
-      LightweightCharts
-        .CandlestickSeries,
-      {
-
-        upColor:
-          "#21d69b",
-
-        downColor:
-          "#ff5b6e",
-
-        borderVisible:
-          false,
-
-        wickUpColor:
-          "#21d69b",
-
-        wickDownColor:
-          "#ff5b6e",
-
-        priceLineVisible:
-          true,
-
-        lastValueVisible:
-          true
-
-      }
-    );
-
-
-  resizeObserver =
-    new ResizeObserver(
-      () => {
-
-        chart.applyOptions(
-          {
-
-            width:
-              wrap.clientWidth,
-
-            height:
-              wrap.clientHeight
-
-          }
-        );
-
-
-        requestAnimationFrame(
-          drawZones
-        );
-
-      }
-    );
-
-
-  resizeObserver.observe(
-    wrap
-  );
-
-
-  chart
-    .timeScale()
-    .subscribeVisibleLogicalRangeChange(
-      () =>
-        requestAnimationFrame(
-          drawZones
-        )
-    );
+  return data;
 
 }
 
 
-/* =========================================================
-   CLEAR ANNOTATIONS
-========================================================= */
+/* ================================================================
+   FULL ENGINE
+================================================================ */
 
-function clearChartAnnotations() {
+async function loadFull() {
 
-  for (
-    const series
-    of scenarioSeries
-  ) {
+  try {
 
-    try {
+    setFeed(
+      false,
+      "ANALYSING"
+    );
 
-      chart.removeSeries(
-        series
+
+    const data =
+      await fetchJSON(
+        `/api/xau?mode=full&t=${Date.now()}`
       );
 
-    }
 
-    catch {}
+    state =
+      data;
+
+
+    render(
+      data
+    );
+
+
+    showError(
+      ""
+    );
+
+
+    setFeed(
+      true,
+      "CONNECTED"
+    );
 
   }
 
-
-  scenarioSeries =
-    [];
-
-
-  for (
-    const line
-    of priceLines
+  catch (
+    error
   ) {
 
-    try {
+    showError(
+      `Gold intelligence error: ${error.message}`
+    );
 
-      candleSeries
-        .removePriceLine(
-          line
-        );
 
-    }
-
-    catch {}
+    setFeed(
+      false,
+      "ERROR"
+    );
 
   }
-
-
-  priceLines =
-    [];
 
 }
 
 
-/* =========================================================
-   PRICE LINE
-========================================================= */
+/* ================================================================
+   QUOTE UPDATE
+================================================================ */
 
-function addPriceLine(
-  price,
-  title,
-  color,
-  style = 2,
-  width = 1
-) {
+async function loadQuote() {
 
-  if (
-    !Number.isFinite(
-      Number(
-        price
-      )
-    )
-  ) {
+  try {
 
-    return;
-
-  }
-
-
-  const line =
-    candleSeries
-      .createPriceLine(
-        {
-
-          price:
-            Number(
-              price
-            ),
-
-          color,
-
-          lineWidth:
-            width,
-
-          lineStyle:
-            style,
-
-          axisLabelVisible:
-            true,
-
-          title
-
-        }
+    const quote =
+      await fetchJSON(
+        `/api/xau?mode=quote&t=${Date.now()}`
       );
 
 
-  priceLines.push(
-    line
-  );
-
-}
-
-
-/* =========================================================
-   RENDER CHART
-========================================================= */
-
-function renderChart(
-  data
-) {
-
-  if (
-    !chart
-  ) {
-
-    initChart();
-
-  }
-
-
-  const candles =
-    data.chart
-      ?.candles ||
-    [];
-
-
-  candleSeries
-    .setData(
-      candles
-    );
-
-
-  clearChartAnnotations();
-
-
-  const topClusters =
-    data.chart
-      ?.importantClusters ||
-    [];
-
-
-  topClusters
-    .slice(
-      0,
-      6
-    )
-    .forEach(
-      (
-        cluster,
-        index
-      ) => {
-
-        addPriceLine(
-
-          cluster.center,
-
-          `${cluster.side} ${cluster.magnetScore}`,
-
-          cluster.side ===
-          "BSL"
-            ?
-            "rgba(255,91,110,.74)"
-            :
-            "rgba(33,214,155,.74)",
-
-          index <
-          2
-            ?
-            0
-            :
-            2,
-
-          index <
-          2
-            ?
-            2
-            :
-            1
-
-        );
-
-      }
-    );
-
-
-  if (
-    data.trade
-      ?.status &&
-    data.trade
-      .status !==
-      "NO_TRADE"
-  ) {
-
-    addPriceLine(
-      data.trade
-        .referenceEntry,
-      "ENTRY",
-      "#f7c948",
-      0,
-      2
-    );
-
-
-    addPriceLine(
-      data.trade.stop,
-      "SL",
-      "#ff5b6e",
-      0,
-      2
-    );
-
-
-    addPriceLine(
-      data.trade.tp1,
-      "TP1",
-      "#21d69b",
-      2,
-      1
-    );
-
-
-    addPriceLine(
-      data.trade.tp2,
-      "TP2",
-      "#45d8e6",
-      2,
-      1
-    );
-
-  }
-
-
-  const scenarioColors =
-    [
-
-      "#f7c948",
-
-      "#9d7bff",
-
-      "#55a8ff"
-
-    ];
-
-
-  (
-    data.scenarios ||
-    []
-  ).forEach(
-    (
-      scenario,
-      index
-    ) => {
-
-      const series =
-        chart.addSeries(
-          LightweightCharts
-            .LineSeries,
-          {
-
-            color:
-              scenarioColors[
-                index
-              ] ||
-              "#75808f",
-
-            lineWidth:
-              index ===
-              0
-                ?
-                2
-                :
-                1,
-
-            lineStyle:
-              LightweightCharts
-                .LineStyle
-                .Dashed,
-
-            lastValueVisible:
-              false,
-
-            priceLineVisible:
-              false,
-
-            crosshairMarkerVisible:
-              false
-
-          }
-        );
-
-
-      const first =
-        candles.length
-          ?
-          {
-
-            time:
-              candles[
-                candles.length -
-                1
-              ].time,
-
-            value:
-              candles[
-                candles.length -
-                1
-              ].close
-
-          }
-          :
-          null;
-
-
-      series.setData(
-        first
-          ?
-          [
-            first,
-            ...(
-              scenario.points ||
-              []
-            )
-          ]
-          :
-          (
-            scenario.points ||
-            []
-          )
-      );
-
-
-      scenarioSeries.push(
-        series
-      );
-
-    }
-  );
-
-
-  chart
-    .timeScale()
-    .fitContent();
-
-
-  $("chartTime")
-    .textContent =
-      new Date(
-        (
-          data.data
-            ?.lastCandleTime ||
-          0
-        ) *
-        1000
-      ).toLocaleString();
-
-
-  $("chartLabels")
-    .innerHTML =
-      topClusters
-        .slice(
-          0,
+    $("price")
+      .textContent =
+        fmt(
+          quote.price,
           3
-        )
-        .map(
-          (
-            cluster,
-            index
-          ) =>
-            `<span class="chip">#${
-              index +
-              1
-            } ${
-              esc(
-                cluster.side
-              )
-            } ${
-              fmt(
-                cluster.center,
-                2
-              )
-            } · ${
-              fmt(
-                cluster.magnetScore,
-                0
-              )
-            }</span>`
-        )
-        .join(
-          ""
         );
 
 
-  setTimeout(
-    drawZones,
-    80
-  );
+    if (
+      state
+    ) {
 
-}
+      state.data.price =
+        quote.price;
 
 
-/* =========================================================
-   DRAW ZONE OVERLAYS
-========================================================= */
+      drawChart(
+        state
+      );
 
-function drawZones() {
-
-  if (
-    !state ||
-    !candleSeries
-  ) {
-
-    return;
+    }
 
   }
 
+  catch {
 
-  const layer =
-    $("zones");
+    /*
+       Full endpoint remains primary.
+    */
 
-
-  layer.innerHTML =
-    "";
-
-
-  (
-    state.chart
-      ?.importantClusters ||
-    []
-  )
-    .slice(
-      0,
-      4
-    )
-    .forEach(
-      cluster => {
-
-        const top =
-          candleSeries
-            .priceToCoordinate(
-              cluster.high
-            );
-
-
-        const bottom =
-          candleSeries
-            .priceToCoordinate(
-              cluster.low
-            );
-
-
-        if (
-          top ==
-            null ||
-          bottom ==
-            null
-        ) {
-
-          return;
-
-        }
-
-
-        const div =
-          document
-            .createElement(
-              "div"
-            );
-
-
-        div.className =
-          `zone ${cluster.side.toLowerCase()}`;
-
-
-        div.style.top =
-          `${Math.min(
-            top,
-            bottom
-          )}px`;
-
-
-        div.style.height =
-          `${Math.max(
-            3,
-            Math.abs(
-              bottom -
-              top
-            )
-          )}px`;
-
-
-        layer.appendChild(
-          div
-        );
-
-      }
-    );
+  }
 
 }
 
 
-/* =========================================================
-   HERO
-========================================================= */
+/* ================================================================
+   MAIN RENDER
+================================================================ */
 
-function renderHero(
+function render(
   data
 ) {
 
   $("price")
-    .innerHTML =
-      `${fmt(
+    .textContent =
+      fmt(
         data.data.price,
-        2
-      )} <small>USD</small>`;
+        3
+      );
 
 
-  $("biasBadge")
+  $("engineVersion")
     .textContent =
-      data.bias.direction;
+      `V${data.version}`;
 
 
-  $("biasBadge")
-    .className =
-      `bias-badge ${clsFor(
-        data.bias.direction
-      )}`;
-
-
-  $("freshness")
+  $("updatedAt")
     .textContent =
-      `Data ${ago(
-        data.data
-          .freshnessSeconds ||
-        0
-      )}`;
+      new Date(
+        data.generatedAt
+      ).toLocaleTimeString(
+        [],
+        {
+
+          hour:
+            "2-digit",
+
+          minute:
+            "2-digit",
+
+          second:
+            "2-digit"
+
+        }
+      );
 
 
-  $("atrChip")
+  $("atr5")
     .textContent =
-      `M5 ATR ${fmt(
+      fmt(
         data.data.atrM5,
-        2
-      )}`;
+        3
+      );
 
 
-  $("rsiChip")
+  $("atr15")
     .textContent =
-      `M5 RSI ${fmt(
+      fmt(
+        data.data.atrM15,
+        3
+      );
+
+
+  $("rsi5")
+    .textContent =
+      fmt(
         data.data.rsiM5,
+        1
+      );
+
+
+  $("rsi15")
+    .textContent =
+      fmt(
+        data.data.rsiM15,
+        1
+      );
+
+
+  $("zoneCount")
+    .textContent =
+      data
+        .liquidity
+        .clusters
+        .length;
+
+
+  $("rejectedCount")
+    .textContent =
+      data
+        .liquidity
+        .rejectedClusterCount ??
+      0;
+
+
+  const bias =
+    data.bias;
+
+
+  const direction =
+    $("biasDirection");
+
+
+  direction.textContent =
+    bias.direction;
+
+
+  direction.className =
+    `biasDirection ${biasClass(
+      bias.direction
+    )}`;
+
+
+  $("biasGap")
+    .textContent =
+      `GAP ${fmt(
+        bias.gap,
         1
       )}`;
 
 
-  $("engineChip")
+  $("sellScore")
     .textContent =
-      `${data.version} · ${data.computationMs}ms`;
+      `SELL ${fmt(
+        bias.sellScore,
+        1
+      )}`;
+
+
+  $("buyScore")
+    .textContent =
+      `BUY ${fmt(
+        bias.buyScore,
+        1
+      )}`;
+
+
+  const marker =
+    50 +
+    (
+      bias.buyScore -
+      bias.sellScore
+    ) /
+    2;
+
+
+  $("scoreMarker")
+    .style
+    .left =
+      `${
+        Math.max(
+          3,
+          Math.min(
+            97,
+            marker
+          )
+        )
+      }%`;
+
+
+  $("confluence")
+    .textContent =
+      fmt(
+        data.confluence.total,
+        1
+      );
 
 
   $("phase")
@@ -3810,7 +3063,7 @@ function renderHero(
       data.phase.phase;
 
 
-  $("phaseScore")
+  $("phaseDetail")
     .textContent =
       `${fmt(
         data.phase.score,
@@ -3823,803 +3076,227 @@ function renderHero(
       data.regime.label;
 
 
-  $("regimeSub")
+  $("trendStrength")
     .textContent =
-      `${data.regime.trend} · vol ${fmt(
-        data.regime
-          .volatilityRatio,
-        2
-      )}×`;
-
-
-  $("confluenceHero")
-    .textContent =
-      `${fmt(
-        data.confluence.total,
-        0
-      )}/100`;
-
-
-  $("raidPressureHero")
-    .textContent =
-      `${fmt(
-        data.raid
-          .tracking
-          ?.pressure,
-        0
-      )}/100`;
-
-
-  $("raidStageHero")
-    .textContent =
-      data.raid
-        .tracking
-        ?.stage ||
-      "NO ACTIVE APPROACH";
-
-}
-
-
-/* =========================================================
-   METRICS
-========================================================= */
-
-function renderMetrics(
-  data
-) {
-
-  const items =
-    [
-
-      [
-        "Buy Engine",
-        `${fmt(
-          data.bias.buyScore,
-          1
-        )}/100`,
-        data.bias.direction ===
-        "BULLISH"
-          ?
-          "Dominant"
-          :
-          "Directional vote"
-      ],
-
-      [
-        "Sell Engine",
-        `${fmt(
-          data.bias.sellScore,
-          1
-        )}/100`,
-        data.bias.direction ===
-        "BEARISH"
-          ?
-          "Dominant"
-          :
-          "Directional vote"
-      ],
-
-      [
-        "H1 Trend",
-        data.trend.h1.bias,
-        `EMA20 ${fmt(
-          data.trend
-            .h1
-            .ema20,
-          1
-        )}`
-      ],
-
-      [
-        "H4 Trend",
-        data.trend.h4.bias,
-        `EMA50 ${fmt(
-          data.trend
-            .h4
-            .ema50,
-          1
-        )}`
-      ],
-
-      [
-        "M15 ATR",
-        fmt(
-          data.data.atrM15,
-          2
-        ),
-        `Vol ratio ${fmt(
-          data.regime
-            .volatilityRatio,
-          2
-        )}×`
-      ],
-
-      [
-        "RSI M15",
-        fmt(
-          data.data.rsiM15,
-          1
-        ),
-        "Momentum context"
-      ],
-
-      [
-        "History Bias",
-        data.historical
-          .bias ||
-        "—",
-        `${data.historical.matches || 0} matches`
-      ],
-
-      [
-        "Macro",
-        data.macro
-          .bias ||
-        "NEUTRAL",
-        `${fmt(
-          data.macro.score,
-          0
-        )}/100 gold pressure`
-      ]
-
-    ];
-
-
-  $("metricGrid")
-    .innerHTML =
-      items
-        .map(
-          (
-            [
-              label,
-              value,
-              foot
-            ]
-          ) =>
-            `<div class="metric">
-
-              <div class="label">
-                ${esc(label)}
-              </div>
-
-              <div class="value ${clsFor(value)}">
-                ${esc(value)}
-              </div>
-
-              <div class="foot">
-                ${esc(foot)}
-              </div>
-
-            </div>`
-        )
-        .join(
-          ""
-        );
-
-}
-
-
-/* =========================================================
-   CONFLUENCE
-========================================================= */
-
-function renderConfluence(
-  data
-) {
-
-  $("scoreRing")
-    .style
-    .setProperty(
-      "--score",
-      Math.max(
-        0,
-        Math.min(
-          100,
-          data.confluence
-            .total ||
-          0
-        )
-      )
-    );
-
-
-  $("scoreValue")
-    .textContent =
-      fmt(
-        data.confluence.total,
-        0
-      );
-
-
-  $("directionHeadline")
-    .textContent =
-      `${data.bias.direction} · GAP ${fmt(
-        data.bias.gap,
+      `Trend strength ${fmt(
+        data.regime.trendStrength,
         1
       )}`;
 
 
-  $("directionHeadline")
-    .className =
-      `headline ${clsFor(
-        data.bias.direction
+  $("h1Trend")
+    .textContent =
+      data.trend.h1.bias;
+
+
+  $("h1Score")
+    .textContent =
+      `score ${fmt(
+        data.trend.h1.score,
+        2
       )}`;
 
 
-  const reasons =
-    data.bias.direction ===
-    "BULLISH"
-      ?
-      data.bias.reasonsBuy
-      :
-      data.bias.direction ===
-      "BEARISH"
-        ?
-        data.bias.reasonsSell
-        :
-        [
-          "No side currently has enough agreement."
-        ];
-
-
-  $("directionCopy")
+  $("h4Trend")
     .textContent =
-      reasons
-        .slice(
-          0,
-          3
-        )
-        .join(
-          " · "
-        );
+      data.trend.h4.bias;
 
 
-  const names =
-    {
-
-      liquidity:
-        "Liquidity",
-
-      structure:
-        "Structure",
-
-      displacement:
-        "Displacement",
-
-      session:
-        "Session",
-
-      historical:
-        "Historical Edge",
-
-      macro:
-        "Macro",
-
-      regime:
-        "Regime",
-
-      trap:
-        "Trap Evidence"
-
-    };
+  $("h4Score")
+    .textContent =
+      `combined ${data.trend.combined}`;
 
 
-  $("confluenceBars")
-    .innerHTML =
-      Object.entries(
-        data.confluence
-          .components ||
-        {}
-      )
-        .map(
-          (
-            [
-              key,
-              value
-            ],
-            index
-          ) =>
-            `<div class="bar-row">
+  $("freshness")
+    .textContent =
+      `${data.data.freshnessSeconds}s`;
 
-              <div class="bar-top">
 
-                <span>
-                  ${names[key] || key}
-                </span>
+  $("computeMs")
+    .textContent =
+      `engine ${data.computationMs} ms`;
 
-                <strong>
-                  ${fmt(value,0)}
-                </strong>
 
-              </div>
+  $("zoneFilter")
+    .textContent =
+      `Quality ≥ ${data.filters.minQuality}`;
 
-              <div class="track">
 
-                <div
-                  class="fill ${
-                    index === 1
-                      ?
-                      "blue"
-                      :
-                      index === 4
-                        ?
-                        "violet"
-                        :
-                        ""
-                  }"
-                  style="width:${Math.max(
-                    0,
-                    Math.min(
-                      100,
-                      value
-                    )
-                  )}%"
-                ></div>
+  renderTrade(
+    data.trade
+  );
 
-              </div>
 
-            </div>`
-        )
-        .join(
-          ""
-        );
+  renderZones(
+    data.liquidity.clusters
+  );
+
+
+  renderRaid(
+    data.raid,
+    data.trap
+  );
+
+
+  renderContext(
+    data.macro,
+    data.historical
+  );
+
+
+  renderScenarios(
+    data.scenarios
+  );
+
+
+  $("narrative")
+    .textContent =
+      data.narrative;
+
+
+  drawChart(
+    data
+  );
 
 }
 
 
-/* =========================================================
-   LIQUIDITY MAGNETS
-========================================================= */
+/* ================================================================
+   TRADE
+================================================================ */
 
-function renderLiquidity(
-  data
+function renderTrade(
+  trade
 ) {
 
-  const list =
-    (
-      data.liquidity
-        .clusters ||
-      []
-    ).slice(
-      0,
-      9
+  const status =
+    trade?.status ||
+    "NO_TRADE";
+
+
+  const statusElement =
+    $("tradeStatus");
+
+
+  statusElement.textContent =
+    status.replaceAll(
+      "_",
+      " "
     );
 
 
-  $("liquidityList")
-    .innerHTML =
-      list.length
+  statusElement.className =
+    `status ${statusClass(
+      status
+    )}`;
+
+
+  const direction =
+    trade?.direction ||
+    "NEUTRAL";
+
+
+  const directionElement =
+    $("tradeDirection");
+
+
+  directionElement.textContent =
+    direction;
+
+
+  directionElement.className =
+    `tradeDir ${biasClass(
+      direction
+    )}`;
+
+
+  $("tradeReason")
+    .textContent =
+      trade?.reason ||
+      "No execution state.";
+
+
+  $("tradeConfidence")
+    .textContent =
+      trade?.confidenceScore !=
+      null
         ?
-        list
-          .map(
-            (
-              cluster,
-              index
-            ) => {
-
-              const sources =
-                (
-                  cluster.sources ||
-                  []
-                )
-                  .slice(
-                    0,
-                    3
-                  )
-                  .map(
-                    source =>
-                      source.name
-                  )
-                  .join(
-                    " + "
-                  );
-
-
-              return `
-
-              <div class="liq">
-
-                <div class="rank">
-                  #${index + 1}
-                </div>
-
-                <div>
-
-                  <div class="name ${
-                    cluster.side === "BSL"
-                      ?
-                      "bear"
-                      :
-                      "bull"
-                  }">
-
-                    ${esc(cluster.side)}
-                    ·
-                    ${fmt(cluster.center,2)}
-
-                  </div>
-
-                  <div class="desc">
-
-                    ${esc(sources)}
-                    ·
-                    ${fmt(cluster.distanceAtr,2)}
-                    ATR away
-
-                  </div>
-
-                </div>
-
-                <div class="num">
-
-                  <strong>
-                    ${fmt(cluster.magnetScore,0)}
-                  </strong>
-
-                  <span>
-                    MAGNET
-                  </span>
-
-                </div>
-
-              </div>
-
-              `;
-
-            }
-          )
-          .join(
-            ""
-          )
+        `${fmt(
+          trade.confidenceScore,
+          1
+        )}/100`
         :
-        `<div class="empty">
-          No liquidity clusters available.
-        </div>`;
+        "—";
+
+
+  $("entry")
+    .textContent =
+      trade?.entryZone
+        ?
+        `${fmt(
+          trade.entryZone[
+            0
+          ],
+          3
+        )} – ${fmt(
+          trade.entryZone[
+            1
+          ],
+          3
+        )}`
+        :
+        "—";
+
+
+  $("stop")
+    .textContent =
+      fmt(
+        trade?.stop,
+        3
+      );
+
+
+  $("tp1")
+    .textContent =
+      fmt(
+        trade?.tp1,
+        3
+      );
+
+
+  $("tp2")
+    .textContent =
+      fmt(
+        trade?.tp2,
+        3
+      );
 
 }
 
 
-/* =========================================================
-   RAID PANEL
-========================================================= */
+/* ================================================================
+   STRONG ZONES
+================================================================ */
 
-function renderRaid(
-  data
+function renderZones(
+  zones
 ) {
 
-  const raid =
-    data.raid
-      .latestConfirmed;
-
-
-  const tracking =
-    data.raid
-      .tracking;
-
-
-  const trap =
-    data.trap;
-
-
-  let html =
-    "";
+  const root =
+    $("zones");
 
 
   if (
-    raid
+    !zones?.length
   ) {
 
-    html += `
-
-    <div class="big-score">
-
-      <div
-        class="score-ring"
-        style="--score:${raid.quality}"
-      >
-
-        <div>
-
-          <strong>
-            ${fmt(raid.quality,0)}
-          </strong>
-
-          <span>
-            RAID
-          </span>
-
-        </div>
-
+    root.innerHTML =
+      `
+      <div class="subtext">
+        No zone currently passes the strong-liquidity filter.
+        The engine will stay selective instead of displaying weak levels.
       </div>
-
-
-      <div>
-
-        <div class="headline ${clsFor(
-          raid.directionAfterRaid
-        )}">
-
-          ${esc(raid.side)}
-          RAID CONFIRMED
-
-        </div>
-
-        <div class="copy">
-
-          ${raid.barsAgo}
-          M5 bars ago
-
-          · penetration
-          ${fmt(
-            raid.penetrationAtr,
-            2
-          )}
-          ATR
-
-          · displacement
-          ${fmt(
-            raid.displacementAtr,
-            2
-          )}
-          ATR.
-
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="divider"></div>
-
-
-    <div class="bar-row">
-
-      <div class="bar-top">
-
-        <span>
-          Reversal evidence
-        </span>
-
-        <strong>
-          ${fmt(
-            raid.reversalEvidence,
-            0
-          )}
-        </strong>
-
-      </div>
-
-      <div class="track">
-
-        <div
-          class="fill green"
-          style="width:${raid.reversalEvidence}%"
-        ></div>
-
-      </div>
-
-    </div>
-
-
-    <div class="bar-row">
-
-      <div class="bar-top">
-
-        <span>
-          Continuation evidence
-        </span>
-
-        <strong>
-          ${fmt(
-            raid.continuationEvidence,
-            0
-          )}
-        </strong>
-
-      </div>
-
-      <div class="track">
-
-        <div
-          class="fill red"
-          style="width:${raid.continuationEvidence}%"
-        ></div>
-
-      </div>
-
-    </div>
-
-    `;
-
-  }
-
-  else {
-
-    html += `
-
-    <div class="empty">
-      No confirmed sweep in the recent M5 scan.
-    </div>
-
-    `;
-
-  }
-
-
-  if (
-    tracking
-  ) {
-
-    html += `
-
-    <div class="divider"></div>
-
-
-    <div class="headline">
-
-      ${esc(tracking.stage)}
-      ·
-      ${fmt(
-        tracking.pressure,
-        0
-      )}/100
-
-    </div>
-
-
-    <div class="copy">
-
-      Tracking
-      ${esc(tracking.side)}
-      at
-      ${fmt(
-        tracking.level,
-        2
-      )}
-
-      ·
-      ${fmt(
-        tracking.distanceAtr,
-        2
-      )}
-      ATR away
-
-      ${
-        tracking.velocity
-          ?.toward &&
-        tracking.velocity
-          .etaMinutes
-          ?
-          ` · estimated contact ${fmt(
-            tracking.velocity.etaMinutes,
-            0
-          )} min at current velocity`
-          :
-          ""
-      }.
-
-    </div>
-
-    `;
-
-  }
-
-
-  html += `
-
-  <div class="divider"></div>
-
-
-  <div class="headline ${
-    trap.active
-      ?
-      clsFor(
-        trap.direction
-      )
-      :
-      "neutral"
-  }">
-
-    ${
-      trap.active
-        ?
-        esc(
-          trap.type
-        )
-        :
-        "NO ACTIVE TRAP"
-    }
-
-  </div>
-
-
-  <div class="copy">
-
-    ${esc(
-      trap.reason
-    )}
-
-    ${
-      trap.active
-        ?
-        ` Strength ${fmt(
-          trap.strength,
-          0
-        )}/100.`
-        :
-        ""
-    }
-
-  </div>
-
-  `;
-
-
-  $("raidPanel")
-    .innerHTML =
-      html;
-
-}
-
-
-/* =========================================================
-   TRADE
-========================================================= */
-
-function renderTrade(
-  data
-) {
-
-  const trade =
-    data.trade;
-
-
-  const className =
-    String(
-      trade.status ||
-      "NO_TRADE"
-    ).toLowerCase();
-
-
-  if (
-    trade.status ===
-    "NO_TRADE"
-  ) {
-
-    $("tradePanel")
-      .innerHTML =
-        `
-
-        <div class="trade no_trade">
-
-          <div class="trade-head">
-
-            <span class="trade-status">
-              NO TRADE
-            </span>
-
-            <span class="neutral">
-              WAIT
-            </span>
-
-          </div>
-
-
-          <div class="trade-dir">
-            STAND ASIDE
-          </div>
-
-
-          <div class="copy">
-            ${esc(
-              trade.reason
-            )}
-          </div>
-
-        </div>
-
-        `;
+      `;
 
 
     return;
@@ -4627,175 +3304,441 @@ function renderTrade(
   }
 
 
-  $("tradePanel")
-    .innerHTML =
-      `
+  root.innerHTML =
+    zones
+      .slice(
+        0,
+        8
+      )
+      .map(
+        zone => {
 
-      <div class="trade ${className}">
-
-        <div class="trade-head">
-
-          <span class="trade-status">
-            ${esc(
-              trade.status
-            )}
-          </span>
-
-          <span class="${clsFor(
-            trade.direction
-          )}">
-            ${fmt(
-              trade.confidenceScore,
-              0
-            )}/100
-          </span>
-
-        </div>
+          const source =
+            zone.sources
+              .map(
+                item =>
+                  item.name
+              )
+              .join(
+                " · "
+              );
 
 
-        <div class="trade-dir ${clsFor(
-          trade.direction
-        )}">
+          return `
+          <div class="zone ${zone.side.toLowerCase()}">
 
-          ${esc(
-            trade.direction
-          )}
-          IDEA
+            <div class="grade">
+              ${escapeHtml(zone.grade)}
+            </div>
 
-        </div>
+            <div class="zoneName">
 
+              <b>
+                ${escapeHtml(zone.side)}
+                ·
+                ${escapeHtml(zone.state)}
+              </b>
 
-        <div class="copy">
-          ${esc(
-            trade.reason
-          )}
-        </div>
+              <span>
+                ${escapeHtml(source)}
+              </span>
 
+            </div>
 
-        <div class="trade-grid">
+            <div class="zonePrice">
 
+              <b>
+                ${fmt(zone.center,3)}
+              </b>
 
-          <div class="trade-cell">
+              <span>
+                ${fmt(zone.distanceAtr,2)} ATR away
+              </span>
 
-            <span>
-              Entry zone
-            </span>
+            </div>
 
-            <strong>
+            <div class="zoneScore">
 
-              ${fmt(
-                trade.entryZone[0],
-                2
-              )}
+              <b>
+                ${fmt(zone.quality,0)}
+              </b>
 
-              –
+              <span>
+                quality
+              </span>
 
-              ${fmt(
-                trade.entryZone[1],
-                2
-              )}
-
-            </strong>
+            </div>
 
           </div>
+          `;
 
-
-          <div class="trade-cell">
-
-            <span>
-              Invalidation
-            </span>
-
-            <strong class="bear">
-              ${fmt(
-                trade.stop,
-                2
-              )}
-            </strong>
-
-          </div>
-
-
-          <div class="trade-cell">
-
-            <span>
-              TP1 · 1.5R
-            </span>
-
-            <strong class="bull">
-              ${fmt(
-                trade.tp1,
-                2
-              )}
-            </strong>
-
-          </div>
-
-
-          <div class="trade-cell">
-
-            <span>
-              TP2 ·
-              ${fmt(
-                trade.rrToTp2,
-                2
-              )}R
-            </span>
-
-            <strong class="bull">
-              ${fmt(
-                trade.tp2,
-                2
-              )}
-            </strong>
-
-          </div>
-
-
-        </div>
-
-      </div>
-
-      `;
+        }
+      )
+      .join(
+        ""
+      );
 
 }
 
 
-/* =========================================================
-   SCENARIOS
-========================================================= */
+/* ================================================================
+   RAID RADAR
+================================================================ */
 
-function renderScenarios(
-  data
+function renderRaid(
+  raid,
+  trap
 ) {
 
-  $("scenarioPanel")
+  const latest =
+    raid?.latestConfirmed;
+
+
+  const tracking =
+    raid?.tracking;
+
+
+  if (
+    latest
+  ) {
+
+    $("raidState")
+      .textContent =
+        `${latest.side} RAID CONFIRMED`;
+
+
+    $("raidText")
+      .textContent =
+        `${latest.directionAfterRaid} reaction from a ${latest.zoneGrade} zone. Reversal evidence ${fmt(
+          latest.reversalEvidence,
+          1
+        )}/100.`;
+
+
+    $("raidProgress")
+      .style
+      .width =
+        `${Math.min(
+          100,
+          latest.reversalEvidence
+        )}%`;
+
+  }
+
+  else if (
+    tracking
+  ) {
+
+    $("raidState")
+      .textContent =
+        tracking.stage;
+
+
+    $("raidText")
+      .textContent =
+        `Tracking ${tracking.side} strong zone at ${fmt(
+          tracking.level,
+          3
+        )} · ${fmt(
+          tracking.distanceAtr,
+          2
+        )} ATR away.`;
+
+
+    $("raidProgress")
+      .style
+      .width =
+        `${Math.min(
+          100,
+          tracking.pressure
+        )}%`;
+
+  }
+
+  else {
+
+    $("raidState")
+      .textContent =
+        "NO STRONG ZONE";
+
+
+    $("raidText")
+      .textContent =
+        "No accepted strong liquidity zone is close enough to track.";
+
+
+    $("raidProgress")
+      .style
+      .width =
+        "0%";
+
+  }
+
+
+  const rows =
+    [];
+
+
+  if (
+    tracking
+  ) {
+
+    rows.push(
+
+      [
+        "Pressure",
+        `${fmt(
+          tracking.pressure,
+          1
+        )}/100`
+      ],
+
+      [
+        "Zone grade",
+        tracking.grade
+      ],
+
+      [
+        "Velocity",
+        `${fmt(
+          tracking.velocity
+            ?.perMinute,
+          3
+        )}/min`
+      ],
+
+      [
+        "ETA",
+        tracking.velocity
+          ?.etaMinutes !=
+        null
+          ?
+          `${fmt(
+            tracking.velocity.etaMinutes,
+            1
+          )} min`
+          :
+          "—"
+      ]
+
+    );
+
+  }
+
+
+  if (
+    trap
+  ) {
+
+    rows.push(
+
+      [
+        "Trap",
+        trap.active
+          ?
+          trap.type
+          :
+          "NONE"
+      ],
+
+      [
+        "Trap strength",
+        `${fmt(
+          trap.strength,
+          1
+        )}/100`
+      ]
+
+    );
+
+  }
+
+
+  $("raidRows")
+    .innerHTML =
+      rows
+        .map(
+          (
+            [
+              key,
+              value
+            ]
+          ) =>
+            `
+            <div class="kv">
+              <span>${escapeHtml(key)}</span>
+              <b>${escapeHtml(value)}</b>
+            </div>
+            `
+        )
+        .join(
+          ""
+        );
+
+}
+
+
+/* ================================================================
+   MACRO + HISTORY
+================================================================ */
+
+function renderContext(
+  macro,
+  history
+) {
+
+  $("macroRows")
+    .innerHTML =
+      [
+
+        [
+          "Macro bias",
+          macro?.bias ||
+          "NEUTRAL"
+        ],
+
+        [
+          "Macro score",
+          `${fmt(
+            macro?.score,
+            1
+          )}`
+        ],
+
+        [
+          "Real 10Y",
+          fmt(
+            macro
+              ?.data
+              ?.real10Y,
+            2
+          )
+        ],
+
+        [
+          "Nominal 10Y",
+          fmt(
+            macro
+              ?.data
+              ?.nominal10Y,
+            2
+          )
+        ]
+
+      ]
+        .map(
+          (
+            [
+              key,
+              value
+            ]
+          ) =>
+            `
+            <div class="kv">
+              <span>${escapeHtml(key)}</span>
+              <b>${escapeHtml(value)}</b>
+            </div>
+            `
+        )
+        .join(
+          ""
+        );
+
+
+  $("historyRows")
+    .innerHTML =
+      [
+
+        [
+          "Historical matches",
+          history?.matches ??
+          0
+        ],
+
+        [
+          "History bias",
+          history?.bias ||
+          "—"
+        ],
+
+        [
+          "Bull target hit",
+          history
+            ?.bullishTargetHitPct !=
+          null
+            ?
+            `${fmt(
+              history.bullishTargetHitPct,
+              1
+            )}%`
+            :
+            "—"
+        ],
+
+        [
+          "Bear target hit",
+          history
+            ?.bearishTargetHitPct !=
+          null
+            ?
+            `${fmt(
+              history.bearishTargetHitPct,
+              1
+            )}%`
+            :
+            "—"
+        ]
+
+      ]
+        .map(
+          (
+            [
+              key,
+              value
+            ]
+          ) =>
+            `
+            <div class="kv">
+              <span>${escapeHtml(key)}</span>
+              <b>${escapeHtml(value)}</b>
+            </div>
+            `
+        )
+        .join(
+          ""
+        );
+
+}
+
+
+/* ================================================================
+   SCENARIOS
+================================================================ */
+
+function renderScenarios(
+  scenarios
+) {
+
+  $("scenarios")
     .innerHTML =
       (
-        data.scenarios ||
+        scenarios ||
         []
       )
         .map(
           scenario =>
             `
-
             <div class="scenario">
 
-              <div class="scenario-top">
+              <div class="scenarioTop">
 
-                <span class="scenario-id">
-                  ${esc(
-                    scenario.id
-                  )}
-                </span>
-
-                <span class="scenario-name">
-                  ${esc(
+                <b>
+                  ${escapeHtml(
                     scenario.name
                   )}
-                </span>
+                </b>
 
-                <span class="scenario-weight">
+                <span class="weight">
                   ${fmt(
                     scenario.modelWeightPct,
                     1
@@ -4804,46 +3747,23 @@ function renderScenarios(
 
               </div>
 
-
               <p>
-
-                ${esc(
+                ${escapeHtml(
                   scenario.description
                 )}
-
-                Target:
-                ${fmt(
-                  scenario.target,
-                  2
-                )}.
-
               </p>
 
-
-              <div class="track">
-
-                <div
-                  class="fill ${
-                    scenario.id ===
-                    "B"
-                      ?
-                      "violet"
-                      :
-                      scenario.id ===
-                      "C"
-                        ?
-                        "blue"
-                        :
-                        ""
-                  }"
-
-                  style="width:${scenario.modelWeightPct}%"
-                ></div>
-
+              <div class="target">
+                Target
+                <b>
+                  ${fmt(
+                    scenario.target,
+                    3
+                  )}
+                </b>
               </div>
 
             </div>
-
             `
         )
         .join(
@@ -4853,773 +3773,771 @@ function renderScenarios(
 }
 
 
-/* =========================================================
-   SESSION MAP
-========================================================= */
+/* ================================================================
+   CUSTOM CANVAS CHART
+================================================================ */
 
-function renderSessions(
+function drawChart(
   data
 ) {
 
-  const sessions =
-    data.liquidity
-      .sessions ||
-    {};
+  const canvas =
+    $("chart");
 
 
-  const list =
-    [
+  const wrapper =
+    canvas.parentElement;
 
-      sessions.asia,
 
-      sessions.london,
+  const dpr =
+    Math.max(
+      1,
+      window.devicePixelRatio ||
+      1
+    );
 
-      sessions.newYork
 
-    ].filter(
-      Boolean
+  const width =
+    Math.floor(
+      wrapper.clientWidth
+    );
+
+
+  const height =
+    Math.floor(
+      wrapper.clientHeight
+    );
+
+
+  canvas.width =
+    Math.floor(
+      width *
+      dpr
+    );
+
+
+  canvas.height =
+    Math.floor(
+      height *
+      dpr
+    );
+
+
+  const context =
+    canvas.getContext(
+      "2d"
+    );
+
+
+  context.setTransform(
+    dpr,
+    0,
+    0,
+    dpr,
+    0,
+    0
+  );
+
+
+  context.clearRect(
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  const candles =
+    (
+      data.chart
+        ?.candles ||
+      []
+    ).slice(
+      -140
+    );
+
+
+  if (
+    !candles.length
+  ) {
+
+    return;
+
+  }
+
+
+  const zones =
+    (
+      data.chart
+        ?.importantClusters ||
+      []
+    ).filter(
+      zone =>
+        zone.state !==
+        "CONSUMED"
     );
 
 
   const price =
-    data.data.price;
+    Number(
+      data.data.price
+    );
 
 
-  $("sessionGrid")
-    .innerHTML =
-      list
-        .map(
-          session =>
-            `
-
-            <div class="session">
-
-              <div class="n">
-                ${esc(
-                  session.label
-                )}
-              </div>
+  let minimum =
+    Math.min(
+      ...candles.map(
+        candle =>
+          candle.low
+      )
+    );
 
 
-              <div class="row">
-
-                <span>
-                  HIGH
-                </span>
-
-                <strong class="${
-                  price >
-                  session.high
-                    ?
-                    "bull"
-                    :
-                    ""
-                }">
-                  ${fmt(
-                    session.high,
-                    2
-                  )}
-                </strong>
-
-              </div>
+  let maximum =
+    Math.max(
+      ...candles.map(
+        candle =>
+          candle.high
+      )
+    );
 
 
-              <div class="row">
+  for (
+    const zone
+    of zones
+  ) {
 
-                <span>
-                  LOW
-                </span>
+    if (
+      zone.low >
+      minimum -
+        (
+          maximum -
+          minimum
+        ) *
+          0.25 &&
+      zone.low <
+      maximum +
+        (
+          maximum -
+          minimum
+        ) *
+          0.25
+    ) {
 
-                <strong class="${
-                  price <
-                  session.low
-                    ?
-                    "bear"
-                    :
-                    ""
-                }">
-                  ${fmt(
-                    session.low,
-                    2
-                  )}
-                </strong>
-
-              </div>
-
-
-              <div class="row">
-
-                <span>
-                  STATE
-                </span>
-
-                <strong>
-
-                  ${
-                    price >
-                    session.high
-                      ?
-                      "ABOVE"
-                      :
-                      price <
-                      session.low
-                        ?
-                        "BELOW"
-                        :
-                        "INSIDE"
-                  }
-
-                </strong>
-
-              </div>
-
-            </div>
-
-            `
-        )
-        .join(
-          ""
+      minimum =
+        Math.min(
+          minimum,
+          zone.low
         );
 
 
-  $("narrative")
-    .textContent =
-      data.narrative ||
-      "—";
+      maximum =
+        Math.max(
+          maximum,
+          zone.high
+        );
 
-}
-
-
-/* =========================================================
-   HISTORICAL MEMORY
-========================================================= */
-
-function renderHistory(
-  data
-) {
-
-  const history =
-    data.historical ||
-    {};
-
-
-  if (
-    !history.matches
-  ) {
-
-    $("historyPanel")
-      .innerHTML =
-        `
-
-        <div class="empty">
-          ${esc(
-            history.message ||
-            "No historical matches yet."
-          )}
-        </div>
-
-        `;
-
-
-    return;
+    }
 
   }
 
 
-  $("historyPanel")
-    .innerHTML =
-      `
-
-      <div class="big-score">
-
-        <div
-          class="score-ring"
-          style="--score:${history.averageSimilarity}"
-        >
-
-          <div>
-
-            <strong>
-              ${fmt(
-                history.averageSimilarity,
-                0
-              )}
-            </strong>
-
-            <span>
-              SIMILAR
-            </span>
-
-          </div>
-
-        </div>
+  minimum =
+    Math.min(
+      minimum,
+      price
+    );
 
 
-        <div>
-
-          <div class="headline ${clsFor(
-            history.bias
-          )}">
-
-            ${esc(
-              history.bias
-            )}
-            MEMORY
-
-          </div>
+  maximum =
+    Math.max(
+      maximum,
+      price
+    );
 
 
-          <div class="copy">
-
-            ${history.matches}
-            top analogues
-
-            · median similarity
-
-            ${fmt(
-              history.medianSimilarity,
-              1
-            )}%.
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <div class="divider"></div>
-
-
-      <div class="bar-row">
-
-        <div class="bar-top">
-
-          <span>
-            Bullish 1.5 ATR target hit first
-          </span>
-
-          <strong>
-            ${fmt(
-              history.bullishTargetHitPct,
-              1
-            )}%
-          </strong>
-
-        </div>
-
-        <div class="track">
-
-          <div
-            class="fill green"
-            style="width:${history.bullishTargetHitPct}%"
-          ></div>
-
-        </div>
-
-      </div>
-
-
-      <div class="bar-row">
-
-        <div class="bar-top">
-
-          <span>
-            Bearish 1.5 ATR target hit first
-          </span>
-
-          <strong>
-            ${fmt(
-              history.bearishTargetHitPct,
-              1
-            )}%
-          </strong>
-
-        </div>
-
-
-        <div class="track">
-
-          <div
-            class="fill red"
-            style="width:${history.bearishTargetHitPct}%"
-          ></div>
-
-        </div>
-
-      </div>
-
-
-      <div class="tiny">
-
-        Median excursion:
-
-        +${fmt(
-          history.medianMaxUpAtr,
-          2
-        )}
-        ATR
-
-        /
-
-        -${fmt(
-          history.medianMaxDownAtr,
-          2
-        )}
-        ATR.
-
-        These percentages come from the retrieved matched samples;
-        they are not guarantees.
-
-      </div>
-
-      `;
-
-}
-
-
-/* =========================================================
-   MACRO
-========================================================= */
-
-function renderMacro(
-  data
-) {
-
-  const macro =
-    data.macro ||
-    {};
-
-
-  const evidence =
+  const padding =
     (
-      macro.evidence ||
-      []
-    )
-      .map(
-        item =>
-          `<div class="tiny" style="margin-top:7px">
-            • ${esc(item)}
-          </div>`
+      maximum -
+      minimum
+    ) *
+      0.08 ||
+    1;
+
+
+  minimum -=
+    padding;
+
+
+  maximum +=
+    padding;
+
+
+  const left =
+    12;
+
+
+  const right =
+    66;
+
+
+  const top =
+    14;
+
+
+  const bottom =
+    24;
+
+
+  const plotWidth =
+    width -
+    left -
+    right;
+
+
+  const plotHeight =
+    height -
+    top -
+    bottom;
+
+
+  const y =
+    value =>
+      top +
+      (
+        maximum -
+        value
+      ) /
+      (
+        maximum -
+        minimum
+      ) *
+      plotHeight;
+
+
+  const x =
+    index =>
+      left +
+      (
+        index +
+        0.5
+      ) /
+      candles.length *
+      plotWidth;
+
+
+  /* ============================================================
+     GRID
+  ============================================================ */
+
+  context.strokeStyle =
+    "rgba(255,255,255,.055)";
+
+
+  context.lineWidth =
+    1;
+
+
+  context.font =
+    "9px -apple-system, sans-serif";
+
+
+  context.fillStyle =
+    "rgba(174,183,197,.72)";
+
+
+  for (
+    let index =
+      0;
+    index <=
+      5;
+    index++
+  ) {
+
+    const yy =
+      top +
+      plotHeight *
+        index /
+        5;
+
+
+    context.beginPath();
+
+    context.moveTo(
+      left,
+      yy
+    );
+
+    context.lineTo(
+      width -
+      right,
+      yy
+    );
+
+    context.stroke();
+
+
+    const value =
+      maximum -
+      (
+        maximum -
+        minimum
+      ) *
+        index /
+        5;
+
+
+    context.fillText(
+      value.toFixed(
+        2
+      ),
+      width -
+        right +
+        8,
+      yy +
+        3
+    );
+
+  }
+
+
+  for (
+    let index =
+      0;
+    index <=
+      6;
+    index++
+  ) {
+
+    const xx =
+      left +
+      plotWidth *
+        index /
+        6;
+
+
+    context.beginPath();
+
+    context.moveTo(
+      xx,
+      top
+    );
+
+    context.lineTo(
+      xx,
+      height -
+      bottom
+    );
+
+    context.stroke();
+
+  }
+
+
+  /* ============================================================
+     STRONG ZONES
+  ============================================================ */
+
+  for (
+    const zone
+    of zones
+  ) {
+
+    const highY =
+      y(
+        zone.high
+      );
+
+
+    const lowY =
+      y(
+        zone.low
+      );
+
+
+    const buySide =
+      zone.side ===
+      "BSL";
+
+
+    context.fillStyle =
+      buySide
+        ?
+        "rgba(68,225,166,.075)"
+        :
+        "rgba(255,107,122,.075)";
+
+
+    context.fillRect(
+      left,
+      highY,
+      plotWidth,
+      Math.max(
+        2,
+        lowY -
+        highY
       )
-      .join(
-        ""
-      );
-
-
-  $("macroPanel")
-    .innerHTML =
-      `
-
-      <div class="headline ${clsFor(
-        macro.bias
-      )}">
-
-        ${esc(
-          macro.bias ||
-          "NEUTRAL"
-        )}
-
-      </div>
-
-
-      <div class="copy">
-
-        Gold pressure score:
-
-        ${fmt(
-          macro.score,
-          0
-        )}/100.
-
-        ${
-          macro.enabled
-            ?
-            "FRED context enabled."
-            :
-            "Macro engine is running in fallback mode."
-        }
-
-      </div>
-
-
-      <div class="divider"></div>
-
-
-      ${evidence}
-
-      `;
-
-}
-
-
-/* =========================================================
-   FULL RENDER
-========================================================= */
-
-function renderAll(
-  data
-) {
-
-  state =
-    data;
-
-
-  renderHero(
-    data
-  );
-
-
-  renderChart(
-    data
-  );
-
-
-  renderMetrics(
-    data
-  );
-
-
-  renderConfluence(
-    data
-  );
-
-
-  renderLiquidity(
-    data
-  );
-
-
-  renderRaid(
-    data
-  );
-
-
-  renderTrade(
-    data
-  );
-
-
-  renderScenarios(
-    data
-  );
-
-
-  renderSessions(
-    data
-  );
-
-
-  renderHistory(
-    data
-  );
-
-
-  renderMacro(
-    data
-  );
-
-
-  setConnection(
-    true,
-    "LIVE REST"
-  );
-
-
-  clearError();
-
-
-  $("loading")
-    .classList
-    .add(
-      "hidden"
     );
 
-}
+
+    context.strokeStyle =
+      buySide
+        ?
+        "rgba(68,225,166,.45)"
+        :
+        "rgba(255,107,122,.45)";
 
 
-/* =========================================================
-   FULL FETCH
-========================================================= */
+    context.setLineDash(
+      [
+        5,
+        5
+      ]
+    );
 
-async function fetchFull(
-  force = false
-) {
 
-  if (
-    busy
-  ) {
+    context.beginPath();
 
-    return;
+
+    context.moveTo(
+      left,
+      y(
+        zone.center
+      )
+    );
+
+
+    context.lineTo(
+      width -
+      right,
+      y(
+        zone.center
+      )
+    );
+
+
+    context.stroke();
+
+
+    context.setLineDash(
+      []
+    );
+
+
+    context.fillStyle =
+      buySide
+        ?
+        "rgba(68,225,166,.95)"
+        :
+        "rgba(255,107,122,.95)";
+
+
+    context.font =
+      "9px -apple-system, sans-serif";
+
+
+    context.fillText(
+      `${zone.grade} ${zone.side} ${Number(
+        zone.center
+      ).toFixed(
+        2
+      )}`,
+      left +
+        6,
+      Math.max(
+        top +
+          10,
+        y(
+          zone.center
+        ) -
+          5
+      )
+    );
 
   }
 
 
-  if (
-    !force &&
-    Date.now() -
-      lastFullAt <
-      250000
-  ) {
+  /* ============================================================
+     CANDLES
+  ============================================================ */
 
-    return;
-
-  }
-
-
-  busy =
-    true;
-
-
-  try {
-
-    setConnection(
-      true,
-      "ANALYZING"
+  const candleWidth =
+    Math.max(
+      2,
+      plotWidth /
+        candles.length *
+        0.62
     );
 
 
-    const response =
-      await fetch(
-        `/api/xau?mode=full&t=${Date.now()}`,
-        {
+  candles.forEach(
+    (
+      candle,
+      index
+    ) => {
 
-          cache:
-            "no-store"
+      const xx =
+        x(
+          index
+        );
 
-        }
+
+      const bullish =
+        candle.close >=
+        candle.open;
+
+
+      context.strokeStyle =
+        bullish
+          ?
+          "rgba(68,225,166,.82)"
+          :
+          "rgba(255,107,122,.82)";
+
+
+      context.fillStyle =
+        bullish
+          ?
+          "rgba(68,225,166,.72)"
+          :
+          "rgba(255,107,122,.72)";
+
+
+      context.beginPath();
+
+
+      context.moveTo(
+        xx,
+        y(
+          candle.high
+        )
       );
 
 
-    const data =
-      await response.json();
+      context.lineTo(
+        xx,
+        y(
+          candle.low
+        )
+      );
 
 
-    if (
-      !response.ok ||
-      !data.ok
-    ) {
+      context.stroke();
 
-      throw new Error(
-        data.error ||
-        `HTTP ${response.status}`
+
+      const openY =
+        y(
+          candle.open
+        );
+
+
+      const closeY =
+        y(
+          candle.close
+        );
+
+
+      const bodyHeight =
+        Math.max(
+          1,
+          Math.abs(
+            closeY -
+            openY
+          )
+        );
+
+
+      context.fillRect(
+
+        xx -
+        candleWidth /
+          2,
+
+        Math.min(
+          openY,
+          closeY
+        ),
+
+        candleWidth,
+
+        bodyHeight
+
       );
 
     }
+  );
 
 
-    lastFullAt =
-      Date.now();
+  /* ============================================================
+     LIVE PRICE
+  ============================================================ */
 
-
-    renderAll(
-      data
-    );
-
-  }
-
-  catch (
-    error
-  ) {
-
-    showError(
-      `V9 analysis failed: ${error.message}`
+  const priceY =
+    y(
+      price
     );
 
 
-    $("loading")
-      .classList
-      .add(
-        "hidden"
-      );
+  context.strokeStyle =
+    "rgba(246,196,83,.95)";
 
-  }
 
-  finally {
+  context.setLineDash(
+    [
+      3,
+      4
+    ]
+  );
 
-    busy =
-      false;
 
-  }
+  context.beginPath();
+
+
+  context.moveTo(
+    left,
+    priceY
+  );
+
+
+  context.lineTo(
+    width -
+    right,
+    priceY
+  );
+
+
+  context.stroke();
+
+
+  context.setLineDash(
+    []
+  );
+
+
+  context.fillStyle =
+    "rgba(246,196,83,.95)";
+
+
+  context.fillRect(
+    width -
+      right +
+      5,
+    priceY -
+      10,
+    58,
+    20
+  );
+
+
+  context.fillStyle =
+    "#0a0b0e";
+
+
+  context.font =
+    "bold 10px -apple-system,sans-serif";
+
+
+  context.fillText(
+    price.toFixed(
+      2
+    ),
+    width -
+      right +
+      10,
+    priceY +
+      4
+  );
 
 }
 
 
-/* =========================================================
-   LIGHTWEIGHT PRICE REFRESH
-========================================================= */
-
-async function fetchQuote() {
-
-  if (
-    !state ||
-    document.hidden ||
-    busy
-  ) {
-
-    return;
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        `/api/xau?mode=quote&t=${Date.now()}`,
-        {
-
-          cache:
-            "no-store"
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    if (
-      !response.ok ||
-      !data.ok
-    ) {
-
-      throw new Error(
-        data.error ||
-        `HTTP ${response.status}`
-      );
-
-    }
-
-
-    state.data.price =
-      data.price;
-
-
-    $("price")
-      .innerHTML =
-        `${fmt(
-          data.price,
-          2
-        )} <small>USD</small>`;
-
-
-    setConnection(
-      true,
-      "LIVE REST"
-    );
-
-  }
-
-  catch {
-
-    setConnection(
-      false,
-      "QUOTE ERROR"
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   MANUAL REFRESH
-========================================================= */
+/* ================================================================
+   EVENTS
+================================================================ */
 
 $("refreshBtn")
   .addEventListener(
     "click",
-    () =>
-      fetchFull(
-        true
-      )
-  );
+    async () => {
 
+      await loadFull();
 
-/* =========================================================
-   TAB VISIBILITY
-========================================================= */
-
-document
-  .addEventListener(
-    "visibilitychange",
-    () => {
-
-      if (
-        !document.hidden &&
-        Date.now() -
-          lastFullAt >
-          300000
-      ) {
-
-        fetchFull(
-          true
-        );
-
-      }
+      await loadQuote();
 
     }
   );
 
 
-/* =========================================================
-   START
-========================================================= */
-
-initChart();
-
-
-fetchFull(
-  true
-);
-
-
-/* =========================================================
-   PRICE REFRESH
-
-   60 seconds keeps REST usage far lower than aggressive
-   5-10 second polling.
-
-   Change 60000 to 30000 if your Twelve Data plan has enough
-   credits and you want 30 second price requests.
-========================================================= */
-
-setInterval(
-  fetchQuote,
-  60000
-);
-
-
-/* =========================================================
-   FULL ANALYSIS REFRESH
-
-   Full MTF intelligence every 5 minutes.
-========================================================= */
-
-setInterval(
+window.addEventListener(
+  "resize",
   () => {
 
-    if (
-      !document.hidden
-    ) {
+    clearTimeout(
+      resizeTimer
+    );
 
-      fetchFull(
-        false
+
+    resizeTimer =
+      setTimeout(
+        () => {
+
+          if (
+            state
+          ) {
+
+            drawChart(
+              state
+            );
+
+          }
+
+        },
+        120
       );
 
-    }
-
-  },
-  300000
+  }
 );
 
 
-})();
+/* ================================================================
+   BOOT
+================================================================ */
+
+(
+  async function boot() {
+
+    await loadFull();
+
+    await loadQuote();
+
+
+    /*
+       Quote:
+       every 30 seconds.
+
+       Full structural analysis:
+       every 60 seconds.
+
+       This avoids hammering Twelve Data unnecessarily.
+    */
+
+    quoteTimer =
+      setInterval(
+        loadQuote,
+        30000
+      );
+
+
+    fullTimer =
+      setInterval(
+        loadFull,
+        60000
+      );
+
+  }
+)();
 
 </script>
-
 
 </body>
 
