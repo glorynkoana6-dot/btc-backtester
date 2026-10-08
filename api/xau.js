@@ -1,48 +1,24 @@
 /* ================================================================
-   MKAYFX GOLD INTELLIGENCE V9
-   LIQUIDITY WARFARE ENGINE
+   MKAYFX GOLD INTELLIGENCE V9.2
+   STRONG LIQUIDITY WARFARE ENGINE
 
    FILE
    ---------------------------------------------------------------
    /api/xau.js
 
-   DATA ARCHITECTURE
+   STRONG LIQUIDITY MODE
    ---------------------------------------------------------------
-   API KEY 1
-   TWELVE_DATA_API_KEY
-   -> M1 / latest price
-
-   API KEY 2
-   TWELVE_DATA_API_KEY_2
-   -> M15 / H1 / H4 structure
-
-   API KEY 3
-   TWELVE_DATA_API_KEY_3
-   -> Deep M5 / historical memory
-
-   API KEY 4
-   TWELVE_DATA_API_KEY_4
-   -> Optional fallback
-
-   MACRO
-   ---------------------------------------------------------------
-   FRED_API_KEY
-   -> real yields
-   -> nominal yields
-   -> Fed Funds
-   -> CPI
+   Weak/noisy liquidity is removed before:
+   - Raid analysis
+   - Directional scoring
+   - Scenario generation
+   - Trade construction
+   - Chart rendering
 
    IMPORTANT
    ---------------------------------------------------------------
    Scores are heuristic model scores.
-
-   Historical percentages are calculated from matched historical
-   samples and are not guarantees or true future probabilities.
-================================================================ */
-
-
-/* ================================================================
-   CONFIG
+   Strong liquidity filtering does not guarantee price reaction.
 ================================================================ */
 
 const SYMBOL =
@@ -118,17 +94,49 @@ const CONFIG = {
   },
 
 
+  strongLiquidity: {
+
+    minStrength: 78,
+
+    minMagnetScore: 68,
+
+    minQuality: 76,
+
+    maxDistanceAtr: 10,
+
+    minConfluentSources: 2,
+
+    acceptanceAtr: 0.14,
+
+    recentBars: 90
+
+  },
+
+
   historical: {
 
     forwardBars: 12,
 
-    topK: 80,
+    topK: 60,
 
-    minSimilarity: 58,
+    minSimilarity: 60,
 
     targetAtr: 1.5,
 
-    stopAtr: 1.0
+    stopAtr: 1.0,
+
+    minSpacingBars: 12
+
+  },
+
+
+  execution: {
+
+    minWatchConfluence: 68,
+
+    minReadyConfluence: 74,
+
+    maxRaidBarsAgo: 12
 
   }
 
@@ -136,7 +144,7 @@ const CONFIG = {
 
 
 /* ================================================================
-   BASIC HELPERS
+   HELPERS
 ================================================================ */
 
 const clamp = (
@@ -153,121 +161,6 @@ const clamp = (
   );
 
 
-const round = (
-  value,
-  decimals = 2
-) => {
-
-  const number =
-    Number(
-      value
-    );
-
-  if (
-    !Number.isFinite(
-      number
-    )
-  ) {
-
-    return null;
-
-  }
-
-  const multiplier =
-    10 ** decimals;
-
-  return (
-    Math.round(
-      number *
-      multiplier
-    ) /
-    multiplier
-  );
-
-};
-
-
-const mean =
-  array => {
-
-    if (
-      !array.length
-    ) {
-
-      return 0;
-
-    }
-
-    return (
-      array.reduce(
-        (
-          total,
-          value
-        ) =>
-          total +
-          value,
-        0
-      ) /
-      array.length
-    );
-
-  };
-
-
-const median =
-  array => {
-
-    if (
-      !array.length
-    ) {
-
-      return 0;
-
-    }
-
-    const sorted =
-      [
-        ...array
-      ].sort(
-        (
-          a,
-          b
-        ) =>
-          a -
-          b
-      );
-
-    const middle =
-      Math.floor(
-        sorted.length /
-        2
-      );
-
-    if (
-      sorted.length %
-      2
-    ) {
-
-      return sorted[
-        middle
-      ];
-
-    }
-
-    return (
-      sorted[
-        middle -
-        1
-      ] +
-      sorted[
-        middle
-      ]
-    ) /
-    2;
-
-  };
-
-
 const sum =
   array =>
     array.reduce(
@@ -281,36 +174,131 @@ const sum =
     );
 
 
+const mean =
+  array =>
+    array.length
+      ?
+      sum(
+        array
+      ) /
+      array.length
+      :
+      0;
+
+
+const median =
+  array => {
+
+    if (
+      !array.length
+    ) {
+
+      return 0;
+
+    }
+
+
+    const sorted =
+      [
+        ...array
+      ].sort(
+        (
+          a,
+          b
+        ) =>
+          a -
+          b
+      );
+
+
+    const middle =
+      Math.floor(
+        sorted.length /
+        2
+      );
+
+
+    return sorted.length %
+      2
+      ?
+      sorted[
+        middle
+      ]
+      :
+      (
+        sorted[
+          middle -
+          1
+        ] +
+        sorted[
+          middle
+        ]
+      ) /
+      2;
+
+  };
+
+
 const safeDiv = (
   a,
   b,
   fallback = 0
+) =>
+  Number.isFinite(
+    a
+  ) &&
+  Number.isFinite(
+    b
+  ) &&
+  b !==
+  0
+    ?
+    a /
+    b
+    :
+    fallback;
+
+
+const round = (
+  value,
+  decimals = 2
 ) => {
 
+  const number =
+    Number(
+      value
+    );
+
+
   if (
-    Number.isFinite(
-      a
-    ) &&
-    Number.isFinite(
-      b
-    ) &&
-    b !== 0
+    !Number.isFinite(
+      number
+    )
   ) {
 
-    return (
-      a /
-      b
-    );
+    return null;
 
   }
 
-  return fallback;
+
+  const multiplier =
+    10 **
+    decimals;
+
+
+  return (
+    Math.round(
+      number *
+      multiplier
+    ) /
+    multiplier
+  );
 
 };
 
 
 /* ================================================================
-   JSON RESPONSE
+   JSON
 ================================================================ */
 
 function json(
@@ -348,7 +336,7 @@ function json(
 
 
 /* ================================================================
-   API KEY MANAGEMENT
+   API KEYS
 ================================================================ */
 
 function apiKeys() {
@@ -417,7 +405,7 @@ async function fetchJson(
           headers: {
 
             "user-agent":
-              "MKAYFX-Gold-Intelligence-V9/9.0"
+              "MKAYFX-Gold-Intelligence-V9.2"
 
           }
 
@@ -478,7 +466,7 @@ async function fetchJson(
 
 
 /* ================================================================
-   TWELVE DATA REQUEST WITH KEY FALLBACK
+   TWELVE DATA REQUEST
 ================================================================ */
 
 async function tdRequest(
@@ -630,7 +618,7 @@ async function tdRequest(
 
 
 /* ================================================================
-   TIME PARSER
+   TIME
 ================================================================ */
 
 function parseTdTime(
@@ -693,7 +681,7 @@ function parseTdTime(
 
 
 /* ================================================================
-   CANDLE NORMALIZER
+   NORMALIZE CANDLES
 ================================================================ */
 
 function normalizeCandles(
@@ -765,7 +753,7 @@ function normalizeCandles(
 
 
 /* ================================================================
-   FETCH TIME SERIES
+   FETCH SERIES
 ================================================================ */
 
 async function fetchSeries(
@@ -842,7 +830,7 @@ async function fetchSeries(
 
 
 /* ================================================================
-   LATEST PRICE
+   LIVE PRICE
 ================================================================ */
 
 async function fetchLatestPrice() {
@@ -1312,7 +1300,7 @@ function rollingMean(
     );
 
 
-  const values =
+  return mean(
     array
       .slice(
         start,
@@ -1321,11 +1309,7 @@ function rollingMean(
       )
       .filter(
         Number.isFinite
-      );
-
-
-  return mean(
-    values
+      )
   );
 
 }
@@ -1422,7 +1406,7 @@ function isoWeekKey(
 
 
 /* ================================================================
-   HIGH LOW GROUPING
+   GROUP HIGH / LOW
 ================================================================ */
 
 function groupHighLow(
@@ -1508,27 +1492,22 @@ function groupHighLow(
 
 
 /* ================================================================
-   PREVIOUS COMPLETED GROUP
+   PREVIOUS GROUP
 ================================================================ */
 
 function previousCompletedGroup(
   groups
 ) {
 
-  if (
-    groups.length <
+  return groups.length >=
     2
-  ) {
-
-    return null;
-
-  }
-
-
-  return groups[
-    groups.length -
-    2
-  ];
+    ?
+    groups[
+      groups.length -
+      2
+    ]
+    :
+    null;
 
 }
 
@@ -1568,19 +1547,15 @@ function sessionRange(
       startHour <
       endHour
         ?
-        (
-          hour >=
+        hour >=
             startHour &&
           hour <
             endHour
-        )
         :
-        (
-          hour >=
+        hour >=
             startHour ||
           hour <
-            endHour
-        );
+            endHour;
 
 
     if (
@@ -1681,23 +1656,73 @@ function sessionRange(
     ];
 
 
-  return latest
-    ?
-    {
+  if (
+    !latest
+  ) {
 
-      ...latest,
+    return null;
 
-      label
+  }
 
-    }
-    :
-    null;
+
+  const today =
+    utcDateKey(
+      Math.floor(
+        Date.now() /
+        1000
+      )
+    );
+
+
+  const nowHour =
+    new Date()
+      .getUTCHours();
+
+
+  const currentlyOpen =
+    latest.date ===
+      today &&
+    (
+      startHour <
+      endHour
+        ?
+        nowHour >=
+            startHour &&
+          nowHour <
+            endHour
+        :
+        nowHour >=
+            startHour ||
+          nowHour <
+            endHour
+    );
+
+
+  return {
+
+    ...latest,
+
+    label,
+
+    state:
+      currentlyOpen
+        ?
+        "LIVE"
+        :
+        latest.date ===
+        today
+          ?
+          "COMPLETED"
+          :
+          "STALE"
+
+  };
 
 }
 
 
 /* ================================================================
-   PIVOT DETECTOR
+   PIVOTS
 ================================================================ */
 
 function pivots(
@@ -1856,7 +1881,7 @@ function pivots(
 
 
 /* ================================================================
-   EQUAL HIGHS / LOWS
+   EQUAL LIQUIDITY
 ================================================================ */
 
 function findEqualLevels(
@@ -1866,17 +1891,13 @@ function findEqualLevels(
   lookback = 260
 ) {
 
-  const start =
-    Math.max(
-      0,
-      candles.length -
-      lookback
-    );
-
-
   const slice =
     candles.slice(
-      start
+      Math.max(
+        0,
+        candles.length -
+        lookback
+      )
     );
 
 
@@ -1897,14 +1918,17 @@ function findEqualLevels(
       levels
     ]
     of [
+
       [
         "EQH",
         detected.highs
       ],
+
       [
         "EQL",
         detected.lows
       ]
+
     ]
   ) {
 
@@ -2037,8 +2061,8 @@ function findEqualLevels(
     )
   ) {
 
-    const exists =
-      deduplicated.some(
+    if (
+      !deduplicated.some(
         existing =>
           existing.side ===
             item.side &&
@@ -2047,11 +2071,7 @@ function findEqualLevels(
             item.price
           ) <=
           tolerance
-      );
-
-
-    if (
-      !exists
+      )
     ) {
 
       deduplicated.push(
@@ -2072,7 +2092,7 @@ function findEqualLevels(
 
 
 /* ================================================================
-   M15 FAIR VALUE GAPS
+   FVG
 ================================================================ */
 
 function findFvgs(
@@ -2266,7 +2286,7 @@ function findFvgs(
 
 
 /* ================================================================
-   LEVEL TOUCH COUNTER
+   TOUCH COUNTER
 ================================================================ */
 
 function countTouches(
@@ -2280,16 +2300,16 @@ function countTouches(
     0;
 
 
+  let lastTouch =
+    -10;
+
+
   const start =
     Math.max(
       0,
       candles.length -
       lookback
     );
-
-
-  let lastTouch =
-    -10;
 
 
   for (
@@ -2338,7 +2358,7 @@ function countTouches(
 
 
 /* ================================================================
-   LIQUIDITY LEVEL ENGINE
+   RAW LIQUIDITY LEVELS
 ================================================================ */
 
 function buildLiquidityLevels(
@@ -2356,20 +2376,14 @@ function buildLiquidityLevels(
   const daily =
     groupHighLow(
       m15,
-      timestamp =>
-        utcDateKey(
-          timestamp
-        )
+      utcDateKey
     );
 
 
   const weekly =
     groupHighLow(
       h1,
-      timestamp =>
-        isoWeekKey(
-          timestamp
-        )
+      isoWeekKey
     );
 
 
@@ -2397,37 +2411,34 @@ function buildLiquidityLevels(
   ) {
 
     if (
-      !Number.isFinite(
+      Number.isFinite(
         price
       )
     ) {
 
-      return;
+      levels.push(
+        {
+
+          name,
+
+          side,
+
+          price,
+
+          weight,
+
+          timeframe,
+
+          source,
+
+          touches,
+
+          time
+
+        }
+      );
 
     }
-
-
-    levels.push(
-      {
-
-        name,
-
-        side,
-
-        price,
-
-        weight,
-
-        timeframe,
-
-        source,
-
-        touches,
-
-        time
-
-      }
-    );
 
   }
 
@@ -2545,7 +2556,9 @@ function buildLiquidityLevels(
       session.high,
       weight,
       "M5",
-      `${session.label.toUpperCase()}_HIGH`
+      `${session.label.toUpperCase()}_HIGH`,
+      1,
+      session.end
     );
 
 
@@ -2555,7 +2568,9 @@ function buildLiquidityLevels(
       session.low,
       weight,
       "M5",
-      `${session.label.toUpperCase()}_LOW`
+      `${session.label.toUpperCase()}_LOW`,
+      1,
+      session.end
     );
 
   }
@@ -2587,7 +2602,7 @@ function buildLiquidityLevels(
           `H1 Swing High ${4 - index}`,
           "BSL",
           level.price,
-          76,
+          78,
           "H1",
           "H1_SWING_HIGH",
           1,
@@ -2613,7 +2628,7 @@ function buildLiquidityLevels(
           `H1 Swing Low ${4 - index}`,
           "SSL",
           level.price,
-          76,
+          78,
           "H1",
           "H1_SWING_LOW",
           1,
@@ -2737,7 +2752,7 @@ function buildLiquidityLevels(
 
 
 /* ================================================================
-   TREND DETECTOR
+   TREND
 ================================================================ */
 
 function detectTrend(
@@ -2870,7 +2885,51 @@ function detectTrend(
 
 
 /* ================================================================
-   MARKET REGIME
+   H1 + H4 COMBINED TREND
+================================================================ */
+
+function combineTrendBias(
+  h1,
+  h4
+) {
+
+  if (
+    h1.bias ===
+    h4.bias
+  ) {
+
+    return h1.bias;
+
+  }
+
+
+  if (
+    h4.bias ===
+    "NEUTRAL"
+  ) {
+
+    return h1.bias;
+
+  }
+
+
+  if (
+    h1.bias ===
+    "NEUTRAL"
+  ) {
+
+    return h4.bias;
+
+  }
+
+
+  return "NEUTRAL";
+
+}
+
+
+/* ================================================================
+   REGIME
 ================================================================ */
 
 function detectRegime(
@@ -3059,7 +3118,7 @@ function detectRegime(
 
 
 /* ================================================================
-   LIQUIDITY CLUSTER ENGINE
+   CLUSTER LIQUIDITY
 ================================================================ */
 
 function clusterLiquidity(
@@ -3204,27 +3263,29 @@ function clusterLiquidity(
                 2;
 
 
-        const rawStrength =
-          sum(
-            weights.map(
-              weight =>
-                weight *
-                0.38
-            )
-          ) +
-          Math.min(
-            12,
-            touches *
-              2.5
-          ) +
-          timeframeBonus;
-
-
         let strength =
           clamp(
-            rawStrength,
+
+            sum(
+              weights.map(
+                weight =>
+                  weight *
+                  0.38
+              )
+            ) +
+
+            Math.min(
+              12,
+              touches *
+                2.5
+            ) +
+
+            timeframeBonus,
+
             0,
+
             100
+
           );
 
 
@@ -3414,7 +3475,10 @@ function clusterLiquidity(
                     ),
 
                   weight:
-                    level.weight
+                    level.weight,
+
+                  source:
+                    level.source
 
                 })
               )
@@ -3502,6 +3566,403 @@ function clusterLiquidity(
 
 
 /* ================================================================
+   CLUSTER STATE
+
+   Two closes accepted beyond the zone = CONSUMED.
+================================================================ */
+
+function clusterState(
+  cluster,
+  m5,
+  atr5
+) {
+
+  const recent =
+    m5.slice(
+      -CONFIG
+        .strongLiquidity
+        .recentBars
+    );
+
+
+  const buffer =
+    atr5 *
+    CONFIG
+      .strongLiquidity
+      .acceptanceAtr;
+
+
+  let acceptedBars =
+    0;
+
+
+  let recentTouch =
+    false;
+
+
+  for (
+    const candle
+    of recent
+  ) {
+
+    const touched =
+      candle.low <=
+        cluster.high &&
+      candle.high >=
+        cluster.low;
+
+
+    if (
+      touched
+    ) {
+
+      recentTouch =
+        true;
+
+    }
+
+
+    const accepted =
+      cluster.side ===
+      "BSL"
+        ?
+        candle.close >
+        cluster.high +
+          buffer
+        :
+        candle.close <
+        cluster.low -
+          buffer;
+
+
+    acceptedBars =
+      accepted
+        ?
+        acceptedBars +
+        1
+        :
+        0;
+
+
+    if (
+      acceptedBars >=
+      2
+    ) {
+
+      return "CONSUMED";
+
+    }
+
+  }
+
+
+  return recentTouch
+    ?
+    "TESTED"
+    :
+    "ACTIVE";
+
+}
+
+
+/* ================================================================
+   STRONG ZONE QUALITY
+================================================================ */
+
+function scoreStrongCluster(
+  cluster,
+  state
+) {
+
+  const hasW1 =
+    cluster.sources.some(
+      source =>
+        source.timeframe ===
+        "W1"
+    );
+
+
+  const hasD1 =
+    cluster.sources.some(
+      source =>
+        source.timeframe ===
+        "D1"
+    );
+
+
+  const hasH1 =
+    cluster.sources.some(
+      source =>
+        source.timeframe ===
+        "H1"
+    );
+
+
+  const hasEqual =
+    cluster.sources.some(
+      source =>
+        source.source ===
+        "equal-liquidity"
+    );
+
+
+  const sourceQuality =
+    hasW1
+      ?
+      100
+      :
+      hasD1
+        ?
+        94
+        :
+        hasH1
+          ?
+          84
+          :
+          hasEqual
+            ?
+            82
+            :
+            68;
+
+
+  const confluence =
+    clamp(
+
+      55 +
+
+      (
+        cluster.sources.length -
+        1
+      ) *
+        12,
+
+      0,
+
+      100
+
+    );
+
+
+  const freshness =
+    cluster.touches <=
+    2
+      ?
+      92
+      :
+      cluster.touches <=
+      4
+        ?
+        78
+        :
+        62;
+
+
+  const stateScore =
+    state ===
+    "ACTIVE"
+      ?
+      100
+      :
+      state ===
+      "TESTED"
+        ?
+        84
+        :
+        0;
+
+
+  return clamp(
+
+    cluster.strength *
+      0.30 +
+
+    cluster.magnetScore *
+      0.24 +
+
+    sourceQuality *
+      0.20 +
+
+    confluence *
+      0.12 +
+
+    freshness *
+      0.08 +
+
+    stateScore *
+      0.06,
+
+    0,
+
+    100
+
+  );
+
+}
+
+
+/* ================================================================
+   STRONG LIQUIDITY FILTER
+================================================================ */
+
+function filterStrongLiquidityZones(
+  clusters,
+  m5,
+  atr5
+) {
+
+  return clusters
+
+    .map(
+      cluster => {
+
+        const state =
+          clusterState(
+            cluster,
+            m5,
+            atr5
+          );
+
+
+        const quality =
+          scoreStrongCluster(
+            cluster,
+            state
+          );
+
+
+        const institutional =
+          cluster.sources.some(
+            source =>
+              [
+                "W1",
+                "D1",
+                "H1"
+              ].includes(
+                source.timeframe
+              )
+          );
+
+
+        const equalQuality =
+          cluster.sources.some(
+            source =>
+              source.source ===
+              "equal-liquidity"
+          ) &&
+          cluster.touches >=
+          2;
+
+
+        const confluent =
+          cluster.sources.length >=
+          CONFIG
+            .strongLiquidity
+            .minConfluentSources;
+
+
+        const strongEnough =
+          cluster.strength >=
+          CONFIG
+            .strongLiquidity
+            .minStrength;
+
+
+        const magneticEnough =
+          cluster.magnetScore >=
+          CONFIG
+            .strongLiquidity
+            .minMagnetScore;
+
+
+        const nearEnough =
+          cluster.distanceAtr <=
+          CONFIG
+            .strongLiquidity
+            .maxDistanceAtr;
+
+
+        const structurallyImportant =
+          institutional ||
+          equalQuality ||
+          confluent;
+
+
+        const accepted =
+          state !==
+            "CONSUMED" &&
+          quality >=
+            CONFIG
+              .strongLiquidity
+              .minQuality &&
+          strongEnough &&
+          magneticEnough &&
+          nearEnough &&
+          structurallyImportant;
+
+
+        const grade =
+          quality >=
+          90
+            ?
+            "A+"
+            :
+            quality >=
+            84
+              ?
+              "A"
+              :
+              quality >=
+              78
+                ?
+                "B+"
+                :
+                "B";
+
+
+        return {
+
+          ...cluster,
+
+          state,
+
+          quality:
+            round(
+              quality,
+              1
+            ),
+
+          grade,
+
+          institutional,
+
+          accepted
+
+        };
+
+      }
+    )
+
+    .filter(
+      cluster =>
+        cluster.accepted
+    )
+
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        b.quality -
+          a.quality ||
+        b.magnetScore -
+          a.magnetScore
+    );
+
+}
+
+
+/* ================================================================
    RAID DETECTOR
 ================================================================ */
 
@@ -3542,7 +4003,7 @@ function detectRaidForCluster(
       start;
     index <
       m5.length -
-      1;
+        1;
     index++
   ) {
 
@@ -3693,16 +4154,19 @@ function detectRaidForCluster(
       );
 
 
-    let displacement =
-      0;
-
-
     if (
-      cluster.side ===
-      "BSL"
+      !next.length
     ) {
 
-      displacement =
+      continue;
+
+    }
+
+
+    const displacement =
+      cluster.side ===
+      "BSL"
+        ?
         safeDiv(
 
           candle.close -
@@ -3717,13 +4181,8 @@ function detectRaidForCluster(
 
           0
 
-        );
-
-    }
-
-    else {
-
-      displacement =
+        )
+        :
         safeDiv(
 
           Math.max(
@@ -3739,8 +4198,6 @@ function detectRaidForCluster(
           0
 
         );
-
-    }
 
 
     const penetrationQuality =
@@ -3788,7 +4245,7 @@ function detectRaidForCluster(
         penetrationQuality *
           10 +
 
-        cluster.strength *
+        cluster.quality *
           0.12,
 
         0,
@@ -3810,20 +4267,6 @@ function detectRaidForCluster(
           2
         ) *
           8,
-
-        0,
-
-        100
-
-      );
-
-
-    const continuationEvidence =
-      clamp(
-
-        100 -
-        reversalEvidence *
-          0.82,
 
         0,
 
@@ -3899,8 +4342,21 @@ function detectRaidForCluster(
 
         continuationEvidence:
           round(
-            continuationEvidence,
+
+            clamp(
+
+              100 -
+              reversalEvidence *
+                0.82,
+
+              0,
+
+              100
+
+            ),
+
             1
+
           ),
 
         raidHigh:
@@ -3913,17 +4369,33 @@ function detectRaidForCluster(
           round(
             candle.low,
             3
-          )
+          ),
+
+        zoneGrade:
+          cluster.grade,
+
+        zoneQuality:
+          cluster.quality
 
       };
 
 
+    /*
+       IMPORTANT FIX:
+       Newest raid wins.
+       Quality only breaks a same-time tie.
+    */
+
     if (
       !best ||
       candidate.time >
-      best.time ||
-      candidate.quality >
-      best.quality
+        best.time ||
+      (
+        candidate.time ===
+          best.time &&
+        candidate.quality >
+          best.quality
+      )
     ) {
 
       best =
@@ -3940,7 +4412,7 @@ function detectRaidForCluster(
 
 
 /* ================================================================
-   LIQUIDITY APPROACH VELOCITY
+   APPROACH VELOCITY
 ================================================================ */
 
 function approachVelocity(
@@ -4014,18 +4486,14 @@ function approachVelocity(
     ].close;
 
 
-  const targetDirection =
-    Math.sign(
-      target -
-      currentPrice
-    );
-
-
   const movingToward =
     Math.sign(
       slope
     ) ===
-      targetDirection &&
+      Math.sign(
+        target -
+        currentPrice
+      ) &&
     Math.abs(
       slope
     ) >
@@ -4075,7 +4543,7 @@ function approachVelocity(
 
 
 /* ================================================================
-   RAID STATE ENGINE
+   RAID STATE
 ================================================================ */
 
 function buildRaidState(
@@ -4083,11 +4551,12 @@ function buildRaidState(
   m5,
   m1,
   atr5,
-  currentPrice
+  price
 ) {
 
   const raids =
     clusters
+
       .map(
         cluster =>
           detectRaidForCluster(
@@ -4096,13 +4565,11 @@ function buildRaidState(
             atr5
           )
       )
+
       .filter(
         Boolean
-      );
+      )
 
-
-  const latest =
-    raids
       .sort(
         (
           a,
@@ -4110,25 +4577,31 @@ function buildRaidState(
         ) =>
           b.time -
           a.time
-      )[
-        0
-      ] ||
+      );
+
+
+  const latest =
+    raids[
+      0
+    ] ||
     null;
 
 
   const nearest =
     [
       ...clusters
-    ].sort(
-      (
-        a,
-        b
-      ) =>
-        a.distance -
-        b.distance
-    )[
-      0
-    ] ||
+    ]
+
+      .sort(
+        (
+          a,
+          b
+        ) =>
+          a.distance -
+          b.distance
+      )[
+        0
+      ] ||
     null;
 
 
@@ -4165,10 +4638,10 @@ function buildRaidState(
       clamp(
 
         proximity *
-          0.55 +
+          0.48 +
 
-        nearest.strength *
-          0.30 +
+        nearest.quality *
+          0.37 +
 
         (
           velocity.toward
@@ -4197,11 +4670,17 @@ function buildRaidState(
         level:
           nearest.center,
 
+        grade:
+          nearest.grade,
+
+        quality:
+          nearest.quality,
+
         distance:
           round(
             Math.abs(
               nearest.center -
-              currentPrice
+              price
             ),
             3
           ),
@@ -4264,9 +4743,7 @@ function detectTrap(
 ) {
 
   if (
-    !raid ||
-    raid.status !==
-    "CONFIRMED"
+    !raid
   ) {
 
     return {
@@ -4281,7 +4758,7 @@ function detectTrap(
         0,
 
       reason:
-        "No confirmed liquidity sweep."
+        "No confirmed strong-zone sweep."
 
     };
 
@@ -4322,16 +4799,13 @@ function detectTrap(
 
   const after =
     m5.slice(
-
       index +
         1,
-
       Math.min(
         m5.length,
         index +
           6
       )
-
     );
 
 
@@ -4364,16 +4838,10 @@ function detectTrap(
     ];
 
 
-  let followThrough =
-    0;
-
-
-  if (
+  const followThrough =
     raid.side ===
     "BSL"
-  ) {
-
-    followThrough =
+      ?
       safeDiv(
 
         raidCandle.close -
@@ -4388,13 +4856,8 @@ function detectTrap(
 
         0
 
-      );
-
-  }
-
-  else {
-
-    followThrough =
+      )
+      :
       safeDiv(
 
         Math.max(
@@ -4410,8 +4873,6 @@ function detectTrap(
         0
 
       );
-
-  }
 
 
   const strength =
@@ -4466,9 +4927,9 @@ function detectTrap(
       raid.side ===
       "BSL"
         ?
-        "Buy-side liquidity was swept and price rejected back below the cluster."
+        "Strong buy-side liquidity was swept and rejected."
         :
-        "Sell-side liquidity was swept and price reclaimed back above the cluster."
+        "Strong sell-side liquidity was swept and reclaimed."
 
   };
 
@@ -4476,7 +4937,7 @@ function detectTrap(
 
 
 /* ================================================================
-   MARKET PHASE STATE MACHINE
+   MARKET PHASE
 ================================================================ */
 
 function detectMarketPhase(
@@ -4589,7 +5050,7 @@ function detectMarketPhase(
         ),
 
       detail:
-        "A recent liquidity cluster has been swept and reclaimed."
+        "A strong liquidity zone was swept and reclaimed."
 
     };
 
@@ -4628,7 +5089,7 @@ function detectMarketPhase(
         ),
 
       detail:
-        "A large directional candle is expanding away from recent balance."
+        "Large directional expansion away from balance."
 
     };
 
@@ -4647,20 +5108,17 @@ function detectMarketPhase(
 
       score:
         round(
-
           clamp(
             regime.volatilityRatio *
-            55,
+              55,
             0,
             100
           ),
-
           1
-
         ),
 
       detail:
-        "Short-term range is expanding relative to its recent baseline."
+        "Short-term range is expanding."
 
     };
 
@@ -4685,7 +5143,7 @@ function detectMarketPhase(
               1 -
               compression
             ) *
-            180,
+              180,
             0,
             100
           ),
@@ -4695,47 +5153,7 @@ function detectMarketPhase(
         ),
 
       detail:
-        "Price is compressing, increasing the chance of liquidity building around the range."
-
-    };
-
-  }
-
-
-  const ema20 =
-    emaArray(
-      m5,
-      20
-    );
-
-
-  const distance =
-    Math.abs(
-      last.close -
-      ema20[
-        index
-      ]
-    );
-
-
-  if (
-    regime.trend !==
-      "NEUTRAL" &&
-    distance <
-      currentAtr *
-      0.35
-  ) {
-
-    return {
-
-      phase:
-        "RETRACEMENT",
-
-      score:
-        66,
-
-      detail:
-        "Price is pulling back toward its short-term mean inside a directional regime."
+        "Compression is building liquidity around the range."
 
     };
 
@@ -4751,7 +5169,7 @@ function detectMarketPhase(
       55,
 
     detail:
-      "No confirmed raid or displacement; price is rotating and building structure."
+      "No strong-zone raid or displacement is currently confirmed."
 
   };
 
@@ -4759,7 +5177,7 @@ function detectMarketPhase(
 
 
 /* ================================================================
-   HISTORICAL FEATURE ENGINE
+   HISTORICAL FEATURES
 ================================================================ */
 
 function historicalFeatures(
@@ -4797,19 +5215,15 @@ function historicalFeatures(
     ];
 
 
-  const start =
-    Math.max(
-      0,
-      index -
-      47
-    );
-
-
   const window =
     candles.slice(
-      start,
+      Math.max(
+        0,
+        index -
+        47
+      ),
       index +
-      1
+        1
     );
 
 
@@ -4834,7 +5248,7 @@ function historicalFeatures(
   const priceRange =
     Math.max(
       highest -
-      lowest,
+        lowest,
       0.000000001
     );
 
@@ -4849,7 +5263,7 @@ function historicalFeatures(
   const candleRange =
     Math.max(
       candle.high -
-      candle.low,
+        candle.low,
       0.000000001
     );
 
@@ -4870,6 +5284,33 @@ function historicalFeatures(
       0
 
     );
+
+
+  const hour =
+    new Date(
+      candle.time *
+      1000
+    )
+      .getUTCHours();
+
+
+  const sessionPosition =
+    hour <
+    7
+      ?
+      -1
+      :
+      hour <
+      12
+        ?
+        -0.25
+        :
+        hour <
+        17
+          ?
+          0.5
+          :
+          1;
 
 
   return [
@@ -4944,7 +5385,10 @@ function historicalFeatures(
     Math.sign(
       candle.close -
       candle.open
-    )
+    ),
+
+
+    sessionPosition
 
   ];
 
@@ -4952,7 +5396,7 @@ function historicalFeatures(
 
 
 /* ================================================================
-   HISTORICAL SIMILARITY
+   SIMILARITY
 ================================================================ */
 
 function similarity(
@@ -4977,7 +5421,8 @@ function similarity(
       0.8,
       1.0,
       0.9,
-      0.7
+      0.7,
+      0.55
     ];
 
 
@@ -5019,16 +5464,14 @@ function similarity(
   }
 
 
-  const averageDistance =
-    distance /
-    weightTotal;
-
-
   return (
     100 /
     (
       1 +
-      averageDistance *
+      (
+        distance /
+        weightTotal
+      ) *
       1.35
     )
   );
@@ -5037,7 +5480,7 @@ function similarity(
 
 
 /* ================================================================
-   HISTORICAL MEMORY ENGINE
+   HISTORICAL MEMORY
 ================================================================ */
 
 function historicalMemory(
@@ -5090,21 +5533,13 @@ function historicalMemory(
 
   const current =
     historicalFeatures(
-
       m5,
-
       currentIndex,
-
       ema20,
-
       ema50,
-
       atr14,
-
       atr50,
-
       rsi14
-
     );
 
 
@@ -5148,21 +5583,13 @@ function historicalMemory(
 
     const features =
       historicalFeatures(
-
         m5,
-
         index,
-
         ema20,
-
         ema50,
-
         atr14,
-
         atr50,
-
         rsi14
-
       );
 
 
@@ -5240,29 +5667,23 @@ function historicalMemory(
 
       maxUp =
         Math.max(
-
           maxUp,
-
           (
             bar.high -
             entry
           ) /
           currentAtr
-
         );
 
 
       maxDown =
         Math.max(
-
           maxDown,
-
           (
             entry -
             bar.low
           ) /
           currentAtr
-
         );
 
 
@@ -5399,6 +5820,8 @@ function historicalMemory(
     candidates.push(
       {
 
+        index,
+
         sim:
           match,
 
@@ -5421,22 +5844,67 @@ function historicalMemory(
   }
 
 
+  /*
+     Prevent one historical move from creating
+     many nearly identical matches.
+  */
+
+  const sorted =
+    candidates.sort(
+      (
+        a,
+        b
+      ) =>
+        b.sim -
+        a.sim
+    );
+
+
   const top =
-    candidates
-      .sort(
-        (
-          a,
-          b
-        ) =>
-          b.sim -
-          a.sim
-      )
-      .slice(
-        0,
-        CONFIG
-          .historical
-          .topK
+    [];
+
+
+  for (
+    const candidate
+    of sorted
+  ) {
+
+    const sufficientlySeparated =
+      top.every(
+        match =>
+          Math.abs(
+            match.index -
+            candidate.index
+          ) >=
+          CONFIG
+            .historical
+            .minSpacingBars
       );
+
+
+    if (
+      sufficientlySeparated
+    ) {
+
+      top.push(
+        candidate
+      );
+
+    }
+
+
+    if (
+      top.length >=
+      CONFIG
+        .historical
+        .topK
+    ) {
+
+      break;
+
+    }
+
+  }
 
 
   if (
@@ -5628,7 +6096,7 @@ function historicalMemory(
 
 
 /* ================================================================
-   FRED SERIES
+   FRED
 ================================================================ */
 
 async function fredSeries(
@@ -5699,6 +6167,7 @@ async function fredSeries(
     data?.observations ||
     []
   )
+
     .map(
       observation => ({
 
@@ -5712,6 +6181,7 @@ async function fredSeries(
 
       })
     )
+
     .filter(
       observation =>
         Number.isFinite(
@@ -5723,7 +6193,7 @@ async function fredSeries(
 
 
 /* ================================================================
-   MACRO ENGINE
+   MACRO
 ================================================================ */
 
 async function macroContext() {
@@ -5821,10 +6291,12 @@ async function macroContext() {
     const realChange =
       newest(
         real10
-      ) != null &&
+      ) !=
+        null &&
       older(
         real10
-      ) != null
+      ) !=
+        null
         ?
         newest(
           real10
@@ -5839,10 +6311,12 @@ async function macroContext() {
     const nominalChange =
       newest(
         nominal10
-      ) != null &&
+      ) !=
+        null &&
       older(
         nominal10
-      ) != null
+      ) !=
+        null
         ?
         newest(
           nominal10
@@ -5857,10 +6331,12 @@ async function macroContext() {
     const fedChange =
       newest(
         fed
-      ) != null &&
+      ) !=
+        null &&
       older(
         fed
-      ) != null
+      ) !=
+        null
         ?
         newest(
           fed
@@ -5897,7 +6373,7 @@ async function macroContext() {
     score +=
       clamp(
         -realChange *
-        45,
+          45,
         -35,
         35
       );
@@ -5906,7 +6382,7 @@ async function macroContext() {
     score +=
       clamp(
         -nominalChange *
-        22,
+          22,
         -20,
         20
       );
@@ -5915,7 +6391,7 @@ async function macroContext() {
     score +=
       clamp(
         -fedChange *
-        18,
+          18,
         -15,
         15
       );
@@ -5933,7 +6409,7 @@ async function macroContext() {
             cpiYoY -
             2
           ) *
-          4,
+            4,
           -8,
           12
         );
@@ -5950,31 +6426,24 @@ async function macroContext() {
 
 
     const evidence =
-      [];
+      [
 
+        `10Y real yield change: ${round(
+          realChange,
+          3
+        )} pts`,
 
-    evidence.push(
-      `10Y real yield change: ${round(
-        realChange,
-        3
-      )} pts`
-    );
+        `10Y nominal yield change: ${round(
+          nominalChange,
+          3
+        )} pts`,
 
+        `Fed effective rate change: ${round(
+          fedChange,
+          3
+        )} pts`
 
-    evidence.push(
-      `10Y nominal yield change: ${round(
-        nominalChange,
-        3
-      )} pts`
-    );
-
-
-    evidence.push(
-      `Fed effective rate change: ${round(
-        fedChange,
-        3
-      )} pts`
-    );
+      ];
 
 
     if (
@@ -6084,6 +6553,7 @@ async function macroContext() {
 
 function directionalBias({
   h1Trend,
+  h4Trend,
   regime,
   raid,
   history,
@@ -6114,7 +6584,7 @@ function directionalBias({
   ) {
 
     buy +=
-      15;
+      12;
 
 
     reasonsBuy.push(
@@ -6130,11 +6600,43 @@ function directionalBias({
   ) {
 
     sell +=
-      15;
+      12;
 
 
     reasonsSell.push(
       "H1 trend bearish"
+    );
+
+  }
+
+
+  if (
+    h4Trend.bias ===
+    "BULLISH"
+  ) {
+
+    buy +=
+      13;
+
+
+    reasonsBuy.push(
+      "H4 trend bullish"
+    );
+
+  }
+
+
+  if (
+    h4Trend.bias ===
+    "BEARISH"
+  ) {
+
+    sell +=
+      13;
+
+
+    reasonsSell.push(
+      "H4 trend bearish"
     );
 
   }
@@ -6146,7 +6648,7 @@ function directionalBias({
   ) {
 
     buy +=
-      6;
+      5;
 
   }
 
@@ -6157,7 +6659,7 @@ function directionalBias({
   ) {
 
     sell +=
-      6;
+      5;
 
   }
 
@@ -6171,9 +6673,9 @@ function directionalBias({
 
 
     const boost =
-      12 +
+      10 +
       currentRaid.quality *
-      0.18;
+        0.18;
 
 
     if (
@@ -6186,7 +6688,7 @@ function directionalBias({
 
 
       reasonsBuy.push(
-        `Sell-side raid ${currentRaid.quality}/100`
+        `Strong-zone sell-side raid ${currentRaid.quality}/100`
       );
 
     }
@@ -6198,7 +6700,7 @@ function directionalBias({
 
 
       reasonsSell.push(
-        `Buy-side raid ${currentRaid.quality}/100`
+        `Strong-zone buy-side raid ${currentRaid.quality}/100`
       );
 
     }
@@ -6212,7 +6714,7 @@ function directionalBias({
   ) {
 
     buy +=
-      10;
+      9;
 
 
     reasonsBuy.push(
@@ -6228,7 +6730,7 @@ function directionalBias({
   ) {
 
     sell +=
-      10;
+      9;
 
 
     reasonsSell.push(
@@ -6247,7 +6749,7 @@ function directionalBias({
       Math.min(
         12,
         macro.score *
-        0.18
+          0.18
       );
 
 
@@ -6267,7 +6769,7 @@ function directionalBias({
       Math.min(
         12,
         -macro.score *
-        0.18
+          0.18
       );
 
 
@@ -6283,15 +6785,17 @@ function directionalBias({
       .filter(
         cluster =>
           cluster.center >
-          price
+            price &&
+          cluster.side ===
+            "BSL"
       )
       .sort(
         (
           a,
           b
         ) =>
-          b.magnetScore -
-          a.magnetScore
+          b.quality -
+          a.quality
       )[
         0
       ];
@@ -6302,15 +6806,17 @@ function directionalBias({
       .filter(
         cluster =>
           cluster.center <
-          price
+            price &&
+          cluster.side ===
+            "SSL"
       )
       .sort(
         (
           a,
           b
         ) =>
-          b.magnetScore -
-          a.magnetScore
+          b.quality -
+          a.quality
       )[
         0
       ];
@@ -6335,12 +6841,12 @@ function directionalBias({
         Math.min(
           12,
           difference *
-          0.25
+            0.25
         );
 
 
       reasonsBuy.push(
-        "Stronger liquidity magnet above price"
+        "Stronger strong-zone liquidity magnet above"
       );
 
     }
@@ -6355,12 +6861,12 @@ function directionalBias({
         Math.min(
           12,
           -difference *
-          0.25
+            0.25
         );
 
 
       reasonsSell.push(
-        "Stronger liquidity magnet below price"
+        "Stronger strong-zone liquidity magnet below"
       );
 
     }
@@ -6389,23 +6895,20 @@ function directionalBias({
     sell;
 
 
-  const direction =
-    difference >=
-    8
-      ?
-      "BULLISH"
-      :
-      difference <=
-      -8
-        ?
-        "BEARISH"
-        :
-        "NEUTRAL";
-
-
   return {
 
-    direction,
+    direction:
+      difference >=
+      10
+        ?
+        "BULLISH"
+        :
+        difference <=
+        -10
+          ?
+          "BEARISH"
+          :
+          "NEUTRAL",
 
     buyScore:
       round(
@@ -6437,7 +6940,7 @@ function directionalBias({
 
 
 /* ================================================================
-   CONFLUENCE ENGINE
+   CONFLUENCE
 ================================================================ */
 
 function confluenceScore({
@@ -6468,21 +6971,21 @@ function confluenceScore({
   const liquidity =
     nearest
       ?
-      nearest.strength
+      nearest.quality
       :
-      45;
+      35;
 
 
   const structure =
     direction.direction ===
     "NEUTRAL"
       ?
-      48
+      45
       :
       clamp(
         55 +
         direction.gap *
-        1.25,
+          1.25,
         0,
         100
       );
@@ -6495,7 +6998,7 @@ function confluenceScore({
         .latestConfirmed
         .reversalEvidence
       :
-      45;
+      40;
 
 
   const historical =
@@ -6513,20 +7016,20 @@ function confluenceScore({
       45;
 
 
-  const sessionHour =
+  const hour =
     new Date()
       .getUTCHours();
 
 
   const session =
-    sessionHour >=
+    hour >=
       7 &&
-    sessionHour <
+    hour <
       17
       ?
       82
       :
-      sessionHour <
+      hour <
       7
         ?
         66
@@ -6541,7 +7044,7 @@ function confluenceScore({
       clamp(
         50 +
         macro.score *
-        0.5,
+          0.5,
         0,
         100
       )
@@ -6552,7 +7055,7 @@ function confluenceScore({
         clamp(
           50 -
           macro.score *
-          0.5,
+            0.5,
           0,
           100
         )
@@ -6583,7 +7086,7 @@ function confluenceScore({
       ?
       trap.strength
       :
-      45;
+      42;
 
 
   const components =
@@ -6607,11 +7110,7 @@ function confluenceScore({
           1
         ),
 
-      session:
-        round(
-          session,
-          1
-        ),
+      session,
 
       historical:
         round(
@@ -6644,7 +7143,7 @@ function confluenceScore({
     {
 
       liquidity:
-        0.18,
+        0.23,
 
       structure:
         0.18,
@@ -6653,16 +7152,16 @@ function confluenceScore({
         0.16,
 
       session:
-        0.08,
+        0.06,
 
       historical:
-        0.16,
+        0.15,
 
       macro:
-        0.08,
+        0.07,
 
       regime:
-        0.09,
+        0.08,
 
       trap:
         0.07
@@ -6707,7 +7206,7 @@ function confluenceScore({
 
 
 /* ================================================================
-   TARGET SELECTOR
+   TARGETS
 ================================================================ */
 
 function selectTargets(
@@ -6722,20 +7221,24 @@ function selectTargets(
   ) {
 
     return clusters
+
       .filter(
         cluster =>
           cluster.center >
             price &&
           cluster.side ===
-            "BSL"
+            "BSL" &&
+          cluster.state !==
+            "CONSUMED"
       )
+
       .sort(
         (
           a,
           b
         ) =>
-          b.magnetScore -
-          a.magnetScore
+          b.quality -
+          a.quality
       );
 
   }
@@ -6747,20 +7250,24 @@ function selectTargets(
   ) {
 
     return clusters
+
       .filter(
         cluster =>
           cluster.center <
             price &&
           cluster.side ===
-            "SSL"
+            "SSL" &&
+          cluster.state !==
+            "CONSUMED"
       )
+
       .sort(
         (
           a,
           b
         ) =>
-          b.magnetScore -
-          a.magnetScore
+          b.quality -
+          a.quality
       );
 
   }
@@ -6772,7 +7279,7 @@ function selectTargets(
 
 
 /* ================================================================
-   TRADE CONSTRUCTION
+   TRADE IDEA
 ================================================================ */
 
 function tradeIdea({
@@ -6785,10 +7292,7 @@ function tradeIdea({
 }) {
 
   if (
-    direction.direction ===
-      "NEUTRAL" ||
-    confluence.total <
-      66
+    !clusters.length
   ) {
 
     return {
@@ -6800,7 +7304,32 @@ function tradeIdea({
         "NEUTRAL",
 
       reason:
-        "Directional agreement or confluence is below the execution threshold."
+        "No strong liquidity zone passed the institutional filter."
+
+    };
+
+  }
+
+
+  if (
+    direction.direction ===
+      "NEUTRAL" ||
+    confluence.total <
+      CONFIG
+        .execution
+        .minWatchConfluence
+  ) {
+
+    return {
+
+      status:
+        "NO_TRADE",
+
+      direction:
+        direction.direction,
+
+      reason:
+        "Strong zones exist, but directional agreement/confluence is below threshold."
 
     };
 
@@ -6833,33 +7362,58 @@ function tradeIdea({
     raid
       .latestConfirmed
       .barsAgo <=
-      12;
+      CONFIG
+        .execution
+        .maxRaidBarsAgo;
 
 
-  const status =
+  const nearest =
+    raid.tracking;
+
+
+  let status =
+    "TRACKING";
+
+
+  if (
+    nearest?.distanceAtr <=
+    0.8
+  ) {
+
+    status =
+      "ARMED";
+
+  }
+
+
+  if (
     confirmed &&
     confluence.total >=
-    72
-      ?
-      "READY"
-      :
-      "WATCH";
+    CONFIG
+      .execution
+      .minReadyConfluence
+  ) {
+
+    status =
+      "READY";
+
+  }
+
+
+  const entry =
+    price;
 
 
   const entryLow =
     price -
     atr5 *
-    0.12;
+      0.12;
 
 
   const entryHigh =
     price +
     atr5 *
-    0.12;
-
-
-  const entry =
-    price;
+      0.12;
 
 
   let stop;
@@ -6923,7 +7477,7 @@ function tradeIdea({
       ),
 
       atr5 *
-      0.65
+        0.65
 
     );
 
@@ -7073,11 +7627,17 @@ function tradeIdea({
       confluence.total,
 
     reason:
-      confirmed
+      status ===
+      "READY"
         ?
-        "Confirmed liquidity raid aligns with the directional engine."
+        "Confirmed strong-zone raid aligns with directional confluence."
         :
-        "Strong confluence, but waiting for a cleaner raid/retest confirmation."
+        status ===
+        "ARMED"
+          ?
+          "Price is approaching a strong liquidity zone; wait for raid/rejection confirmation."
+          :
+          "Strong structure exists but price is not yet at an execution zone."
 
   };
 
@@ -7085,7 +7645,7 @@ function tradeIdea({
 
 
 /* ================================================================
-   SCENARIO WEIGHT NORMALIZER
+   NORMALIZE SCENARIO WEIGHTS
 ================================================================ */
 
 function normalizeWeights(
@@ -7120,7 +7680,7 @@ function normalizeWeights(
 
 
 /* ================================================================
-   SCENARIO PROJECTION
+   SCENARIOS
 ================================================================ */
 
 function scenarioProjection({
@@ -7145,8 +7705,8 @@ function scenarioProjection({
           a,
           b
         ) =>
-          b.magnetScore -
-          a.magnetScore
+          b.quality -
+          a.quality
       )[
         0
       ];
@@ -7164,8 +7724,8 @@ function scenarioProjection({
           a,
           b
         ) =>
-          b.magnetScore -
-          a.magnetScore
+          b.quality -
+          a.quality
       )[
         0
       ];
@@ -7184,11 +7744,11 @@ function scenarioProjection({
         :
         (
           (
-            above?.magnetScore ||
+            above?.quality ||
             0
           ) >=
           (
-            below?.magnetScore ||
+            below?.quality ||
             0
           )
             ?
@@ -7206,14 +7766,14 @@ function scenarioProjection({
         above?.center ??
         price +
         atr5 *
-        2.4
+          2.4
       )
       :
       (
         below?.center ??
         price -
         atr5 *
-        2.4
+          2.4
       );
 
 
@@ -7225,92 +7785,79 @@ function scenarioProjection({
         below?.center ??
         price -
         atr5 *
-        1.5
+          1.5
       )
       :
       (
         above?.center ??
         price +
         atr5 *
-        1.5
+          1.5
       );
-
-
-  const primaryRaw =
-    55 +
-    confluence.total *
-    0.35 +
-    (
-      raid.latestConfirmed
-        ?
-        8
-        :
-        0
-    );
-
-
-  const reversalRaw =
-    45 +
-    (
-      raid.tracking
-        ?.pressure ||
-      0
-    ) *
-    0.25 +
-    (
-      primaryDirection >
-      0
-        ?
-        (
-          below?.strength ||
-          40
-        )
-        :
-        (
-          above?.strength ||
-          40
-        )
-    ) *
-    0.18;
-
-
-  const rangeRaw =
-    55 +
-    (
-      direction.direction ===
-      "NEUTRAL"
-        ?
-        18
-        :
-        0
-    ) +
-    (
-      confluence.total <
-      65
-        ?
-        10
-        :
-        0
-    );
 
 
   const weights =
     normalizeWeights(
       [
 
-        primaryRaw,
+        55 +
+        confluence.total *
+          0.35 +
+        (
+          raid.latestConfirmed
+            ?
+            8
+            :
+            0
+        ),
 
-        reversalRaw,
+        45 +
+        (
+          raid.tracking
+            ?.pressure ||
+          0
+        ) *
+          0.25 +
+        (
+          primaryDirection >
+          0
+            ?
+            (
+              below?.quality ||
+              40
+            )
+            :
+            (
+              above?.quality ||
+              40
+            )
+        ) *
+          0.18,
 
-        rangeRaw
+        55 +
+        (
+          direction.direction ===
+          "NEUTRAL"
+            ?
+            18
+            :
+            0
+        ) +
+        (
+          confluence.total <
+          65
+            ?
+            10
+            :
+            0
+        )
 
       ]
     );
 
 
   const step =
-    5 *
-    60;
+    300;
 
 
   const buildPath =
@@ -7337,118 +7884,6 @@ function scenarioProjection({
 
         })
       );
-
-
-  const primary =
-    buildPath(
-      [
-
-        price -
-        primaryDirection *
-        atr5 *
-        0.18,
-
-        price +
-        primaryDirection *
-        atr5 *
-        0.22,
-
-        price +
-        (
-          primaryTarget -
-          price
-        ) *
-        0.35,
-
-        price +
-        (
-          primaryTarget -
-          price
-        ) *
-        0.62,
-
-        price +
-        (
-          primaryTarget -
-          price
-        ) *
-        0.82,
-
-        primaryTarget
-
-      ]
-    );
-
-
-  const reversal =
-    buildPath(
-      [
-
-        price +
-        primaryDirection *
-        atr5 *
-        0.35,
-
-        price +
-        primaryDirection *
-        atr5 *
-        0.65,
-
-        price,
-
-        price +
-        (
-          oppositeTarget -
-          price
-        ) *
-        0.35,
-
-        price +
-        (
-          oppositeTarget -
-          price
-        ) *
-        0.70,
-
-        oppositeTarget
-
-      ]
-    );
-
-
-  const rangeHigh =
-    price +
-    atr5 *
-    0.75;
-
-
-  const rangeLow =
-    price -
-    atr5 *
-    0.75;
-
-
-  const range =
-    buildPath(
-      [
-
-        rangeHigh,
-
-        price,
-
-        rangeLow,
-
-        price,
-
-        rangeHigh *
-          0.15 +
-        price *
-          0.85,
-
-        price
-
-      ]
-    );
 
 
   return [
@@ -7481,10 +7916,47 @@ function scenarioProjection({
         ),
 
       description:
-        "Directional confluence carries price toward the strongest aligned liquidity magnet.",
+        "Price expands toward the highest-quality strong liquidity zone.",
 
       points:
-        primary
+        buildPath(
+          [
+
+            price -
+            primaryDirection *
+              atr5 *
+              0.18,
+
+            price +
+            primaryDirection *
+              atr5 *
+              0.22,
+
+            price +
+            (
+              primaryTarget -
+              price
+            ) *
+              0.35,
+
+            price +
+            (
+              primaryTarget -
+              price
+            ) *
+              0.62,
+
+            price +
+            (
+              primaryTarget -
+              price
+            ) *
+              0.82,
+
+            primaryTarget
+
+          ]
+        )
 
     },
 
@@ -7495,7 +7967,7 @@ function scenarioProjection({
         "B",
 
       name:
-        "Liquidity fakeout / reversal",
+        "Strong-zone fakeout / reversal",
 
       modelWeightPct:
         round(
@@ -7512,10 +7984,42 @@ function scenarioProjection({
         ),
 
       description:
-        "Price first runs the near-side liquidity, fails, then rotates toward the opposing pool.",
+        "Near-side strong liquidity is raided, fails, then price rotates toward the opposing strong zone.",
 
       points:
-        reversal
+        buildPath(
+          [
+
+            price +
+            primaryDirection *
+              atr5 *
+              0.35,
+
+            price +
+            primaryDirection *
+              atr5 *
+              0.65,
+
+            price,
+
+            price +
+            (
+              oppositeTarget -
+              price
+            ) *
+              0.35,
+
+            price +
+            (
+              oppositeTarget -
+              price
+            ) *
+              0.70,
+
+            oppositeTarget
+
+          ]
+        )
 
     },
 
@@ -7526,7 +8030,7 @@ function scenarioProjection({
         "C",
 
       name:
-        "Range continuation",
+        "Balance continuation",
 
       modelWeightPct:
         round(
@@ -7543,10 +8047,32 @@ function scenarioProjection({
         ),
 
       description:
-        "No clean displacement develops and price continues rotating around current value.",
+        "No strong-zone displacement confirms and price remains in balance.",
 
       points:
-        range
+        buildPath(
+          [
+
+            price +
+            atr5 *
+              0.75,
+
+            price,
+
+            price -
+            atr5 *
+              0.75,
+
+            price,
+
+            price +
+            atr5 *
+              0.15,
+
+            price
+
+          ]
+        )
 
     }
 
@@ -7563,135 +8089,12 @@ function scenarioProjection({
 
 
 /* ================================================================
-   SESSION NARRATIVE
-================================================================ */
-
-function sessionNarrative({
-  sessions,
-  price,
-  clusters,
-  raid,
-  direction
-}) {
-
-  const parts =
-    [];
-
-
-  const sessionList =
-    [
-
-      sessions.asia,
-
-      sessions.london,
-
-      sessions.newYork
-
-    ].filter(
-      Boolean
-    );
-
-
-  for (
-    const session
-    of sessionList
-  ) {
-
-    const above =
-      price >
-      session.high;
-
-
-    const below =
-      price <
-      session.low;
-
-
-    parts.push(
-
-      `${session.label}: ${
-        above
-          ?
-          "price is above its high"
-          :
-          below
-            ?
-            "price is below its low"
-            :
-            "price remains inside its range"
-      }.`
-
-    );
-
-  }
-
-
-  if (
-    raid.latestConfirmed
-  ) {
-
-    parts.push(
-
-      `${
-        raid
-          .latestConfirmed
-          .side ===
-        "BSL"
-          ?
-          "Buy-side"
-          :
-          "Sell-side"
-      } liquidity was recently swept; reversal evidence is ${
-        raid
-          .latestConfirmed
-          .reversalEvidence
-      }/100.`
-
-    );
-
-  }
-
-
-  const best =
-    clusters[
-      0
-    ];
-
-
-  if (
-    best
-  ) {
-
-    parts.push(
-
-      `Highest-ranked remaining magnet is ${best.side} near ${best.center} with a ${best.magnetScore}/100 magnet score.`
-
-    );
-
-  }
-
-
-  parts.push(
-
-    `Directional engine is ${direction.direction.toLowerCase()} (${direction.buyScore} buy / ${direction.sellScore} sell).`
-
-  );
-
-
-  return parts.join(
-    " "
-  );
-
-}
-
-
-/* ================================================================
    LIQUIDITY HIERARCHY
 ================================================================ */
 
 function liquidityHierarchy(
   levels,
-  currentPrice
+  price
 ) {
 
   const timeframeRank =
@@ -7749,7 +8152,7 @@ function liquidityHierarchy(
                   level.touches ||
                   1
                 ) *
-                2
+                  2
               ),
 
               0,
@@ -7764,14 +8167,11 @@ function liquidityHierarchy(
 
         distance:
           round(
-
             Math.abs(
               level.price -
-              currentPrice
+              price
             ),
-
             3
-
           )
 
       })
@@ -7795,7 +8195,120 @@ function liquidityHierarchy(
 
 
 /* ================================================================
-   MAIN INTELLIGENCE BUILD
+   NARRATIVE
+================================================================ */
+
+function sessionNarrative({
+  sessions,
+  price,
+  clusters,
+  raid,
+  direction
+}) {
+
+  const parts =
+    [];
+
+
+  for (
+    const session
+    of [
+
+      sessions.asia,
+
+      sessions.london,
+
+      sessions.newYork
+
+    ].filter(
+      Boolean
+    )
+  ) {
+
+    const position =
+      price >
+      session.high
+        ?
+        "above its high"
+        :
+        price <
+        session.low
+          ?
+          "below its low"
+          :
+          "inside its range";
+
+
+    parts.push(
+      `${session.label} (${session.state}): price is ${position}.`
+    );
+
+  }
+
+
+  if (
+    raid.latestConfirmed
+  ) {
+
+    parts.push(
+      `${
+        raid
+          .latestConfirmed
+          .side ===
+        "BSL"
+          ?
+          "Buy-side"
+          :
+          "Sell-side"
+      } strong liquidity was recently swept; reversal evidence ${
+        raid
+          .latestConfirmed
+          .reversalEvidence
+      }/100.`
+    );
+
+  }
+
+
+  const best =
+    clusters[
+      0
+    ];
+
+
+  if (
+    best
+  ) {
+
+    parts.push(
+      `Top strong zone is ${best.side} near ${best.center}, grade ${best.grade}, quality ${best.quality}/100.`
+    );
+
+  }
+
+  else {
+
+    parts.push(
+      "No liquidity zone currently passes the strong-zone filter."
+    );
+
+  }
+
+
+  parts.push(
+    `Directional engine: ${direction.direction.toLowerCase()} (${direction.buyScore} buy / ${direction.sellScore} sell).`
+  );
+
+
+  return parts.join(
+    " "
+  );
+
+}
+
+
+/* ================================================================
+   MAIN ENGINE
 ================================================================ */
 
 async function buildFull() {
@@ -7805,6 +8318,7 @@ async function buildFull() {
 
 
   const [
+    quoteResult,
     m1Result,
     m5Result,
     m15Result,
@@ -7814,6 +8328,8 @@ async function buildFull() {
   ] =
     await Promise.all(
       [
+
+        fetchLatestPrice(),
 
         fetchSeries(
           "1min",
@@ -7881,11 +8397,14 @@ async function buildFull() {
     h4Result.candles;
 
 
+  /*
+     IMPORTANT:
+     Current engine price now comes from /price,
+     not simply the latest M1 candle close.
+  */
+
   const price =
-    m1[
-      m1.length -
-      1
-    ].close;
+    quoteResult.price;
 
 
   const atr5Array =
@@ -7908,7 +8427,7 @@ async function buildFull() {
       1
     ] ||
     price *
-    0.001;
+      0.001;
 
 
   const atr15 =
@@ -7917,7 +8436,7 @@ async function buildFull() {
       1
     ] ||
     atr5 *
-    2;
+      2;
 
 
   const h1Trend =
@@ -7932,6 +8451,13 @@ async function buildFull() {
     );
 
 
+  const combinedTrend =
+    combineTrendBias(
+      h1Trend,
+      h4Trend
+    );
+
+
   const regime =
     detectRegime(
       m15,
@@ -7941,80 +8467,61 @@ async function buildFull() {
 
   const liquidity =
     buildLiquidityLevels(
-
       m5,
-
       m15,
-
       h1,
-
       atr5,
-
       atr15
-
     );
 
 
-  const combinedTrend =
-    h1Trend.bias ===
-    h4Trend.bias
-      ?
-      h1Trend.bias
-      :
-      h1Trend.bias;
-
-
-  const clusters =
+  const allClusters =
     clusterLiquidity(
-
       liquidity.levels,
-
       price,
-
       atr5,
-
       combinedTrend
+    );
 
+
+  /*
+     THIS IS THE IMPORTANT FILTER.
+
+     Everything below this line uses
+     STRONG LIQUIDITY ONLY.
+  */
+
+  const strongClusters =
+    filterStrongLiquidityZones(
+      allClusters,
+      m5,
+      atr5
     );
 
 
   const raid =
     buildRaidState(
-
-      clusters,
-
+      strongClusters,
       m5,
-
       m1,
-
       atr5,
-
       price
-
     );
 
 
   const trap =
     detectTrap(
-
       raid.latestConfirmed,
-
       m5,
-
       atr5
-
     );
 
 
   const phase =
     detectMarketPhase(
-
       m5,
-
       raid.latestConfirmed,
-
       regime
-
     );
 
 
@@ -8030,6 +8537,8 @@ async function buildFull() {
 
         h1Trend,
 
+        h4Trend,
+
         regime,
 
         raid,
@@ -8038,7 +8547,8 @@ async function buildFull() {
 
         macro,
 
-        clusters,
+        clusters:
+          strongClusters,
 
         price
 
@@ -8052,7 +8562,8 @@ async function buildFull() {
 
         direction,
 
-        clusters,
+        clusters:
+          strongClusters,
 
         raid,
 
@@ -8082,7 +8593,8 @@ async function buildFull() {
 
         raid,
 
-        clusters
+        clusters:
+          strongClusters
 
       }
     );
@@ -8098,7 +8610,8 @@ async function buildFull() {
 
         direction,
 
-        clusters,
+        clusters:
+          strongClusters,
 
         raid,
 
@@ -8165,10 +8678,10 @@ async function buildFull() {
       true,
 
     engine:
-      "MKAYFX GOLD INTELLIGENCE V9",
+      "MKAYFX GOLD INTELLIGENCE V9.2 — STRONG LIQUIDITY",
 
     version:
-      "9.0.0",
+      "9.2.0",
 
     symbol:
       SYMBOL,
@@ -8180,6 +8693,34 @@ async function buildFull() {
     computationMs:
       Date.now() -
       started,
+
+
+    filters: {
+
+      mode:
+        "STRONG_LIQUIDITY_ONLY",
+
+      minStrength:
+        CONFIG
+          .strongLiquidity
+          .minStrength,
+
+      minMagnetScore:
+        CONFIG
+          .strongLiquidity
+          .minMagnetScore,
+
+      minQuality:
+        CONFIG
+          .strongLiquidity
+          .minQuality,
+
+      maxDistanceAtr:
+        CONFIG
+          .strongLiquidity
+          .maxDistanceAtr
+
+    },
 
 
     data: {
@@ -8238,6 +8779,9 @@ async function buildFull() {
 
       keySlots: {
 
+        quote:
+          quoteResult.keySlot,
+
         m1:
           m1Result.keySlot,
 
@@ -8256,6 +8800,9 @@ async function buildFull() {
       },
 
       fetchMs: {
+
+        quote:
+          quoteResult.ms,
 
         m1:
           m1Result.ms,
@@ -8289,6 +8836,9 @@ async function buildFull() {
 
     trend: {
 
+      combined:
+        combinedTrend,
+
       h1:
         h1Trend,
 
@@ -8303,10 +8853,20 @@ async function buildFull() {
 
     liquidity: {
 
+      strongOnly:
+        true,
+
       clusters:
-        clusters.slice(
+        strongClusters.slice(
           0,
           12
+        ),
+
+      rejectedClusterCount:
+        Math.max(
+          0,
+          allClusters.length -
+          strongClusters.length
         ),
 
       hierarchy,
@@ -8374,7 +8934,8 @@ async function buildFull() {
 
           price,
 
-          clusters,
+          clusters:
+            strongClusters,
 
           raid,
 
@@ -8425,7 +8986,7 @@ async function buildFull() {
           ),
 
       importantClusters:
-        clusters.slice(
+        strongClusters.slice(
           0,
           6
         )
@@ -8434,7 +8995,7 @@ async function buildFull() {
 
 
     disclaimer:
-      "Heuristic market intelligence for research. Scores are not guaranteed probabilities or financial advice."
+      "Heuristic market intelligence for research. Strong-zone filtering reduces noise but does not guarantee profitable trades."
 
   };
 
@@ -8499,10 +9060,6 @@ export default {
         "full";
 
 
-      /* ==========================================================
-         FAST PRICE MODE
-      ========================================================== */
-
       if (
         mode ===
         "quote"
@@ -8544,10 +9101,6 @@ export default {
 
       }
 
-
-      /* ==========================================================
-         FULL INTELLIGENCE MODE
-      ========================================================== */
 
       const result =
         await buildFull();
