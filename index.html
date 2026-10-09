@@ -1,4544 +1,1690 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
+  content="width=device-width, initial-scale=1, viewport-fit=cover"
 >
 
-<meta
-  name="theme-color"
-  content="#05070b"
->
+<meta name="theme-color" content="#060a11">
 
-<meta
-  name="apple-mobile-web-app-capable"
-  content="yes"
->
-
-<meta
-  name="apple-mobile-web-app-status-bar-style"
-  content="black-translucent"
->
-
-<meta
-  name="apple-mobile-web-app-title"
-  content="MKAYFX Gold"
->
-
-<title>
-  MKAYFX Gold Intelligence V9.2
-</title>
-
+<title>MKAYFX | Gold Institutional Radar</title>
 
 <style>
-
-:root{
-
-  --bg:#05070b;
-  --bg2:#090d13;
-
-  --card:rgba(15,20,29,.84);
-  --card2:rgba(10,14,21,.92);
-
-  --line:rgba(255,255,255,.08);
-  --line2:rgba(255,255,255,.14);
-
-  --text:#f4f7fb;
-  --muted:#7f8999;
-  --soft:#aeb7c5;
-
-  --gold:#f6c453;
-  --gold2:#a97715;
-
-  --green:#44e1a6;
-  --red:#ff6b7a;
-
-  --blue:#70a7ff;
-  --cyan:#61d7ff;
-  --purple:#ae8cff;
-
-  --shadow:
-    0 18px 70px rgba(0,0,0,.38);
-
+:root {
+  --bg:#060a11;
+  --panel:#101722;
+  --panel2:#0c121c;
+  --line:#273141;
+  --text:#ecf1f8;
+  --muted:#8493a8;
+  --gold:#efc879;
+  --green:#4fddb9;
+  --red:#fd718b;
+  --blue:#8fbcff;
 }
 
-
-*{
-
+* {
   box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-
 }
 
-
-html,
-body{
-
+body {
   margin:0;
-
-  min-height:100%;
-
-  background:
-    var(--bg);
-
-  color:
-    var(--text);
-
+  color:var(--text);
   font-family:
-    Inter,
-    ui-sans-serif,
-    -apple-system,
+    Inter,-apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-}
-
-
-body{
-
+    'Segoe UI',sans-serif;
   background:
-
     radial-gradient(
-      circle at 84% -10%,
-      rgba(246,196,83,.14),
-      transparent 28%
+      ellipse at 70% -20%,
+      #1e2940 0%,
+      transparent 47%
     ),
-
-    radial-gradient(
-      circle at 0% 20%,
-      rgba(97,215,255,.09),
-      transparent 22%
-    ),
-
-    linear-gradient(
-      180deg,
-      #05070b 0%,
-      #070a10 45%,
-      #05070b 100%
-    );
-
-  overflow-x:hidden;
-
+    var(--bg);
 }
 
-
-body:before{
-
-  content:"";
-
-  position:fixed;
-
-  inset:0;
-
-  pointer-events:none;
-
-  opacity:.22;
-
-  background-image:
-
-    linear-gradient(
-      rgba(255,255,255,.015) 1px,
-      transparent 1px
-    ),
-
-    linear-gradient(
-      90deg,
-      rgba(255,255,255,.015) 1px,
-      transparent 1px
-    );
-
-  background-size:
-    32px 32px;
-
-  mask-image:
-    linear-gradient(
-      to bottom,
-      black,
-      transparent 80%
-    );
-
-}
-
-
-button{
-
-  font:inherit;
-
-}
-
-
-.app{
-
-  width:
-    min(
-      1500px,
-      100%
-    );
-
+.wrap {
+  max-width:1500px;
   margin:auto;
-
-  padding:
-    18px
-    18px
-    calc(
-      40px +
-      env(safe-area-inset-bottom)
-    );
-
+  padding:24px 22px 80px;
 }
 
-
-/* ================================================================
-   HEADER
-================================================================ */
-
-.topbar{
-
+header {
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
-  gap:14px;
-
-  margin-bottom:18px;
-
-  position:sticky;
-
-  top:0;
-
-  z-index:30;
-
-  padding:
-    10px 0 12px;
-
-  backdrop-filter:
-    blur(14px);
-
-  background:
-
-    linear-gradient(
-      180deg,
-      rgba(5,7,11,.96),
-      rgba(5,7,11,.72),
-      transparent
-    );
-
+  gap:16px;
+  padding:6px 0 27px;
+  border-bottom:1px solid var(--line);
 }
 
+.logo {
+  font-size:21px;
+  font-weight:900;
+  letter-spacing:2px;
+}
 
-.brand{
+.logo span {
+  color:var(--gold);
+}
 
+.subtitle {
+  font-size:10px;
+  letter-spacing:3px;
+  color:var(--muted);
+  margin-top:7px;
+}
+
+.headright {
   display:flex;
-
   align-items:center;
-
   gap:12px;
-
-  min-width:0;
-
+  flex-wrap:wrap;
+  justify-content:flex-end;
 }
 
+.chip {
+  border:1px solid var(--line);
+  border-radius:30px;
+  padding:9px 13px;
+  color:var(--muted);
+  font-size:11px;
+  letter-spacing:.6px;
+  background:#0a101a;
+}
 
-.brandmark{
+.dot {
+  display:inline-block;
+  background:var(--muted);
+  width:7px;
+  height:7px;
+  border-radius:100%;
+  margin-right:7px;
+}
 
-  width:42px;
+.dot.good {
+  background:var(--green);
+  box-shadow:0 0 12px #4fddb955;
+}
 
-  height:42px;
+.dot.bad {
+  background:var(--red);
+}
 
-  border-radius:13px;
+button {
+  cursor:pointer;
+  background:var(--gold);
+  border:0;
+  border-radius:10px;
+  color:#17120a;
+  font-weight:800;
+  padding:11px 17px;
+  font-size:12px;
+}
 
+button:disabled {
+  opacity:.45;
+  cursor:wait;
+}
+
+.eyebrow {
+  font-size:10px;
+  letter-spacing:2px;
+  color:var(--gold);
+  font-weight:800;
+  text-transform:uppercase;
+}
+
+.hero {
   display:grid;
+  grid-template-columns:1.25fr .75fr;
+  gap:16px;
+  margin-top:22px;
+}
 
-  place-items:center;
-
+.panel {
   background:
-
     linear-gradient(
       135deg,
-      #2b210e,
-      #0c0d10 70%
+      #111926,
+      #0c121b
     );
-
-  border:
-    1px solid
-    rgba(246,196,83,.35);
-
-  box-shadow:
-
-    inset 0 0 28px
-    rgba(246,196,83,.07),
-
-    0 0 34px
-    rgba(246,196,83,.08);
-
-  font-weight:900;
-
-  color:
-    var(--gold);
-
-  letter-spacing:-1px;
-
+  border:1px solid #263140;
+  border-radius:18px;
+  padding:21px;
+  min-width:0;
+  box-shadow:0 13px 36px #00000016;
 }
 
-
-.brand h1{
-
-  font-size:15px;
-
-  line-height:1.1;
-
-  margin:0;
-
-  white-space:nowrap;
-
-}
-
-
-.brand small{
-
-  display:block;
-
-  margin-top:4px;
-
-  color:
-    var(--muted);
-
-  font-size:10px;
-
-  letter-spacing:.12em;
-
-  text-transform:uppercase;
-
-}
-
-
-.actions{
-
-  display:flex;
-
-  gap:8px;
-
-  align-items:center;
-
-}
-
-
-.pill,
-.refresh{
-
-  height:38px;
-
-  border:
-    1px solid
-    var(--line);
-
-  background:
-    rgba(255,255,255,.035);
-
-  color:
-    var(--soft);
-
-  border-radius:12px;
-
-  padding:
-    0 12px;
-
-  display:flex;
-
-  align-items:center;
-
-  gap:8px;
-
-}
-
-
-.dot{
-
-  width:8px;
-
-  height:8px;
-
-  border-radius:50%;
-
-  background:
-    var(--muted);
-
-  box-shadow:
-    0 0 0 4px
-    rgba(255,255,255,.03);
-
-}
-
-
-.dot.live{
-
-  background:
-    var(--green);
-
-  box-shadow:
-
-    0 0 0 4px
-    rgba(68,225,166,.08),
-
-    0 0 18px
-    rgba(68,225,166,.35);
-
-}
-
-
-.refresh{
-
-  cursor:pointer;
-
-  color:
-    var(--text);
-
-}
-
-
-.refresh:active{
-
-  transform:
-    scale(.98);
-
-}
-
-
-/* ================================================================
-   PANELS
-================================================================ */
-
-.panel{
-
+.hero-panel {
+  min-height:220px;
   position:relative;
-
-  background:
-
-    linear-gradient(
-      180deg,
-      rgba(15,20,29,.9),
-      rgba(8,12,18,.92)
-    );
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:20px;
-
-  box-shadow:
-    var(--shadow);
-
   overflow:hidden;
-
 }
 
-
-.panel:after{
-
-  content:"";
-
+.hero-panel:after {
+  content:'';
   position:absolute;
-
-  inset:0;
-
+  border:1px solid #efc87918;
+  border-radius:100%;
+  width:300px;
+  height:300px;
+  right:-125px;
+  top:-130px;
   pointer-events:none;
-
-  background:
-
-    linear-gradient(
-      120deg,
-      rgba(255,255,255,.025),
-      transparent 22%,
-      transparent 72%,
-      rgba(246,196,83,.025)
-    );
-
 }
 
-
-/* ================================================================
-   HERO
-================================================================ */
-
-.hero{
-
-  display:grid;
-
-  grid-template-columns:
-    minmax(0,1.5fr)
-    minmax(280px,.75fr);
-
-  gap:14px;
-
-  margin-bottom:14px;
-
+.price {
+  font-size:clamp(37px,5vw,69px);
+  font-weight:780;
+  letter-spacing:-2px;
+  line-height:1.22;
+  margin:13px 0;
 }
 
-
-.pricePanel{
-
-  padding:20px;
-
+.price small {
+  font-size:16px;
+  font-weight:600;
+  color:var(--muted);
+  letter-spacing:0;
 }
 
-
-.eyebrow{
-
-  font-size:10px;
-
-  letter-spacing:.15em;
-
-  text-transform:uppercase;
-
-  color:
-    var(--muted);
-
+.muted {
+  color:var(--muted);
 }
 
-
-.priceRow{
-
-  display:flex;
-
-  align-items:flex-end;
-
-  justify-content:space-between;
-
-  gap:14px;
-
-  margin-top:8px;
-
-}
-
-
-.price{
-
-  font-size:
-    clamp(
-      36px,
-      6vw,
-      68px
-    );
-
-  font-weight:800;
-
-  letter-spacing:-.05em;
-
-  line-height:.95;
-
-}
-
-
-.priceMeta{
-
-  text-align:right;
-
-}
-
-
-.priceMeta strong{
-
-  display:block;
-
+.small {
   font-size:12px;
-
+  line-height:1.6;
 }
 
-
-.priceMeta span{
-
-  font-size:11px;
-
-  color:
-    var(--muted);
-
-}
-
-
-.chips{
-
-  display:flex;
-
-  flex-wrap:wrap;
-
-  gap:7px;
-
-  margin-top:16px;
-
-}
-
-
-.chip{
-
-  border:
-    1px solid
-    var(--line);
-
-  background:
-    rgba(255,255,255,.03);
-
-  border-radius:999px;
-
-  padding:
-    7px 9px;
-
+.fine {
   font-size:10px;
-
-  color:
-    var(--soft);
-
-}
-
-
-.chip b{
-
-  color:
-    var(--text);
-
-}
-
-
-/* ================================================================
-   BIAS
-================================================================ */
-
-.biasPanel{
-
-  padding:18px;
-
-  display:flex;
-
-  flex-direction:column;
-
-  justify-content:space-between;
-
-}
-
-
-.biasTitle{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  align-items:center;
-
-}
-
-
-.biasDirection{
-
-  font-size:28px;
-
-  font-weight:800;
-
-  letter-spacing:-.03em;
-
-  margin-top:10px;
-
-}
-
-
-.biasDirection.bull{
-
-  color:
-    var(--green);
-
-}
-
-
-.biasDirection.bear{
-
-  color:
-    var(--red);
-
-}
-
-
-.biasDirection.neutral{
-
-  color:
-    var(--gold);
-
-}
-
-
-.scorebar{
-
-  height:12px;
-
-  border-radius:999px;
-
-  background:
-
-    linear-gradient(
-      90deg,
-      rgba(255,107,122,.9)
-      0 50%,
-      rgba(68,225,166,.9)
-      50% 100%
-    );
-
-  position:relative;
-
-  margin:
-    20px 0 8px;
-
-  box-shadow:
-
-    inset 0 0 0 1px
-    rgba(255,255,255,.08);
-
-}
-
-
-.scoreMarker{
-
-  position:absolute;
-
-  top:-5px;
-
-  width:4px;
-
-  height:22px;
-
-  border-radius:3px;
-
-  background:white;
-
-  box-shadow:
-    0 0 14px
-    rgba(255,255,255,.55);
-
-  transform:
-    translateX(-50%);
-
-}
-
-
-.scoreLabels{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  font-size:11px;
-
-  color:
-    var(--muted);
-
-}
-
-
-/* ================================================================
-   METRICS
-================================================================ */
-
-.metrics{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      6,
-      minmax(0,1fr)
-    );
-
-  gap:10px;
-
-  margin-bottom:14px;
-
-}
-
-
-.metric{
-
-  padding:
-    14px 14px 13px;
-
-}
-
-
-.metric .k{
-
-  font-size:10px;
-
-  text-transform:uppercase;
-
-  letter-spacing:.1em;
-
-  color:
-    var(--muted);
-
-}
-
-
-.metric .v{
-
-  font-size:21px;
-
-  font-weight:800;
-
-  margin-top:7px;
-
-}
-
-
-.metric .s{
-
-  font-size:10px;
-
-  color:
-    var(--muted);
-
-  margin-top:4px;
-
-  white-space:nowrap;
-
-  overflow:hidden;
-
-  text-overflow:ellipsis;
-
-}
-
-
-/* ================================================================
-   MAIN GRID
-================================================================ */
-
-.gridMain{
-
-  display:grid;
-
-  grid-template-columns:
-    minmax(0,1.65fr)
-    minmax(330px,.75fr);
-
-  gap:14px;
-
-}
-
-
-.chartPanel{
-
-  padding:16px;
-
-}
-
-
-.sectionHead{
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  gap:10px;
-
-  margin-bottom:12px;
-
-}
-
-
-.sectionHead h2{
-
-  font-size:13px;
-
-  margin:0;
-
-}
-
-
-.sectionHead span{
-
-  font-size:10px;
-
-  color:
-    var(--muted);
-
-}
-
-
-/* ================================================================
-   CHART
-================================================================ */
-
-.chartWrap{
-
-  height:480px;
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:16px;
-
-  background:
-
-    linear-gradient(
-      180deg,
-      rgba(4,7,11,.98),
-      rgba(7,10,15,.98)
-    );
-
-  overflow:hidden;
-
-  position:relative;
-
-}
-
-
-.chartWrap canvas{
-
-  width:100%;
-
-  height:100%;
-
-  display:block;
-
-}
-
-
-.legend{
-
-  position:absolute;
-
-  left:12px;
-
-  top:12px;
-
-  display:flex;
-
-  gap:7px;
-
-  flex-wrap:wrap;
-
-  pointer-events:none;
-
-}
-
-
-.legend span{
-
-  font-size:9px;
-
-  padding:
-    5px 7px;
-
-  border-radius:999px;
-
-  background:
-    rgba(5,7,11,.72);
-
-  border:
-    1px solid
-    var(--line);
-
-  backdrop-filter:
-    blur(8px);
-
-}
-
-
-/* ================================================================
-   SIDE STACK
-================================================================ */
-
-.sideStack{
-
-  display:grid;
-
-  gap:14px;
-
-}
-
-
-.tradeCard{
-
-  padding:18px;
-
-}
-
-
-.status{
-
-  display:inline-flex;
-
-  align-items:center;
-
-  gap:7px;
-
-  padding:
-    7px 9px;
-
-  border-radius:10px;
-
-  border:
-    1px solid
-    var(--line);
-
-  font-size:10px;
-
-  font-weight:800;
-
-  letter-spacing:.08em;
-
-}
-
-
-.status.ready{
-
-  color:
-    var(--green);
-
-  border-color:
-    rgba(68,225,166,.28);
-
-  background:
-    rgba(68,225,166,.08);
-
-}
-
-
-.status.armed{
-
-  color:
-    var(--gold);
-
-  border-color:
-    rgba(246,196,83,.28);
-
-  background:
-    rgba(246,196,83,.08);
-
-}
-
-
-.status.no{
-
-  color:
-    var(--muted);
-
-}
-
-
-.tradeDir{
-
-  font-size:30px;
-
-  font-weight:850;
-
-  margin:
-    12px 0 4px;
-
-}
-
-
-.tradeDir.bull{
-
-  color:
-    var(--green);
-
-}
-
-
-.tradeDir.bear{
-
-  color:
-    var(--red);
-
-}
-
-
-.tradeReason{
-
-  font-size:11px;
-
-  line-height:1.55;
-
-  color:
-    var(--muted);
-
-}
-
-
-.tradeGrid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      1fr
-    );
-
-  gap:8px;
-
-  margin-top:14px;
-
-}
-
-
-.tradeCell{
-
-  padding:10px;
-
-  border-radius:12px;
-
-  background:
-    rgba(255,255,255,.028);
-
-  border:
-    1px solid
-    var(--line);
-
-}
-
-
-.tradeCell span{
-
-  font-size:9px;
-
-  color:
-    var(--muted);
-
-  text-transform:uppercase;
-
-  letter-spacing:.08em;
-
-}
-
-
-.tradeCell b{
-
-  display:block;
-
-  margin-top:5px;
-
-  font-size:13px;
-
-}
-
-
-/* ================================================================
-   STRONG ZONES
-================================================================ */
-
-.zonePanel{
-
-  margin-top:14px;
-
-  padding:16px;
-
-}
-
-
-.zoneSummary{
-
-  display:flex;
-
-  gap:8px;
-
-  flex-wrap:wrap;
-
-  margin-bottom:12px;
-
-}
-
-
-.zoneSummary .chip{
-
-  background:
-    rgba(246,196,83,.04);
-
-}
-
-
-.zones{
-
-  display:grid;
-
-  gap:8px;
-
-}
-
-
-.zone{
-
-  display:grid;
-
-  grid-template-columns:
-    56px
-    minmax(0,1fr)
-    90px
-    72px;
-
-  gap:10px;
-
-  align-items:center;
-
-  padding:12px;
-
-  border-radius:14px;
-
-  background:
-    rgba(255,255,255,.026);
-
-  border:
-    1px solid
-    var(--line);
-
-  position:relative;
-
-  overflow:hidden;
-
-}
-
-
-.zone:before{
-
-  content:"";
-
-  position:absolute;
-
-  left:0;
-
-  top:0;
-
-  bottom:0;
-
-  width:3px;
-
-  background:
-    var(--gold);
-
-}
-
-
-.zone.ssl:before{
-
-  background:
-    var(--red);
-
-}
-
-
-.zone.bsl:before{
-
-  background:
-    var(--green);
-
-}
-
-
-.grade{
-
-  font-size:18px;
-
-  font-weight:900;
-
-  color:
-    var(--gold);
-
-}
-
-
-.zoneName b{
-
-  display:block;
-
-  font-size:12px;
-
-}
-
-
-.zoneName span{
-
-  font-size:10px;
-
-  color:
-    var(--muted);
-
-  display:block;
-
-  margin-top:4px;
-
-  white-space:nowrap;
-
-  overflow:hidden;
-
-  text-overflow:ellipsis;
-
-}
-
-
-.zonePrice{
-
-  text-align:right;
-
-}
-
-
-.zonePrice b{
-
-  display:block;
-
-  font-size:13px;
-
-}
-
-
-.zonePrice span{
-
-  font-size:9px;
-
-  color:
-    var(--muted);
-
-}
-
-
-.zoneScore{
-
-  text-align:right;
-
-}
-
-
-.zoneScore b{
-
-  font-size:14px;
-
-}
-
-
-.zoneScore span{
-
-  display:block;
-
-  font-size:9px;
-
-  color:
-    var(--muted);
-
-}
-
-
-/* ================================================================
-   LOWER PANELS
-================================================================ */
-
-.twoCol{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
-    );
-
-  gap:14px;
-
-  margin-top:14px;
-
-}
-
-
-.infoPanel{
-
-  padding:16px;
-
-}
-
-
-.bigState{
-
-  font-size:24px;
-
-  font-weight:850;
-
-  margin-top:8px;
-
-}
-
-
-.subtext{
-
-  font-size:11px;
-
-  color:
-    var(--muted);
-
-  line-height:1.55;
-
-  margin-top:6px;
-
-}
-
-
-.progress{
-
-  height:7px;
-
-  background:
-    rgba(255,255,255,.055);
-
-  border-radius:999px;
-
-  margin-top:12px;
-
-  overflow:hidden;
-
-}
-
-
-.progress i{
-
-  display:block;
-
-  height:100%;
-
-  background:
-
-    linear-gradient(
-      90deg,
-      var(--gold2),
-      var(--gold)
-    );
-
-  border-radius:inherit;
-
-}
-
-
-.kv{
-
-  display:grid;
-
-  grid-template-columns:
-    1fr auto;
-
-  gap:8px;
-
-  padding:
-    8px 0;
-
-  border-bottom:
-    1px solid
-    rgba(255,255,255,.055);
-
-  font-size:11px;
-
-}
-
-
-.kv:last-child{
-
-  border-bottom:0;
-
-}
-
-
-.kv span{
-
-  color:
-    var(--muted);
-
-}
-
-
-.kv b{
-
-  font-weight:700;
-
-}
-
-
-/* ================================================================
-   SCENARIOS
-================================================================ */
-
-.scenarios{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      minmax(0,1fr)
-    );
-
-  gap:10px;
-
-}
-
-
-.scenario{
-
-  padding:14px;
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:14px;
-
-  background:
-    rgba(255,255,255,.025);
-
-}
-
-
-.scenarioTop{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  gap:8px;
-
-  align-items:flex-start;
-
-}
-
-
-.scenarioTop b{
-
-  font-size:11px;
-
-}
-
-
-.weight{
-
-  font-size:14px;
-
-  font-weight:850;
-
-  color:
-    var(--gold);
-
-}
-
-
-.scenario p{
-
-  font-size:10px;
-
-  line-height:1.45;
-
-  color:
-    var(--muted);
-
-  margin:
-    8px 0 0;
-
-}
-
-
-.target{
-
-  margin-top:10px;
-
-  font-size:11px;
-
-}
-
-
-.target b{
-
-  font-size:15px;
-
-}
-
-
-/* ================================================================
-   NARRATIVE
-================================================================ */
-
-.narrative{
-
-  padding:16px;
-
-  margin-top:14px;
-
-}
-
-
-.narrative p{
-
-  margin:
-    8px 0 0;
-
-  color:#c4cbd6;
-
-  font-size:12px;
-
-  line-height:1.65;
-
-}
-
-
-.footer{
-
-  color:
-    var(--muted);
-
-  font-size:10px;
-
+  letter-spacing:.4px;
   line-height:1.5;
-
-  text-align:center;
-
-  padding:
-    18px 6px 0;
-
 }
 
+.bias {
+  font-weight:850;
+  font-size:27px;
+  margin:14px 0 12px;
+}
 
-/* ================================================================
-   ERROR
-================================================================ */
+.bar {
+  background:#253044;
+  height:8px;
+  border-radius:40px;
+  overflow:hidden;
+  position:relative;
+}
 
-.error{
+.bar > div {
+  height:100%;
+  border-radius:40px;
+  background:var(--gold);
+  width:50%;
+  transition:width .4s;
+}
 
-  padding:16px;
+.signal {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:14px;
+}
 
-  border:
-    1px solid
-    rgba(255,107,122,.28);
+.metrics {
+  display:grid;
+  grid-template-columns:
+    repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-top:14px;
+}
 
-  background:
-    rgba(255,107,122,.07);
+.metric {
+  min-height:111px;
+}
 
-  border-radius:14px;
+.metric-name {
+  font-size:10px;
+  color:var(--muted);
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
 
-  color:#ffc1c7;
+.metric-val {
+  font-size:clamp(18px,2.5vw,27px);
+  font-weight:800;
+  margin-top:13px;
+  letter-spacing:-.4px;
+}
 
+.metric-caption {
+  font-size:10px;
+  color:var(--muted);
+  margin-top:8px;
+}
+
+.grid {
+  display:grid;
+  grid-template-columns:1.55fr 1fr;
+  gap:16px;
+  margin-top:16px;
+}
+
+.stack {
+  display:grid;
+  gap:16px;
+}
+
+.sectionhead {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:18px;
+}
+
+.sectionhead h2 {
+  font-size:14px;
+  margin:0;
+  letter-spacing:.3px;
+}
+
+.tag {
+  font-size:10px;
+  color:var(--gold);
+  background:#efc87910;
+  padding:7px 9px;
+  border-radius:7px;
+  border:1px solid #efc87930;
+  white-space:nowrap;
+}
+
+canvas {
+  display:block;
+  width:100%;
+  height:325px;
+  touch-action:pan-y;
+}
+
+.charttip {
+  min-height:25px;
+  font-size:11px;
+  color:var(--muted);
+  padding-top:7px;
+}
+
+.quad {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:11px;
+}
+
+.subcard {
+  background:#090f18;
+  border:1px solid #263140;
+  border-radius:12px;
+  padding:14px;
+}
+
+.subcard div:first-child {
+  font-size:11px;
+  color:var(--muted);
+}
+
+.subcard strong {
+  font-size:23px;
+  display:block;
+  margin-top:12px;
+}
+
+.subcard em {
+  font-style:normal;
+  font-size:10px;
+  color:var(--muted);
+  display:block;
+  margin-top:5px;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  text-align:left;
   font-size:12px;
+}
 
-  display:none;
+th {
+  color:#8699ad;
+  font-size:9px;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  padding:10px 5px;
+  border-bottom:1px solid #2a3442;
+}
 
+td {
+  padding:12px 5px;
+  border-bottom:1px solid #242e3c;
+}
+
+tr:last-child td {
+  border-bottom:0;
+}
+
+.tablewrap {
+  overflow-x:auto;
+}
+
+.positive {
+  color:var(--green);
+}
+
+.negative {
+  color:var(--red);
+}
+
+.neutral {
+  color:var(--gold);
+}
+
+.badge {
+  font-size:10px;
+  padding:5px 7px;
+  border-radius:7px;
+  background:#1b2835;
+  white-space:nowrap;
+}
+
+.event {
+  padding:13px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.event:last-child {
+  border:0;
+}
+
+.eventtop {
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+}
+
+.event strong {
+  font-size:13px;
+}
+
+.event small {
+  display:block;
+  color:var(--muted);
+  margin-top:8px;
+  line-height:1.6;
+}
+
+.factor {
   margin-bottom:14px;
-
 }
 
-
-/* ================================================================
-   RESPONSIVE
-================================================================ */
-
-@media(
-  max-width:1100px
-){
-
-  .metrics{
-
-    grid-template-columns:
-      repeat(
-        3,
-        1fr
-      );
-
-  }
-
-
-  .gridMain{
-
-    grid-template-columns:
-      1fr;
-
-  }
-
-
-  .sideStack{
-
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0,1fr)
-      );
-
-  }
-
-
-  .zonePanel{
-
-    margin-top:0;
-
-  }
-
-
-  .chartWrap{
-
-    height:430px;
-
-  }
-
+.factor-label {
+  display:flex;
+  justify-content:space-between;
+  gap:7px;
+  color:var(--muted);
+  font-size:11px;
+  margin-bottom:7px;
 }
 
+.track {
+  height:5px;
+  background:#263346;
+  border-radius:10px;
+  overflow:hidden;
+}
 
-@media(
-  max-width:720px
-){
+.fill {
+  height:100%;
+  width:0;
+  background:var(--gold);
+  border-radius:10px;
+}
 
-  .app{
+.foot {
+  margin-top:20px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.8;
+}
 
-    padding:
-      12px
-      12px
-      34px;
+.foot a {
+  color:var(--gold);
+}
 
+.sourcegrid {
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+
+.source {
+  font-size:10px;
+  padding:8px 10px;
+  background:#0a111a;
+  border:1px solid var(--line);
+  border-radius:9px;
+}
+
+.empty {
+  font-size:12px;
+  line-height:1.7;
+  color:var(--muted);
+  padding:14px 0;
+}
+
+@media(max-width:900px) {
+  .hero,
+  .grid {
+    grid-template-columns:1fr;
   }
 
-
-  .topbar{
-
-    padding-top:8px;
-
-  }
-
-
-  .brand small{
-
-    display:none;
-
-  }
-
-
-  .pill span:last-child{
-
-    display:none;
-
-  }
-
-
-  .hero{
-
+  .metrics {
     grid-template-columns:
-      1fr;
-
+      repeat(2,minmax(0,1fr));
   }
 
+  canvas {
+    height:270px;
+  }
+}
 
-  .pricePanel{
-
-    padding:16px;
-
+@media(max-width:520px) {
+  .wrap {
+    padding:18px 13px 50px;
   }
 
+  header {
+    align-items:flex-start;
+  }
 
-  .biasPanel{
+  .logo {
+    font-size:17px;
+  }
 
+  .subtitle {
+    letter-spacing:1.5px;
+    font-size:9px;
+  }
+
+  .headright {
+    gap:7px;
+  }
+
+  .chip {
+    padding:8px 9px;
+    font-size:9px;
+  }
+
+  button {
+    padding:9px 11px;
+  }
+
+  .panel {
     padding:15px;
-
+    border-radius:14px;
   }
 
-
-  .metrics{
-
-    grid-template-columns:
-      repeat(
-        2,
-        1fr
-      );
-
+  .hero-panel {
+    min-height:180px;
   }
 
-
-  .metric{
-
-    padding:12px;
-
+  .price {
+    font-size:43px;
   }
 
-
-  .gridMain{
-
-    display:block;
-
+  .bias {
+    font-size:22px;
   }
 
-
-  .chartPanel{
-
-    padding:12px;
-
+  .metric {
+    min-height:100px;
   }
 
-
-  .chartWrap{
-
-    height:390px;
-
+  .metric-val {
+    font-size:21px;
   }
 
-
-  .sideStack{
-
-    display:grid;
-
-    grid-template-columns:
-      1fr;
-
-    margin-top:14px;
-
+  canvas {
+    height:230px;
   }
 
-
-  .twoCol{
-
-    grid-template-columns:
-      1fr;
-
+  .quad {
+    gap:7px;
   }
 
-
-  .scenarios{
-
-    grid-template-columns:
-      1fr;
-
+  .subcard {
+    padding:11px;
   }
 
-
-  .zone{
-
-    grid-template-columns:
-      46px
-      minmax(0,1fr)
-      78px;
-
+  .subcard strong {
+    font-size:19px;
   }
-
-
-  .zoneScore{
-
-    display:none;
-
-  }
-
-
-  .priceMeta{
-
-    max-width:120px;
-
-  }
-
-
-  .price{
-
-    font-size:46px;
-
-  }
-
 }
-
-
-@media(
-  max-width:410px
-){
-
-  .price{
-
-    font-size:41px;
-
-  }
-
-
-  .actions .pill{
-
-    display:none;
-
-  }
-
-
-  .chartWrap{
-
-    height:350px;
-
-  }
-
-
-  .tradeGrid{
-
-    grid-template-columns:
-      1fr 1fr;
-
-  }
-
-
-  .zone{
-
-    padding:10px;
-
-  }
-
-}
-
 </style>
-
 </head>
 
-
 <body>
+<main class="wrap">
 
-<div class="app">
-
-
-<header class="topbar">
-
-  <div class="brand">
-
-    <div class="brandmark">
-      M
+<header>
+  <div>
+    <div class="logo">
+      MKAY<span>FX</span>
     </div>
 
-    <div>
-
-      <h1>
-        MKAYFX GOLD INTELLIGENCE
-      </h1>
-
-      <small>
-        V9.2 · Strong Liquidity Warfare
-      </small>
-
+    <div class="subtitle">
+      GOLD INSTITUTIONAL RADAR / V1
     </div>
-
   </div>
 
+  <div class="headright">
+    <span class="chip">
+      <i id="dot" class="dot"></i>
+      <span id="status">CONNECTING</span>
+    </span>
 
-  <div class="actions">
-
-    <div class="pill">
-
-      <span
-        id="liveDot"
-        class="dot"
-      ></span>
-
-      <span id="feedLabel">
-        CONNECTING
-      </span>
-
-    </div>
-
-
-    <button
-      class="refresh"
-      id="refreshBtn"
-    >
-      ↻ Refresh
+    <button id="refresh" type="button">
+      REFRESH ↗
     </button>
-
   </div>
-
 </header>
 
+<div class="hero">
 
-<div
-  id="errorBox"
-  class="error"
-></div>
-
-
-<section class="hero">
-
-
-  <div class="panel pricePanel">
-
+  <section class="panel hero-panel">
     <div class="eyebrow">
-      XAU / USD · LIVE REFERENCE
+      XAU / USD · PUBLIC MARKET INTELLIGENCE
     </div>
 
-
-    <div class="priceRow">
-
-      <div
-        id="price"
-        class="price"
-      >
-        —
-      </div>
-
-
-      <div class="priceMeta">
-
-        <strong id="engineVersion">
-          V9.2
-        </strong>
-
-        <span id="updatedAt">
-          Waiting for data
-        </span>
-
-      </div>
-
+    <div class="price">
+      <span id="price">—</span>
+      <small>USD / OZ</small>
     </div>
 
-
-    <div class="chips">
-
-      <div class="chip">
-        ATR M5
-        <b id="atr5">—</b>
-      </div>
-
-      <div class="chip">
-        ATR M15
-        <b id="atr15">—</b>
-      </div>
-
-      <div class="chip">
-        RSI M5
-        <b id="rsi5">—</b>
-      </div>
-
-      <div class="chip">
-        RSI M15
-        <b id="rsi15">—</b>
-      </div>
-
-      <div class="chip">
-        Strong zones
-        <b id="zoneCount">—</b>
-      </div>
-
-      <div class="chip">
-        Rejected noise
-        <b id="rejectedCount">—</b>
-      </div>
-
+    <div class="small muted" id="priceNote">
+      Checking candle feed…
     </div>
 
-  </div>
+    <div class="sourcegrid">
+      <span class="source">
+        COMEX COT positioning
+      </span>
 
+      <span class="source">
+        Gold liquidity
+      </span>
 
-  <div class="panel biasPanel">
+      <span class="source">
+        FRED macro
+      </span>
+    </div>
+  </section>
 
-    <div>
-
-      <div class="biasTitle">
-
-        <span class="eyebrow">
-          Directional engine
-        </span>
-
-        <span
-          id="biasGap"
-          class="eyebrow"
-        >
-          GAP —
-        </span>
-
-      </div>
-
-
-      <div
-        id="biasDirection"
-        class="biasDirection neutral"
-      >
-        NEUTRAL
-      </div>
-
+  <section class="panel hero-panel">
+    <div class="eyebrow">
+      MULTI-SOURCE DIRECTIONAL EVIDENCE
     </div>
 
-
-    <div>
-
-      <div class="scorebar">
-
-        <i
-          id="scoreMarker"
-          class="scoreMarker"
-          style="left:50%"
-        ></i>
-
-      </div>
-
-
-      <div class="scoreLabels">
-
-        <span id="sellScore">
-          SELL —
-        </span>
-
-        <span id="buyScore">
-          BUY —
-        </span>
-
-      </div>
-
+    <div class="bias" id="bias">
+      EVALUATING
     </div>
 
-  </div>
+    <div class="bar">
+      <div id="biasBar"></div>
+    </div>
 
-</section>
+    <div class="signal">
+      <span class="muted small" id="score">
+        Evidence: —
+      </span>
 
+      <span class="tag" id="coverage">
+        Coverage: —
+      </span>
+    </div>
+
+    <p class="small muted">
+      Evidence index, not a trade
+      recommendation or predicted win rate.
+    </p>
+  </section>
+
+</div>
 
 <section class="metrics">
 
   <div class="panel metric">
-
-    <div class="k">
-      Confluence
+    <div class="metric-name">
+      Managed Money Net
     </div>
-
-    <div
-      id="confluence"
-      class="v"
-    >
-      —
+    <div class="metric-val" id="net">—</div>
+    <div class="metric-caption">
+      CFTC COMEX contracts
     </div>
-
-    <div class="s">
-      Strong-zone weighted
-    </div>
-
   </div>
 
-
   <div class="panel metric">
-
-    <div class="k">
-      Market phase
+    <div class="metric-name">
+      Weekly Net Change
     </div>
-
-    <div
-      id="phase"
-      class="v"
-    >
-      —
+    <div class="metric-val" id="netChange">—</div>
+    <div class="metric-caption">
+      Contracts vs prior report
     </div>
-
-    <div
-      id="phaseDetail"
-      class="s"
-    >
-      —
-    </div>
-
   </div>
 
-
   <div class="panel metric">
-
-    <div class="k">
-      Regime
+    <div class="metric-name">
+      Futures Open Interest
     </div>
-
-    <div
-      id="regime"
-      class="v"
-    >
-      —
+    <div class="metric-val" id="oi">—</div>
+    <div class="metric-caption">
+      Outstanding contracts
     </div>
-
-    <div
-      id="trendStrength"
-      class="s"
-    >
-      —
-    </div>
-
   </div>
 
-
   <div class="panel metric">
-
-    <div class="k">
-      H1 trend
+    <div class="metric-name">
+      M5 Average True Range
     </div>
-
-    <div
-      id="h1Trend"
-      class="v"
-    >
-      —
+    <div class="metric-val" id="atr">—</div>
+    <div class="metric-caption">
+      Gold price units (USD)
     </div>
-
-    <div
-      id="h1Score"
-      class="s"
-    >
-      —
-    </div>
-
-  </div>
-
-
-  <div class="panel metric">
-
-    <div class="k">
-      H4 trend
-    </div>
-
-    <div
-      id="h4Trend"
-      class="v"
-    >
-      —
-    </div>
-
-    <div
-      id="h4Score"
-      class="s"
-    >
-      —
-    </div>
-
-  </div>
-
-
-  <div class="panel metric">
-
-    <div class="k">
-      Feed age
-    </div>
-
-    <div
-      id="freshness"
-      class="v"
-    >
-      —
-    </div>
-
-    <div
-      id="computeMs"
-      class="s"
-    >
-      —
-    </div>
-
   </div>
 
 </section>
 
+<div class="grid">
 
-<section class="gridMain">
+<div class="stack">
 
-
-  <div class="panel chartPanel">
-
-    <div class="sectionHead">
-
-      <h2>
-        Strong Liquidity Map
-      </h2>
-
-      <span>
-        Only accepted zones are drawn
-      </span>
-
-    </div>
-
-
-    <div class="chartWrap">
-
-      <canvas id="chart"></canvas>
-
-
-      <div class="legend">
-
-        <span>
-          BSL strong zone
-        </span>
-
-        <span>
-          SSL strong zone
-        </span>
-
-        <span>
-          Live price
-        </span>
-
-      </div>
-
-    </div>
-
+<section class="panel">
+  <div class="sectionhead">
+    <h2>XAU/USD · 5-MINUTE STRUCTURE</h2>
+    <span class="tag">COMPLETED CANDLES</span>
   </div>
 
+  <canvas
+    id="chart"
+    aria-label="Gold price candles and detected zones"
+  ></canvas>
 
-  <div class="sideStack">
-
-
-    <div class="panel tradeCard">
-
-      <div class="sectionHead">
-
-        <h2>
-          Execution State
-        </h2>
-
-        <span id="tradeConfidence">
-          —
-        </span>
-
-      </div>
-
-
-      <span
-        id="tradeStatus"
-        class="status no"
-      >
-        NO TRADE
-      </span>
-
-
-      <div
-        id="tradeDirection"
-        class="tradeDir neutral"
-      >
-        NEUTRAL
-      </div>
-
-
-      <div
-        id="tradeReason"
-        class="tradeReason"
-      >
-        Waiting for full intelligence.
-      </div>
-
-
-      <div class="tradeGrid">
-
-
-        <div class="tradeCell">
-
-          <span>
-            Entry
-          </span>
-
-          <b id="entry">
-            —
-          </b>
-
-        </div>
-
-
-        <div class="tradeCell">
-
-          <span>
-            Stop
-          </span>
-
-          <b id="stop">
-            —
-          </b>
-
-        </div>
-
-
-        <div class="tradeCell">
-
-          <span>
-            TP1
-          </span>
-
-          <b id="tp1">
-            —
-          </b>
-
-        </div>
-
-
-        <div class="tradeCell">
-
-          <span>
-            TP2
-          </span>
-
-          <b id="tp2">
-            —
-          </b>
-
-        </div>
-
-
-      </div>
-
-    </div>
-
-
-    <div class="panel zonePanel">
-
-      <div class="sectionHead">
-
-        <h2>
-          Institutional-Grade Zones
-        </h2>
-
-        <span id="zoneFilter">
-          Quality ≥ 76
-        </span>
-
-      </div>
-
-
-      <div class="zoneSummary">
-
-        <div class="chip">
-          Mode
-          <b>STRONG ONLY</b>
-        </div>
-
-        <div class="chip">
-          Consumed
-          <b>REMOVED</b>
-        </div>
-
-      </div>
-
-
-      <div
-        id="zones"
-        class="zones"
-      >
-
-        <div class="subtext">
-          Loading strong liquidity zones…
-        </div>
-
-      </div>
-
-    </div>
-
-
+  <div class="charttip" id="chartTip">
+    Waiting for completed bars…
   </div>
 
+  <div class="fine muted">
+    Chart uses Twelve Data spot gold candles.
+    Horizontal lines are heuristic liquidity
+    levels, not actual resting bank orders.
+  </div>
 </section>
 
-
-<section class="twoCol">
-
-
-  <div class="panel infoPanel">
-
-    <div class="sectionHead">
-
-      <h2>
-        Raid Radar
-      </h2>
-
-      <span>
-        Strong zones only
-      </span>
-
-    </div>
-
-
-    <div
-      id="raidState"
-      class="bigState"
-    >
-      NO RAID
-    </div>
-
-
-    <div
-      id="raidText"
-      class="subtext"
-    >
-      No strong-zone sweep confirmed yet.
-    </div>
-
-
-    <div class="progress">
-
-      <i
-        id="raidProgress"
-        style="width:0%"
-      ></i>
-
-    </div>
-
-
-    <div
-      id="raidRows"
-      style="margin-top:10px"
-    ></div>
-
+<section class="panel">
+  <div class="sectionhead">
+    <h2>HIGH-PRIORITY LIQUIDITY LEVELS</h2>
+    <span class="tag">STRUCTURE RADAR</span>
   </div>
 
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th>LEVEL TYPE</th>
+          <th>PRICE</th>
+          <th>SIDE</th>
+          <th>IMPORTANCE</th>
+        </tr>
+      </thead>
 
-  <div class="panel infoPanel">
-
-    <div class="sectionHead">
-
-      <h2>
-        Macro + Historical
-      </h2>
-
-      <span>
-        Context, not prediction
-      </span>
-
-    </div>
-
-
-    <div id="macroRows"></div>
-
-    <div id="historyRows"></div>
-
+      <tbody id="zones">
+        <tr>
+          <td colspan="4" class="muted">
+            Loading levels…
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 
-
+  <p class="fine muted">
+    Importance is based on structural touches
+    and level type. It is not a percentage
+    probability of being swept.
+  </p>
 </section>
 
-
-<section
-  class="panel infoPanel"
-  style="margin-top:14px"
->
-
-  <div class="sectionHead">
-
-    <h2>
-      Scenario Engine
-    </h2>
-
-    <span>
-      Model weights are heuristic
-    </span>
-
+<section class="panel">
+  <div class="sectionhead">
+    <h2>INSTITUTIONAL POSITIONING</h2>
+    <span class="tag">WEEKLY / NOT REAL TIME</span>
   </div>
 
+  <div class="quad">
+
+    <div class="subcard">
+      <div>Managed long</div>
+      <strong id="managedLong">—</strong>
+      <em>Contracts</em>
+    </div>
+
+    <div class="subcard">
+      <div>Managed short</div>
+      <strong id="managedShort">—</strong>
+      <em>Contracts</em>
+    </div>
+
+    <div class="subcard">
+      <div>Producer / merchant net</div>
+      <strong id="producer">—</strong>
+      <em>Commercial hedger category</em>
+    </div>
+
+    <div class="subcard">
+      <div>Relative historical net rank</div>
+      <strong id="rank">—</strong>
+      <em id="rankSample">
+        Within available weeks
+      </em>
+    </div>
+
+  </div>
 
   <div
-    id="scenarios"
-    class="scenarios"
-  ></div>
-
+    class="small muted"
+    style="margin-top:14px"
+    id="cotDate"
+  >
+    No current CFTC report loaded.
+  </div>
 </section>
 
+</div>
 
-<section class="panel narrative">
+<div class="stack">
 
-  <div class="eyebrow">
-    Session intelligence narrative
+<section class="panel">
+  <div class="sectionhead">
+    <h2>MACRO PRESSURE</h2>
+    <span class="tag">FRED / DAILY SERIES</span>
   </div>
 
-  <p id="narrative">
-    Waiting for intelligence engine…
-  </p>
+  <div id="macro" class="empty">
+    Retrieving yields and dollar index…
+  </div>
 
+  <div class="fine muted">
+    Daily observations can lag market moves.
+    Changes compare the two latest available
+    observations, not intraday ticks.
+  </div>
 </section>
 
+<section class="panel">
+  <div class="sectionhead">
+    <h2>LIQUIDITY SWEEP EVIDENCE</h2>
+    <span class="tag">M5 CLOSE REQUIRED</span>
+  </div>
 
-<div class="footer">
+  <div id="events" class="empty">
+    Searching for completed-bar rejections…
+  </div>
+</section>
 
-  Research dashboard only.
-  “Strong” means the zone passed this model's filters;
-  it does not mean price must react there or that a trade
-  will be profitable.
+<section class="panel">
+  <div class="sectionhead">
+    <h2>EVIDENCE BREAKDOWN</h2>
+    <span class="tag">TRANSPARENT SCORING</span>
+  </div>
+
+  <div id="factors" class="empty">
+    No factor results yet.
+  </div>
+</section>
+
+<section class="panel">
+  <div class="sectionhead">
+    <h2>DATA QUALITY MONITOR</h2>
+    <span class="tag">SOURCE HEALTH</span>
+  </div>
+
+  <div id="health" class="empty">
+    Running source diagnostics…
+  </div>
+
+  <div class="fine muted">
+    Some features continue working if a
+    provider is offline or API credits run
+    out. Unavailable data is never silently
+    replaced with an invented reading.
+  </div>
+</section>
 
 </div>
-
-
 </div>
 
+<footer class="foot">
+  PUBLIC SOURCES:
+
+  <a
+    target="_blank"
+    rel="noreferrer"
+    href="https://publicreporting.cftc.gov/stories/s/Disaggregated-Futures-Only/ubmb-6exi/"
+  >CFTC COT</a>
+
+  ·
+
+  <a
+    target="_blank"
+    rel="noreferrer"
+    href="https://fred.stlouisfed.org/series/DFII10"
+  >FRED real yields</a>
+
+  ·
+
+  <a
+    target="_blank"
+    rel="noreferrer"
+    href="https://twelvedata.com/"
+  >Twelve Data</a>.
+
+  This project cannot identify individual
+  traders or confidential orders.
+  No automatic trade execution.
+
+  <span id="generated"></span>
+</footer>
+
+</main>
 
 <script>
+const $ = id =>
+  document.getElementById(id);
 
-/* ================================================================
-   HELPERS
-================================================================ */
+const fmt = (v, decimals = 0) =>
+  v == null || !Number.isFinite(Number(v))
+    ? "—"
+    : Number(v).toLocaleString("en-US", {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+      });
 
-const $ =
-  id =>
-    document.getElementById(
-      id
-    );
+const signed = (v, d = 0) =>
+  v == null
+    ? "—"
+    : (v > 0 ? "+" : "") + fmt(v, d);
 
+const escapeHTML = s =>
+  String(s ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c])
+  );
 
-const fmt =
-  (
-    value,
-    decimals = 2
-  ) =>
-    Number.isFinite(
-      Number(
-        value
-      )
-    )
-      ?
-      Number(
-        value
-      ).toLocaleString(
-        undefined,
-        {
+let activeData = null;
+let busy = false;
 
-          minimumFractionDigits:
-            decimals,
+function updateText(id, val) {
+  $(id).textContent = val;
+}
 
-          maximumFractionDigits:
-            decimals
+function dateStr(v) {
+  if (!v) return "Unknown time";
 
-        }
-      )
-      :
-      "—";
+  const d = new Date(v);
 
+  return Number.isFinite(d.getTime())
+    ? d.toLocaleString("en-ZA", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "Africa/Johannesburg"
+      }) + " SAST"
+    : String(v);
+}
 
-const escapeHtml =
-  value =>
-    String(
-      value ??
-      ""
-    ).replace(
-      /[&<>'"]/g,
-      character => (
-        {
+function color(v) {
+  return v > 0
+    ? "positive"
+    : v < 0
+      ? "negative"
+      : "neutral";
+}
 
-          "&":
-            "&amp;",
+function putSigned(id, value, decimals = 0) {
+  updateText(id, signed(value, decimals));
 
-          "<":
-            "&lt;",
-
-          ">":
-            "&gt;",
-
-          "'":
-            "&#39;",
-
-          "\"":
-            "&quot;"
-
-        }[
-          character
-        ]
-      )
-    );
-
-
-let state =
-  null;
-
-
-let quoteTimer =
-  null;
-
-
-let fullTimer =
-  null;
-
-
-let resizeTimer =
-  null;
-
-
-/* ================================================================
-   FEED STATE
-================================================================ */
-
-function setFeed(
-  ok,
-  label
-) {
-
-  $("liveDot")
-    .classList
-    .toggle(
-      "live",
-      !!ok
-    );
-
-
-  $("feedLabel")
-    .textContent =
-      label;
-
+  $(id).className =
+    "metric-val " + color(value);
 }
 
 
-/* ================================================================
-   ERROR
-================================================================ */
+/* ============================================================
+   DASHBOARD RENDERING
+============================================================ */
 
-function showError(
-  message
-) {
+function render(data) {
+  activeData = data;
 
-  const box =
-    $("errorBox");
+  const p = data.price;
+  const pos = data.positioning;
+  const bias = data.bias || {};
+
+  updateText(
+    "price",
+    p ? fmt(p.value, 2) : "—"
+  );
+
+  updateText(
+    "priceNote",
+    p
+      ? `Latest candle: ${dateStr(p.candleTime)} · ${p.delayMinutes} min old · ${p.marketFresh ? "recent" : "STALE / MARKET MAY BE CLOSED"}`
+      : "Price source unavailable — check API key and provider response."
+  );
+
+  updateText(
+    "bias",
+    bias.status || "NO DATA"
+  );
+
+  $("bias").className =
+    "bias " + color(bias.score);
+
+  $("biasBar").style.width =
+    bias.score == null
+      ? "0%"
+      : Math.max(
+          0,
+          Math.min(
+            100,
+            (bias.score + 100) / 2
+          )
+        ) + "%";
+
+  $("biasBar").style.background =
+    bias.score > 22
+      ? "var(--green)"
+      : bias.score < -22
+        ? "var(--red)"
+        : "var(--gold)";
+
+  updateText(
+    "score",
+    `Evidence index: ${signed(bias.score)} / ±100`
+  );
+
+  updateText(
+    "coverage",
+    `Factor coverage ${fmt(bias.coverage || 0)} / 100`
+  );
+
+  putSigned(
+    "net",
+    pos?.managedNet
+  );
+
+  putSigned(
+    "netChange",
+    pos?.weeklyNetChange
+  );
+
+  updateText(
+    "oi",
+    fmt(pos?.openInterest)
+  );
+
+  updateText(
+    "atr",
+    fmt(
+      data.technical?.atr5m,
+      2
+    )
+  );
+
+  updateText(
+    "managedLong",
+    fmt(pos?.managedLong)
+  );
+
+  updateText(
+    "managedShort",
+    fmt(pos?.managedShort)
+  );
+
+  updateText(
+    "producer",
+    signed(pos?.producerNet)
+  );
+
+  updateText(
+    "rank",
+    pos?.historicalRank == null
+      ? "—"
+      : fmt(pos.historicalRank) + "th pct."
+  );
+
+  updateText(
+    "rankSample",
+    `Rank among ${fmt(pos?.sampleWeeks)} available weekly reports`
+  );
+
+  updateText(
+    "cotDate",
+    pos
+      ? `Position date: ${pos.date} · COT is published days after positions are recorded, not live institutional order flow.`
+      : "CFTC gold positioning unavailable."
+  );
 
 
-  if (
-    !message
-  ) {
+  /* ==========================================================
+     LIQUIDITY LEVEL TABLE
+  ========================================================== */
 
-    box.style.display =
-      "none";
+  const zones = data.zones || [];
 
-    box.textContent =
-      "";
+  $("zones").innerHTML =
+    zones.length
+      ? zones.map(z => `
+        <tr>
+          <td>${escapeHTML(z.label)}</td>
+
+          <td>
+            <strong>
+              $${fmt(z.price, 2)}
+            </strong>
+          </td>
+
+          <td>
+            <span class="badge ${z.side === "HIGH" ? "negative" : "positive"}">
+              ${escapeHTML(z.side)}
+            </span>
+          </td>
+
+          <td>
+            ${fmt(z.strength)} / 95
+          </td>
+        </tr>
+      `).join("")
+      : `<tr>
+          <td colspan="4" class="muted">
+            No validated levels available.
+          </td>
+        </tr>`;
+
+
+  /* ==========================================================
+     MACRO
+  ========================================================== */
+
+  const specs = [
+    [
+      "DFII10",
+      "US 10Y real yield",
+      "%"
+    ],
+    [
+      "DGS10",
+      "US 10Y nominal yield",
+      "%"
+    ],
+    [
+      "DTWEXBGS",
+      "Broad trade-weighted USD",
+      "index"
+    ]
+  ];
+
+  $("macro").innerHTML =
+    specs.map(([key, name, unit]) => {
+      const m = data.macro?.[key];
+
+      return `
+        <div class="event">
+          <div class="eventtop">
+            <strong>
+              ${escapeHTML(name)}
+            </strong>
+
+            <strong>
+              ${m ? fmt(m.value, 2) : "—"}
+              ${unit}
+            </strong>
+          </div>
+
+          <small>
+            ${
+              m
+                ? `${escapeHTML(m.date)} · change ${signed(m.change, 3)}`
+                : "Unavailable"
+            }
+          </small>
+        </div>
+      `;
+    }).join("");
+
+
+  /* ==========================================================
+     SWEEPS
+  ========================================================== */
+
+  const events = data.sweeps || [];
+
+  $("events").innerHTML =
+    events.length
+      ? events.slice(0, 5).map(e => `
+        <div class="event">
+          <div class="eventtop">
+
+            <strong class="${e.direction === "BULLISH" ? "positive" : "negative"}">
+              ${escapeHTML(e.direction)}
+              REJECTION
+            </strong>
+
+            <span class="badge">
+              Evidence ${fmt(e.evidenceScore)}/95
+            </span>
+          </div>
+
+          <small>
+            ${escapeHTML(e.level)}
+            near $${fmt(e.price, 2)}
+            · ${dateStr(e.time)}
+          </small>
+        </div>
+      `).join("")
+      : `<div class="empty">
+          No recent completed-candle sweeps
+          met the rule. That is not proof no
+          institutional trading happened.
+        </div>`;
+
+
+  /* ==========================================================
+     FACTOR SCORING
+  ========================================================== */
+
+  const factors = bias.factors || [];
+
+  $("factors").innerHTML =
+    factors.length
+      ? factors.map(f => `
+        <div class="factor">
+
+          <div class="factor-label">
+            <span>
+              ${escapeHTML(f.label)}
+            </span>
+
+            <span class="${color(f.direction)}">
+              ${
+                f.direction > .1
+                  ? "BULLISH"
+                  : f.direction < -.1
+                    ? "BEARISH"
+                    : "MIXED"
+              }
+
+              · ${fmt(Math.abs(f.direction) * f.weight, 1)}
+              / ${fmt(f.weight)}
+            </span>
+          </div>
+
+          <div class="track">
+            <div
+              class="fill"
+              style="
+                width:${fmt(Math.abs(f.direction) * 100, 1)}%;
+                background:${
+                  f.direction > .1
+                    ? "var(--green)"
+                    : f.direction < -.1
+                      ? "var(--red)"
+                      : "var(--gold)"
+                };
+              "
+            ></div>
+          </div>
+
+        </div>
+      `).join("")
+      : `<div class="empty">
+          Insufficient evidence to calculate
+          a directional index.
+        </div>`;
+
+
+  /* ==========================================================
+     API HEALTH
+  ========================================================== */
+
+  const sources = [
+    ["m5", "XAU/USD M5"],
+    ["h1", "XAU/USD H1"],
+    ["cot", "CFTC COT"],
+    ["macro", "FRED macro"]
+  ];
+
+  $("health").innerHTML =
+    sources.map(([id, name]) => `
+      <div class="event">
+        <div class="eventtop">
+
+          <strong>
+            ${escapeHTML(name)}
+          </strong>
+
+          <strong class="${data.sources?.[id] === "OK" ? "positive" : "negative"}">
+            ${escapeHTML(data.sources?.[id] || "UNAVAILABLE")}
+          </strong>
+
+        </div>
+      </div>
+    `).join("") +
+
+    (data.errors || []).map(e => `
+      <div
+        class="fine muted"
+        style="padding-top:7px"
+      >
+        ${escapeHTML(e.source)}:
+        ${escapeHTML(e.message)}
+      </div>
+    `).join("");
+
+
+  updateText(
+    "generated",
+    `· Server checked ${dateStr(data.generatedAt)}.`
+  );
+
+  $("dot").className =
+    "dot " +
+    (
+      p?.marketFresh
+        ? "good"
+        : "bad"
+    );
+
+  updateText(
+    "status",
+    p?.marketFresh
+      ? "RECENT CANDLE"
+      : p
+        ? "STALE PRICE"
+        : "PARTIAL DATA"
+  );
+
+  drawChart(
+    data.candles || [],
+    zones
+  );
+}
+
+
+/* ============================================================
+   ADVANCED CANVAS CANDLESTICK CHART
+============================================================ */
+
+function drawChart(bars, zones) {
+  const canvas = $("chart");
+  const ctx = canvas.getContext("2d");
+
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+
+  const pixelRatio =
+    window.devicePixelRatio || 1;
+
+  canvas.width =
+    Math.round(width * pixelRatio);
+
+  canvas.height =
+    Math.round(height * pixelRatio);
+
+  ctx.setTransform(
+    pixelRatio,0,0,pixelRatio,0,0
+  );
+
+  ctx.clearRect(
+    0,0,width,height
+  );
+
+  if (!bars.length) {
+    ctx.fillStyle = "#8493a8";
+    ctx.font = "12px sans-serif";
+
+    ctx.fillText(
+      "No M5 bars available",
+      22,
+      42
+    );
 
     return;
+  }
 
+  const subset = bars.slice(
+    -Math.max(
+      25,
+      Math.min(
+        85,
+        Math.floor(width / 7)
+      )
+    )
+  );
+
+  const pad = {
+    left:9,
+    right:72,
+    top:18,
+    bottom:23
+  };
+
+  const plotW =
+    width - pad.left - pad.right;
+
+  const plotH =
+    height - pad.top - pad.bottom;
+
+  if (
+    plotW <= 0 ||
+    plotH <= 0
+  ) return;
+
+  let low = Math.min(
+    ...subset.map(b => b.l)
+  );
+
+  let high = Math.max(
+    ...subset.map(b => b.h)
+  );
+
+  const spread = Math.max(
+    high - low,
+    .01
+  );
+
+  low -= spread * .10;
+  high += spread * .10;
+
+  const y = price =>
+    pad.top +
+    (high - price) /
+    (high - low) *
+    plotH;
+
+  const x = idx =>
+    pad.left +
+    (idx + .5) /
+    subset.length *
+    plotW;
+
+  ctx.lineWidth = 1;
+  ctx.textBaseline = "middle";
+  ctx.font = "10px sans-serif";
+
+
+  /* PRICE GRID */
+
+  for (let i = 0; i <= 4; i++) {
+    const yy =
+      pad.top +
+      i * plotH / 4;
+
+    ctx.strokeStyle = "#243143";
+
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yy);
+    ctx.lineTo(
+      width - pad.right,
+      yy
+    );
+    ctx.stroke();
+
+    ctx.fillStyle = "#8694a8";
+
+    ctx.fillText(
+      fmt(
+        high -
+        i * (high - low) / 4,
+        2
+      ),
+      width - pad.right + 9,
+      yy
+    );
   }
 
 
-  box.style.display =
-    "block";
+  /* CANDLESTICKS */
+
+  const step =
+    plotW / subset.length;
+
+  subset.forEach((b, i) => {
+    const xx = x(i);
+
+    const up =
+      b.c >= b.o;
+
+    ctx.strokeStyle =
+      up
+        ? "#4fddb9"
+        : "#fd718b";
+
+    ctx.fillStyle =
+      ctx.strokeStyle;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+      xx,
+      y(b.h)
+    );
+
+    ctx.lineTo(
+      xx,
+      y(b.l)
+    );
+
+    ctx.stroke();
+
+    const top = y(
+      Math.max(b.o, b.c)
+    );
+
+    const h = Math.max(
+      1.5,
+      Math.abs(
+        y(b.o) - y(b.c)
+      )
+    );
+
+    ctx.fillRect(
+      xx - Math.max(1, step * .30),
+      top,
+      Math.max(2, step * .60),
+      h
+    );
+  });
 
 
-  box.textContent =
-    message;
+  /* LIQUIDITY LINES */
 
+  zones
+    .filter(
+      z =>
+        z.price >= low &&
+        z.price <= high
+    )
+    .sort(
+      (a, b) =>
+        b.strength - a.strength
+    )
+    .slice(0, 5)
+    .forEach(z => {
+      const yy =
+        y(z.price);
+
+      ctx.setLineDash([3,5]);
+
+      ctx.strokeStyle =
+        z.side === "HIGH"
+          ? "#fd718b80"
+          : "#efc87980";
+
+      ctx.beginPath();
+
+      ctx.moveTo(
+        pad.left,
+        yy
+      );
+
+      ctx.lineTo(
+        width - pad.right,
+        yy
+      );
+
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+    });
+
+
+  /* UTC TIME AXIS */
+
+  const labels = [
+    0,
+    Math.floor(subset.length / 2),
+    subset.length - 1
+  ];
+
+  ctx.fillStyle = "#8190a4";
+
+  labels.forEach(i => {
+    const t = new Date(
+      subset[i].t
+    );
+
+    ctx.fillText(
+      t.toLocaleTimeString(
+        "en-GB",
+        {
+          hour:"2-digit",
+          minute:"2-digit",
+          timeZone:"UTC"
+        }
+      ) + "Z",
+
+      Math.max(
+        2,
+        x(i) - 15
+      ),
+
+      height - 9
+    );
+  });
+
+  updateText(
+    "chartTip",
+    `Showing ${subset.length} completed M5 candles · ${dateStr(subset.at(-1).time)} last plotted`
+  );
 }
 
 
-/* ================================================================
-   CLASS HELPERS
-================================================================ */
+/* ============================================================
+   FETCH / AUTO REFRESH
+============================================================ */
 
-function biasClass(
-  value
-) {
+async function load() {
+  if (busy) return;
 
-  return value ===
-    "BULLISH"
-      ?
-      "bull"
-      :
-      value ===
-      "BEARISH"
-        ?
-        "bear"
-        :
-        "neutral";
+  busy = true;
 
-}
+  $("refresh").disabled = true;
 
-
-function statusClass(
-  value
-) {
-
-  return value ===
-    "READY"
-      ?
-      "ready"
-      :
-      value ===
-      "ARMED"
-        ?
-        "armed"
-        :
-        "no";
-
-}
-
-
-/* ================================================================
-   API FETCH
-================================================================ */
-
-async function fetchJSON(
-  url
-) {
-
-  const response =
-    await fetch(
-      url,
+  try {
+    const response = await fetch(
+      "/api/gold",
       {
-
-        cache:
-          "no-store"
-
+        cache:"no-store"
       }
     );
 
-
-  const data =
-    await response.json();
-
-
-  if (
-    !response.ok ||
-    !data.ok
-  ) {
-
-    throw new Error(
-      data.error ||
-      `Request failed (${response.status})`
-    );
-
-  }
-
-
-  return data;
-
-}
-
-
-/* ================================================================
-   FULL ENGINE
-================================================================ */
-
-async function loadFull() {
-
-  try {
-
-    setFeed(
-      false,
-      "ANALYSING"
-    );
-
+    if (!response.ok) {
+      throw new Error(
+        "Backend HTTP " +
+        response.status
+      );
+    }
 
     const data =
-      await fetchJSON(
-        `/api/xau?mode=full&t=${Date.now()}`
-      );
+      await response.json();
 
+    render(data);
 
-    state =
-      data;
-
-
-    render(
-      data
+  } catch (error) {
+    updateText(
+      "status",
+      "CONNECTION ERROR"
     );
 
+    $("dot").className =
+      "dot bad";
 
-    showError(
-      ""
+    updateText(
+      "health",
+      "Could not reach /api/gold: " +
+      error.message
     );
-
-
-    setFeed(
-      true,
-      "CONNECTED"
-    );
-
+  } finally {
+    busy = false;
+    $("refresh").disabled = false;
   }
-
-  catch (
-    error
-  ) {
-
-    showError(
-      `Gold intelligence error: ${error.message}`
-    );
-
-
-    setFeed(
-      false,
-      "ERROR"
-    );
-
-  }
-
 }
 
-
-/* ================================================================
-   QUOTE UPDATE
-================================================================ */
-
-async function loadQuote() {
-
-  try {
-
-    const quote =
-      await fetchJSON(
-        `/api/xau?mode=quote&t=${Date.now()}`
-      );
-
-
-    $("price")
-      .textContent =
-        fmt(
-          quote.price,
-          3
-        );
-
-
-    if (
-      state
-    ) {
-
-      state.data.price =
-        quote.price;
-
-
-      drawChart(
-        state
-      );
-
-    }
-
-  }
-
-  catch {
-
-    /*
-       Full endpoint remains primary.
-    */
-
-  }
-
-}
-
-
-/* ================================================================
-   MAIN RENDER
-================================================================ */
-
-function render(
-  data
-) {
-
-  $("price")
-    .textContent =
-      fmt(
-        data.data.price,
-        3
-      );
-
-
-  $("engineVersion")
-    .textContent =
-      `V${data.version}`;
-
-
-  $("updatedAt")
-    .textContent =
-      new Date(
-        data.generatedAt
-      ).toLocaleTimeString(
-        [],
-        {
-
-          hour:
-            "2-digit",
-
-          minute:
-            "2-digit",
-
-          second:
-            "2-digit"
-
-        }
-      );
-
-
-  $("atr5")
-    .textContent =
-      fmt(
-        data.data.atrM5,
-        3
-      );
-
-
-  $("atr15")
-    .textContent =
-      fmt(
-        data.data.atrM15,
-        3
-      );
-
-
-  $("rsi5")
-    .textContent =
-      fmt(
-        data.data.rsiM5,
-        1
-      );
-
-
-  $("rsi15")
-    .textContent =
-      fmt(
-        data.data.rsiM15,
-        1
-      );
-
-
-  $("zoneCount")
-    .textContent =
-      data
-        .liquidity
-        .clusters
-        .length;
-
-
-  $("rejectedCount")
-    .textContent =
-      data
-        .liquidity
-        .rejectedClusterCount ??
-      0;
-
-
-  const bias =
-    data.bias;
-
-
-  const direction =
-    $("biasDirection");
-
-
-  direction.textContent =
-    bias.direction;
-
-
-  direction.className =
-    `biasDirection ${biasClass(
-      bias.direction
-    )}`;
-
-
-  $("biasGap")
-    .textContent =
-      `GAP ${fmt(
-        bias.gap,
-        1
-      )}`;
-
-
-  $("sellScore")
-    .textContent =
-      `SELL ${fmt(
-        bias.sellScore,
-        1
-      )}`;
-
-
-  $("buyScore")
-    .textContent =
-      `BUY ${fmt(
-        bias.buyScore,
-        1
-      )}`;
-
-
-  const marker =
-    50 +
-    (
-      bias.buyScore -
-      bias.sellScore
-    ) /
-    2;
-
-
-  $("scoreMarker")
-    .style
-    .left =
-      `${
-        Math.max(
-          3,
-          Math.min(
-            97,
-            marker
-          )
-        )
-      }%`;
-
-
-  $("confluence")
-    .textContent =
-      fmt(
-        data.confluence.total,
-        1
-      );
-
-
-  $("phase")
-    .textContent =
-      data.phase.phase;
-
-
-  $("phaseDetail")
-    .textContent =
-      `${fmt(
-        data.phase.score,
-        0
-      )}/100 · ${data.phase.detail}`;
-
-
-  $("regime")
-    .textContent =
-      data.regime.label;
-
-
-  $("trendStrength")
-    .textContent =
-      `Trend strength ${fmt(
-        data.regime.trendStrength,
-        1
-      )}`;
-
-
-  $("h1Trend")
-    .textContent =
-      data.trend.h1.bias;
-
-
-  $("h1Score")
-    .textContent =
-      `score ${fmt(
-        data.trend.h1.score,
-        2
-      )}`;
-
-
-  $("h4Trend")
-    .textContent =
-      data.trend.h4.bias;
-
-
-  $("h4Score")
-    .textContent =
-      `combined ${data.trend.combined}`;
-
-
-  $("freshness")
-    .textContent =
-      `${data.data.freshnessSeconds}s`;
-
-
-  $("computeMs")
-    .textContent =
-      `engine ${data.computationMs} ms`;
-
-
-  $("zoneFilter")
-    .textContent =
-      `Quality ≥ ${data.filters.minQuality}`;
-
-
-  renderTrade(
-    data.trade
-  );
-
-
-  renderZones(
-    data.liquidity.clusters
-  );
-
-
-  renderRaid(
-    data.raid,
-    data.trap
-  );
-
-
-  renderContext(
-    data.macro,
-    data.historical
-  );
-
-
-  renderScenarios(
-    data.scenarios
-  );
-
-
-  $("narrative")
-    .textContent =
-      data.narrative;
-
-
-  drawChart(
-    data
-  );
-
-}
-
-
-/* ================================================================
-   TRADE
-================================================================ */
-
-function renderTrade(
-  trade
-) {
-
-  const status =
-    trade?.status ||
-    "NO_TRADE";
-
-
-  const statusElement =
-    $("tradeStatus");
-
-
-  statusElement.textContent =
-    status.replaceAll(
-      "_",
-      " "
-    );
-
-
-  statusElement.className =
-    `status ${statusClass(
-      status
-    )}`;
-
-
-  const direction =
-    trade?.direction ||
-    "NEUTRAL";
-
-
-  const directionElement =
-    $("tradeDirection");
-
-
-  directionElement.textContent =
-    direction;
-
-
-  directionElement.className =
-    `tradeDir ${biasClass(
-      direction
-    )}`;
-
-
-  $("tradeReason")
-    .textContent =
-      trade?.reason ||
-      "No execution state.";
-
-
-  $("tradeConfidence")
-    .textContent =
-      trade?.confidenceScore !=
-      null
-        ?
-        `${fmt(
-          trade.confidenceScore,
-          1
-        )}/100`
-        :
-        "—";
-
-
-  $("entry")
-    .textContent =
-      trade?.entryZone
-        ?
-        `${fmt(
-          trade.entryZone[
-            0
-          ],
-          3
-        )} – ${fmt(
-          trade.entryZone[
-            1
-          ],
-          3
-        )}`
-        :
-        "—";
-
-
-  $("stop")
-    .textContent =
-      fmt(
-        trade?.stop,
-        3
-      );
-
-
-  $("tp1")
-    .textContent =
-      fmt(
-        trade?.tp1,
-        3
-      );
-
-
-  $("tp2")
-    .textContent =
-      fmt(
-        trade?.tp2,
-        3
-      );
-
-}
-
-
-/* ================================================================
-   STRONG ZONES
-================================================================ */
-
-function renderZones(
-  zones
-) {
-
-  const root =
-    $("zones");
-
-
-  if (
-    !zones?.length
-  ) {
-
-    root.innerHTML =
-      `
-      <div class="subtext">
-        No zone currently passes the strong-liquidity filter.
-        The engine will stay selective instead of displaying weak levels.
-      </div>
-      `;
-
-
-    return;
-
-  }
-
-
-  root.innerHTML =
-    zones
-      .slice(
-        0,
-        8
-      )
-      .map(
-        zone => {
-
-          const source =
-            zone.sources
-              .map(
-                item =>
-                  item.name
-              )
-              .join(
-                " · "
-              );
-
-
-          return `
-          <div class="zone ${zone.side.toLowerCase()}">
-
-            <div class="grade">
-              ${escapeHtml(zone.grade)}
-            </div>
-
-            <div class="zoneName">
-
-              <b>
-                ${escapeHtml(zone.side)}
-                ·
-                ${escapeHtml(zone.state)}
-              </b>
-
-              <span>
-                ${escapeHtml(source)}
-              </span>
-
-            </div>
-
-            <div class="zonePrice">
-
-              <b>
-                ${fmt(zone.center,3)}
-              </b>
-
-              <span>
-                ${fmt(zone.distanceAtr,2)} ATR away
-              </span>
-
-            </div>
-
-            <div class="zoneScore">
-
-              <b>
-                ${fmt(zone.quality,0)}
-              </b>
-
-              <span>
-                quality
-              </span>
-
-            </div>
-
-          </div>
-          `;
-
-        }
-      )
-      .join(
-        ""
-      );
-
-}
-
-
-/* ================================================================
-   RAID RADAR
-================================================================ */
-
-function renderRaid(
-  raid,
-  trap
-) {
-
-  const latest =
-    raid?.latestConfirmed;
-
-
-  const tracking =
-    raid?.tracking;
-
-
-  if (
-    latest
-  ) {
-
-    $("raidState")
-      .textContent =
-        `${latest.side} RAID CONFIRMED`;
-
-
-    $("raidText")
-      .textContent =
-        `${latest.directionAfterRaid} reaction from a ${latest.zoneGrade} zone. Reversal evidence ${fmt(
-          latest.reversalEvidence,
-          1
-        )}/100.`;
-
-
-    $("raidProgress")
-      .style
-      .width =
-        `${Math.min(
-          100,
-          latest.reversalEvidence
-        )}%`;
-
-  }
-
-  else if (
-    tracking
-  ) {
-
-    $("raidState")
-      .textContent =
-        tracking.stage;
-
-
-    $("raidText")
-      .textContent =
-        `Tracking ${tracking.side} strong zone at ${fmt(
-          tracking.level,
-          3
-        )} · ${fmt(
-          tracking.distanceAtr,
-          2
-        )} ATR away.`;
-
-
-    $("raidProgress")
-      .style
-      .width =
-        `${Math.min(
-          100,
-          tracking.pressure
-        )}%`;
-
-  }
-
-  else {
-
-    $("raidState")
-      .textContent =
-        "NO STRONG ZONE";
-
-
-    $("raidText")
-      .textContent =
-        "No accepted strong liquidity zone is close enough to track.";
-
-
-    $("raidProgress")
-      .style
-      .width =
-        "0%";
-
-  }
-
-
-  const rows =
-    [];
-
-
-  if (
-    tracking
-  ) {
-
-    rows.push(
-
-      [
-        "Pressure",
-        `${fmt(
-          tracking.pressure,
-          1
-        )}/100`
-      ],
-
-      [
-        "Zone grade",
-        tracking.grade
-      ],
-
-      [
-        "Velocity",
-        `${fmt(
-          tracking.velocity
-            ?.perMinute,
-          3
-        )}/min`
-      ],
-
-      [
-        "ETA",
-        tracking.velocity
-          ?.etaMinutes !=
-        null
-          ?
-          `${fmt(
-            tracking.velocity.etaMinutes,
-            1
-          )} min`
-          :
-          "—"
-      ]
-
-    );
-
-  }
-
-
-  if (
-    trap
-  ) {
-
-    rows.push(
-
-      [
-        "Trap",
-        trap.active
-          ?
-          trap.type
-          :
-          "NONE"
-      ],
-
-      [
-        "Trap strength",
-        `${fmt(
-          trap.strength,
-          1
-        )}/100`
-      ]
-
-    );
-
-  }
-
-
-  $("raidRows")
-    .innerHTML =
-      rows
-        .map(
-          (
-            [
-              key,
-              value
-            ]
-          ) =>
-            `
-            <div class="kv">
-              <span>${escapeHtml(key)}</span>
-              <b>${escapeHtml(value)}</b>
-            </div>
-            `
-        )
-        .join(
-          ""
-        );
-
-}
-
-
-/* ================================================================
-   MACRO + HISTORY
-================================================================ */
-
-function renderContext(
-  macro,
-  history
-) {
-
-  $("macroRows")
-    .innerHTML =
-      [
-
-        [
-          "Macro bias",
-          macro?.bias ||
-          "NEUTRAL"
-        ],
-
-        [
-          "Macro score",
-          `${fmt(
-            macro?.score,
-            1
-          )}`
-        ],
-
-        [
-          "Real 10Y",
-          fmt(
-            macro
-              ?.data
-              ?.real10Y,
-            2
-          )
-        ],
-
-        [
-          "Nominal 10Y",
-          fmt(
-            macro
-              ?.data
-              ?.nominal10Y,
-            2
-          )
-        ]
-
-      ]
-        .map(
-          (
-            [
-              key,
-              value
-            ]
-          ) =>
-            `
-            <div class="kv">
-              <span>${escapeHtml(key)}</span>
-              <b>${escapeHtml(value)}</b>
-            </div>
-            `
-        )
-        .join(
-          ""
-        );
-
-
-  $("historyRows")
-    .innerHTML =
-      [
-
-        [
-          "Historical matches",
-          history?.matches ??
-          0
-        ],
-
-        [
-          "History bias",
-          history?.bias ||
-          "—"
-        ],
-
-        [
-          "Bull target hit",
-          history
-            ?.bullishTargetHitPct !=
-          null
-            ?
-            `${fmt(
-              history.bullishTargetHitPct,
-              1
-            )}%`
-            :
-            "—"
-        ],
-
-        [
-          "Bear target hit",
-          history
-            ?.bearishTargetHitPct !=
-          null
-            ?
-            `${fmt(
-              history.bearishTargetHitPct,
-              1
-            )}%`
-            :
-            "—"
-        ]
-
-      ]
-        .map(
-          (
-            [
-              key,
-              value
-            ]
-          ) =>
-            `
-            <div class="kv">
-              <span>${escapeHtml(key)}</span>
-              <b>${escapeHtml(value)}</b>
-            </div>
-            `
-        )
-        .join(
-          ""
-        );
-
-}
-
-
-/* ================================================================
-   SCENARIOS
-================================================================ */
-
-function renderScenarios(
-  scenarios
-) {
-
-  $("scenarios")
-    .innerHTML =
-      (
-        scenarios ||
-        []
-      )
-        .map(
-          scenario =>
-            `
-            <div class="scenario">
-
-              <div class="scenarioTop">
-
-                <b>
-                  ${escapeHtml(
-                    scenario.name
-                  )}
-                </b>
-
-                <span class="weight">
-                  ${fmt(
-                    scenario.modelWeightPct,
-                    1
-                  )}%
-                </span>
-
-              </div>
-
-              <p>
-                ${escapeHtml(
-                  scenario.description
-                )}
-              </p>
-
-              <div class="target">
-                Target
-                <b>
-                  ${fmt(
-                    scenario.target,
-                    3
-                  )}
-                </b>
-              </div>
-
-            </div>
-            `
-        )
-        .join(
-          ""
-        );
-
-}
-
-
-/* ================================================================
-   CUSTOM CANVAS CHART
-================================================================ */
-
-function drawChart(
-  data
-) {
-
-  const canvas =
-    $("chart");
-
-
-  const wrapper =
-    canvas.parentElement;
-
-
-  const dpr =
-    Math.max(
-      1,
-      window.devicePixelRatio ||
-      1
-    );
-
-
-  const width =
-    Math.floor(
-      wrapper.clientWidth
-    );
-
-
-  const height =
-    Math.floor(
-      wrapper.clientHeight
-    );
-
-
-  canvas.width =
-    Math.floor(
-      width *
-      dpr
-    );
-
-
-  canvas.height =
-    Math.floor(
-      height *
-      dpr
-    );
-
-
-  const context =
-    canvas.getContext(
-      "2d"
-    );
-
-
-  context.setTransform(
-    dpr,
-    0,
-    0,
-    dpr,
-    0,
-    0
-  );
-
-
-  context.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
-
-
-  const candles =
-    (
-      data.chart
-        ?.candles ||
-      []
-    ).slice(
-      -140
-    );
-
-
-  if (
-    !candles.length
-  ) {
-
-    return;
-
-  }
-
-
-  const zones =
-    (
-      data.chart
-        ?.importantClusters ||
-      []
-    ).filter(
-      zone =>
-        zone.state !==
-        "CONSUMED"
-    );
-
-
-  const price =
-    Number(
-      data.data.price
-    );
-
-
-  let minimum =
-    Math.min(
-      ...candles.map(
-        candle =>
-          candle.low
-      )
-    );
-
-
-  let maximum =
-    Math.max(
-      ...candles.map(
-        candle =>
-          candle.high
-      )
-    );
-
-
-  for (
-    const zone
-    of zones
-  ) {
-
-    if (
-      zone.low >
-      minimum -
-        (
-          maximum -
-          minimum
-        ) *
-          0.25 &&
-      zone.low <
-      maximum +
-        (
-          maximum -
-          minimum
-        ) *
-          0.25
-    ) {
-
-      minimum =
-        Math.min(
-          minimum,
-          zone.low
-        );
-
-
-      maximum =
-        Math.max(
-          maximum,
-          zone.high
-        );
-
-    }
-
-  }
-
-
-  minimum =
-    Math.min(
-      minimum,
-      price
-    );
-
-
-  maximum =
-    Math.max(
-      maximum,
-      price
-    );
-
-
-  const padding =
-    (
-      maximum -
-      minimum
-    ) *
-      0.08 ||
-    1;
-
-
-  minimum -=
-    padding;
-
-
-  maximum +=
-    padding;
-
-
-  const left =
-    12;
-
-
-  const right =
-    66;
-
-
-  const top =
-    14;
-
-
-  const bottom =
-    24;
-
-
-  const plotWidth =
-    width -
-    left -
-    right;
-
-
-  const plotHeight =
-    height -
-    top -
-    bottom;
-
-
-  const y =
-    value =>
-      top +
-      (
-        maximum -
-        value
-      ) /
-      (
-        maximum -
-        minimum
-      ) *
-      plotHeight;
-
-
-  const x =
-    index =>
-      left +
-      (
-        index +
-        0.5
-      ) /
-      candles.length *
-      plotWidth;
-
-
-  /* ============================================================
-     GRID
-  ============================================================ */
-
-  context.strokeStyle =
-    "rgba(255,255,255,.055)";
-
-
-  context.lineWidth =
-    1;
-
-
-  context.font =
-    "9px -apple-system, sans-serif";
-
-
-  context.fillStyle =
-    "rgba(174,183,197,.72)";
-
-
-  for (
-    let index =
-      0;
-    index <=
-      5;
-    index++
-  ) {
-
-    const yy =
-      top +
-      plotHeight *
-        index /
-        5;
-
-
-    context.beginPath();
-
-    context.moveTo(
-      left,
-      yy
-    );
-
-    context.lineTo(
-      width -
-      right,
-      yy
-    );
-
-    context.stroke();
-
-
-    const value =
-      maximum -
-      (
-        maximum -
-        minimum
-      ) *
-        index /
-        5;
-
-
-    context.fillText(
-      value.toFixed(
-        2
-      ),
-      width -
-        right +
-        8,
-      yy +
-        3
-    );
-
-  }
-
-
-  for (
-    let index =
-      0;
-    index <=
-      6;
-    index++
-  ) {
-
-    const xx =
-      left +
-      plotWidth *
-        index /
-        6;
-
-
-    context.beginPath();
-
-    context.moveTo(
-      xx,
-      top
-    );
-
-    context.lineTo(
-      xx,
-      height -
-      bottom
-    );
-
-    context.stroke();
-
-  }
-
-
-  /* ============================================================
-     STRONG ZONES
-  ============================================================ */
-
-  for (
-    const zone
-    of zones
-  ) {
-
-    const highY =
-      y(
-        zone.high
-      );
-
-
-    const lowY =
-      y(
-        zone.low
-      );
-
-
-    const buySide =
-      zone.side ===
-      "BSL";
-
-
-    context.fillStyle =
-      buySide
-        ?
-        "rgba(68,225,166,.075)"
-        :
-        "rgba(255,107,122,.075)";
-
-
-    context.fillRect(
-      left,
-      highY,
-      plotWidth,
-      Math.max(
-        2,
-        lowY -
-        highY
-      )
-    );
-
-
-    context.strokeStyle =
-      buySide
-        ?
-        "rgba(68,225,166,.45)"
-        :
-        "rgba(255,107,122,.45)";
-
-
-    context.setLineDash(
-      [
-        5,
-        5
-      ]
-    );
-
-
-    context.beginPath();
-
-
-    context.moveTo(
-      left,
-      y(
-        zone.center
-      )
-    );
-
-
-    context.lineTo(
-      width -
-      right,
-      y(
-        zone.center
-      )
-    );
-
-
-    context.stroke();
-
-
-    context.setLineDash(
-      []
-    );
-
-
-    context.fillStyle =
-      buySide
-        ?
-        "rgba(68,225,166,.95)"
-        :
-        "rgba(255,107,122,.95)";
-
-
-    context.font =
-      "9px -apple-system, sans-serif";
-
-
-    context.fillText(
-      `${zone.grade} ${zone.side} ${Number(
-        zone.center
-      ).toFixed(
-        2
-      )}`,
-      left +
-        6,
-      Math.max(
-        top +
-          10,
-        y(
-          zone.center
-        ) -
-          5
-      )
-    );
-
-  }
-
-
-  /* ============================================================
-     CANDLES
-  ============================================================ */
-
-  const candleWidth =
-    Math.max(
-      2,
-      plotWidth /
-        candles.length *
-        0.62
-    );
-
-
-  candles.forEach(
-    (
-      candle,
-      index
-    ) => {
-
-      const xx =
-        x(
-          index
-        );
-
-
-      const bullish =
-        candle.close >=
-        candle.open;
-
-
-      context.strokeStyle =
-        bullish
-          ?
-          "rgba(68,225,166,.82)"
-          :
-          "rgba(255,107,122,.82)";
-
-
-      context.fillStyle =
-        bullish
-          ?
-          "rgba(68,225,166,.72)"
-          :
-          "rgba(255,107,122,.72)";
-
-
-      context.beginPath();
-
-
-      context.moveTo(
-        xx,
-        y(
-          candle.high
-        )
-      );
-
-
-      context.lineTo(
-        xx,
-        y(
-          candle.low
-        )
-      );
-
-
-      context.stroke();
-
-
-      const openY =
-        y(
-          candle.open
-        );
-
-
-      const closeY =
-        y(
-          candle.close
-        );
-
-
-      const bodyHeight =
-        Math.max(
-          1,
-          Math.abs(
-            closeY -
-            openY
-          )
-        );
-
-
-      context.fillRect(
-
-        xx -
-        candleWidth /
-          2,
-
-        Math.min(
-          openY,
-          closeY
-        ),
-
-        candleWidth,
-
-        bodyHeight
-
-      );
-
-    }
-  );
-
-
-  /* ============================================================
-     LIVE PRICE
-  ============================================================ */
-
-  const priceY =
-    y(
-      price
-    );
-
-
-  context.strokeStyle =
-    "rgba(246,196,83,.95)";
-
-
-  context.setLineDash(
-    [
-      3,
-      4
-    ]
-  );
-
-
-  context.beginPath();
-
-
-  context.moveTo(
-    left,
-    priceY
-  );
-
-
-  context.lineTo(
-    width -
-    right,
-    priceY
-  );
-
-
-  context.stroke();
-
-
-  context.setLineDash(
-    []
-  );
-
-
-  context.fillStyle =
-    "rgba(246,196,83,.95)";
-
-
-  context.fillRect(
-    width -
-      right +
-      5,
-    priceY -
-      10,
-    58,
-    20
-  );
-
-
-  context.fillStyle =
-    "#0a0b0e";
-
-
-  context.font =
-    "bold 10px -apple-system,sans-serif";
-
-
-  context.fillText(
-    price.toFixed(
-      2
-    ),
-    width -
-      right +
-      10,
-    priceY +
-      4
-  );
-
-}
-
-
-/* ================================================================
-   EVENTS
-================================================================ */
-
-$("refreshBtn")
-  .addEventListener(
-    "click",
-    async () => {
-
-      await loadFull();
-
-      await loadQuote();
-
-    }
-  );
-
+$("refresh").addEventListener(
+  "click",
+  load
+);
 
 window.addEventListener(
   "resize",
   () => {
-
-    clearTimeout(
-      resizeTimer
-    );
-
-
-    resizeTimer =
-      setTimeout(
-        () => {
-
-          if (
-            state
-          ) {
-
-            drawChart(
-              state
-            );
-
-          }
-
-        },
-        120
+    if (activeData) {
+      drawChart(
+        activeData.candles || [],
+        activeData.zones || []
       );
-
+    }
   }
 );
 
+load();
 
-/* ================================================================
-   BOOT
-================================================================ */
-
-(
-  async function boot() {
-
-    await loadFull();
-
-    await loadQuote();
-
-
-    /*
-       Quote:
-       every 30 seconds.
-
-       Full structural analysis:
-       every 60 seconds.
-
-       This avoids hammering Twelve Data unnecessarily.
-    */
-
-    quoteTimer =
-      setInterval(
-        loadQuote,
-        30000
-      );
-
-
-    fullTimer =
-      setInterval(
-        loadFull,
-        60000
-      );
-
-  }
-)();
-
+setInterval(
+  load,
+  70000
+);
 </script>
 
 </body>
-
 </html>
