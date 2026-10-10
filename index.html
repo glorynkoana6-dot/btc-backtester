@@ -2,326 +2,519 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#070b12">
-<title>MKAYFX GODMODE</title>
+<meta name="theme-color" content="#070a10">
+<title>MKAYFX GOLD GODMODE V2</title>
+
 <style>
-* {
-  box-sizing: border-box;
+:root {
+  --bg: #070a10;
+  --panel: #101722;
+  --panel2: #172231;
+  --line: #283649;
+  --text: #ecf3fb;
+  --muted: #93a2b7;
+  --gold: #eac176;
+  --green: #46d9a6;
+  --red: #ff7e90;
 }
+
+* { box-sizing: border-box; }
+
 body {
   margin: 0;
-  background: #070b12;
-  color: #eaf0fa;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at 10% 0%,
+      #b8843d16,
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at 95% 30%,
+      #3c6ea70c,
+      transparent 40%
+    );
+}
+
 main {
-  max-width: 1150px;
+  max-width: 1450px;
   margin: auto;
   padding: 22px;
+  position: relative;
 }
+
 header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: 15px;
-  border-bottom: 1px solid #29364b;
-  padding-bottom: 20px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
 }
+
 .logo {
+  font-size: 22px;
   font-weight: 900;
   letter-spacing: 2px;
-  font-size: 22px;
 }
-.gold {
-  color: #f1c47a;
-}
-.sub {
-  color: #90a0b8;
+
+.gold { color: var(--gold); }
+.green { color: var(--green); }
+.red { color: var(--red); }
+
+.small {
   font-size: 12px;
-  line-height: 1.6;
+  color: var(--muted);
+  line-height: 1.7;
 }
+
 .tag {
-  border: 1px solid #334159;
-  padding: 8px 12px;
-  border-radius: 30px;
-  color: #93cdb7;
   font-size: 11px;
+  color: var(--gold);
+  border: 1px solid #665235;
+  border-radius: 20px;
+  padding: 9px 13px;
+  white-space: nowrap;
 }
+
+.hero {
+  margin: 34px 0 25px;
+}
+
+.eyebrow {
+  color: var(--gold);
+  letter-spacing: 2px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 h1 {
-  font-size: clamp(30px,5vw,52px);
+  font-size: clamp(30px, 5vw, 52px);
+  line-height: 1.1;
   letter-spacing: -2px;
-  margin: 35px 0 8px;
+  margin: 12px 0;
 }
+
 h2 {
-  font-size: 15px;
-  margin: 0 0 14px;
+  font-size: 14px;
+  letter-spacing: .6px;
+  margin: 0 0 17px;
 }
-.panel {
-  background: linear-gradient(140deg,#151f2e,#101724);
-  border: 1px solid #2a374a;
-  border-radius: 15px;
-  padding: 19px;
-  margin-top: 15px;
-}
+
 .controls {
   display: flex;
   flex-wrap: wrap;
-  align-items: end;
   gap: 12px;
-  margin: 23px 0;
+  align-items: end;
+  margin-bottom: 20px;
 }
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
 label {
-  display: block;
   font-size: 10px;
-  letter-spacing: 1.5px;
-  color: #9daabe;
-  margin-bottom: 8px;
+  color: var(--muted);
+  letter-spacing: 1.2px;
 }
-select, input {
-  background: #192638;
-  color: white;
-  border: 1px solid #36455a;
-  border-radius: 9px;
+
+select {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 10px;
   padding: 12px;
-  width: 140px;
+  min-width: 135px;
 }
+
 button {
   border: 0;
-  background: #e7b967;
-  color: #14100a;
   border-radius: 10px;
+  background: var(--gold);
+  color: #18120a;
   padding: 13px 20px;
-  font-weight: 900;
+  font-weight: 850;
   cursor: pointer;
 }
+
 button:disabled {
   opacity: .5;
+  cursor: wait;
 }
+
+.secondary {
+  background: #233248;
+  color: var(--text);
+  border: 1px solid #41516a;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 13px;
 }
+
+.panel, .stat {
+  background: linear-gradient(
+    150deg,
+    #131d2b,
+    #101620
+  );
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+.panel {
+  padding: 20px;
+  margin-top: 15px;
+}
+
 .stat {
-  background: #1a2637;
-  border-radius: 10px;
-  padding: 15px;
+  padding: 17px;
 }
-.value {
-  font-size: 25px;
-  font-weight: 800;
-  margin-top: 10px;
+
+.metric {
+  font-size: 27px;
+  font-weight: 850;
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
 }
-.green {
-  color: #51ddb3;
-}
-.red {
-  color: #ff8290;
-}
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  border-bottom: 1px solid #2b384a;
-  padding: 12px 0;
-}
-.row:last-child {
-  border: 0;
-}
-.pill {
-  font-size: 11px;
-  background: #26364a;
-  border-radius: 8px;
-  padding: 7px 10px;
-}
+
 .split {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
-canvas {
-  width: 100%;
-  height: 230px;
+
+.verdict {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: .5px;
 }
-.muted {
-  color: #a0aec1;
+
+.row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
 }
-.error {
-  background: #44202b;
-  color: #ffcad1;
-  border: 1px solid #a34b61;
-  padding: 12px;
-  border-radius: 9px;
-  display: none;
+
+.row:last-child { border-bottom: 0; }
+
+.pill {
+  background: #263449;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  white-space: nowrap;
 }
+
 pre {
   white-space: pre-wrap;
   word-break: break-word;
-  color: #e5c487;
+  color: var(--gold);
   font-size: 12px;
 }
-footer {
-  font-size: 11px;
-  color: #8493aa;
-  margin-top: 25px;
-  line-height: 1.7;
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 240px;
 }
-@media(max-width:700px) {
-  main {
-    padding: 13px;
-  }
+
+.error {
+  display: none;
+  background: #4a1c29;
+  border: 1px solid #a74459;
+  color: #ffd5dd;
+  border-radius: 10px;
+  padding: 13px;
+  margin-bottom: 15px;
+  font-size: 12px;
+}
+
+.result {
+  background: #1b2839;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 13px;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.tableWrap { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+footer {
+  margin-top: 30px;
+  color: #8393a7;
+  font-size: 11px;
+  line-height: 1.8;
+}
+
+@media(max-width:850px) {
   .grid {
     grid-template-columns: repeat(2,1fr);
   }
+
   .split {
     grid-template-columns: 1fr;
+    gap: 0;
   }
-  .controls>* {
-    flex: 1;
-  }
-  select, input {
-    width: 100%;
-  }
-  .value {
-    font-size: 21px;
-  }
-  .logo {
-    font-size: 17px;
-  }
+}
+
+@media(max-width:550px) {
+  main { padding: 13px; }
+  .logo { font-size: 16px; }
+  .tag { font-size: 9px; }
+  .panel { padding: 14px; }
+  .stat { padding: 12px; }
+  .metric { font-size: 21px; }
+  .field { flex: 1; }
+  select { width: 100%; min-width: 0; }
+  #run { width: 100%; }
 }
 </style>
 </head>
+
 <body>
 <main>
 
 <header>
   <div>
-    <div class="logo">MKAYFX <span class="gold">GODMODE</span></div>
-    <div class="sub">AUTONOMOUS STRATEGY RESEARCH · V1</div>
+    <div class="logo">
+      MKAYFX <span class="gold">GODMODE</span>
+    </div>
+    <div class="small">
+      GOLD STRATEGY EVOLUTION · V2
+    </div>
   </div>
-  <div class="tag">BTC-USD / COINBASE</div>
+
+  <div class="tag">
+    XAU / USD
+  </div>
 </header>
 
-<h1>Evolution beats <span class="gold">guesswork.</span></h1>
+<section class="hero">
+  <div class="eyebrow">
+    AUTONOMOUS QUANTITATIVE RESEARCH
+  </div>
 
-<p class="sub">
-  Generate candidates. Simulate trades. Challenge every result.
-  Reserve the final holdout for unbiased evaluation.
-</p>
+  <h1>
+    Gold intelligence.<br>
+    <span class="gold">Evolved by data.</span>
+  </h1>
+
+  <p class="small">
+    Generate, test, evolve and validate gold trading
+    strategies using historical XAU/USD price action.
+  </p>
+</section>
 
 <div class="controls">
-  <div>
-    <label>M5 CANDLES</label>
+
+  <div class="field">
+    <label>TIMEFRAME</label>
+    <select id="tf">
+      <option value="5m">M5</option>
+      <option value="15m">M15</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>HISTORICAL CANDLES</label>
     <select id="bars">
       <option value="750">750</option>
-      <option value="1000" selected>1000</option>
-      <option value="1600">1600</option>
+      <option value="1500" selected>1500</option>
+      <option value="3000">3000</option>
+      <option value="5000">5000</option>
     </select>
   </div>
 
-  <div>
+  <div class="field">
     <label>GENERATIONS</label>
     <select id="generations">
-      <option>2</option>
-      <option selected>3</option>
-      <option>5</option>
+      <option value="2">2</option>
+      <option value="4" selected>4</option>
+      <option value="6">6</option>
+      <option value="8">8</option>
     </select>
   </div>
 
-  <div>
+  <div class="field">
     <label>POPULATION</label>
     <select id="population">
-      <option>8</option>
-      <option selected>12</option>
-      <option>20</option>
+      <option value="8">8</option>
+      <option value="16" selected>16</option>
+      <option value="24">24</option>
+      <option value="32">32</option>
     </select>
   </div>
 
-  <button id="run">EVOLVE STRATEGIES →</button>
+  <button id="run">
+    ⚡ EVOLVE GOLD STRATEGIES
+  </button>
+
 </div>
 
 <div id="error" class="error"></div>
 
 <div class="grid">
   <div class="stat">
-    <label>STRATEGIES EVALUATED</label>
-    <div class="value" id="evaluated">—</div>
+    <label>STRATEGY EVALUATIONS</label>
+    <div class="metric" id="evaluated">—</div>
   </div>
+
   <div class="stat">
     <label>VALIDATION EXPECTANCY</label>
-    <div class="value" id="expectancy">—</div>
+    <div class="metric" id="expectancy">—</div>
   </div>
+
   <div class="stat">
     <label>HOLDOUT PROFIT FACTOR</label>
-    <div class="value" id="pf">—</div>
+    <div class="metric" id="pf">—</div>
   </div>
+
   <div class="stat">
-    <label>HOLDOUT TRADES</label>
-    <div class="value" id="trades">—</div>
+    <label>HOLDOUT WIN RATE</label>
+    <div class="metric" id="winrate">—</div>
   </div>
 </div>
 
 <div class="panel">
-  <h2>RESEARCH VERDICT</h2>
-  <div id="verdict" class="gold" style="font-size:23px;font-weight:850">
-    AWAITING EXPERIMENT
+  <h2>STRATEGY DECISION</h2>
+
+  <div class="verdict gold" id="verdict">
+    AWAITING EVOLUTION
   </div>
-  <p class="sub" id="span">
-    60% development / 20% validation / 20% untouched final holdout.
-    All trading results are hypothetical.
+
+  <p class="small" id="period">
+    Development 60% · Validation 20% · Holdout 20%
   </p>
 </div>
 
 <div class="split">
+
   <div class="panel">
-    <h2>CHAMPION PARAMETERS</h2>
-    <pre id="params">Run the research engine to generate a candidate.</pre>
-    <button id="live" disabled>CHECK LATEST CANDLE</button>
-    <p class="sub" id="liveResult"></p>
+    <h2>CHAMPION STRATEGY</h2>
+
+    <pre id="params">
+No champion selected yet.
+    </pre>
+
+    <button
+      id="live"
+      class="secondary"
+      disabled
+    >
+      ANALYSE LATEST GOLD CANDLE
+    </button>
+
+    <div id="liveResult" class="result">
+      Waiting for strategy selection.
+    </div>
   </div>
 
   <div class="panel">
-    <h2>FINAL HOLDOUT EQUITY CURVE</h2>
+    <h2>HOLDOUT EQUITY CURVE</h2>
     <canvas id="curve"></canvas>
-    <p class="sub">
-      Simulation starts at $1,000, 0.5% risk per trade.
-      Trading costs modelled as 0.12R.
+
+    <p class="small">
+      Starting equity $1,000 · Hypothetical 0.5%
+      risk per trade · Fixed 0.12R cost model.
     </p>
   </div>
+
 </div>
 
 <div class="split">
+
   <div class="panel">
     <h2>RESEARCH COUNCIL</h2>
-    <div id="council" class="sub">
-      Waiting for historical evidence...
+    <div id="council" class="small">
+      Awaiting historical test results.
     </div>
   </div>
 
   <div class="panel">
-    <h2>STRATEGY LEADERBOARD</h2>
-    <div id="leaders" class="sub">
-      No candidates evaluated yet.
+    <h2>TOP STRATEGY CANDIDATES</h2>
+    <div id="leaders" class="small">
+      No strategies evaluated.
     </div>
   </div>
+
 </div>
 
 <div class="panel">
-  <h2>FINAL HOLDOUT TRADE LOG</h2>
-  <div id="tradeLog" class="sub">
-    No simulations yet.
+  <h2>FINAL HOLDOUT TRADE HISTORY</h2>
+
+  <div class="tableWrap">
+    <table>
+      <thead>
+        <tr>
+          <th>TIME</th>
+          <th>SIDE</th>
+          <th>ENTRY</th>
+          <th>EXIT</th>
+          <th>RESULT</th>
+          <th>NET R</th>
+        </tr>
+      </thead>
+
+      <tbody id="tradeLog">
+        <tr>
+          <td colspan="6">
+            No backtest completed.
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 
 <footer>
-  This system uses deterministic rule engines, not an LLM.
-  Selection on the validation set still introduces multiple-testing bias.
-  Holdout results are only a limited check, not forward performance.
-  No trades are placed. Data availability, slippage, exchange fees
-  and broker execution can materially change outcomes.
+  MKAYFX GOLD GODMODE V2 · RESEARCH ONLY.
+  No automatic order execution. Strategy performance is
+  historical and hypothetical. Gold broker spreads,
+  contract sizes, commissions and slippage are not
+  fully modelled. Passing a holdout test does not
+  guarantee future profitability.
 </footer>
 
 </main>
@@ -329,272 +522,392 @@ footer {
 <script>
 const $ = id => document.getElementById(id);
 
-let result = null;
+let research = null;
 
-const fmt = (n, d = 2) =>
-  Number.isFinite(n) ? n.toFixed(d) : 'N/A';
-
-function set(id, s) {
-  $(id).textContent = s;
+function fmt(n, digits = 2) {
+  return Number.isFinite(Number(n)) && n !== null
+    ? Number(n).toFixed(digits)
+    : "N/A";
 }
 
-function draw(data) {
-  const c = $('curve');
-  const r = c.getBoundingClientRect();
-  const scale = Math.min(devicePixelRatio || 1, 2);
+function set(id, value) {
+  $(id).textContent = value;
+}
 
-  c.width = r.width * scale;
-  c.height = r.height * scale;
+function showError(message) {
+  $("error").textContent = message;
+  $("error").style.display = "block";
+}
 
-  const x = c.getContext('2d');
-  x.scale(scale, scale);
+function clearError() {
+  $("error").style.display = "none";
+}
 
-  const w = r.width;
-  const h = r.height;
+async function fetchJSON(url) {
+  const response = await fetch(url, {
+    cache: "no-store"
+  });
 
-  x.clearRect(0, 0, w, h);
+  const data = await response.json();
 
-  if (!data || data.length < 2) {
-    x.fillStyle = '#9aa8ba';
-    x.fillText('No holdout trades', 15, 25);
+  if (!response.ok || !data.ok) {
+    throw new Error(
+      data.error || "Request failed"
+    );
+  }
+
+  return data;
+}
+
+function drawCurve(points) {
+  const canvas = $("curve");
+  const rect = canvas.getBoundingClientRect();
+
+  const ratio = Math.min(
+    window.devicePixelRatio || 1,
+    2
+  );
+
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+
+  const ctx = canvas.getContext("2d");
+  ctx.scale(ratio, ratio);
+
+  const w = rect.width;
+  const h = rect.height;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (!points || points.length < 2) {
+    ctx.fillStyle = "#93a2b7";
+    ctx.font = "12px sans-serif";
+    ctx.fillText(
+      "No equity curve available",
+      15,
+      30
+    );
     return;
   }
 
-  const a = data.map(v => v.v);
-  const low = Math.min(...a);
-  const high = Math.max(...a);
-  const range = high - low || 1;
+  const values = points.map(x => x.equity);
 
-  x.strokeStyle = '#324158';
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+
+  ctx.strokeStyle = "#2b3a50";
+  ctx.lineWidth = 1;
 
   for (let j = 0; j < 5; j++) {
     const y = 20 + j * (h - 40) / 4;
 
-    x.beginPath();
-    x.moveTo(12, y);
-    x.lineTo(w - 12, y);
-    x.stroke();
+    ctx.beginPath();
+    ctx.moveTo(10, y);
+    ctx.lineTo(w - 10, y);
+    ctx.stroke();
   }
 
-  x.beginPath();
+  ctx.beginPath();
 
-  data.forEach((p, i) => {
-    const xx = 12 + i / (data.length - 1) * (w - 24);
-    const yy = 15 + (high - p.v) / range * (h - 30);
+  points.forEach((p, i) => {
+    const x =
+      12 + i / (points.length - 1) * (w - 24);
 
-    if (i) x.lineTo(xx, yy);
-    else x.moveTo(xx, yy);
+    const y =
+      18 + (max - p.equity) / range * (h - 36);
+
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
   });
 
-  x.strokeStyle =
-    a.at(-1) >= a[0] ? '#51ddb3' : '#ff8290';
+  ctx.strokeStyle =
+    values.at(-1) >= values[0]
+      ? "#46d9a6"
+      : "#ff7e90";
 
-  x.lineWidth = 2;
-  x.stroke();
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "#a7b5c8";
+  ctx.font = "11px sans-serif";
+
+  ctx.fillText(
+    "$" + fmt(values[0]),
+    12,
+    13
+  );
+
+  ctx.fillText(
+    "$" + fmt(values.at(-1)),
+    Math.max(12, w - 105),
+    h - 5
+  );
 }
 
-$('run').onclick = async () => {
-  const btn = $('run');
+function createRow(leftText, rightText, rightClass = "") {
+  const row = document.createElement("div");
+  row.className = "row";
 
-  btn.disabled = true;
-  set('run', 'EVOLVING...');
+  const left = document.createElement("span");
+  left.textContent = leftText;
 
-  $('error').style.display = 'none';
+  const right = document.createElement("span");
+  right.textContent = rightText;
+  right.className = rightClass;
 
-  try {
-    const q = new URLSearchParams({
-      bars: $('bars').value,
-      generations: $('generations').value,
-      population: $('population').value
-    });
+  row.append(left, right);
 
-    const r = await fetch('/api/evolve?' + q);
-    const j = await r.json();
+  return row;
+}
 
-    if (!r.ok || !j.ok) {
-      throw Error(j.error || 'Research failed');
+function renderResearch(data) {
+  const champion = data.champion;
+
+  set(
+    "evaluated",
+    String(data.evaluated)
+  );
+
+  set(
+    "verdict",
+    data.verdict
+  );
+
+  set(
+    "period",
+    `${data.bars} ${data.timeframe.toUpperCase()} candles · ` +
+    `${data.from.slice(0, 10)} to ${data.to.slice(0, 10)} UTC · ` +
+    "60/20/20 chronological evaluation"
+  );
+
+  set(
+    "expectancy",
+    champion
+      ? fmt(champion.validation.expectancy, 3) + "R"
+      : "N/A"
+  );
+
+  set(
+    "pf",
+    champion
+      ? fmt(champion.holdout.profitFactor)
+      : "N/A"
+  );
+
+  set(
+    "winrate",
+    champion
+      ? fmt(champion.holdout.winRate, 1) + "%"
+      : "N/A"
+  );
+
+  set(
+    "params",
+    champion
+      ? JSON.stringify(champion.params, null, 2)
+      : "No champion available"
+  );
+
+  $("live").disabled = !champion;
+
+  drawCurve(champion?.curve);
+
+  const council = $("council");
+  council.replaceChildren();
+
+  if (champion) {
+    const checks = [
+      [
+        "VALIDATION EDGE",
+        champion.validation.expectancy > 0
+          ? "Positive"
+          : "Failed"
+      ],
+      [
+        "VALIDATION SAMPLE",
+        champion.validation.count >= 10
+          ? "Minimum sample met"
+          : "Insufficient"
+      ],
+      [
+        "HOLDOUT EDGE",
+        champion.holdout.expectancy > 0
+          ? "Positive"
+          : "Failed"
+      ],
+      [
+        "HOLDOUT PROFIT FACTOR",
+        champion.holdout.profitFactor > 1
+          ? "Above 1.0"
+          : "Failed / unavailable"
+      ],
+      [
+        "HOLDOUT DRAWDOWN",
+        fmt(champion.holdout.drawdown) + "%"
+      ]
+    ];
+
+    for (const [name, value] of checks) {
+      council.appendChild(
+        createRow(name, value)
+      );
     }
+  }
 
-    result = j;
+  const leaders = $("leaders");
+  leaders.replaceChildren();
 
-    const c = j.champion;
+  data.candidates.forEach((candidate, i) => {
+    leaders.appendChild(
+      createRow(
+        `#${i + 1} ${candidate.params.type} · ` +
+        `SL ${candidate.params.stopATR} ATR · ` +
+        `TP ${candidate.params.rr}R`,
 
-    set(
-      'evaluated',
-      String(
-        +$('generations').value *
-        +$('population').value
+        `${fmt(candidate.validation.expectancy, 3)}R · ` +
+        `${candidate.validation.count} trades`
       )
     );
+  });
 
-    set('verdict', j.verdict);
+  const tbody = $("tradeLog");
+  tbody.replaceChildren();
 
-    set(
-      'span',
-      `${j.bars} completed candles · ` +
-      `${j.from.slice(0,10)} to ${j.to.slice(0,10)} UTC · ` +
-      `60/20/20 chronological split`
-    );
+  if (!champion?.trades?.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
 
-    set(
-      'expectancy',
-      c ? fmt(c.validation.expectancy, 3) + 'R' : '—'
-    );
+    cell.colSpan = 6;
+    cell.textContent = "No holdout trades.";
 
-    set(
-      'pf',
-      c ? fmt(c.holdout.pf) : '—'
-    );
+    row.appendChild(cell);
+    tbody.appendChild(row);
 
-    set(
-      'trades',
-      c ? String(c.holdout.count) : '—'
-    );
+    return;
+  }
 
-    set(
-      'params',
-      c ? JSON.stringify(c.params, null, 2) : 'No champion'
-    );
+  for (const trade of champion.trades) {
+    const row = document.createElement("tr");
 
-    $('live').disabled = !c;
+    const values = [
+      new Date(trade.time).toLocaleString(
+        "en-ZA",
+        {
+          timeZone: "Africa/Johannesburg",
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit"
+        }
+      ),
+      trade.side,
+      "$" + fmt(trade.entry),
+      "$" + fmt(trade.exit),
+      trade.reason,
+      fmt(trade.resultR, 3) + "R"
+    ];
 
-    draw(c?.equityCurve);
+    values.forEach((value, i) => {
+      const cell = document.createElement("td");
 
-    $('leaders').replaceChildren();
+      cell.textContent = value;
 
-    j.candidates.forEach((v, i) => {
-      const row = document.createElement('div');
-      row.className = 'row';
+      if (i === 5) {
+        cell.className =
+          trade.resultR >= 0 ? "green" : "red";
+      }
 
-      const left = document.createElement('span');
-      left.textContent =
-        `#${i + 1} ${v.params.kind.toUpperCase()} · ` +
-        `SL ${v.params.stop} ATR · TP ${v.params.rr}R`;
-
-      const right = document.createElement('span');
-      right.className = 'pill';
-      right.textContent =
-        `VAL ${fmt(v.validation.expectancy, 3)}R · ` +
-        `${v.validation.count} trades`;
-
-      row.append(left, right);
-      $('leaders').appendChild(row);
+      row.appendChild(cell);
     });
 
-    $('council').replaceChildren();
-
-    if (c) {
-      const checks = [
-        [
-          'Profitability',
-          c.validation.expectancy > 0
-            ? 'Positive validation expectancy'
-            : 'No positive validation expectancy'
-        ],
-        [
-          'Sample size',
-          c.holdout.count >= 8
-            ? 'At least 8 holdout trades'
-            : 'Insufficient holdout trades'
-        ],
-        [
-          'Risk',
-          c.holdout.drawdown < 10
-            ? 'Observed holdout drawdown below 10%'
-            : 'Drawdown or sample risk elevated'
-        ],
-        [
-          'Generalisation',
-          c.holdout.expectancy > 0
-            ? 'Positive final holdout result'
-            : 'Holdout failed'
-        ]
-      ];
-
-      for (const [name, value] of checks) {
-        const row = document.createElement('div');
-        row.className = 'row';
-
-        const label = document.createElement('b');
-        label.textContent = name;
-
-        const detail = document.createElement('span');
-        detail.textContent = value;
-
-        row.append(label, detail);
-        $('council').appendChild(row);
-      }
-    }
-
-    $('tradeLog').replaceChildren();
-
-    if (c?.trades?.length) {
-      for (const t of c.trades) {
-        const row = document.createElement('div');
-        row.className = 'row';
-
-        const left = document.createElement('span');
-        left.textContent =
-          `${t.time.slice(0,16)} · ${t.side}`;
-
-        const right = document.createElement('span');
-        right.className = t.netR >= 0 ? 'green' : 'red';
-        right.textContent =
-          `${fmt(t.netR,3)}R · ${t.reason}`;
-
-        row.append(left, right);
-        $('tradeLog').appendChild(row);
-      }
-    } else {
-      $('tradeLog').textContent = 'No holdout trades';
-    }
-
-  } catch (e) {
-    $('error').textContent = e.message;
-    $('error').style.display = 'block';
-
-  } finally {
-    btn.disabled = false;
-    set('run', 'EVOLVE STRATEGIES →');
+    tbody.appendChild(row);
   }
-};
+}
 
-$('live').onclick = async () => {
-  if (!result?.champion) return;
+$("run").onclick = async () => {
+  const button = $("run");
 
-  set('liveResult', 'Fetching latest completed candle...');
+  button.disabled = true;
+  button.textContent = "EVOLVING GOLD STRATEGIES...";
+
+  clearError();
 
   try {
     const q = new URLSearchParams({
-      strategy: JSON.stringify(result.champion.params)
+      tf: $("tf").value,
+      bars: $("bars").value,
+      generations: $("generations").value,
+      population: $("population").value
     });
 
-    const r = await fetch('/api/live?' + q);
-    const j = await r.json();
-
-    if (!r.ok || !j.ok) {
-      throw Error(j.error);
-    }
-
-    set(
-      'liveResult',
-      `${j.signal} · BTC $${fmt(j.price)} · ` +
-      `candle ${j.candleTime} · ${j.reason}` +
-      (j.signal === 'WAIT'
-        ? ''
-        : ` · SL $${fmt(j.stop)} · TP $${fmt(j.target)}`)
+    const data = await fetchJSON(
+      "/api/evolve?" + q
     );
 
-  } catch (e) {
-    set('liveResult', e.message);
+    research = data;
+    renderResearch(data);
+
+  } catch (error) {
+    showError(error.message);
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "⚡ EVOLVE GOLD STRATEGIES";
   }
 };
 
-window.addEventListener('resize', () =>
-  draw(result?.champion?.equityCurve)
-);
+$("live").onclick = async () => {
+  if (!research?.champion) return;
 
-draw(null);
+  set(
+    "liveResult",
+    "Analysing latest completed XAU/USD candle..."
+  );
+
+  try {
+    const q = new URLSearchParams({
+      tf: research.timeframe,
+      strategy: JSON.stringify(
+        research.champion.params
+      )
+    });
+
+    const data = await fetchJSON(
+      "/api/live?" + q
+    );
+
+    let text =
+      `${data.signal} · XAU/USD $${fmt(data.price)}\n` +
+      `ATR: ${fmt(data.atr)}\n` +
+      `RSI: ${fmt(data.rsi, 1)}\n` +
+      `Candle: ${data.candleTime}\n` +
+      `Fresh: ${data.fresh ? "YES" : "NO"}`;
+
+    if (data.signal !== "WAIT") {
+      text +=
+        `\nSTOP LOSS: $${fmt(data.stop)}` +
+        `\nTAKE PROFIT: $${fmt(data.target)}`;
+    }
+
+    text += "\n" + data.note;
+
+    $("liveResult").style.whiteSpace = "pre-line";
+    set("liveResult", text);
+
+  } catch (error) {
+    set(
+      "liveResult",
+      "Error: " + error.message
+    );
+  }
+};
+
+window.addEventListener("resize", () => {
+  drawCurve(research?.champion?.curve);
+});
+
+drawCurve(null);
 </script>
 </body>
 </html>
