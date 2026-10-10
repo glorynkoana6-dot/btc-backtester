@@ -1,12 +1,13 @@
+
 {
-  "name": "mkayfx-omega",
-  "private": true,
+  "name": "mkayfx-godmode",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vercel dev"
+    "test": "node --test"
   }
 }
