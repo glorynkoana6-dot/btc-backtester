@@ -1,50 +1,81 @@
 
-import { candles } from '../lib/data.js';
-import { research } from '../lib/engine.js';
+import { candles } from "../lib/data.js";
+import { evolve } from "../lib/engine.js";
 
-export async function GET(req) {
+function safeNumber(value, fallback, min, max) {
+  const n = Number(value);
+
+  return Number.isFinite(n)
+    ? Math.max(min, Math.min(max, Math.floor(n)))
+    : fallback;
+}
+
+export async function GET(request) {
   try {
-    const q = new URL(req.url).searchParams;
+    const q = new URL(request.url).searchParams;
 
-    const bars = Math.min(
-      1600,
-      Math.max(500, Number(q.get('bars')) || 1000)
+    const tf = q.get("tf") === "15m"
+      ? "15m"
+      : "5m";
+
+    const count = safeNumber(
+      q.get("bars"),
+      1500,
+      500,
+      5000
     );
 
-    const generations = Math.min(
-      5,
-      Math.max(1, Number(q.get('generations')) || 3)
+    const generations = safeNumber(
+      q.get("generations"),
+      4,
+      1,
+      8
     );
 
-    const population = Math.min(
-      24,
-      Math.max(8, Number(q.get('population')) || 12)
+    const population = safeNumber(
+      q.get("population"),
+      16,
+      8,
+      32
     );
 
-    const b = await candles(bars);
+    const history = await candles(tf, count);
 
-    if (b.length < 400) {
-      throw Error('Insufficient Coinbase history');
+    if (history.length < 400) {
+      throw new Error(
+        "Not enough XAU/USD historical candles"
+      );
     }
+
+    const results = evolve(
+      history,
+      generations,
+      population
+    );
 
     return Response.json({
       ok: true,
-      symbol: 'BTC-USD',
-      source: 'Coinbase Exchange',
-      bars: b.length,
-      from: new Date(b[0].t * 1000).toISOString(),
-      to: new Date(b.at(-1).t * 1000).toISOString(),
-      ...research(b, generations, population)
+      symbol: "XAU/USD",
+      source: "Twelve Data",
+      timeframe: tf,
+      bars: history.length,
+      from: new Date(
+        history[0].t * 1000
+      ).toISOString(),
+      to: new Date(
+        history.at(-1).t * 1000
+      ).toISOString(),
+      ...results
     }, {
       headers: {
-        'Cache-Control': 'no-store'
+        "Cache-Control": "no-store"
       }
     });
 
-  } catch (e) {
+  } catch (error) {
     return Response.json({
       ok: false,
-      error: String(e.message).slice(0, 160)
+      error: String(error.message).slice(0, 200)
     }, {
       status: 502
     });
