@@ -1,72 +1,117 @@
 
-import { candles } from '../lib/data.js';
-import { features, signal } from '../lib/engine.js';
+import { candles } from "../lib/data.js";
+import {
+  indicators,
+  getSignal
+} from "../lib/engine.js";
 
-export async function GET(req) {
+export async function GET(request) {
   try {
-    const p = new URL(req.url).searchParams;
+    const q = new URL(request.url).searchParams;
 
-    let strategy = null;
+    const tf = q.get("tf") === "15m"
+      ? "15m"
+      : "5m";
 
-    try {
-      strategy = JSON.parse(p.get('strategy') || 'null');
-    } catch {}
+    const raw = q.get("strategy");
 
-    if (
-      !strategy ||
-      !['trend', 'breakout', 'sweep', 'rsi'].includes(strategy.kind)
-    ) {
-      return Response.json({
-        ok: false,
-        error: 'Supply a valid research strategy'
-      }, {
-        status: 400
-      });
+    if (!raw || raw.length > 3000) {
+      throw new Error("Valid strategy required");
     }
 
-    const b = await candles(150);
-    const x = features(b).at(-1);
+    const p = JSON.parse(raw);
 
-    const side = signal(x, strategy);
+    if (
+      !["TREND", "BREAKOUT", "SWEEP", "RSI"]
+        .includes(p.type) ||
+      !Number.isFinite(p.stopATR) ||
+      !Number.isFinite(p.rr) ||
+      p.stopATR < 0.1 ||
+      p.stopATR > 5 ||
+      p.rr < 0.5 ||
+      p.rr > 6 ||
+      !Number.isFinite(p.filter) ||
+      !Number.isFinite(p.threshold)
+    ) {
+      throw new Error("Invalid strategy parameters");
+    }
 
-    const fresh = Date.now() / 1000 - (x.t + 300) < 900;
+    const history = await candles(tf, 180);
+
+    if (history.length < 80) {
+      throw new Error("Insufficient recent gold data");
+    }
+
+    const x = indicators(history).at(-1);
+
+    const direction = getSignal(x, p);
+
+    const seconds = tf === "5m" ? 300 : 900;
+
+    const age =
+      Date.now() / 1000 -
+      (x.t + seconds);
+
+    const fresh = age >= 0 && age <= seconds * 2;
+
+    const side = !fresh
+      ? "WAIT"
+      : direction === 1
+      ? "BUY"
+      : direction === -1
+      ? "SELL"
+      : "WAIT";
+
+    const distance = x.atr * p.stopATR;
 
     return Response.json({
       ok: true,
+      symbol: "XAU/USD",
+      timeframe: tf,
+      source: "Twelve Data",
+      candleTime: new Date(
+        x.t * 1000
+      ).toISOString(),
       price: x.c,
-      candleTime: new Date(x.t * 1000).toISOString(),
+      atr: x.atr,
+      rsi: x.rsi,
+      ema20: x.ema20,
+      ema50: x.ema50,
+      support: x.support,
+      resistance: x.resistance,
       fresh,
+      signal: side,
 
-      signal: fresh
-        ? (side === 1 ? 'BUY' : side === -1 ? 'SELL' : 'WAIT')
-        : 'WAIT',
+      stop: side === "WAIT"
+        ? null
+        : Number(
+            (x.c - direction * distance).toFixed(2)
+          ),
 
-      reason: fresh
-        ? 'Completed candle rule evaluation'
-        : 'Stale candle data',
+      target: side === "WAIT"
+        ? null
+        : Number(
+            (x.c + direction * distance * p.rr)
+              .toFixed(2)
+          ),
 
-      stop: side
-        ? +(x.c - side * x.atr * strategy.stop).toFixed(2)
-        : null,
-
-      target: side
-        ? +(x.c + side * x.atr * strategy.stop * strategy.rr).toFixed(2)
-        : null,
-
-      atr: x.atr
+      note:
+        side === "WAIT"
+          ? "No fresh confirmed signal"
+          : "Research signal based on the latest completed candle; not a broker execution quote"
 
     }, {
       headers: {
-        'Cache-Control': 'no-store'
+        "Cache-Control": "no-store"
       }
     });
 
-  } catch (e) {
+  } catch (error) {
     return Response.json({
       ok: false,
-      error: String(e.message).slice(0, 160)
+      error: String(error.message).slice(0, 200)
     }, {
-      status: 502
+      status: 400
     });
   }
 }
