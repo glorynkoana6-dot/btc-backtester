@@ -1,12 +1,12 @@
+
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
+  "version": 2,
   "functions": {
-    "api/scan.js": {
-      "maxDuration": 30
-    },
-    "api/backtest.js": {
+    "api/evolve.js": {
       "maxDuration": 60
+    },
+    "api/live.js": {
+      "maxDuration": 30
     }
   },
   "headers": [
@@ -15,11 +15,7 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-store, max-age=0"
-        },
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
+          "value": "no-store"
         }
       ]
     }
