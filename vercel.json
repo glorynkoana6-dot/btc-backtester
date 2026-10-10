@@ -1,14 +1,5 @@
-
 {
   "version": 2,
-  "functions": {
-    "api/evolve.js": {
-      "maxDuration": 60
-    },
-    "api/live.js": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/api/(.*)",
