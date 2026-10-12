@@ -2,128 +2,73 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1,
-                 viewport-fit=cover">
-  <meta name="theme-color" content="#070d18">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#080e19">
   <title>MKAYFX | BLACKBOOK X2</title>
-  <link rel="stylesheet" href="/style.css?v=2">
-  <script src="/app.js?v=2" defer></script>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
 </head>
-
 <body>
 <div class="app">
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="mark">M<span>✦</span></div>
-      <div>
-        <div class="brandtop">MKAYFX</div>
-        <div class="brandname">BLACKBOOK X2</div>
-        <div class="brandsub">
-          GOLD MICROSTRUCTURE TERMINAL
-        </div>
-      </div>
+<header class="top">
+  <div class="brand">
+    <div class="logo">M<span>✦</span></div>
+    <div>
+      <b>MKAYFX <em>BLACKBOOK X2</em></b>
+      <small>GOLD MICROSTRUCTURE + TRADE INTELLIGENCE</small>
     </div>
+  </div>
+  <div class="topright">
+    <span id="clock">--:--:-- SAST</span>
+    <span id="connection" class="pill">
+      <i></i>
+      <span id="connectionText">CONNECTING</span>
+    </span>
+  </div>
+</header>
 
-    <div class="righthead">
-      <div class="clock" id="clock">--:--:-- SAST</div>
+<section class="hero">
+  <p class="overline">
+    PUBLIC EXCHANGE DATA · LIVE RESEARCH ENGINE
+  </p>
+  <h1>Order Flow <span>Intelligence</span></h1>
+  <p class="subtitle">
+    Actual PAXG/USDT trades and visible Binance liquidity.
+    Rule-based trade ideas only when live evidence confirms
+    a completed 1-minute candle.
+  </p>
 
-      <div class="pill offline" id="status">
-        <i id="dot"></i>
-        <span id="statusText">OFFLINE</span>
-      </div>
-
-      <button class="primary" id="connectBtn">
-        RECONNECT
-      </button>
-    </div>
-  </header>
-
-  <section class="dataRibbon">
-    <div class="ribbonTitle">
-      <span class="light"></span>
-      DATA INTEGRITY
-    </div>
-
-    <p>
-      Real Binance <b>PAXG/USDT</b> spot executions
-      and public order-book quantities.
-      Not CME gold futures, hidden institutional
-      orders, or direct XAU/USD spot transactions.
-    </p>
-
-    <div class="sourceInfo" id="sourceInfo">
-      Starting market-data engines...
-    </div>
-  </section>
-
-  <section class="hero">
-    <div class="eyebrow">
-      MKAYFX / MARKET MICROSTRUCTURE
-    </div>
-
-    <h1>
-      Institutional-Style
-      <span>Order Flow</span>
-    </h1>
-
-    <p>
-      Executed trades · Liquidity heatmap ·
-      Order-book depth · Footprint ·
-      Cumulative volume delta
-    </p>
-  </section>
-
-  <section class="connectionPanel">
-    <div class="panelTitle">
-      <span>CONNECTION INTELLIGENCE</span>
-      <span class="panelFlag" id="engineMode">
-        STARTING
-      </span>
-    </div>
-
-    <div class="diagnosticGrid">
-      <div>
-        <small>WEBSOCKET</small>
-        <strong id="wsState">CONNECTING</strong>
-      </div>
-
-      <div>
-        <small>REST ENGINE</small>
-        <strong id="restState">WAITING</strong>
-      </div>
-
-      <div>
-        <small>LAST MARKET EVENT</small>
-        <strong id="lastEvent">—</strong>
-      </div>
-
-      <div>
-        <small>RECONNECT ATTEMPTS</small>
-        <strong id="retryCount">0</strong>
-      </div>
-    </div>
-
-    <p class="diagnosticMessage" id="diagnostic">
-      Initializing connections...
-    </p>
-  </section>
-
-  <section class="controls">
+  <div class="controls">
     <label>
-      LARGE TRADE ALERT · USDT
-      <input
-        id="threshold"
-        type="number"
-        min="100"
-        step="500"
-        value="10000">
+      Minimum setup score
+      <select id="minimumScore">
+        <option value="70">70 / 100</option>
+        <option value="75" selected>75 / 100</option>
+        <option value="80">80 / 100</option>
+        <option value="85">85 / 100</option>
+      </select>
     </label>
 
     <label>
-      PRICE BUCKET
+      Reward : risk
+      <select id="rr">
+        <option value="1.5">1.5R</option>
+        <option value="1.8" selected>1.8R</option>
+        <option value="2">2.0R</option>
+        <option value="2.5">2.5R</option>
+      </select>
+    </label>
+
+    <label>
+      Large trade (USDT)
+      <input id="threshold" type="number"
+        min="100" step="100" value="10000">
+    </label>
+
+    <label>
+      Footprint bucket
       <select id="bucket">
         <option value="0.5">$0.50</option>
         <option value="1" selected>$1.00</option>
@@ -132,252 +77,289 @@
       </select>
     </label>
 
-    <button id="pauseBtn">
-      PAUSE HEATMAP
-    </button>
+    <button id="alerts" class="btn">ENABLE ALERTS</button>
+    <button id="reconnect" class="btn alt">RECONNECT</button>
+  </div>
+</section>
 
-    <button id="notifyBtn">
-      ENABLE ALERTS
-    </button>
-  </section>
+<section class="metrics">
+  <article class="metric">
+    <small>BINANCE PAXG/USDT</small>
+    <strong id="price">—</strong>
+    <span id="priceInfo">Waiting for price</span>
+  </article>
+  <article class="metric">
+    <small>XAU/USD REFERENCE</small>
+    <strong id="xauPrice">—</strong>
+    <span id="xauInfo">Separate Twelve Data candle</span>
+  </article>
+  <article class="metric">
+    <small>TOP-15 BID SHARE</small>
+    <strong id="imbalance">—</strong>
+    <span>Visible resting depth only</span>
+  </article>
+  <article class="metric">
+    <small>OBSERVED SESSION CVD</small>
+    <strong id="cvd">—</strong>
+    <span>PAXG aggressor buy − sell</span>
+  </article>
+  <article class="metric">
+    <small>BEST BID/ASK SPREAD</small>
+    <strong id="spread">—</strong>
+    <span>USDT per PAXG</span>
+  </article>
+  <article class="metric">
+    <small>60 SECOND EXECUTIONS</small>
+    <strong id="volume60">—</strong>
+    <span>Observed trade notional (USDT)</span>
+  </article>
+</section>
 
-  <section class="metrics">
+<section class="primary">
 
-    <div class="metric">
-      <span>PAXG/USDT · BINANCE</span>
-      <strong id="price">—</strong>
-      <small id="priceStatus">
-        Waiting for price
-      </small>
+  <article class="panel signal-panel">
+    <div class="heading">
+      <div>
+        <small>01 / AUTOMATIC TRADE INTELLIGENCE</small>
+        <h2>BLACKBOOK SIGNAL ENGINE</h2>
+      </div>
+      <span id="signalBadge" class="tag">WAITING</span>
     </div>
 
-    <div class="metric">
-      <span>BEST BID / ASK SPREAD</span>
-      <strong id="spread">—</strong>
-      <small>USDT per PAXG</small>
-    </div>
-
-    <div class="metric">
-      <span>TOP-15 BID DEPTH SHARE</span>
-      <strong id="imbalance">—</strong>
-      <small>Observed order-book quantities</small>
-    </div>
-
-    <div class="metric">
-      <span>OBSERVED TRADE DELTA</span>
-      <strong id="cvd">—</strong>
-      <small>Net taker-buy PAXG</small>
-    </div>
-
-    <div class="metric">
-      <span>OBSERVED 60S VOLUME</span>
-      <strong id="volume">—</strong>
-      <small>Received trade sample · PAXG</small>
-    </div>
-
-    <div class="metric">
-      <span>XAU/USD · TWELVE DATA</span>
-      <strong id="spot">—</strong>
-      <small id="spotStatus">
-        Optional independent quote
-      </small>
-    </div>
-
-  </section>
-
-  <main class="dashboard">
-
-    <section class="card full">
-      <div class="cardHead">
+    <div class="signal-content">
+      <div class="signal-line">
         <div>
-          <div class="eyebrow">01 / PRICE DISCOVERY</div>
-          <h2>PAXG Price Action</h2>
-          <p>Actual Binance 1-minute candles</p>
-        </div>
-
-        <span class="tag">1M</span>
-      </div>
-
-      <div class="canvasWrap priceChart">
-        <canvas id="chartCanvas"></canvas>
-      </div>
-
-      <div class="legend">
-        <span class="buy">● Bullish</span>
-        <span class="sell">● Bearish</span>
-        <span class="muted">Trade markers</span>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="cardHead">
-        <div>
-          <div class="eyebrow">02 / DISPLAYED DEPTH</div>
-          <h2>Order Book</h2>
-        </div>
-
-        <span class="tag" id="bookState">
-          WAITING
-        </span>
-      </div>
-
-      <div class="bookHeader">
-        <span>ASK QTY</span>
-        <span>ASK PRICE</span>
-        <span>BID PRICE</span>
-        <span>BID QTY</span>
-      </div>
-
-      <div id="bookRows" class="bookRows">
-        <div class="empty">
-          Waiting for order-book data...
-        </div>
-      </div>
-
-      <div class="cardFooter">
-        <span>LAST BOOK UPDATE ID</span>
-        <strong id="sequence">—</strong>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="cardHead">
-        <div>
-          <div class="eyebrow">03 / EXECUTED ORDERS</div>
-          <h2>Trade Tape</h2>
-        </div>
-
-        <span class="tag" id="tradeCount">
-          0 TRADES
-        </span>
-      </div>
-
-      <div class="tapeHeader">
-        <span>TIME</span>
-        <span>PRICE</span>
-        <span>PAXG</span>
-        <span>SIDE</span>
-      </div>
-
-      <div id="tradeRows" class="tapeRows">
-        <div class="empty">
-          Waiting for executed trades...
-        </div>
-      </div>
-    </section>
-
-    <section class="card full">
-      <div class="cardHead">
-        <div>
-          <div class="eyebrow">
-            04 / RESTING LIQUIDITY
-          </div>
-
-          <h2>Liquidity Heatmap</h2>
-          <p>
-            Visible quantities recorded
-            while this page is open
+          <span class="label">
+            LATEST DECISION · PAXG/USDT
+          </span>
+          <strong id="direction" class="direction">
+            NO TRADE
+          </strong>
+          <p id="signalReason">
+            Waiting for completed candles and live
+            order-flow confirmation.
           </p>
         </div>
 
-        <span class="tag">DEPTH</span>
+        <div class="score">
+          <strong id="score">—</strong>
+          <small>HEURISTIC SCORE / 100</small>
+        </div>
       </div>
 
-      <div class="canvasWrap heatChart">
-        <canvas id="heatCanvas"></canvas>
-      </div>
-
-      <div class="legend">
-        <span class="buy">● Bid liquidity</span>
-        <span class="sell">● Ask liquidity</span>
-      </div>
-    </section>
-
-    <section class="card full">
-      <div class="cardHead">
+      <div class="levels">
         <div>
-          <div class="eyebrow">
-            05 / AGGRESSIVE EXECUTIONS
-          </div>
-
-          <h2>Cumulative Volume Delta</h2>
-          <p>
-            Received taker-buy minus
-            taker-sell quantity
-          </p>
+          <span>ENTRY REFERENCE</span>
+          <b id="entry">—</b>
         </div>
-
-        <span class="tag">CVD</span>
-      </div>
-
-      <div class="canvasWrap cvdChart">
-        <canvas id="cvdCanvas"></canvas>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="cardHead">
         <div>
-          <div class="eyebrow">
-            06 / VOLUME AT PRICE
-          </div>
-
-          <h2>Trade Footprint</h2>
+          <span>STOP LOSS</span>
+          <b id="stop">—</b>
         </div>
-
-        <span class="tag">SELL / BUY</span>
-      </div>
-
-      <div class="footHeader">
-        <span>TAKER SELL</span>
-        <span>PRICE</span>
-        <span>TAKER BUY</span>
-      </div>
-
-      <div id="footRows" class="footRows">
-        <div class="empty">
-          Waiting for trades...
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="cardHead">
         <div>
-          <div class="eyebrow">
-            07 / MARKET ACTIVITY
-          </div>
-
-          <h2>Event Journal</h2>
+          <span>TAKE PROFIT</span>
+          <b id="target">—</b>
         </div>
-
-        <button id="clearBtn" class="smallBtn">
-          CLEAR
-        </button>
-      </div>
-
-      <div id="eventRows" class="eventRows">
-        <div class="empty">
-          Waiting for exchange events...
+        <div>
+          <span>REWARD / RISK</span>
+          <b id="riskReward">—</b>
         </div>
       </div>
-    </section>
 
-  </main>
+      <div class="signal-bottom">
+        <span id="signalTime">No qualifying idea yet</span>
+        <span id="signalStatus">
+          Research ideas — no orders placed
+        </span>
+      </div>
 
-  <footer>
-    <b>MKAYFX BLACKBOOK X2</b>
-    <p>
-      Public exchange events · Research only ·
-      No hidden institutional identity ·
-      No synthetic order flow
-    </p>
-    <p>
-      REST backup may miss trades between requests.
-      The heatmap records only observed book snapshots.
-    </p>
-  </footer>
+      <div class="checks" id="checks">
+        <span>● Waiting for data health</span>
+      </div>
+    </div>
+
+    <div class="note">
+      Ideas are calculated from completed 1m candles and live
+      Binance PAXG/USDT order flow. Scores are rule-based,
+      not win probabilities. Entries are indicative, not
+      executable quotes. No signals when connection or
+      order-flow evidence is stale.
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="heading">
+      <div>
+        <small>02 / INSTITUTIONAL-STYLE CONTEXT</small>
+        <h2>Market State</h2>
+      </div>
+      <span class="tag" id="marketMode">WAITING</span>
+    </div>
+
+    <div class="state-list">
+      <div>
+        <small>TREND · EMA 9 / EMA 21</small>
+        <b id="trend">—</b>
+      </div>
+      <div>
+        <small>COMPLETED M1 ATR(14)</small>
+        <b id="atr">—</b>
+      </div>
+      <div>
+        <small>LAST 90S TAKER BUY SHARE</small>
+        <b id="pressure">—</b>
+      </div>
+      <div>
+        <small>VISIBLE DEPTH BIAS</small>
+        <b id="bookBias">—</b>
+      </div>
+      <div>
+        <small>DATA FRESHNESS</small>
+        <b id="freshness">—</b>
+      </div>
+    </div>
+
+    <div class="note">
+      Signals require both live buy/sell aggression and
+      current depth. A resting limit order is not an
+      executed institutional trade.
+    </div>
+  </article>
+</section>
+
+<section class="grid-two wide">
+
+  <article class="panel">
+    <div class="heading">
+      <div>
+        <small>03 / PRICE</small>
+        <h2>1-Minute PAXG Candlesticks</h2>
+      </div>
+      <span class="tag" id="candleCount">—</span>
+    </div>
+    <div class="chart">
+      <canvas id="candles"></canvas>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="heading">
+      <div>
+        <small>04 / EXECUTED MARKET ORDERS</small>
+        <h2>Live Trade Tape</h2>
+      </div>
+      <span class="tag" id="tradeCount">—</span>
+    </div>
+
+    <div class="row-head tape-layout">
+      <span>TIME (SAST)</span>
+      <span>SIDE</span>
+      <span>PRICE</span>
+      <span>NOTIONAL</span>
+    </div>
+
+    <div id="tape" class="scroll tape">
+      <div class="empty">
+        Waiting for exchange trades…
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="panel full">
+  <div class="heading">
+    <div>
+      <small>05 / VISIBLE RESTING LIQUIDITY</small>
+      <h2>Live Order-Book Heatmap</h2>
+    </div>
+    <span class="tag" id="heatCount">—</span>
+  </div>
+
+  <div class="heat-wrap">
+    <canvas id="heatmap"></canvas>
+  </div>
+
+  <div class="legend">
+    <span class="bull">■ RESTING BIDS</span>
+    <span class="bear">■ RESTING ASKS</span>
+    <span>BRIGHTER = MORE VISIBLE QUANTITY</span>
+  </div>
+
+  <div class="note">
+    Top-20 exchange snapshots sampled while the page is open.
+    Historical heat is not downloaded. Quote removal is not
+    proof of spoofing or execution.
+  </div>
+</section>
+
+<section class="grid-two">
+
+  <article class="panel">
+    <div class="heading">
+      <div>
+        <small>06 / TOP 20 EACH SIDE</small>
+        <h2>Order Book Depth</h2>
+      </div>
+      <span class="tag" id="depthTime">—</span>
+    </div>
+
+    <div class="books">
+      <div>
+        <h3 class="bear">ASKS · SELL LIMITS</h3>
+        <div id="asks" class="book"></div>
+      </div>
+      <div>
+        <h3 class="bull">BIDS · BUY LIMITS</h3>
+        <div id="bids" class="book"></div>
+      </div>
+    </div>
+  </article>
+
+  <article class="panel">
+    <div class="heading">
+      <div>
+        <small>07 / RECENT EXECUTIONS</small>
+        <h2>Trade Footprint</h2>
+      </div>
+      <span class="tag">LAST 3 MINUTES</span>
+    </div>
+
+    <div class="row-head footprint-layout">
+      <span>LEVEL</span>
+      <span>SELL QTY</span>
+      <span>BUY QTY</span>
+      <span>DELTA</span>
+    </div>
+
+    <div id="footprint" class="footprint">
+      <div class="empty">
+        Waiting for executed trades…
+      </div>
+    </div>
+  </article>
+</section>
+
+<section class="panel full">
+  <div class="heading">
+    <div>
+      <small>08 / CONNECTION + SIGNAL LOG</small>
+      <h2>Event Journal</h2>
+    </div>
+    <button id="clear" class="btn alt">CLEAR</button>
+  </div>
+  <div id="events" class="events scroll"></div>
+</section>
+
+<footer>
+  MKAYFX BLACKBOOK X2 · PAXG/USDT SPOT DATA ≠
+  OTC XAU/USD OR CME GOLD FUTURES ·
+  EDUCATIONAL RESEARCH · NO BROKER ORDERS
+</footer>
 
 </div>
+
+<div id="toast" class="toast"
+  role="status" aria-live="polite"></div>
+
 </body>
 </html>
