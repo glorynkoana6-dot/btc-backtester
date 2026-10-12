@@ -1,114 +1,107 @@
-// MKAYFX BLACKBOOK X1
-// Optional XAU/USD spot gold quote.
-// The API key remains on Vercel's server.
 
-const TD_URL =
-  'https://api.twelvedata.com/time_series';
+/*
+ Separate indicative XAU/USD candle-close
+ reference, not exchange order flow.
+*/
+
+const NAMES = [
+  "TWELVE_DATA_API_KEY",
+  "TWELVE_DATA_API_KEY_2",
+  "TWELVE_DATA_API_KEY_3",
+  "TWELVE_DATA_API_KEY_4"
+];
+
+let cache = null;
+let expiry = 0;
 
 export default async function handler(req, res) {
   res.setHeader(
-    'Cache-Control',
-    'no-store, max-age=0'
+    "Cache-Control",
+    "no-store, max-age=0"
   );
 
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-
+  if (req.method !== "GET") {
     return res.status(405).json({
       ok: false,
-      error: 'Method not allowed'
+      error: "GET only"
     });
   }
 
-  const key =
-    process.env.TWELVE_DATA_API_KEY;
-
-  if (!key) {
-    return res.status(503).json({
-      ok: false,
-      error:
-        'XAU/USD optional feed not configured. ' +
-        'Add TWELVE_DATA_API_KEY on Vercel.'
-    });
+  if (cache && Date.now() < expiry) {
+    return res.status(200).json(cache);
   }
 
-  try {
-    const url = new URL(TD_URL);
+  const keys = [
+    ...new Set(
+      NAMES
+        .map(n => process.env[n])
+        .filter(Boolean)
+    )
+  ];
 
-    url.searchParams.set(
-      'symbol',
-      'XAU/USD'
-    );
-
-    url.searchParams.set(
-      'interval',
-      '1min'
-    );
-
-    url.searchParams.set(
-      'outputsize',
-      '2'
-    );
-
-    url.searchParams.set(
-      'apikey',
-      key
-    );
-
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(8000),
-      cache: 'no-store'
-    });
-
-    const data =
-      await response.json();
-
-    if (
-      !response.ok ||
-      data.status === 'error' ||
-      !Array.isArray(data.values) ||
-      !data.values[0]
-    ) {
-      return res.status(502).json({
-        ok: false,
-        error:
-          data.message ||
-          'Twelve Data returned no usable XAU/USD candles.'
-      });
-    }
-
-    const latest = data.values[0];
-
-    const price =
-      Number(latest.close);
-
-    if (
-      !Number.isFinite(price) ||
-      price <= 0
-    ) {
-      return res.status(502).json({
-        ok: false,
-        error: 'XAU/USD quote is invalid.'
-      });
-    }
-
+  if (!keys.length) {
     return res.status(200).json({
-      ok: true,
-      symbol: 'XAU/USD',
-      provider: 'Twelve Data',
-      price,
-      candleTime: latest.datetime,
-      providerTimezone:
-        data.meta?.exchange_timezone ||
-        'Provider time',
-      fetchedAt: new Date().toISOString()
-    });
-
-  } catch (err) {
-    return res.status(502).json({
       ok: false,
-      error:
-        'Spot feed request failed or timed out.'
+      error: "Configure TWELVE_DATA_API_KEY"
     });
   }
+
+  let error = "XAU/USD feed unavailable";
+
+  for (const key of keys) {
+    try {
+      const url = new URL(
+        "https://api.twelvedata.com/time_series"
+      );
+
+      url.search = new URLSearchParams({
+        symbol: "XAU/USD",
+        interval: "1min",
+        outputsize: "2",
+        timezone: "UTC",
+        apikey: key
+      }).toString();
+
+      const r = await fetch(url, {
+        signal: AbortSignal.timeout(5500),
+        cache: "no-store"
+      });
+
+      const d = await r.json();
+      const candle = d?.values?.[0];
+      const price = Number(candle?.close);
+
+      if (
+        !r.ok ||
+        d.status === "error" ||
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
+        throw Error(
+          d.message || `HTTP ${r.status}`
+        );
+      }
+
+      cache = {
+        ok: true,
+        price,
+        symbol: "XAU/USD",
+        source: "Twelve Data 1min close",
+        candleUTC: candle.datetime,
+        fetchedAt: Date.now()
+      };
+
+      expiry = Date.now() + 75000;
+
+      return res.status(200).json(cache);
+
+    } catch (e) {
+      error = e.message;
+    }
+  }
+
+  return res.status(200).json({
+    ok: false,
+    error
+  });
 }
