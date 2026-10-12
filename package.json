@@ -1,13 +1,9 @@
-
 {
-  "name": "mkayfx-radar-v4",
-  "version": "4.0.0",
+  "name": "mkayfx-blackbook-x1-free",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vercel dev"
-  },
-  "engines": {
-    "node": ">=20"
   }
 }
