@@ -1,14 +1,45 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "version": 2,
+
   "headers": [
+
     {
-      "source": "/api/(.*)",
+
+      "source": "/app.js",
+
       "headers": [
+
         {
+
           "key": "Cache-Control",
-          "value": "no-store"
+
+          "value": "no-cache, must-revalidate"
+
         }
+
       ]
+
+    },
+
+    {
+
+      "source": "/api/(.*)",
+
+      "headers": [
+
+        {
+
+          "key": "Cache-Control",
+
+          "value": "no-store, max-age=0"
+
+        }
+
+      ]
+
     }
+
   ]
+
 }
