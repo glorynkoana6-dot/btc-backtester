@@ -1,1121 +1,303 @@
-/* ===========================================================
-   MKAYFX INSTITUTIONAL LIQUIDITY RADAR V1
-   FILE: /api/xau.js
-
-   Twelve Data:
-   API 1 = M1
-   API 2 = M5
-   API 3 = M15 + H1
-   API 4 = H4 + D1
-
-   NOTE:
-   All liquidity scores are OHLC-based estimates.
-   There is no real institutional order-book feed.
-=========================================================== */
-
-const SYMBOL = "XAU/USD";
-
-const BASE = "https://api.twelvedata.com/time_series";
-
-const FRAME = {
-  "1min": {
-    env: "TWELVE_DATA_API_KEY",
-    size: 240,
-    ttl: 55000,
-    minutes: 1
-  },
-  "5min": {
-    env: "TWELVE_DATA_API_KEY_2",
-    size: 540,
-    ttl: 175000,
-    minutes: 5
-  },
-  "15min": {
-    env: "TWELVE_DATA_API_KEY_3",
-    size: 300,
-    ttl: 390000,
-    minutes: 15
-  },
-  "1h": {
-    env: "TWELVE_DATA_API_KEY_3",
-    size: 220,
-    ttl: 900000,
-    minutes: 60
-  },
-  "4h": {
-    env: "TWELVE_DATA_API_KEY_4",
-    size: 160,
-    ttl: 1800000,
-    minutes: 240
-  },
-  "1day": {
-    env: "TWELVE_DATA_API_KEY_4",
-    size: 45,
-    ttl: 3600000,
-    minutes: 1440
-  }
+/* MKAYFX INSTITUTIONAL LIQUIDITY RADAR V2
+   /api/xau.js — Node.js / Vercel
+   Candle-derived estimates, NOT real order-book depth.
+   BUY-SIDE liquidity = above highs; SELL-SIDE liquidity = below lows.
+*/
+const SYMBOL = 'XAU/USD';
+const API_URL = 'https://api.twelvedata.com/time_series';
+const FEEDS = {
+  '1min':  { key: 'TWELVE_DATA_API_KEY',   size: 360, ttl: 55000,   mins: 1 },
+  '5min':  { key: 'TWELVE_DATA_API_KEY_2', size: 650, ttl: 160000,  mins: 5 },
+  '15min': { key: 'TWELVE_DATA_API_KEY_3', size: 420, ttl: 420000,  mins: 15 },
+  '1h':    { key: 'TWELVE_DATA_API_KEY_3', size: 320, ttl: 850000,  mins: 60 },
+  '4h':    { key: 'TWELVE_DATA_API_KEY_4', size: 210, ttl: 1700000, mins: 240 },
+  '1day':  { key: 'TWELVE_DATA_API_KEY_4', size: 100, ttl: 3500000, mins: 1440 }
 };
-
 const cache = new Map();
-const inflight = new Map();
+const pending = new Map();
+const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+const round = (x,n=2) => Number(Number(x).toFixed(n));
+const avg = xs => xs.length ? xs.reduce((a,b)=>a+b,0)/xs.length : 0;
+const label = e => String(e?.message || e || 'Unknown error')
+  .replace(/apikey\s*[=:]\s*[^&\s]+/gi,'apikey=REDACTED').slice(0,190);
 
-const clamp = (x, min, max) =>
-  Math.max(min, Math.min(max, x));
-
-const avg = a =>
-  a.length
-    ? a.reduce((s, x) => s + x, 0) / a.length
-    : 0;
-
-const round = (n, d = 2) =>
-  Number(Number(n).toFixed(d));
-
-const safeError = e =>
-  String(e?.message || e || "Unknown error")
-    .replace(/apikey=[^&\s]+/gi, "apikey=REDACTED")
-    .slice(0, 170);
-
-/* =============================
-   TIME AND CANDLE NORMALIZATION
-============================= */
-
-function timeOf(s) {
+function parseUTC(input) {
+  const s = String(input || '').trim().replace(' ','T');
   if (!s) return NaN;
-
-  const clean = String(s)
-    .trim()
-    .replace(" ", "T");
-
-  return Date.parse(
-    /(?:Z|[+-]\d\d:\d\d)$/.test(clean)
-      ? clean
-      : `${clean}${clean.length === 10 ? "T00:00:00Z" : "Z"}`
-  );
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(s) ? `${s}T00:00:00Z` :
+    /(?:Z|[+-]\d\d:\d\d)$/.test(s) ? s : `${s}Z`;
+  return Date.parse(iso);
 }
-
-function barsOf(data) {
-  if (!Array.isArray(data.values)) {
-    throw Error(
-      "No candle data returned; verify symbol access and subscription"
-    );
-  }
-
-  const out = data.values
-    .map(v => ({
-      t: timeOf(v.datetime),
-      o: +v.open,
-      h: +v.high,
-      l: +v.low,
-      c: +v.close
-    }))
-    .filter(
-      b =>
-        Number.isFinite(b.t) &&
-        [b.o, b.h, b.l, b.c].every(Number.isFinite) &&
-        b.h >= b.l &&
-        b.h >= Math.max(b.o, b.c) &&
-        b.l <= Math.min(b.o, b.c)
-    );
-
-  out.sort((a, b) => a.t - b.t);
-
-  return out.filter(
-    (b, i) => i === 0 || b.t !== out[i - 1].t
-  );
+function normalize(values) {
+  if (!Array.isArray(values)) throw Error('Candle values unavailable for XAU/USD');
+  const rows = values.map(v => ({
+    t: parseUTC(v.datetime), o: Number(v.open), h: Number(v.high),
+    l: Number(v.low), c: Number(v.close)
+  })).filter(b => Number.isFinite(b.t) &&
+    [b.o,b.h,b.l,b.c].every(Number.isFinite) && b.l <= Math.min(b.o,b.c) &&
+    b.h >= Math.max(b.o,b.c));
+  rows.sort((a,b)=>a.t-b.t);
+  const unique = new Map(rows.map(b=>[b.t,b]));
+  return [...unique.values()];
 }
-
-/* =============================
-   DATA ENGINE
-============================= */
-
-async function fetchFrame(name) {
-  const cfg = FRAME[name];
-  const now = Date.now();
-  const old = cache.get(name);
-
-  if (old && now - old.at < cfg.ttl) {
-    return {
-      candles: old.data,
-      stale: false,
-      cached: true
-    };
-  }
-
-  if (inflight.has(name)) {
-    return inflight.get(name);
-  }
-
-  const job = (async () => {
-    const key = process.env[cfg.env];
-
-    if (!key) {
-      throw Error(
-        `Missing Vercel variable ${cfg.env}`
-      );
-    }
-
-    const u = new URL(BASE);
-
-    Object.entries({
-      symbol: SYMBOL,
-      interval: name,
-      outputsize: cfg.size,
-      order: "asc",
-      timezone: "UTC",
-      apikey: key
-    }).forEach(([k, v]) =>
-      u.searchParams.set(k, String(v))
-    );
-
+async function getFeed(tf) {
+  const config = FEEDS[tf], now = Date.now(), old = cache.get(tf);
+  if (old && now-old.time < config.ttl) return {bars:old.bars,cached:true,stale:false};
+  if (pending.has(tf)) return pending.get(tf);
+  const task = (async () => {
+    const key = process.env[config.key];
+    if (!key) throw Error(`Missing environment variable ${config.key}`);
+    const url = new URL(API_URL);
+    for (const [k,v] of Object.entries({symbol:SYMBOL,interval:tf,outputsize:config.size,
+      timezone:'UTC',order:'asc',apikey:key})) url.searchParams.set(k,String(v));
     const controller = new AbortController();
-
-    const timer = setTimeout(
-      () => controller.abort(),
-      8500
-    );
-
+    const timer = setTimeout(()=>controller.abort(),9000);
     try {
-      const response = await fetch(u, {
-        signal: controller.signal,
-        headers: {
-          Accept: "application/json"
-        }
-      });
-
-      const data = await response.json();
-
-      if (
-        !response.ok ||
-        data.status === "error" ||
-        data.code >= 400
-      ) {
-        throw Error(
-          `Twelve Data: ${String(
-            data.message || `HTTP ${response.status}`
-          ).slice(0, 125)}`
-        );
-      }
-
-      const candles = barsOf(data);
-
-      if (!candles.length) {
-        throw Error(
-          "Twelve Data returned zero valid candles"
-        );
-      }
-
-      cache.set(name, {
-        at: Date.now(),
-        data: candles
-      });
-
-      return {
-        candles,
-        stale: false,
-        cached: false
-      };
-    } finally {
-      clearTimeout(timer);
-    }
+      const response = await fetch(url,{signal:controller.signal,headers:{accept:'application/json'}});
+      const json = await response.json();
+      if (!response.ok || json.status === 'error' || (json.code && json.code >= 400))
+        throw Error('Twelve Data: '+String(json.message || `HTTP ${response.status}`).slice(0,120));
+      const bars = normalize(json.values);
+      if (bars.length < 10) throw Error(`Too few valid ${tf} candles`);
+      cache.set(tf,{time:Date.now(),bars});
+      return {bars,cached:false,stale:false};
+    } finally { clearTimeout(timer); }
   })();
-
-  inflight.set(name, job);
-
-  try {
-    return await job;
-  } catch (e) {
-    if (old && now - old.at < cfg.ttl * 12) {
-      return {
-        candles: old.data,
-        stale: true,
-        cached: true,
-        warning: safeError(e)
-      };
-    }
-
+  pending.set(tf,task);
+  try { return await task; }
+  catch (e) {
+    if (old && now-old.time < config.ttl*10)
+      return {bars:old.bars,cached:true,stale:true,warning:label(e)};
     throw e;
-  } finally {
-    inflight.delete(name);
+  } finally { pending.delete(tf); }
+}
+function completed(bars,minutes) {
+  const until = Date.now() - 2500;
+  return bars.filter(b=>b.t + minutes*60000 <= until);
+}
+function ema(bars,n) {
+  if (!bars.length) return NaN;
+  const k=2/(n+1); let v=bars[0].c;
+  for (let i=1;i<bars.length;i++) v=bars[i].c*k+v*(1-k);
+  return v;
+}
+function atr(bars,n=14) {
+  if (bars.length<2) return NaN;
+  const start=Math.max(1,bars.length-n); let values=[];
+  for (let i=start;i<bars.length;i++) {
+    const b=bars[i],p=bars[i-1].c;
+    values.push(Math.max(b.h-b.l,Math.abs(b.h-p),Math.abs(b.l-p)));
   }
+  return avg(values);
 }
-
-function closed(bars, mins) {
-  return bars.filter(
-    b => b.t + mins * 60000 <= Date.now() - 2000
-  );
+function trend(bars) {
+  if (bars.length<55) return 'UNKNOWN';
+  const fast=ema(bars,20), slow=ema(bars,50), v=atr(bars);
+  if (!Number.isFinite(v)) return 'UNKNOWN';
+  if (Math.abs(fast-slow)<v*.13) return 'RANGING';
+  return fast>slow?'BULLISH':'BEARISH';
 }
-
-/* =============================
-   TECHNICAL INDICATORS
-============================= */
-
-function atr(bars, period = 14) {
-  if (bars.length < 2) return 1;
-
-  return (
-    avg(
-      bars.slice(-period).map((b, i, a) => {
-        const prev = i
-          ? a[i - 1].c
-          : (
-              bars[
-                bars.length -
-                Math.min(period, bars.length) -
-                1
-              ]?.c ?? b.o
-            );
-
-        return Math.max(
-          b.h - b.l,
-          Math.abs(b.h - prev),
-          Math.abs(b.l - prev)
-        );
-      })
-    ) || 1
-  );
-}
-
-function ema(bars, n) {
-  if (!bars.length) return 0;
-
-  let x = bars[0].c;
-  const k = 2 / (n + 1);
-
-  for (let i = 1; i < bars.length; i++) {
-    x = bars[i].c * k + x * (1 - k);
+function swingPoints(bars,tf,width,weight) {
+  const out=[];
+  for (let i=width;i<bars.length-width;i++) {
+    const b=bars[i]; let high=true,low=true;
+    for (let j=i-width;j<=i+width;j++) {
+      if (j===i) continue;
+      if (bars[j].h>=b.h) high=false;
+      if (bars[j].l<=b.l) low=false;
+      if (!high&&!low) break;
+    }
+    const confirmed=bars[i+width].t;
+    if (high) out.push({price:b.h,side:'BUY_SIDE',kind:`${tf} SWING HIGH`,weight,
+      time:b.t,confirmedAt:confirmed});
+    if (low) out.push({price:b.l,side:'SELL_SIDE',kind:`${tf} SWING LOW`,weight,
+      time:b.t,confirmedAt:confirmed});
   }
-
-  return x;
+  return out.slice(-75);
 }
-
-/* =============================
-   SWING DETECTION
-============================= */
-
-function pivotCandidates(bars, tf, k, weight) {
-  const found = [];
-
-  for (let i = k; i < bars.length - k; i++) {
-    const b = bars[i];
-
-    const near = bars.slice(
-      i - k,
-      i + k + 1
-    );
-
-    if (
-      near.every(
-        (n, j) => j === k || b.h > n.h
-      )
-    ) {
-      found.push({
-        price: b.h,
-        side: "SELL_SIDE",
-        kind: `${tf} SWING HIGH`,
-        t: b.t,
-        weight
-      });
-    }
-
-    if (
-      near.every(
-        (n, j) => j === k || b.l < n.l
-      )
-    ) {
-      found.push({
-        price: b.l,
-        side: "BUY_SIDE",
-        kind: `${tf} SWING LOW`,
-        t: b.t,
-        weight
-      });
-    }
-  }
-
-  return found.slice(-75);
+const dateKey=t=>new Date(t).toISOString().slice(0,10);
+function previousDay(daily) {
+  const today=dateKey(Date.now());
+  return [...daily].reverse().find(b=>dateKey(b.t)<today) || null;
 }
-
-/* =============================
-   PREVIOUS DAY / WEEK
-============================= */
-
-function previousDay(dayBars) {
-  const today = new Date()
-    .toISOString()
-    .slice(0, 10);
-
-  return [...dayBars]
-    .reverse()
-    .find(
-      b =>
-        new Date(b.t)
-          .toISOString()
-          .slice(0, 10) < today
-    );
+function monday(t) {
+  const d=new Date(t),dow=(d.getUTCDay()+6)%7;
+  return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-dow);
 }
-
-function weekStartUTC(t) {
-  const d = new Date(t);
-
-  const day =
-    (d.getUTCDay() + 6) % 7;
-
-  return Date.UTC(
-    d.getUTCFullYear(),
-    d.getUTCMonth(),
-    d.getUTCDate() - day
-  );
+function previousWeek(daily) {
+  const before=daily.filter(b=>monday(b.t)<monday(Date.now()));
+  if (!before.length) return null;
+  const start=monday(before.at(-1).t), week=before.filter(b=>monday(b.t)===start);
+  return {h:Math.max(...week.map(b=>b.h)),l:Math.min(...week.map(b=>b.l)),t:week[0].t};
 }
-
-function previousWeek(dayBars) {
-  const thisWeek = weekStartUTC(
-    Date.now()
-  );
-
-  const arr = dayBars.filter(
-    b => weekStartUTC(b.t) < thisWeek
-  );
-
-  if (!arr.length) return null;
-
-  const week = weekStartUTC(
-    arr[arr.length - 1].t
-  );
-
-  const b = arr.filter(
-    x => weekStartUTC(x.t) === week
-  );
-
-  return {
-    h: Math.max(...b.map(x => x.h)),
-    l: Math.min(...b.map(x => x.l)),
-    t: b[0].t
-  };
+const sessionDefs=[
+  {id:'ASIA',zone:'Asia/Tokyo',start:9,end:17,display:'09–17 TOKYO'},
+  {id:'LONDON',zone:'Europe/London',start:8,end:17,display:'08–17 LONDON'},
+  {id:'NEW_YORK',zone:'America/New_York',start:8,end:17,display:'08–17 NEW YORK'}
+];
+const formatters=Object.fromEntries(sessionDefs.map(s=>[s.id,
+  new Intl.DateTimeFormat('en-CA',{timeZone:s.zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'})]));
+function zonedParts(ts,id) {
+  const o={};
+  for (const x of formatters[id].formatToParts(new Date(ts))) if (x.type!=='literal') o[x.type]=x.value;
+  return {date:`${o.year}-${o.month}-${o.day}`, hour:Number(o.hour)+Number(o.minute)/60};
 }
-
-/* =============================
-   SESSION INTELLIGENCE
-============================= */
-
-function sessionLevels(bars) {
-  const day = new Date()
-    .toISOString()
-    .slice(0, 10);
-
-  const current = bars.filter(
-    b =>
-      new Date(b.t)
-        .toISOString()
-        .slice(0, 10) === day
-  );
-
-  const definitions = [
-    {
-      id: "ASIA",
-      label: "ASIA",
-      start: 0,
-      end: 8
-    },
-    {
-      id: "LONDON",
-      label: "LONDON",
-      start: 8,
-      end: 16
-    },
-    {
-      id: "NEW_YORK",
-      label: "NEW YORK",
-      start: 13,
-      end: 21
-    }
+function sessions(m5) {
+  return sessionDefs.map(s=>{
+    const now=zonedParts(Date.now(),s.id);
+    const inside=m5.filter(b=>{
+      const t=zonedParts(b.t,s.id);
+      return t.date===now.date && t.hour>=s.start && t.hour<s.end;
+    });
+    return {id:s.id,display:s.display,status:now.hour<s.start?'UPCOMING':now.hour>=s.end?'COMPLETE':'ACTIVE',
+      high:inside.length?round(Math.max(...inside.map(b=>b.h))):null,
+      low:inside.length?round(Math.min(...inside.map(b=>b.l))):null,
+      bars:inside.length,complete:now.hour>=s.end};
+  });
+}
+function buildLevels(m5,m15,h1,daily,ss,price,v) {
+  let candidates=[
+    ...swingPoints(m5.slice(-500),'M5',5,14),
+    ...swingPoints(m15.slice(-350),'M15',4,21),
+    ...swingPoints(h1.slice(-240),'H1',3,27)
   ];
-
-  const nowHour =
-    new Date().getUTCHours() +
-    new Date().getUTCMinutes() / 60;
-
-  return definitions.map(s => {
-    const relevant = current.filter(b => {
-      const h = new Date(b.t)
-        .getUTCHours();
-
-      return (
-        h >= s.start &&
-        h < s.end
-      );
-    });
-
-    return {
-      ...s,
-
-      status:
-        nowHour < s.start
-          ? "UPCOMING"
-          : nowHour >= s.end
-            ? "ENDED"
-            : "ACTIVE",
-
-      high: relevant.length
-        ? round(
-            Math.max(
-              ...relevant.map(b => b.h)
-            )
-          )
-        : null,
-
-      low: relevant.length
-        ? round(
-            Math.min(
-              ...relevant.map(b => b.l)
-            )
-          )
-        : null
-    };
+  const pd=previousDay(daily), pw=previousWeek(daily);
+  if (pd) candidates.push(
+    {price:pd.h,side:'BUY_SIDE',kind:'PREVIOUS DAY HIGH',weight:36,time:pd.t,confirmedAt:pd.t+86400000},
+    {price:pd.l,side:'SELL_SIDE',kind:'PREVIOUS DAY LOW',weight:36,time:pd.t,confirmedAt:pd.t+86400000}
+  );
+  if (pw) candidates.push(
+    {price:pw.h,side:'BUY_SIDE',kind:'PREVIOUS WEEK HIGH',weight:42,time:pw.t,confirmedAt:monday(pw.t)+7*86400000},
+    {price:pw.l,side:'SELL_SIDE',kind:'PREVIOUS WEEK LOW',weight:42,time:pw.t,confirmedAt:monday(pw.t)+7*86400000}
+  );
+  for (const s of ss) if (s.high !== null) candidates.push(
+    {price:s.high,side:'BUY_SIDE',kind:s.id.replace('_',' ')+' HIGH',weight:s.complete?26:16,
+      time:Date.now(),confirmedAt:s.complete?Date.now():null,forming:!s.complete},
+    {price:s.low,side:'SELL_SIDE',kind:s.id.replace('_',' ')+' LOW',weight:s.complete?26:16,
+      time:Date.now(),confirmedAt:s.complete?Date.now():null,forming:!s.complete}
+  );
+  const tolerance=Math.max(v*.28,price*.000065,0.08);
+  const groups=[];
+  for (const side of ['BUY_SIDE','SELL_SIDE']) {
+    const sorted=candidates.filter(x=>x.side===side).sort((a,b)=>a.price-b.price);
+    for (const x of sorted) {
+      let g=groups.find(z=>z.side===side && Math.abs(z.price-x.price)<=tolerance);
+      if (!g) {
+        g={side,price:x.price,weightSum:0,count:0,maxWeight:0,kinds:[],time:0,forming:true};
+        groups.push(g);
+      }
+      g.price=(g.price*g.weightSum+x.price*x.weight)/(g.weightSum+x.weight);
+      g.weightSum+=x.weight;
+      g.count++;
+      if (x.weight>=g.maxWeight) { g.kind=x.kind; g.maxWeight=x.weight; }
+      if (!g.kinds.includes(x.kind)) g.kinds.push(x.kind);
+      g.time=Math.max(g.time,x.time||0);
+      if (!x.forming) g.forming=false;
+    }
+  }
+  return groups.map((g,i)=>{
+    const distance=Math.abs(g.price-price)/v;
+    const score=clamp(Math.round(19+g.maxWeight+Math.min(6,g.count)*6+
+      Math.min(15,Math.log2(1+g.weightSum)*1.8)+(distance<=6?7:0)-(g.forming?12:0)),1,99);
+    return {id:`Z${i+1}`,price:round(g.price),side:g.side,kind:g.kind,
+      tags:g.kinds.slice(0,4),confluences:g.count,score,forming:g.forming,
+      distanceATR:round(distance,2),status:g.forming?'FORMING':'TRACKING'};
+  }).filter(g=>g.distanceATR<35 || g.kind.includes('PREVIOUS'))
+    .sort((a,b)=>b.score-a.score).slice(0,40);
+}
+function findSweeps(bars) {
+  const out=[];
+  for (let i=Math.max(22,bars.length-150);i<bars.length;i++) {
+    const b=bars[i],prior=bars.slice(i-20,i), v=atr(bars.slice(Math.max(0,i-15),i+1));
+    if (!Number.isFinite(v)||v===0) continue;
+    const high=Math.max(...prior.map(x=>x.h)), low=Math.min(...prior.map(x=>x.l));
+    const wickH=b.h-Math.max(b.o,b.c),wickL=Math.min(b.o,b.c)-b.l;
+    if (b.h>high+v*.06 && b.c<high-v*.025 && wickH>v*.12)
+      out.push({t:b.t,side:'BUY_SIDE',price:round(high),extreme:round(b.h),
+        type:'BUY-SIDE LIQUIDITY RAID',result:'REJECTED HIGH',
+        strength:clamp(Math.round(40+wickH/v*25+(high-b.c)/v*15),1,99)});
+    if (b.l<low-v*.06 && b.c>low+v*.025 && wickL>v*.12)
+      out.push({t:b.t,side:'SELL_SIDE',price:round(low),extreme:round(b.l),
+        type:'SELL-SIDE LIQUIDITY RAID',result:'REJECTED LOW',
+        strength:clamp(Math.round(40+wickL/v*25+(b.c-low)/v*15),1,99)});
+  }
+  return out.sort((a,b)=>b.t-a.t).slice(0,12);
+}
+function findFVG(bars,v) {
+  const out=[];
+  for (let i=2;i<bars.length;i++) {
+    const a=bars[i-2],c=bars[i]; let low,high,side;
+    if (c.l-a.h>v*.18) {low=a.h;high=c.l;side='BULLISH';}
+    else if (a.l-c.h>v*.18) {low=c.h;high=a.l;side='BEARISH';}
+    else continue;
+    const later=bars.slice(i+1);
+    const filled=later.some(x=>side==='BULLISH'?x.l<=low:x.h>=high);
+    if (filled) continue;
+    const touched=later.some(x=>side==='BULLISH'?x.l<high:x.h>low);
+    out.push({t:c.t,low:round(low),high:round(high),side,status:touched?'PARTIAL':'OPEN'});
+  }
+  return out.slice(-15);
+}
+function density(levels,price,v) {
+  if (!levels.length) return [];
+  const min=price-v*12,max=price+v*12;
+  const bins=26;
+  const raw=Array.from({length:bins},(_,i)=>{
+    const p=min+(max-min)*(i+.5)/bins;
+    const strength=levels.reduce((s,z)=>s+z.score*Math.exp(-.5*Math.pow((p-z.price)/(v*.65),2)),0);
+    return {price:round(p),value:strength};
   });
+  const high=Math.max(1,...raw.map(x=>x.value));
+  return raw.map(x=>({price:x.price,strength:Math.round(x.value/high*100)}));
 }
-
-/* =============================
-   LIQUIDITY CLUSTER ENGINE
-============================= */
-
-function collectLevels({
-  m5,
-  m15,
-  h1,
-  day,
-  price,
-  volatility
-}) {
-  let p = [
-    ...pivotCandidates(
-      m5, "M5", 4, 10
-    ),
-    ...pivotCandidates(
-      m15, "M15", 3, 17
-    ),
-    ...pivotCandidates(
-      h1, "H1", 2, 23
-    )
-  ];
-
-  const pd = previousDay(day);
-  const pw = previousWeek(day);
-  const ss = sessionLevels(m5);
-
-  if (pd) {
-    p.push(
-      {
-        price: pd.h,
-        side: "SELL_SIDE",
-        kind: "PREVIOUS DAY HIGH",
-        t: pd.t,
-        weight: 30
-      },
-      {
-        price: pd.l,
-        side: "BUY_SIDE",
-        kind: "PREVIOUS DAY LOW",
-        t: pd.t,
-        weight: 30
-      }
-    );
+function assemble(feeds,errors) {
+  const original={}; const closed={};
+  for (const [tf,cfg] of Object.entries(FEEDS)) {
+    original[tf]=feeds[tf]?.bars||[];
+    closed[tf]=completed(original[tf],cfg.mins);
   }
-
-  if (pw) {
-    p.push(
-      {
-        price: pw.h,
-        side: "SELL_SIDE",
-        kind: "PREVIOUS WEEK HIGH",
-        t: pw.t,
-        weight: 34
-      },
-      {
-        price: pw.l,
-        side: "BUY_SIDE",
-        kind: "PREVIOUS WEEK LOW",
-        t: pw.t,
-        weight: 34
-      }
-    );
-  }
-
-  for (const s of ss) {
-    if (s.high !== null) {
-      p.push(
-        {
-          price: s.high,
-          side: "SELL_SIDE",
-          kind: `${s.label} HIGH`,
-          t: Date.now(),
-          weight: 22
-        },
-        {
-          price: s.low,
-          side: "BUY_SIDE",
-          kind: `${s.label} LOW`,
-          t: Date.now(),
-          weight: 22
-        }
-      );
-    }
-  }
-
-  const threshold = Math.max(
-    volatility * 0.32,
-    price * 0.00008,
-    0.12
-  );
-
-  p.sort(
-    (a, b) =>
-      a.side.localeCompare(b.side) ||
-      a.price - b.price
-  );
-
-  const clusters = [];
-
-  for (const x of p) {
-    const match = clusters.find(
-      z =>
-        z.side === x.side &&
-        Math.abs(
-          z.price - x.price
-        ) <= threshold
-    );
-
-    if (match) {
-      const total =
-        match.rawWeight + x.weight;
-
-      match.price =
-        (
-          match.price *
-          match.rawWeight +
-          x.price * x.weight
-        ) / total;
-
-      match.rawWeight = total;
-      match.touches++;
-
-      if (x.weight >= match.weight) {
-        match.kind = x.kind;
-        match.weight = x.weight;
-      }
-
-      match.t = Math.max(
-        match.t, x.t
-      );
-    } else {
-      clusters.push({
-        ...x,
-        touches: 1,
-        rawWeight: x.weight
-      });
-    }
-  }
-
-  return clusters
-    .map((z, i) => {
-      const distanceATR =
-        Math.abs(
-          z.price - price
-        ) / volatility;
-
-      const rank = clamp(
-        Math.round(
-          27 +
-          z.weight +
-          Math.min(
-            z.touches, 7
-          ) * 7 +
-          (distanceATR < 5 ? 8 : 0)
-        ),
-        1,
-        99
-      );
-
-      const raid = m5
-        .slice(-80)
-        .some(b =>
-          z.side === "SELL_SIDE"
-            ? (
-                b.h >
-                  z.price +
-                  volatility * 0.07 &&
-                b.c <
-                  z.price -
-                  volatility * 0.035
-              )
-            : (
-                b.l <
-                  z.price -
-                  volatility * 0.07 &&
-                b.c >
-                  z.price +
-                  volatility * 0.035
-              )
-        );
-
-      return {
-        id: `L${i}`,
-        price: round(z.price),
-        side: z.side,
-        kind: z.kind,
-        t: z.t,
-        touches: z.touches,
-        score: rank,
-        distanceATR: round(
-          distanceATR
-        ),
-        status: raid
-          ? "RECENT RAID"
-          : "TRACKING"
-      };
-    })
-    .sort(
-      (a, b) => b.score - a.score
-    )
-    .slice(0, 35);
-}
-
-/* =============================
-   FAIR VALUE GAPS
-============================= */
-
-function findGaps(bars, vol) {
-  const out = [];
-
-  for (
-    let i = 2;
-    i < bars.length;
-    i++
-  ) {
-    const a = bars[i - 2];
-    const b = bars[i];
-
-    if (
-      b.l - a.h >
-      vol * 0.22
-    ) {
-      out.push({
-        t: a.t,
-        low: round(a.h),
-        high: round(b.l),
-        side: "BULLISH"
-      });
-    }
-
-    if (
-      a.l - b.h >
-      vol * 0.22
-    ) {
-      out.push({
-        t: a.t,
-        low: round(b.h),
-        high: round(a.l),
-        side: "BEARISH"
-      });
-    }
-  }
-
-  return out.slice(-18);
-}
-
-/* =============================
-   LIQUIDITY SWEEP EVENTS
-============================= */
-
-function sweepEvents(
-  bars,
-  levels,
-  vol
-) {
-  const chosen = levels
-    .filter(
-      x => x.score >= 60
-    )
-    .slice(0, 20);
-
-  const events = [];
-
-  for (
-    const b of bars.slice(-72)
-  ) {
-    for (const lev of chosen) {
-      const tested =
-        lev.side === "SELL_SIDE"
-          ? (
-              b.h >
-                lev.price +
-                vol * 0.08 &&
-              b.c <
-                lev.price -
-                vol * 0.04
-            )
-          : (
-              b.l <
-                lev.price -
-                vol * 0.08 &&
-              b.c >
-                lev.price +
-                vol * 0.04
-            );
-
-      if (tested) {
-        events.push({
-          time: b.t,
-          price: lev.price,
-          side: lev.side,
-          label:
-            `${
-              lev.side === "SELL_SIDE"
-                ? "Sell-side"
-                : "Buy-side"
-            } sweep rejection`,
-          score: lev.score
-        });
-      }
-    }
-  }
-
-  const uniq = new Map();
-
-  for (const e of events) {
-    uniq.set(
-      `${e.time}-${e.side}`,
-      e
-    );
-  }
-
-  return [...uniq.values()]
-    .sort(
-      (a, b) => b.time - a.time
-    )
-    .slice(0, 6);
-}
-
-/* =============================
-   MARKET STRUCTURE
-============================= */
-
-function statusText(
-  price,
-  h1,
-  m15
-) {
-  const trend1 =
-    h1.length >= 52
-      ? (
-          ema(h1, 20) >
-          ema(h1, 50)
-            ? "BULLISH"
-            : "BEARISH"
-        )
-      : "UNKNOWN";
-
-  const trend15 =
-    m15.length >= 52
-      ? (
-          ema(m15, 20) >
-          ema(m15, 50)
-            ? "BULLISH"
-            : "BEARISH"
-        )
-      : "UNKNOWN";
-
+  const base=original['1min'].at(-1)||original['5min'].at(-1)||original['15min'].at(-1)||original['1h'].at(-1);
+  if (!base) throw Error('No usable XAU/USD feed: check API keys, plan access and remaining credits');
+  const price=base.c, m5=closed['5min'],m15=closed['15min'],h1=closed['1h'];
+  const v=Number.isFinite(atr(m5)) ? Math.max(.03,atr(m5)) : Math.max(.03,price*.001);
+  const ss=sessions(m5),levels=buildLevels(m5,m15,h1,closed['1day'],ss,price,v);
+  const trend15=trend(m15),trend1=trend(h1);
+  const agreement=trend15===trend1 && ['BULLISH','BEARISH'].includes(trend1);
+  const upper=levels.filter(z=>z.side==='BUY_SIDE'&&z.price>price).sort((a,b)=>a.price-b.price)[0]||null;
+  const lower=levels.filter(z=>z.side==='SELL_SIDE'&&z.price<price).sort((a,b)=>b.price-a.price)[0]||null;
+  const ageSec=Math.max(0,Math.floor((Date.now()-base.t)/1000));
+  const quality=Object.fromEntries(Object.keys(FEEDS).map(tf=>[tf,{
+    count:original[tf].length,last:original[tf].at(-1)?.t||null,
+    stale:!!feeds[tf]?.stale,cached:!!feeds[tf]?.cached,
+    warning:errors[tf]||null
+  }]));
   return {
-    h1: trend1,
-    m15: trend15,
-
-    agreement:
-      trend1 === trend15 &&
-      trend1 !== "UNKNOWN"
-        ? "ALIGNED"
-        : "MIXED",
-
-    bias:
-      trend1 === trend15
-        ? trend1
-        : "NEUTRAL"
+    ok:true,symbol:SYMBOL,generatedAt:Date.now(),price:round(price),quoteTime:base.t,
+    quoteIsCandleClose:true,ageSeconds:ageSec,
+    disclaimer:'OHLC-derived liquidity estimates. Not real resting orders, institutional positions or predictive probabilities.',
+    market:{atrM5:round(v,3),trendM15:trend15,trendH1:trend1,
+      agreement:agreement?'ALIGNED':'MIXED',bias:agreement?trend1:'NEUTRAL',
+      nearestBuySide:upper,nearestSellSide:lower,strongZones:levels.filter(z=>z.score>=70&&!z.forming).length,
+      lastConfirmedM5:m5.at(-1)?.t||null},
+    sessions:ss,levels,sweeps:findSweeps(m5),fvgs:findFVG(m5,v),density:density(levels,price,v),
+    dataQuality:quality,
+    candles:Object.fromEntries(Object.entries(original).map(([tf,bars])=>[tf,bars.slice(-340)]))
   };
 }
-
-/* =============================
-   BUILD DASHBOARD DATA
-============================= */
-
-function build(data, errors) {
-  const bars = Object.fromEntries(
-    Object.keys(FRAME).map(
-      k => [
-        k,
-        data[k]?.candles || []
-      ]
-    )
-  );
-
-  const m5 = closed(
-    bars["5min"], 5
-  );
-
-  const m15 = closed(
-    bars["15min"], 15
-  );
-
-  const h1 = closed(
-    bars["1h"], 60
-  );
-
-  const m1 = bars["1min"];
-
-  const source =
-    m1.at(-1) ||
-    bars["5min"].at(-1) ||
-    bars["15min"].at(-1) ||
-    bars["1h"].at(-1);
-
-  if (!source) {
-    throw Error(
-      "No XAU/USD candles available. Check your four keys and subscription."
-    );
-  }
-
-  const price = source.c;
-
-  const vol = round(
-    atr(
-      m5.length > 15
-        ? m5
-        : bars["5min"]
-    ),
-    3
-  );
-
-  const sessions = sessionLevels(m5);
-
-  const levels = collectLevels({
-    m5,
-    m15,
-    h1,
-    day: bars["1day"],
-    price,
-    volatility: Math.max(
-      0.05, vol
-    )
+export default async function handler(req,res) {
+  res.setHeader('Content-Type','application/json; charset=utf-8');
+  res.setHeader('Cache-Control','public, s-maxage=40, stale-while-revalidate=45');
+  if (req.method!=='GET') return res.status(405).json({ok:false,error:'Method not allowed'});
+  const entries=Object.keys(FEEDS);
+  const settled=await Promise.allSettled(entries.map(getFeed));
+  const feeds={},errors={};
+  settled.forEach((result,i)=>{
+    const tf=entries[i];
+    if (result.status==='fulfilled') {
+      feeds[tf]=result.value;
+      if (result.value.warning) errors[tf]=result.value.warning;
+    } else errors[tf]=label(result.reason);
   });
-
-  const upper = levels
-    .filter(
-      l =>
-        l.price > price &&
-        l.side === "SELL_SIDE"
-    )
-    .sort(
-      (a, b) => a.price - b.price
-    );
-
-  const lower = levels
-    .filter(
-      l =>
-        l.price < price &&
-        l.side === "BUY_SIDE"
-    )
-    .sort(
-      (a, b) => b.price - a.price
-    );
-
-  const trend = statusText(
-    price,
-    h1,
-    m15
-  );
-
-  const nearestUp =
-    upper[0] || null;
-
-  const nearestDown =
-    lower[0] || null;
-
-  const good = levels.filter(
-    l => l.score >= 70
-  );
-
-  const gaps = findGaps(
-    m5,
-    Math.max(0.05, vol)
-  );
-
-  const isM1 =
-    !!m1.length;
-
-  const feedAge = Math.max(
-    0,
-    Math.round(
-      (
-        Date.now() -
-        (
-          source.t +
-          (isM1 ? 1 : 5) *
-          60000
-        )
-      ) / 1000
-    )
-  );
-
-  return {
-    ok: true,
-    symbol: SYMBOL,
-    generatedAt: Date.now(),
-
-    price: round(price),
-    quoteTime: source.t,
-
-    quoteSource: isM1
-      ? "M1 candle close (indicative)"
-      : "Latest available candle close",
-
-    feedAgeSeconds: feedAge,
-
-    asOfClosedCandle:
-      m5.at(-1)?.t || null,
-
-    quality: {
-      dataFrames: Object.keys(
-        data
-      ).length,
-
-      totalFrames: 6,
-
-      staleFrames: Object.entries(
-        data
-      )
-        .filter(
-          ([, v]) => v.stale
-        )
-        .map(
-          ([k]) => k
-        ),
-
-      warnings: errors,
-
-      model:
-        "OHLC-DERIVED • NO LEVEL 2 / DOM",
-
-      note:
-        "Rank and heat intensity are heuristic, not real orders or calibrated probabilities."
-    },
-
-    analytics: {
-      atr5: vol,
-      trend,
-      strongZones: good.length,
-
-      upper: nearestUp,
-      lower: nearestDown,
-
-      priceToSell:
-        nearestUp
-          ? round(
-              nearestUp.price -
-              price
-            )
-          : null,
-
-      priceToBuy:
-        nearestDown
-          ? round(
-              price -
-              nearestDown.price
-            )
-          : null,
-
-      stance:
-        trend.agreement === "ALIGNED"
-          ? `${trend.bias} CONTEXT`
-          : "WAIT FOR CONFIRMATION"
-    },
-
-    levels,
-    sessions,
-
-    events: sweepEvents(
-      m5,
-      levels,
-      Math.max(0.05, vol)
-    ),
-
-    gaps,
-
-    candles: Object.fromEntries(
-      Object.entries(bars)
-        .map(
-          ([k, arr]) => [
-            k,
-            arr.slice(-310)
-          ]
-        )
-    )
-  };
-}
-
-/* =============================
-   VERCEL ENDPOINT
-============================= */
-
-export default async function handler(
-  req,
-  res
-) {
-  res.setHeader(
-    "Content-Type",
-    "application/json; charset=utf-8"
-  );
-
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=45, stale-while-revalidate=90"
-  );
-
-  if (req.method !== "GET") {
-    return res.status(405).json({
-      ok: false,
-      error: "Method not allowed"
-    });
-  }
-
-  const keys = Object.keys(FRAME);
-
-  const results = await Promise.allSettled(
-    keys.map(fetchFrame)
-  );
-
-  const frames = {};
-  const errors = {};
-
-  results.forEach((r, i) => {
-    if (r.status === "fulfilled") {
-      frames[keys[i]] = r.value;
-
-      if (r.value.warning) {
-        errors[keys[i]] =
-          r.value.warning;
-      }
-    } else {
-      errors[keys[i]] =
-        safeError(r.reason);
-    }
-  });
-
-  try {
-    return res.status(200).json(
-      build(frames, errors)
-    );
-  } catch (e) {
-    return res.status(503).json({
-      ok: false,
-      error: safeError(e),
-      errors
-    });
-  }
+  try { return res.status(200).json(assemble(feeds,errors)); }
+  catch(e) { return res.status(503).json({ok:false,error:label(e),feedErrors:errors}); }
 }
