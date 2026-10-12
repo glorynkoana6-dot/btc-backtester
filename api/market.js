@@ -1,54 +1,40 @@
 
-/*
- MKAYFX BLACKBOOK X2
- FILE: api/market.js
+/* Public Binance REST backup. Never fabricate data. */
 
- Real Binance public market data.
- No API key required.
+const HOSTS = [
+  "https://data-api.binance.vision",
+  "https://api.binance.com"
+];
 
- This endpoint supplies REST snapshots.
- It is not a persistent WebSocket connection.
-*/
-
-const BASE = "https://data-api.binance.vision/api/v3";
 const SYMBOL = "PAXGUSDT";
 
-async function request(path) {
-  const controller = new AbortController();
+async function get(path) {
+  let last;
 
-  const timer = setTimeout(() => {
-    controller.abort();
-  }, 6500);
+  for (const host of HOSTS) {
+    try {
+      const r = await fetch(host + path, {
+        signal: AbortSignal.timeout(4500),
+        cache: "no-store"
+      });
 
-  try {
-    const response = await fetch(BASE + path, {
-      method: "GET",
-      headers: {
-        Accept: "application/json"
-      },
-      signal: controller.signal
-    });
+      const data = await r.json();
 
-    if (!response.ok) {
-      throw new Error(
-        "Binance HTTP " + response.status
-      );
+      if (!r.ok || data?.code < 0) {
+        throw Error(
+          data?.msg || `HTTP ${r.status}`
+        );
+      }
+
+      return data;
+    } catch (e) {
+      last = e;
     }
-
-    const data = await response.json();
-
-    if (data && typeof data === "object" &&
-        typeof data.code === "number" &&
-        data.code < 0) {
-      throw new Error(
-        data.msg || "Binance API error"
-      );
-    }
-
-    return data;
-  } finally {
-    clearTimeout(timer);
   }
+
+  throw Error(
+    last?.message || "Provider unavailable"
+  );
 }
 
 export default async function handler(req, res) {
@@ -59,65 +45,76 @@ export default async function handler(req, res) {
 
   if (req.method !== "GET") {
     return res.status(405).json({
-      ok: false,
-      error: "Method not allowed"
+      error: "GET only"
     });
   }
 
-  const paths = {
-    ticker:
-      "/ticker/price?symbol=" + SYMBOL,
-
+  const routes = {
     depth:
-      "/depth?symbol=" + SYMBOL + "&limit=20",
+      `/api/v3/depth?symbol=${SYMBOL}&limit=20`,
 
     trades:
-      "/trades?symbol=" + SYMBOL + "&limit=100",
+      `/api/v3/trades?symbol=${SYMBOL}&limit=200`,
 
     candles:
-      "/klines?symbol=" + SYMBOL +
-      "&interval=1m&limit=100"
+      `/api/v3/klines?symbol=${SYMBOL}&interval=1m&limit=130`,
+
+    ticker:
+      `/api/v3/ticker/24hr?symbol=${SYMBOL}`
   };
 
-  const keys = Object.keys(paths);
-
-  const results = await Promise.allSettled(
-    keys.map(key => request(paths[key]))
+  const entries = await Promise.allSettled(
+    Object.entries(routes).map(
+      async ([name, path]) => [
+        name,
+        await get(path)
+      ]
+    )
   );
 
-  const data = {};
-  const errors = {};
-
-  results.forEach((result, index) => {
-    const key = keys[index];
-
-    if (result.status === "fulfilled") {
-      data[key] = result.value;
-    } else {
-      errors[key] =
-        result.reason?.message || "Fetch failed";
-    }
-  });
-
-  const ok = Object.keys(data).length > 0;
-
-  return res.status(ok ? 200 : 502).json({
-    ok,
+  const output = {
+    ok: false,
     symbol: SYMBOL,
-    source: "BINANCE_PUBLIC_REST",
-    mode: "SNAPSHOT",
-    timestamp: Date.now(),
+    receivedAt: Date.now(),
+    depth: null,
+    trades: null,
+    candles: null,
+    ticker: null,
+    errors: []
+  };
 
-    price: data.ticker
-      ? Number(data.ticker.price)
-      : null,
+  for (const result of entries) {
+    if (result.status === "rejected") {
+      output.errors.push(
+        result.reason?.message || "Request failed"
+      );
+      continue;
+    }
 
-    book: data.depth || null,
+    const [name, data] = result.value;
 
-    trades: data.trades || [],
+    output[name] =
+      name === "candles"
+        ? data.map(k => ({
+            t: +k[0],
+            o: +k[1],
+            h: +k[2],
+            l: +k[3],
+            c: +k[4],
+            v: +k[5],
+            closed: Date.now() >= +k[6] + 1
+          }))
+        : data;
+  }
 
-    candles: data.candles || [],
+  output.ok = !!(
+    output.depth ||
+    output.trades ||
+    output.candles ||
+    output.ticker
+  );
 
-    errors
-  });
+  return res.status(
+    output.ok ? 200 : 503
+  ).json(output);
 }
