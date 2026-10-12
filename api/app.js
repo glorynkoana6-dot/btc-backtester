@@ -5,8 +5,12 @@
  */
 const SYMBOL = 'PAXGUSDT';
 const REST = 'https://data-api.binance.vision/api/v3';
-const STREAM = 'wss://data-stream.binance.vision/stream?streams=' +
-  'paxgusdt@trade/paxgusdt@depth@100ms/paxgusdt@kline_1m';
+const WS_URL =
+  "wss://data-stream.binance.vision:443/stream?streams=" +
+  "paxgusdt@trade/" +
+  "paxgusdt@depth20@100ms/" +
+  "paxgusdt@bookTicker";
+
 
 const $ = id => document.getElementById(id);
 const N = v => Number(v);
