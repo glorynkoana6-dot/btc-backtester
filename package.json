@@ -1,9 +1,21 @@
+
+
 {
-  "name": "mkayfx-blackbook-x1-free",
-  "version": "1.0.0",
+
+  "name": "mkayfx-blackbook-x2",
+
+  "version": "2.0.0",
+
   "private": true,
+
   "type": "module",
-  "scripts": {
-    "dev": "vercel dev"
+
+  "description": "MKAYFX Gold Order Flow Terminal",
+
+  "engines": {
+
+    "node": ">=20"
+
   }
+
 }
