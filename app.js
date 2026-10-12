@@ -1,1837 +1,1975 @@
-/* MKAYFX BLACKBOOK X1 FREE
- * Real Binance spot PAXGUSDT trade + Level 2 aggregate depth feed.
- * It does NOT show CME, hidden orders, order IDs, or XAU/USD executions.
- * A correct local order book needs a REST snapshot plus sequenced diff updates.
- */
-const SYMBOL = 'PAXGUSDT';
-const REST = 'https://data-api.binance.vision/api/v3';
-const WS_URL =
-  "wss://data-stream.binance.vision:443/stream?streams=" +
-  "paxgusdt@trade/" +
-  "paxgusdt@depth20@100ms/" +
-  "paxgusdt@bookTicker";
 
+/*
+====================================================
+ MKAYFX BLACKBOOK X2
+ FILE: app.js
+
+ REAL BINANCE PAXGUSDT MARKET DATA
+
+ CONNECTION SYSTEM
+ 1. Binance WebSocket
+ 2. Alternate Binance WebSocket
+ 3. Vercel REST backup
+
+ MARKET ANALYTICS
+ - Executed trade tape
+ - Top 20 order book
+ - Top 15 depth imbalance
+ - Liquidity heatmap
+ - Cumulative volume delta
+ - Footprint
+ - 1-minute candles
+ - Large trade alerts
+
+ No synthetic trades or fabricated order book.
+====================================================
+*/
+
+(() => {
+"use strict";
+
+/* ===============================================
+   CONFIGURATION
+=============================================== */
+
+const SYMBOL = "PAXGUSDT";
+
+const STREAMS = [
+  "paxgusdt@trade",
+  "paxgusdt@depth20@100ms",
+  "paxgusdt@bookTicker",
+  "paxgusdt@kline_1m"
+].join("/");
+
+const WS_ENDPOINTS = [
+  "wss://data-stream.binance.vision:443/stream?streams=" +
+    STREAMS,
+
+  "wss://stream.binance.com:443/stream?streams=" +
+    STREAMS
+];
+
+const REST_URL = "/api/market";
+
+const REST_INTERVAL = 12000;
+const SPOT_INTERVAL = 90000;
+const CONNECT_TIMEOUT = 12000;
+const STALE_TIMEOUT = 65000;
+
+const MAX_TRADES = 250;
+const MAX_HEAT = 90;
+const MAX_EVENTS = 60;
 
 const $ = id => document.getElementById(id);
-const N = v => Number(v);
 
-const money = v => Number.isFinite(v)
-  ? v.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
-  : '—';
+const num = value => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : NaN;
+};
 
-const vol = v => Number.isFinite(v)
-  ? v.toLocaleString('en-US', {
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
-    })
-  : '—';
+const money = value => {
+  if (!Number.isFinite(value)) return "—";
 
-const signed = v => Number.isFinite(v)
-  ? (v >= 0 ? '+' : '') + vol(v)
-  : '—';
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
 
-const tSast = ms => new Date(ms).toLocaleTimeString(
-  'en-GB', {
-    timeZone: 'Africa/Johannesburg',
+const qty = value => {
+  if (!Number.isFinite(value)) return "—";
+
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3
+  });
+};
+
+const clockFormat = new Intl.DateTimeFormat(
+  "en-GB",
+  {
+    timeZone: "Africa/Johannesburg",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
     hour12: false
   }
 );
 
-const escapeHTML = s => String(s).replace(
-  /[&<>"']/g,
-  c => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[c])
-);
+function timeText(t = Date.now()) {
+  return clockFormat.format(new Date(t));
+}
 
-const state = {
-  ws: null,
-  run: 0,
-  reconnect: null,
-  manual: false,
-  active: false,
-  synced: false,
-  syncing: false,
+/* ===============================================
+   GLOBAL ENGINE STATE
+=============================================== */
 
-  buffer: [],
-  bid: new Map(),
-  ask: new Map(),
-  bookId: 0,
+const S = {
+  socket: null,
+  running: true,
 
-  lastDepth: 0,
-  lastTrade: 0,
-  lastPrice: null,
-  lastError: '',
+  socketOpen: false,
+  socketOpenedAt: 0,
+  lastWsAt: 0,
 
+  lastRestAt: 0,
+  lastTradeAt: 0,
+  lastBookAt: 0,
+
+  lastError: "",
+  wsLabel: "CONNECTING",
+  restLabel: "WAITING",
+
+  attempts: 0,
+  retryTimer: null,
+  connectTimer: null,
+
+  fetching: false,
+  renderTimer: null,
+
+  price: NaN,
+  bestBid: NaN,
+  bestAsk: NaN,
+  spot: NaN,
+
+  book: {
+    bids: [],
+    asks: [],
+    lastUpdateId: null
+  },
+
+  bookSource: "",
+
+  candles: [],
   trades: [],
-  tradeCount: 0,
-  cvd: 0,
-  cvdPoints: [],
-  volumeQueue: [],
+  seenTrades: new Set(),
 
-  candle: [],
+  totalTrades: 0,
+  cvd: 0,
+  cvdHistory: [],
+
   heat: [],
+  events: [],
+
+  alertEnabled: false,
+  notificationGranted: false,
   heatPaused: false,
 
-  events: [],
-  depthCount: 0,
-  added: 0,
-  removed: 0,
-
-  alertThreshold: 10000,
-  bucket: 1,
-  notifications: false,
-
-  spotPrice: null,
-  spotTime: null,
-  spotError: 'Not configured'
+  lastHeatAt: 0,
+  lastLiquidityEventAt: 0
 };
 
-function eventLog(title, detail = '', kind = 'blue') {
-  state.events.unshift({
+/* ===============================================
+   EVENT JOURNAL
+=============================================== */
+
+function logEvent(message, type = "info") {
+  S.events.unshift({
     time: Date.now(),
-    title,
-    detail,
-    kind
+    message,
+    type
   });
 
-  state.events.length = Math.min(
-    state.events.length,
-    65
+  S.events = S.events.slice(0, MAX_EVENTS);
+
+  renderEvents();
+}
+
+function reportError(message) {
+  S.lastError = message;
+  $("diagnostic").textContent = message;
+  logEvent(message, "error");
+}
+
+/* ===============================================
+   CONNECTION STATUS
+=============================================== */
+
+function updateConnection() {
+  const now = Date.now();
+
+  const wsFresh =
+    S.socketOpen &&
+    S.lastWsAt > 0 &&
+    now - S.lastWsAt < 25000;
+
+  const restFresh =
+    S.lastRestAt > 0 &&
+    now - S.lastRestAt < 30000;
+
+  let mode = "OFFLINE";
+  let css = "offline";
+
+  if (wsFresh) {
+    mode = "LIVE WS";
+    css = "online";
+  } else if (restFresh) {
+    mode = "REST BACKUP";
+    css = "backup";
+  } else if (
+    S.socket &&
+    (
+      S.socket.readyState === WebSocket.CONNECTING ||
+      S.socket.readyState === WebSocket.OPEN
+    )
+  ) {
+    mode = "CONNECTING";
+    css = "connecting";
+  }
+
+  $("status").className = "pill " + css;
+  $("statusText").textContent = mode;
+  $("engineMode").textContent = mode;
+
+  $("wsState").textContent = S.wsLabel;
+  $("restState").textContent = S.restLabel;
+
+  $("retryCount").textContent =
+    Math.max(0, S.attempts - 1);
+
+  const last = Math.max(
+    S.lastWsAt,
+    S.lastRestAt,
+    S.lastTradeAt,
+    S.lastBookAt
   );
+
+  $("lastEvent").textContent =
+    last ? timeText(last) : "—";
+
+  if (wsFresh) {
+    $("sourceInfo").textContent =
+      "LIVE WEBSOCKET · Binance PAXGUSDT";
+
+    $("diagnostic").textContent =
+      "WebSocket market events are being received.";
+
+  } else if (restFresh) {
+    $("sourceInfo").textContent =
+      "REST BACKUP · Periodic real Binance snapshots";
+
+    $("diagnostic").textContent =
+      "WebSocket unavailable or inactive. " +
+      "REST polling is supplying available market data. " +
+      "Some trades and depth changes may be missed.";
+
+  } else if (mode === "CONNECTING") {
+    $("sourceInfo").textContent =
+      "Connecting to public market data...";
+
+    $("diagnostic").textContent =
+      "Waiting for Binance market data.";
+
+  } else {
+    $("sourceInfo").textContent =
+      "No verified fresh market data";
+
+    $("diagnostic").textContent =
+      S.lastError ||
+      "Both market-data connections are unavailable.";
+  }
 }
 
-async function getJSON(url) {
-  const res = await fetch(url, {
-    cache: 'no-store',
-    signal: AbortSignal.timeout(12000)
-  });
+/* ===============================================
+   WEBSOCKET CONNECTION
+=============================================== */
 
-  if (!res.ok) {
-    throw new Error(
-      'HTTP ' + res.status + ' from public market data API'
-    );
+function connectWebSocket() {
+  if (!S.running) return;
+
+  clearTimeout(S.retryTimer);
+  clearTimeout(S.connectTimer);
+
+  if (S.socket) {
+    const oldSocket = S.socket;
+    S.socket = null;
+
+    try {
+      oldSocket.close();
+    } catch (_) {}
   }
 
-  const obj = await res.json();
+  const index =
+    S.attempts % WS_ENDPOINTS.length;
 
-  if (obj?.code < 0) {
-    throw new Error(
-      obj.msg || 'Exchange rejected request'
-    );
-  }
+  const url = WS_ENDPOINTS[index];
 
-  return obj;
-}
+  S.attempts++;
 
-function setStatus(label, good = false) {
-  $('statusText').textContent = label;
-  $('status').classList.toggle('live', good);
-}
+  S.socketOpen = false;
+  S.wsLabel = "CONNECTING";
 
-function resetStreamData() {
-  state.bid.clear();
-  state.ask.clear();
+  logEvent(
+    "WebSocket attempt " +
+    S.attempts +
+    " using Binance endpoint " +
+    (index + 1)
+  );
 
-  state.bookId = 0;
-  state.synced = false;
-  state.syncing = false;
-  state.buffer = [];
-
-  state.heat = [];
-  state.trades = [];
-  state.cvdPoints = [];
-  state.volumeQueue = [];
-
-  state.cvd = 0;
-  state.lastPrice = null;
-  state.tradeCount = 0;
-  state.depthCount = 0;
-
-  state.added = 0;
-  state.removed = 0;
-
-  state.lastDepth = 0;
-  state.lastTrade = 0;
-}
-
-function connect() {
-  state.manual = false;
-
-  clearTimeout(state.reconnect);
-
-  if (state.ws) {
-    state.ws.onclose = null;
-    state.ws.close();
-    state.ws = null;
-  }
-
-  const run = ++state.run;
-
-  resetStreamData();
-
-  setStatus('CONNECTING');
-
-  $('connectBtn').textContent = 'DISCONNECT';
-
-  $('sourceInfo').textContent =
-    'Source: Binance public spot market data';
+  let socket;
 
   try {
-    state.ws = new WebSocket(STREAM);
-  } catch (err) {
-    state.lastError = err.message;
-
-    eventLog(
-      'WebSocket unsupported',
-      err.message,
-      'red'
+    socket = new WebSocket(url);
+  } catch (error) {
+    S.wsLabel = "FAILED";
+    reportError(
+      "WebSocket creation failed: " +
+      error.message
     );
-
-    scheduleReconnect(run);
+    scheduleReconnect();
     return;
   }
 
-  const socket = state.ws;
+  S.socket = socket;
+
+  S.connectTimer = setTimeout(() => {
+    if (
+      S.socket === socket &&
+      socket.readyState === WebSocket.CONNECTING
+    ) {
+      S.wsLabel = "TIMEOUT";
+      logEvent(
+        "WebSocket handshake timed out.",
+        "error"
+      );
+      socket.close();
+    }
+  }, CONNECT_TIMEOUT);
 
   socket.onopen = () => {
-    if (run !== state.run) return;
+    if (S.socket !== socket) return;
 
-    state.active = true;
+    clearTimeout(S.connectTimer);
 
-    setStatus('SYNCING');
+    S.socketOpen = true;
+    S.socketOpenedAt = Date.now();
+    S.wsLabel = "SOCKET OPEN";
 
-    eventLog(
-      'Market stream opened',
-      'Buffering depth events and loading exchange snapshot'
+    logEvent(
+      "WebSocket opened. Awaiting exchange events.",
+      "success"
     );
 
-    syncOrderBook(run);
+    updateConnection();
   };
 
-  socket.onmessage = message => {
-    if (run !== state.run) return;
+  socket.onmessage = event => {
+    if (S.socket !== socket) return;
 
-    let data;
+    let packet;
 
     try {
-      data = JSON.parse(message.data).data;
-    } catch {
+      packet = JSON.parse(event.data);
+    } catch (_) {
       return;
     }
 
-    if (!data) return;
+    const data = packet.data || packet;
 
-    if (data.e === 'depthUpdate') {
-      state.lastDepth = Date.now();
+    S.lastWsAt = Date.now();
+    S.wsLabel = "RECEIVING";
 
-      if (!state.synced) {
-        state.buffer.push(data);
-
-        if (state.buffer.length > 12000) {
-          state.lastError = 'Depth buffer overflow';
-          socket.close();
-        }
-      } else {
-        applyDepth(data, run);
-      }
-
-    } else if (data.e === 'trade') {
-      receiveTrade(data);
-
-    } else if (data.e === 'kline') {
-      receiveCandle(data.k);
+    if (!data || typeof data !== "object") {
+      return;
     }
+
+    // Actual executed trade
+    if (data.e === "trade") {
+      processTrade(data, "WS", false);
+    }
+
+    // Partial top-20 book snapshot
+    else if (
+      Array.isArray(data.bids) &&
+      Array.isArray(data.asks)
+    ) {
+      applyBook(data, "WS");
+    }
+
+    // Best bid and best ask
+    else if (data.e === "bookTicker") {
+      const bid = num(data.b);
+      const ask = num(data.a);
+
+      if (Number.isFinite(bid)) S.bestBid = bid;
+      if (Number.isFinite(ask)) S.bestAsk = ask;
+    }
+
+    // One-minute candle update
+    else if (data.e === "kline" && data.k) {
+      applyKline(data.k);
+    }
+
+    queueRender();
   };
 
   socket.onerror = () => {
-    if (run === state.run) {
-      state.lastError = 'Market WebSocket failed';
-    }
+    if (S.socket !== socket) return;
+
+    S.wsLabel = "ERROR";
+
+    logEvent(
+      "WebSocket transport error. " +
+      "Trying REST backup and reconnect.",
+      "error"
+    );
   };
 
-  socket.onclose = () => {
-    if (run !== state.run) return;
+  socket.onclose = event => {
+    if (S.socket !== socket) return;
 
-    state.active = false;
-    state.synced = false;
+    clearTimeout(S.connectTimer);
 
-    setStatus('OFFLINE');
+    S.socket = null;
+    S.socketOpen = false;
 
-    eventLog(
-      'Market stream disconnected',
-      state.lastError || 'Socket closed',
-      'red'
+    S.wsLabel =
+      "CLOSED " + (event.code || "");
+
+    logEvent(
+      "WebSocket closed. Code " +
+      event.code,
+      "warning"
     );
 
-    if (!state.manual) {
-      scheduleReconnect(run);
-    }
+    updateConnection();
+    scheduleReconnect();
   };
-
-  loadCandles(run);
 }
 
-function scheduleReconnect(run) {
-  if (run !== state.run || state.manual) return;
+function scheduleReconnect() {
+  if (!S.running) return;
 
-  setStatus('RETRYING');
+  clearTimeout(S.retryTimer);
 
-  state.reconnect = setTimeout(() => {
-    if (run === state.run && !state.manual) {
-      connect();
-    }
-  }, 4500);
+  const delay = Math.min(
+    30000,
+    2000 * Math.pow(
+      1.6,
+      Math.min(S.attempts, 6)
+    )
+  );
+
+  S.retryTimer = setTimeout(() => {
+    connectWebSocket();
+  }, delay);
 }
 
-function disconnect() {
-  state.manual = true;
+function reconnectNow() {
+  clearTimeout(S.retryTimer);
+  clearTimeout(S.connectTimer);
 
-  clearTimeout(state.reconnect);
+  S.attempts = 0;
 
-  ++state.run;
+  S.lastWsAt = 0;
+  S.lastError = "";
 
-  if (state.ws) {
-    state.ws.onclose = null;
-    state.ws.close();
-    state.ws = null;
-  }
+  S.running = true;
 
-  state.active = false;
-  state.synced = false;
-  state.syncing = false;
+  connectWebSocket();
+  pollREST();
 
-  $('connectBtn').textContent = 'CONNECT';
-
-  setStatus('OFFLINE');
-
-  eventLog(
-    'Stream manually disconnected',
-    'Existing readings are historical until reconnected'
+  logEvent(
+    "Manual connection restart requested."
   );
 }
 
-/*
- * BINANCE ORDER BOOK SYNCHRONIZATION
- * Fetch initial exchange snapshot.
- * Replay buffered incremental depth updates.
- * Detect gaps rather than continuing with an incorrect book.
- */
-async function syncOrderBook(run) {
-  if (state.syncing || run !== state.run) return;
+/* ===============================================
+   REST BACKUP ENGINE
+=============================================== */
 
-  state.syncing = true;
-  state.synced = false;
+async function pollREST() {
+  if (S.fetching || !S.running) return;
+
+  S.fetching = true;
+  S.restLabel = "FETCHING";
+
+  const controller = new AbortController();
+
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, 11000);
 
   try {
-    let ready = false;
-
-    for (let attempt = 0; attempt < 7; attempt++) {
-      if (run !== state.run || state.manual) return;
-
-      const snap = await getJSON(
-        `${REST}/depth?symbol=${SYMBOL}&limit=1000`
-      );
-
-      if (run !== state.run) return;
-
-      if (
-        !Number.isSafeInteger(snap.lastUpdateId) ||
-        !Array.isArray(snap.bids) ||
-        !Array.isArray(snap.asks)
-      ) {
-        throw Error(
-          'Invalid exchange order-book snapshot'
-        );
+    const response = await fetch(
+      REST_URL + "?t=" + Date.now(),
+      {
+        cache: "no-store",
+        signal: controller.signal
       }
+    );
 
-      if (
-        state.buffer.length &&
-        snap.lastUpdateId + 1 < state.buffer[0].U
-      ) {
-        continue;
-      }
-
-      state.bid = new Map(
-        snap.bids.map(([p, q]) => [N(p), N(q)])
-      );
-
-      state.ask = new Map(
-        snap.asks.map(([p, q]) => [N(p), N(q)])
-      );
-
-      state.bookId = snap.lastUpdateId;
-
-      const held = state.buffer.splice(0);
-
-      state.synced = true;
-
-      for (const ev of held) {
-        if (!state.synced) break;
-        applyDepth(ev, run);
-      }
-
-      if (state.synced) {
-        ready = true;
-        break;
-      }
-    }
-
-    if (!ready) {
-      throw Error(
-        'Cannot sequence snapshot with live depth stream'
+    if (!response.ok) {
+      throw new Error(
+        "Market API HTTP " + response.status
       );
     }
 
-    setStatus('LIVE', true);
+    const data = await response.json();
 
-    state.lastError = '';
+    if (!data.ok) {
+      throw new Error(
+        "No Binance REST data available"
+      );
+    }
 
-    eventLog(
-      'Order book synchronized',
-      'Binance snapshot ID ' + state.bookId
+    S.lastRestAt = Date.now();
+    S.restLabel = "HEALTHY";
+
+    const wsFresh =
+      S.socketOpen &&
+      Date.now() - S.lastWsAt < 20000;
+
+    // Do not overwrite a fresh live trade price.
+    if (!wsFresh && Number.isFinite(num(data.price))) {
+      S.price = num(data.price);
+    }
+
+    // Prefer fresh WebSocket order-book data.
+    const bookFresh =
+      S.bookSource === "WS" &&
+      Date.now() - S.lastBookAt < 15000;
+
+    if (data.book && !bookFresh) {
+      applyBook(data.book, "REST");
+    }
+
+    // REST trades are real but polling may skip executions.
+    if (Array.isArray(data.trades) && !wsFresh) {
+      const ordered = [...data.trades].sort(
+        (a, b) => num(a.time) - num(b.time)
+      );
+
+      const firstLoad = S.totalTrades === 0;
+
+      for (const trade of ordered) {
+        processTrade(trade, "REST", firstLoad);
+      }
+    }
+
+    if (Array.isArray(data.candles)) {
+      if (
+        !S.candles.length ||
+        !wsFresh
+      ) {
+        applyCandles(data.candles);
+      }
+    }
+
+    const errors = Object.entries(
+      data.errors || {}
     );
 
-  } catch (err) {
-    if (run !== state.run) return;
+    if (errors.length) {
+      S.restLabel = "PARTIAL";
+    }
 
-    state.lastError = err.message;
+  } catch (error) {
+    S.restLabel = "FAILED";
 
-    eventLog(
-      'Order book synchronization failed',
-      err.message,
-      'red'
-    );
+    const message =
+      "REST backup failed: " + error.message;
 
-    if (
-      state.ws &&
-      state.ws.readyState < 2
-    ) {
-      state.ws.close();
+    if (S.lastError !== message) {
+      reportError(message);
     }
 
   } finally {
-    state.syncing = false;
+    clearTimeout(timer);
+    S.fetching = false;
+
+    updateConnection();
+    queueRender();
   }
 }
 
-function applyDepth(d, run) {
-  if (d.u <= state.bookId) return;
+/* ===============================================
+   OPTIONAL XAU/USD SPOT QUOTE
+=============================================== */
 
-  if (d.U > state.bookId + 1) {
-    state.synced = false;
-    state.buffer = [d];
-
-    eventLog(
-      'Depth sequence gap',
-      'Missing book events — automatically resynchronizing',
-      'red'
+async function pollSpot() {
+  try {
+    const response = await fetch(
+      "/api/spot?t=" + Date.now(),
+      { cache: "no-store" }
     );
 
-    if (!state.syncing) {
-      syncOrderBook(run);
+    const data = await response.json();
+
+    if (data.ok && Number.isFinite(num(data.price))) {
+      S.spot = num(data.price);
+
+      $("spotStatus").textContent =
+        "Twelve Data · last response " +
+        timeText();
+
+    } else if (data.configured === false) {
+      $("spotStatus").textContent =
+        "Add TWELVE_DATA_API_KEY on Vercel";
+
+    } else {
+      $("spotStatus").textContent =
+        "Spot quote unavailable";
     }
 
-    setStatus('SYNCING');
-    return;
+  } catch (_) {
+    $("spotStatus").textContent =
+      "Spot quote API unavailable";
   }
 
-  const changes = [];
+  queueRender();
+}
 
-  for (
-    const [side, updates] of [
-      [state.bid, d.b],
-      [state.ask, d.a]
-    ]
-  ) {
-    const label = side === state.bid ? 'BID' : 'ASK';
+/* ===============================================
+   CANDLE PROCESSING
+=============================================== */
 
-    for (const [ps, qs] of updates) {
-      const p = N(ps);
-      const q = N(qs);
+function applyCandles(data) {
+  const candles = [];
 
-      if (
-        !Number.isFinite(p) ||
-        !Number.isFinite(q) ||
-        p <= 0 ||
-        q < 0
-      ) {
-        continue;
-      }
+  for (const row of data) {
+    if (!Array.isArray(row)) continue;
 
-      const old = side.get(p) || 0;
-
-      if (q === 0) {
-        side.delete(p);
-      } else {
-        side.set(p, q);
-      }
-
-      const delta = q - old;
-
-      if (delta > 0) {
-        state.added += delta;
-      }
-
-      if (delta < 0) {
-        state.removed += -delta;
-      }
-
-      if (Math.abs(delta) >= 0.15) {
-        changes.push({
-          label,
-          p,
-          delta
-        });
-      }
-    }
-  }
-
-  state.bookId = d.u;
-  state.depthCount++;
-
-  /*
-   * Aggregate changes do NOT establish that an individual
-   * institutional order was placed or cancelled.
-   */
-  if (changes.length) {
-    changes.sort(
-      (a, b) =>
-        Math.abs(b.delta) - Math.abs(a.delta)
-    );
-
-    const c = changes[0];
+    const c = {
+      t: num(row[0]),
+      o: num(row[1]),
+      h: num(row[2]),
+      l: num(row[3]),
+      c: num(row[4]),
+      v: num(row[5])
+    };
 
     if (
-      !state.lastBookEventAt ||
-      Date.now() - state.lastBookEventAt > 1600
+      Number.isFinite(c.t) &&
+      Number.isFinite(c.o) &&
+      Number.isFinite(c.h) &&
+      Number.isFinite(c.l) &&
+      Number.isFinite(c.c)
     ) {
-      eventLog(
-        `${c.label} displayed liquidity ${
-          c.delta > 0 ? 'increased' : 'decreased'
-        }`,
-        `${signed(c.delta)} PAXG at ${money(c.p)} USDT`,
-        'blue'
-      );
-
-      state.lastBookEventAt = Date.now();
+      candles.push(c);
     }
+  }
+
+  if (candles.length) {
+    S.candles = candles.slice(-150);
   }
 }
 
-/*
- * REAL EXECUTED TRADES
- * Binance m=true => buyer was maker => SELL taker.
- * Binance m=false => BUY taker.
- */
-function receiveTrade(d) {
-  const price = N(d.p);
-  const qty = N(d.q);
-  const time = N(d.T);
-
-  if (!(price > 0 && qty > 0 && time > 0)) {
-    return;
-  }
-
-  const side = d.m ? 'SELL' : 'BUY';
-  const value = price * qty;
-
-  state.lastPrice = price;
-  state.lastTrade = Date.now();
-
-  state.tradeCount++;
-
-  state.cvd += side === 'BUY'
-    ? qty
-    : -qty;
-
-  state.trades.unshift({
-    id: d.t,
-    price,
-    qty,
-    time,
-    side,
-    value
-  });
-
-  if (state.trades.length > 3000) {
-    state.trades.length = 3000;
-  }
-
-  state.volumeQueue.push({
-    time: Date.now(),
-    qty
-  });
-
-  if (value >= state.alertThreshold) {
-    eventLog(
-      `Large executed ${side} trade`,
-      `${money(value)} USDT · ${vol(qty)} PAXG @ ${money(price)}`,
-      side === 'BUY' ? 'green' : 'red'
-    );
-
-    if (
-      state.notifications &&
-      Notification.permission === 'granted' &&
-      document.hidden
-    ) {
-      new Notification(
-        'MKAYFX: ' + side + ' execution',
-        {
-          body:
-            money(value) +
-            ' USDT at ' +
-            money(price)
-        }
-      );
-    }
-  }
-}
-
-function receiveCandle(k) {
-  if (!k) return;
-
-  const bar = {
-    time: N(k.t),
-    open: N(k.o),
-    high: N(k.h),
-    low: N(k.l),
-    close: N(k.c),
-    volume: N(k.v)
+function applyKline(k) {
+  const candle = {
+    t: num(k.t),
+    o: num(k.o),
+    h: num(k.h),
+    l: num(k.l),
+    c: num(k.c),
+    v: num(k.v)
   };
 
   if (
-    !Number.isFinite(bar.time) ||
-    !Number.isFinite(bar.close)
+    !Number.isFinite(candle.t) ||
+    !Number.isFinite(candle.c)
   ) {
     return;
   }
 
-  const last =
-    state.candle[state.candle.length - 1];
-
-  if (last && last.time === bar.time) {
-    state.candle[state.candle.length - 1] = bar;
-
-  } else if (!last || bar.time > last.time) {
-    state.candle.push(bar);
-  }
-
-  if (state.candle.length > 210) {
-    state.candle.splice(
-      0,
-      state.candle.length - 210
-    );
-  }
-
-  if (state.lastPrice === null) {
-    state.lastPrice = bar.close;
-  }
-}
-
-async function loadCandles(run) {
-  try {
-    const bars = await getJSON(
-      `${REST}/klines?symbol=${SYMBOL}&interval=1m&limit=150`
-    );
-
-    if (run !== state.run) return;
-
-    if (!Array.isArray(bars)) {
-      throw Error('Invalid candles response');
-    }
-
-    const loaded = bars.map(k => ({
-      time: N(k[0]),
-      open: N(k[1]),
-      high: N(k[2]),
-      low: N(k[3]),
-      close: N(k[4]),
-      volume: N(k[5])
-    }));
-
-    const byTime = new Map(
-      [...loaded, ...state.candle]
-        .map(b => [b.time, b])
-    );
-
-    state.candle = [...byTime.values()]
-      .sort((a, b) => a.time - b.time)
-      .slice(-210);
-
-    if (
-      state.lastPrice === null &&
-      state.candle.length
-    ) {
-      state.lastPrice =
-        state.candle.at(-1).close;
-    }
-
-  } catch (err) {
-    if (run === state.run) {
-      eventLog(
-        'Candlestick history unavailable',
-        err.message,
-        'red'
-      );
-    }
-  }
-}
-
-/*
- * OPTIONAL XAU/USD SPOT FEED
- * Calls the Vercel serverless function, never Twelve Data
- * directly with an exposed API key.
- */
-async function refreshSpot() {
-  try {
-    const r = await fetch('/api/xau', {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(12000)
-    });
-
-    const obj = await r.json();
-
-    if (!r.ok || !obj.ok) {
-      throw Error(
-        obj.error || 'Feed unavailable'
-      );
-    }
-
-    state.spotPrice = obj.price;
-
-    state.spotTime =
-      obj.candleTime +
-      ' (' +
-      obj.providerTimezone +
-      ')';
-
-    state.spotError = '';
-
-  } catch (err) {
-    state.spotPrice = null;
-    state.spotTime = null;
-    state.spotError = err.message;
-  }
-}
-
-function sortedBook() {
-  const bids = [...state.bid.entries()]
-    .sort((a, b) => b[0] - a[0]);
-
-  const asks = [...state.ask.entries()]
-    .sort((a, b) => a[0] - b[0]);
-
-  return { bids, asks };
-}
-
-function observedMid() {
-  if (!state.synced) {
-    return state.lastPrice;
-  }
-
-  const b = Math.max(...state.bid.keys());
-  const a = Math.min(...state.ask.keys());
-
-  return Number.isFinite(b) &&
-    Number.isFinite(a)
-    ? (a + b) / 2
-    : state.lastPrice;
-}
-
-function sampleBook() {
-  if (
-    !state.synced ||
-    state.heatPaused
-  ) {
-    return;
-  }
-
-  const mid = observedMid();
-
-  if (!(mid > 0)) return;
-
-  const step = state.bucket;
-  const limit = mid + step * 32;
-  const low = mid - step * 32;
-
-  state.heat.push({
-    time: Date.now(),
-    mid,
-    bids: [...state.bid].filter(
-      x => x[0] >= low && x[0] <= limit
-    ),
-    asks: [...state.ask].filter(
-      x => x[0] >= low && x[0] <= limit
-    )
-  });
-
-  if (state.heat.length > 95) {
-    state.heat.shift();
-  }
-}
-
-function cleanVolume() {
-  const cutoff = Date.now() - 60000;
-
-  while (
-    state.volumeQueue.length &&
-    state.volumeQueue[0].time < cutoff
-  ) {
-    state.volumeQueue.shift();
-  }
-
-  state.cvdPoints.push({
-    time: Date.now(),
-    cvd: state.cvd
-  });
-
-  if (state.cvdPoints.length > 180) {
-    state.cvdPoints.shift();
-  }
-}
-
-function renderMetrics() {
-  const { bids, asks } = sortedBook();
-
-  const bid = bids[0]?.[0];
-  const ask = asks[0]?.[0];
-
-  $('price').textContent =
-    state.lastPrice
-      ? money(state.lastPrice)
-      : '—';
-
-  $('priceStatus').textContent =
-    state.lastTrade
-      ? 'Last execution ' + tSast(state.lastTrade)
-      : 'Latest Binance 1m candle';
-
-  $('spread').textContent =
-    state.synced && ask && bid
-      ? money(ask - bid)
-      : '—';
-
-  const bQty = bids
-    .slice(0, 15)
-    .reduce((n, x) => n + x[1], 0);
-
-  const aQty = asks
-    .slice(0, 15)
-    .reduce((n, x) => n + x[1], 0);
-
-  $('imbalance').textContent =
-    state.synced && (bQty + aQty) > 0
-      ? (
-          100 * bQty / (bQty + aQty)
-        ).toFixed(1) + '%'
-      : '—';
-
-  $('cvd').textContent =
-    state.tradeCount
-      ? signed(state.cvd)
-      : '—';
-
-  $('cvd').className =
-    state.cvd >= 0
-      ? 'positive'
-      : 'negative';
-
-  $('volume').textContent =
-    state.volumeQueue.length
-      ? vol(
-          state.volumeQueue.reduce(
-            (s, t) => s + t.qty,
-            0
-          )
-        )
-      : '—';
-
-  $('spot').textContent =
-    state.spotPrice
-      ? money(state.spotPrice)
-      : '—';
-
-  $('spotStatus').textContent =
-    state.spotTime || state.spotError;
-
-  $('bookState').textContent =
-    state.synced
-      ? 'SYNCHRONIZED'
-      : 'NOT SYNCHRONIZED';
-
-  $('sequence').textContent =
-    state.synced
-      ? state.bookId.toLocaleString()
-      : '—';
-
-  $('tradeCount').textContent =
-    state.tradeCount.toLocaleString() +
-    ' RECEIVED';
-
-  $('clock').textContent =
-    tSast(Date.now()) + ' SAST';
-
-  if (
-    state.active &&
-    state.synced
-  ) {
-    setStatus('LIVE', true);
-  }
-
-  $('connectBtn').textContent =
-    state.manual || !state.ws
-      ? 'CONNECT'
-      : 'DISCONNECT';
-}
-
-function renderBook() {
-  if (!state.synced) {
-    $('bookRows').innerHTML =
-      '<div class="empty">Depth synchronization required…</div>';
-    return;
-  }
-
-  const { bids, asks } = sortedBook();
-
-  const topB = bids.slice(0, 9);
-  const topA = asks.slice(0, 9).reverse();
-
-  const max = Math.max(
-    0.001,
-    ...topB.map(x => x[1]),
-    ...topA.map(x => x[1])
+  const index = S.candles.findIndex(
+    x => x.t === candle.t
   );
 
-  const line = (p, q, side) => `
-    <div class="bookLine ${side}">
-      <span
-        class="barSide"
-        style="
-          --shade:${side === 'bid' ? '#225c51' : '#612b41'};
-          --size:${Math.round(100 * q / max)}%
-        ">
-        ${side === 'bid' ? vol(q) : '—'}
-      </span>
+  if (index >= 0) {
+    S.candles[index] = candle;
+  } else {
+    S.candles.push(candle);
+    S.candles.sort((a, b) => a.t - b.t);
+  }
 
-      <span>${money(p)}</span>
-
-      <span
-        class="barSide"
-        style="
-          --shade:${side === 'ask' ? '#612b41' : '#225c51'};
-          --size:${Math.round(100 * q / max)}%
-        ">
-        ${side === 'ask' ? vol(q) : '—'}
-      </span>
-    </div>
-  `;
-
-  $('bookRows').innerHTML =
-    topA
-      .map(([p, q]) => line(p, q, 'ask'))
-      .join('') +
-
-    `<div class="bookLine mid">
-      <span>BEST BID</span>
-      <span>
-        ${money(bids[0]?.[0])} /
-        ${money(asks[0]?.[0])}
-      </span>
-      <span>BEST ASK</span>
-    </div>` +
-
-    topB
-      .map(([p, q]) => line(p, q, 'bid'))
-      .join('');
+  S.candles = S.candles.slice(-150);
 }
 
-function renderTape() {
-  $('tradeRows').innerHTML =
-    state.trades.length
-      ? state.trades
-          .slice(0, 45)
-          .map(t => `
-            <div class="tapeLine ${
-              t.value >= state.alertThreshold
-                ? 'big'
-                : ''
-            }">
-              <span class="time">
-                ${tSast(t.time)}
-              </span>
+/* ===============================================
+   EXECUTED TRADE PROCESSING
+=============================================== */
 
-              <span>${money(t.price)}</span>
-              <span>${vol(t.qty)}</span>
+function processTrade(raw, source, backfill) {
+  const id = String(
+    raw.t ?? raw.id ?? raw.a ?? ""
+  );
 
-              <span class="${
-                t.side === 'BUY'
-                  ? 'buy'
-                  : 'sell'
-              }">
-                ${t.side}
-              </span>
-            </div>
-          `)
-          .join('')
-      : '<div class="empty">Waiting for executed trades…</div>';
-}
-
-function renderEvents() {
-  $('eventRows').innerHTML =
-    state.events.length
-      ? state.events
-          .slice(0, 38)
-          .map(e => `
-            <div class="eventRow">
-              <time>
-                ${tSast(e.time)}
-              </time>
-
-              <div>
-                <strong class="${
-                  e.kind === 'red'
-                    ? 'redText'
-                    : e.kind === 'green'
-                      ? 'greenText'
-                      : 'blueText'
-                }">
-                  ${escapeHTML(e.title)}
-                </strong>
-
-                <small>
-                  ${escapeHTML(e.detail)}
-                </small>
-              </div>
-            </div>
-          `)
-          .join('')
-      : '<div class="empty">No events recorded.</div>';
-}
-
-function renderFootprint() {
-  if (!state.trades.length) {
-    $('footRows').innerHTML =
-      '<div class="empty">Waiting for live trades…</div>';
+  if (!id || S.seenTrades.has(id)) {
     return;
   }
 
-  const step = state.bucket;
-  const grouped = new Map();
+  const price = num(raw.p ?? raw.price);
+  const amount = num(raw.q ?? raw.qty);
+  const time = num(
+    raw.T ?? raw.time ?? Date.now()
+  );
 
-  for (const t of state.trades) {
-    const p =
-      Math.round(t.price / step) * step;
+  if (
+    !Number.isFinite(price) ||
+    !Number.isFinite(amount) ||
+    price <= 0 ||
+    amount <= 0
+  ) {
+    return;
+  }
 
-    if (!grouped.has(p)) {
-      grouped.set(p, {
+  S.seenTrades.add(id);
+
+  if (S.seenTrades.size > 2500) {
+    const first = S.seenTrades.values().next().value;
+    S.seenTrades.delete(first);
+  }
+
+  // m=true means buyer was maker.
+  // Therefore the aggressor was the seller.
+  const side = raw.m ? "SELL" : "BUY";
+
+  const trade = {
+    id,
+    price,
+    amount,
+    time,
+    side,
+    source,
+    notional: price * amount
+  };
+
+  S.trades.unshift(trade);
+
+  if (S.trades.length > MAX_TRADES) {
+    S.trades.pop();
+  }
+
+  S.totalTrades++;
+
+  S.cvd += side === "BUY"
+    ? amount
+    : -amount;
+
+  S.cvdHistory.push({
+    time,
+    value: S.cvd
+  });
+
+  S.cvdHistory =
+    S.cvdHistory.slice(-250);
+
+  S.lastTradeAt = Date.now();
+
+  if (source === "WS") {
+    S.price = price;
+  } else if (!Number.isFinite(S.price)) {
+    S.price = price;
+  }
+
+  const threshold = Math.max(
+    100,
+    num($("threshold").value) || 10000
+  );
+
+  if (!backfill && trade.notional >= threshold) {
+    const message =
+      "LARGE " + side +
+      " TRADE · $" +
+      money(trade.notional);
+
+    logEvent(
+      message,
+      side === "BUY" ? "buy" : "sell"
+    );
+
+    if (S.alertEnabled) {
+      sendTradeAlert(message);
+    }
+  }
+
+  queueRender();
+}
+
+/* ===============================================
+   REAL ORDER BOOK
+=============================================== */
+
+function cleanLevels(levels, descending) {
+  if (!Array.isArray(levels)) return [];
+
+  return levels
+    .map(level => ({
+      price: num(level[0]),
+      amount: num(level[1])
+    }))
+    .filter(x =>
+      Number.isFinite(x.price) &&
+      Number.isFinite(x.amount) &&
+      x.price > 0 &&
+      x.amount > 0
+    )
+    .sort((a, b) =>
+      descending
+        ? b.price - a.price
+        : a.price - b.price
+    )
+    .slice(0, 20);
+}
+
+function applyBook(data, source) {
+  const bids = cleanLevels(data.bids, true);
+  const asks = cleanLevels(data.asks, false);
+
+  if (!bids.length || !asks.length) {
+    return;
+  }
+
+  const previousBid = S.book.bids[0];
+  const previousAsk = S.book.asks[0];
+
+  S.book = {
+    bids,
+    asks,
+    lastUpdateId:
+      data.lastUpdateId ??
+      S.book.lastUpdateId
+  };
+
+  S.bestBid = bids[0].price;
+  S.bestAsk = asks[0].price;
+
+  S.bookSource = source;
+  S.lastBookAt = Date.now();
+
+  $("bookState").textContent =
+    source + " SNAPSHOT";
+
+  if (
+    previousBid &&
+    previousAsk &&
+    Date.now() - S.lastLiquidityEventAt > 5000
+  ) {
+    const bidChange =
+      bids[0].amount - previousBid.amount;
+
+    const askChange =
+      asks[0].amount - previousAsk.amount;
+
+    if (
+      Math.abs(bidChange) >= 0.5 ||
+      Math.abs(askChange) >= 0.5
+    ) {
+      const text =
+        "Displayed depth changed · BID " +
+        qty(bidChange) +
+        " · ASK " +
+        qty(askChange);
+
+      logEvent(text);
+
+      S.lastLiquidityEventAt = Date.now();
+    }
+  }
+
+  recordHeat();
+  queueRender();
+}
+
+/* ===============================================
+   LIQUIDITY HEATMAP HISTORY
+=============================================== */
+
+function getBucket() {
+  return Math.max(
+    0.5,
+    num($("bucket").value) || 1
+  );
+}
+
+function bucketPrice(price) {
+  const b = getBucket();
+
+  return Math.round(price / b) * b;
+}
+
+function recordHeat() {
+  if (S.heatPaused) return;
+
+  if (Date.now() - S.lastHeatAt < 1400) {
+    return;
+  }
+
+  const levels = [];
+
+  for (const x of S.book.bids) {
+    levels.push({
+      price: bucketPrice(x.price),
+      qty: x.amount,
+      side: "BID"
+    });
+  }
+
+  for (const x of S.book.asks) {
+    levels.push({
+      price: bucketPrice(x.price),
+      qty: x.amount,
+      side: "ASK"
+    });
+  }
+
+  S.heat.push({
+    time: Date.now(),
+    levels
+  });
+
+  if (S.heat.length > MAX_HEAT) {
+    S.heat.shift();
+  }
+
+  S.lastHeatAt = Date.now();
+}
+
+/* ===============================================
+   METRICS
+=============================================== */
+
+function renderMetrics() {
+  $("price").textContent = money(S.price);
+
+  $("spot").textContent = money(S.spot);
+
+  const spread =
+    S.bestAsk - S.bestBid;
+
+  $("spread").textContent =
+    Number.isFinite(spread) && spread >= 0
+      ? "$" + money(spread)
+      : "—";
+
+  const bids = S.book.bids.slice(0, 15);
+  const asks = S.book.asks.slice(0, 15);
+
+  const bidTotal = bids.reduce(
+    (sum, x) => sum + x.amount, 0
+  );
+
+  const askTotal = asks.reduce(
+    (sum, x) => sum + x.amount, 0
+  );
+
+  const total = bidTotal + askTotal;
+
+  const imbalance =
+    total > 0
+      ? 100 * bidTotal / total
+      : NaN;
+
+  $("imbalance").textContent =
+    Number.isFinite(imbalance)
+      ? imbalance.toFixed(1) + "%"
+      : "—";
+
+  $("cvd").textContent =
+    S.totalTrades
+      ? qty(S.cvd)
+      : "—";
+
+  const cutoff = Date.now() - 60000;
+
+  const volume = S.trades
+    .filter(x => x.time >= cutoff)
+    .reduce(
+      (sum, x) => sum + x.amount, 0
+    );
+
+  $("volume").textContent =
+    S.totalTrades
+      ? qty(volume)
+      : "—";
+
+  $("priceStatus").textContent =
+    S.lastTradeAt
+      ? "Last received trade " +
+        timeText(S.lastTradeAt)
+      : S.lastRestAt
+        ? "Binance REST price"
+        : "Waiting for Binance";
+
+  $("sequence").textContent =
+    S.book.lastUpdateId ?? "—";
+
+  $("tradeCount").textContent =
+    S.totalTrades + " RECEIVED";
+}
+
+/* ===============================================
+   DOM ROW HELPERS
+=============================================== */
+
+function createRow(className, values, classes = []) {
+  const row = document.createElement("div");
+  row.className = className;
+
+  values.forEach((value, index) => {
+    const cell = document.createElement("span");
+
+    cell.textContent = String(value ?? "");
+
+    if (classes[index]) {
+      cell.className = classes[index];
+    }
+
+    row.appendChild(cell);
+  });
+
+  return row;
+}
+
+function setEmpty(container, message) {
+  const div = document.createElement("div");
+  div.className = "empty";
+  div.textContent = message;
+
+  container.replaceChildren(div);
+}
+
+/* ===============================================
+   ORDER BOOK TABLE
+=============================================== */
+
+function renderBook() {
+  const root = $("bookRows");
+
+  if (
+    !S.book.bids.length ||
+    !S.book.asks.length
+  ) {
+    setEmpty(
+      root,
+      "Waiting for real Binance order book..."
+    );
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  for (let i = 0; i < 15; i++) {
+    const ask = S.book.asks[i];
+    const bid = S.book.bids[i];
+
+    fragment.appendChild(
+      createRow(
+        "bookRow",
+        [
+          ask ? qty(ask.amount) : "—",
+          ask ? money(ask.price) : "—",
+          bid ? money(bid.price) : "—",
+          bid ? qty(bid.amount) : "—"
+        ],
+        ["sell", "sell", "buy", "buy"]
+      )
+    );
+  }
+
+  root.replaceChildren(fragment);
+}
+
+/* ===============================================
+   EXECUTED TRADE TAPE
+=============================================== */
+
+function renderTape() {
+  const root = $("tradeRows");
+
+  if (!S.trades.length) {
+    setEmpty(
+      root,
+      "No executed trades received yet."
+    );
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  for (const trade of S.trades.slice(0, 35)) {
+    const sideClass =
+      trade.side === "BUY" ? "buy" : "sell";
+
+    fragment.appendChild(
+      createRow(
+        "tapeRow",
+        [
+          timeText(trade.time),
+          money(trade.price),
+          qty(trade.amount),
+          trade.side
+        ],
+        ["muted", "", "", sideClass]
+      )
+    );
+  }
+
+  root.replaceChildren(fragment);
+}
+
+/* ===============================================
+   FOOTPRINT
+=============================================== */
+
+function renderFootprint() {
+  const root = $("footRows");
+
+  if (!S.trades.length) {
+    setEmpty(root, "Waiting for trade data...");
+    return;
+  }
+
+  const groups = new Map();
+
+  for (const trade of S.trades) {
+    const price = bucketPrice(trade.price);
+    const key = price.toFixed(2);
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        price,
         buy: 0,
         sell: 0
       });
     }
 
-    grouped
-      .get(p)[t.side.toLowerCase()] += t.qty;
+    const item = groups.get(key);
+
+    if (trade.side === "BUY") {
+      item.buy += trade.amount;
+    } else {
+      item.sell += trade.amount;
+    }
   }
 
-  const price = state.lastPrice || 0;
+  const rows = [...groups.values()]
+    .sort((a, b) => b.price - a.price)
+    .slice(0, 20);
 
-  let rows = [...grouped]
-    .sort((a, b) => b[0] - a[0]);
+  const fragment =
+    document.createDocumentFragment();
 
-  const closest = rows
-    .slice()
-    .sort(
-      (a, b) =>
-        Math.abs(a[0] - price) -
-        Math.abs(b[0] - price)
-    )
-    .slice(0, 17)
-    .map(x => x[0]);
+  for (const item of rows) {
+    fragment.appendChild(
+      createRow(
+        "footRow",
+        [
+          qty(item.sell),
+          money(item.price),
+          qty(item.buy)
+        ],
+        ["sell", "", "buy"]
+      )
+    );
+  }
 
-  rows = rows.filter(
-    ([p]) => closest.includes(p)
-  );
-
-  const max = Math.max(
-    0.01,
-    ...rows.flatMap(
-      ([, q]) => [q.buy, q.sell]
-    )
-  );
-
-  $('footRows').innerHTML =
-    rows.map(([p, q]) => `
-      <div class="footLine">
-        <span
-          class="s"
-          style="
-            background:linear-gradient(
-              90deg,
-              transparent,
-              #6a293a ${100 * q.sell / max}%,
-              transparent
-            )
-          ">
-          ${vol(q.sell)}
-        </span>
-
-        <span class="p">
-          ${money(p)}
-        </span>
-
-        <span
-          class="b"
-          style="
-            background:linear-gradient(
-              90deg,
-              transparent,
-              #1c5d4d ${100 * q.buy / max}%,
-              transparent
-            )
-          ">
-          ${vol(q.buy)}
-        </span>
-      </div>
-    `).join('');
+  root.replaceChildren(fragment);
 }
 
-function setupCanvas(canvas) {
-  const dpr = Math.min(
-    devicePixelRatio || 1,
-    2
-  );
+/* ===============================================
+   EVENT JOURNAL
+=============================================== */
 
-  const rect =
-    canvas.getBoundingClientRect();
+function renderEvents() {
+  const root = $("eventRows");
 
-  if (!rect.width || !rect.height) {
+  if (!S.events.length) {
+    setEmpty(root, "No events recorded.");
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  for (const event of S.events.slice(0, 35)) {
+    const row = document.createElement("div");
+
+    row.className =
+      "eventRow " + event.type;
+
+    const time = document.createElement("span");
+    time.textContent = timeText(event.time);
+
+    const message = document.createElement("span");
+    message.textContent = event.message;
+
+    row.append(time, message);
+    fragment.appendChild(row);
+  }
+
+  root.replaceChildren(fragment);
+}
+
+/* ===============================================
+   CANVAS HELPERS
+=============================================== */
+
+function prepareCanvas(id) {
+  const canvas = $(id);
+
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+
+  if (width < 10 || height < 10) {
     return null;
   }
 
-  const w = Math.round(
-    rect.width * dpr
+  const dpr = Math.min(
+    window.devicePixelRatio || 1,
+    2
   );
 
-  const h = Math.round(
-    rect.height * dpr
-  );
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
 
-  if (
-    canvas.width !== w ||
-    canvas.height !== h
-  ) {
-    canvas.width = w;
-    canvas.height = h;
-  }
-
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
 
   ctx.setTransform(
     dpr, 0, 0, dpr, 0, 0
   );
 
-  ctx.clearRect(
-    0, 0,
-    rect.width,
-    rect.height
-  );
+  ctx.fillStyle = "#0a1323";
+  ctx.fillRect(0, 0, width, height);
 
   return {
     ctx,
-    w: rect.width,
-    h: rect.height
+    width,
+    height
   };
 }
 
-function emptyCanvas(ctx, w, h, message) {
-  ctx.fillStyle = '#7d96ae';
-  ctx.font = '12px sans-serif';
-  ctx.textAlign = 'center';
+function gridLines(ctx, x, y, w, h, count = 4) {
+  ctx.strokeStyle = "rgba(135,165,205,.10)";
+  ctx.lineWidth = 1;
+
+  for (let i = 0; i <= count; i++) {
+    const py = y + h * i / count;
+
+    ctx.beginPath();
+    ctx.moveTo(x, py);
+    ctx.lineTo(x + w, py);
+    ctx.stroke();
+  }
+}
+
+function emptyCanvas(data, message) {
+  const { ctx, width, height } = data;
+
+  ctx.fillStyle = "#8296b1";
+  ctx.font = "13px system-ui";
+  ctx.textAlign = "center";
 
   ctx.fillText(
     message,
-    w / 2,
-    h / 2
+    width / 2,
+    height / 2
   );
 
-  ctx.textAlign = 'left';
+  ctx.textAlign = "left";
 }
 
-function grid(
-  ctx, w, h,
-  l = 12,
-  r = 68,
-  t = 13,
-  b = 24
-) {
-  ctx.strokeStyle = '#1a2a3e';
-  ctx.lineWidth = 1;
+/* ===============================================
+   CANDLESTICK CHART
+=============================================== */
 
-  for (let i = 0; i <= 5; i++) {
-    const y =
-      t + (h - t - b) * i / 5;
+function drawChart() {
+  const canvas = prepareCanvas("chartCanvas");
 
-    ctx.beginPath();
-    ctx.moveTo(l, y);
-    ctx.lineTo(w - r, y);
-    ctx.stroke();
-  }
-}
+  if (!canvas) return;
 
-function renderCandles() {
-  const c =
-    setupCanvas($('chartCanvas'));
+  const { ctx, width: w, height: h } = canvas;
 
-  if (!c) return;
+  const candles = S.candles.slice(-65);
 
-  const { ctx, w, h } = c;
-
-  const series =
-    state.candle.slice(-70);
-
-  if (!series.length) {
+  if (!candles.length) {
     emptyCanvas(
-      ctx, w, h,
-      'Loading real exchange candles…'
+      canvas,
+      "Waiting for real Binance candles..."
     );
     return;
   }
 
-  const l = 10;
-  const r = 74;
-  const t = 15;
-  const b = 38;
+  const left = 12;
+  const top = 16;
+  const right = 74;
+  const bottom = 28;
 
-  const W = w - l - r;
-  const H = h - t - b;
+  const plotW = w - left - right;
+  const plotH = h - top - bottom;
 
-  const hi = Math.max(
-    ...series.map(d => d.high)
-  );
+  if (plotW <= 0 || plotH <= 0) return;
 
-  const lo = Math.min(
-    ...series.map(d => d.low)
-  );
+  let high = Math.max(...candles.map(x => x.h));
+  let low = Math.min(...candles.map(x => x.l));
 
-  const pad = Math.max(
-    (hi - lo) * 0.11,
+  const padding = Math.max(
+    (high - low) * 0.10,
     0.5
   );
 
-  const min = lo - pad;
-  const max = hi + pad;
+  high += padding;
+  low -= padding;
 
-  const y = p =>
-    t + (max - p) * H / (max - min);
+  const y = price =>
+    top + (high - price) /
+    (high - low) * plotH;
 
-  const cw = W / series.length;
+  gridLines(ctx, left, top, plotW, plotH);
 
-  grid(ctx, w, h, l, r, t, b);
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = "#91a4bd";
 
-  ctx.fillStyle = '#879ab1';
-  ctx.font = '10px ui-monospace,monospace';
-
-  for (let i = 0; i <= 5; i++) {
-    const p =
-      max - (max - min) * i / 5;
+  for (let i = 0; i <= 4; i++) {
+    const price =
+      high - (high - low) * i / 4;
 
     ctx.fillText(
-      money(p),
-      w - r + 9,
-      t + H * i / 5 + 3
+      price.toFixed(2),
+      w - right + 5,
+      top + plotH * i / 4 + 4
     );
   }
 
-  const maxVol = Math.max(
-    0.001,
-    ...series.map(d => d.volume)
+  const step = plotW / candles.length;
+  const bodyW = Math.max(
+    2,
+    Math.min(12, step * 0.65)
   );
 
-  for (
-    let i = 0;
-    i < series.length;
-    i++
-  ) {
-    const bar = series[i];
+  candles.forEach((c, i) => {
+    const x = left + step * (i + 0.5);
 
-    const x =
-      l + (i + 0.5) * cw;
+    const bullish = c.c >= c.o;
 
-    const up =
-      bar.close >= bar.open;
+    ctx.strokeStyle =
+      bullish ? "#32dfae" : "#ff647e";
 
-    ctx.fillStyle = up
-      ? '#3ee8ab'
-      : '#ff637b';
-
-    ctx.strokeStyle = ctx.fillStyle;
-
-    ctx.globalAlpha = 0.2;
-
-    ctx.fillRect(
-      x - cw * 0.3,
-      h - b + 1,
-      cw * 0.6,
-      22 * bar.volume / maxVol
-    );
-
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = ctx.strokeStyle;
 
     ctx.beginPath();
-    ctx.moveTo(x, y(bar.high));
-    ctx.lineTo(x, y(bar.low));
+    ctx.moveTo(x, y(c.h));
+    ctx.lineTo(x, y(c.l));
     ctx.stroke();
 
-    const yo = y(bar.open);
-    const yc = y(bar.close);
+    const a = y(c.o);
+    const b = y(c.c);
 
     ctx.fillRect(
-      x - Math.max(1, cw * 0.32),
-      Math.min(yo, yc),
-      Math.max(2, cw * 0.64),
-      Math.max(1, Math.abs(yo - yc))
+      x - bodyW / 2,
+      Math.min(a, b),
+      bodyW,
+      Math.max(1.5, Math.abs(a - b))
     );
-  }
+  });
 
-  // Overlay only actually received executions.
-  const start = series[0].time;
-  const last =
-    series.at(-1).time + 60000;
+  // Mark received real executions on matching candles.
+  const first = candles[0].t;
+  const last = candles[candles.length - 1].t;
 
-  for (
-    const tr of state.trades.slice(0, 130)
-  ) {
-    if (
-      tr.time < start ||
-      tr.time >= last
-    ) {
-      continue;
-    }
+  for (const trade of S.trades.slice(0, 70)) {
+    const t = Math.floor(trade.time / 60000) *
+      60000;
 
-    const x =
-      l +
-      ((tr.time - start) /
-        (last - start)) * W;
+    if (t < first || t > last) continue;
+
+    const index = candles.findIndex(
+      c => c.t === t
+    );
+
+    if (index < 0) continue;
+
+    const x = left + step * (index + 0.5);
+
+    ctx.fillStyle =
+      trade.side === "BUY"
+        ? "rgba(86,188,255,.8)"
+        : "rgba(255,173,87,.8)";
 
     ctx.beginPath();
-
     ctx.arc(
       x,
-      y(tr.price),
-      Math.min(
-        6,
-        2 + Math.sqrt(tr.value / 5000)
-      ),
+      y(trade.price),
+      2.3,
       0,
       Math.PI * 2
     );
-
-    ctx.fillStyle =
-      tr.side === 'BUY'
-        ? '#55b9ff99'
-        : '#f3c97999';
-
     ctx.fill();
   }
 
-  if (state.lastPrice) {
-    ctx.strokeStyle = '#55b9ff';
+  ctx.fillStyle = "#91a4bd";
+  ctx.font = "11px system-ui";
 
-    ctx.setLineDash([4, 5]);
+  const labelCount = 4;
 
-    ctx.beginPath();
-    ctx.moveTo(
-      l,
-      y(state.lastPrice)
+  for (let i = 0; i <= labelCount; i++) {
+    const index = Math.min(
+      candles.length - 1,
+      Math.floor(
+        i * (candles.length - 1) / labelCount
+      )
     );
 
-    ctx.lineTo(
-      w - r,
-      y(state.lastPrice)
-    );
+    const c = candles[index];
 
-    ctx.stroke();
-    ctx.setLineDash([]);
+    const x = left + step * (index + 0.5);
+
+    ctx.fillText(
+      timeText(c.t).slice(0, 5),
+      x - 14,
+      h - 8
+    );
   }
-
-  ctx.fillStyle = '#91a7bc';
-
-  ctx.fillText(
-    tSast(series[0].time),
-    l,
-    h - 7
-  );
-
-  ctx.fillText(
-    tSast(series.at(-1).time),
-    w - r - 60,
-    h - 7
-  );
 }
 
-function renderHeatmap() {
-  const c =
-    setupCanvas($('heatCanvas'));
+/* ===============================================
+   LIQUIDITY HEATMAP CANVAS
+=============================================== */
 
-  if (!c) return;
+function drawHeatmap() {
+  const canvas = prepareCanvas("heatCanvas");
 
-  const { ctx, w, h } = c;
+  if (!canvas) return;
 
-  if (!state.heat.length) {
+  const { ctx, width: w, height: h } = canvas;
+
+  if (!S.heat.length) {
     emptyCanvas(
-      ctx, w, h,
-      'Heatmap begins after synchronized depth snapshots…'
+      canvas,
+      "Waiting for real depth snapshots..."
     );
     return;
   }
 
-  const l = 10;
-  const r = 80;
-  const t = 12;
-  const b = 28;
+  const left = 10;
+  const top = 15;
+  const right = 76;
+  const bottom = 25;
 
-  const W = w - l - r;
-  const H = h - t - b;
+  const plotW = w - left - right;
+  const plotH = h - top - bottom;
 
-  const rows = 46;
-  const cols = state.heat.length;
-  const step = state.bucket;
+  if (plotW <= 0 || plotH <= 0) return;
 
-  const mid =
-    observedMid() ||
-    state.heat.at(-1).mid;
+  const bucket = getBucket();
 
-  const anchor =
-    Math.round(mid / step) * step;
+  const center = Number.isFinite(S.price)
+    ? bucketPrice(S.price)
+    : bucketPrice(
+        (S.bestBid + S.bestAsk) / 2
+      );
 
-  const dx =
-    W / Math.max(95, cols);
+  if (!Number.isFinite(center)) return;
 
-  const dy =
-    H / rows;
+  const rows = 36;
+  const slots = 90;
 
-  const prepared =
-    state.heat.map(s => {
-      const map = new Map();
+  const samples = S.heat.slice(-slots);
 
-      for (
-        const [side, list] of [
-          ['bid', s.bids],
-          ['ask', s.asks]
-        ]
-      ) {
-        for (const [price, qty] of list) {
-          const idx =
-            Math.round(
-              (anchor - price) / step
-            ) +
-            Math.floor(rows / 2);
+  const cellW = plotW / slots;
+  const cellH = plotH / rows;
 
-          if (
-            idx >= 0 &&
-            idx < rows
-          ) {
-            const key =
-              side + ':' + idx;
+  let maxQty = 0;
 
-            map.set(
-              key,
-              (map.get(key) || 0) + qty
-            );
-          }
-        }
-      }
-
-      return map;
-    });
-
-  let maxQ = 0;
-
-  for (const m of prepared) {
-    for (const q of m.values()) {
-      maxQ = Math.max(maxQ, q);
+  for (const sample of samples) {
+    for (const item of sample.levels) {
+      maxQty = Math.max(
+        maxQty,
+        item.qty
+      );
     }
   }
 
-  ctx.fillStyle = '#0b1524';
+  maxQty = Math.max(maxQty, 0.001);
 
-  ctx.fillRect(
-    l, t, W, H
-  );
+  samples.forEach((sample, i) => {
+    const column =
+      slots - samples.length + i;
 
-  prepared.forEach((m, i) => {
-    const x =
-      l + (95 - cols + i) * dx;
+    const x = left + column * cellW;
 
-    for (const [key, q] of m) {
-      const [side, idx] =
-        key.split(':');
+    for (const item of sample.levels) {
+      const diff =
+        (item.price - center) / bucket;
 
-      const alpha =
-        0.13 +
-        0.87 * Math.sqrt(
-          q / Math.max(maxQ, 0.001)
-        );
+      const row =
+        Math.floor(rows / 2 - diff);
 
-      ctx.fillStyle =
-        side === 'bid'
-          ? `rgba(45,232,165,${alpha})`
-          : `rgba(255,100,126,${alpha})`;
+      if (row < 0 || row >= rows) continue;
+
+      const intensity = Math.min(
+        0.9,
+        0.12 + (item.qty / maxQty) * 0.78
+      );
+
+      const color =
+        item.side === "BID"
+          ? "rgba(35,220,164," +
+            intensity + ")"
+          : "rgba(255,85,118," +
+            intensity + ")";
+
+      ctx.fillStyle = color;
 
       ctx.fillRect(
         x,
-        t + N(idx) * dy,
-        Math.ceil(dx) + 0.2,
-        dy + 0.3
+        top + row * cellH,
+        Math.max(1, cellW),
+        Math.max(1, cellH)
       );
     }
   });
 
-  ctx.font =
-    '10px ui-monospace,monospace';
+  gridLines(
+    ctx,
+    left,
+    top,
+    plotW,
+    plotH
+  );
 
-  ctx.fillStyle = '#a1b5cc';
-  ctx.strokeStyle = '#203148';
-
-  for (
-    let j = 0;
-    j <= rows;
-    j += 5
-  ) {
-    const y = t + j * dy;
-
-    ctx.beginPath();
-    ctx.moveTo(l, y);
-    ctx.lineTo(w - r, y);
-    ctx.stroke();
-
-    ctx.fillText(
-      money(
-        anchor +
-        (Math.floor(rows / 2) - j) * step
-      ),
-      w - r + 7,
-      y + 3
-    );
-  }
-
-  ctx.strokeStyle = '#f3c979';
-  ctx.setLineDash([3, 4]);
+  ctx.strokeStyle = "#53baff";
+  ctx.setLineDash([4, 5]);
 
   ctx.beginPath();
-
   ctx.moveTo(
-    l,
-    t + rows / 2 * dy
+    left,
+    top + plotH / 2
   );
-
   ctx.lineTo(
-    w - r,
-    t + rows / 2 * dy
+    left + plotW,
+    top + plotH / 2
   );
-
   ctx.stroke();
+
   ctx.setLineDash([]);
 
-  ctx.fillStyle = '#8298b2';
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = "#9aacc4";
 
-  ctx.fillText(
-    tSast(state.heat[0].time),
-    l,
-    h - 8
-  );
+  for (let i = 0; i <= 6; i++) {
+    const price =
+      center + (rows / 2 - i * 6) * bucket;
 
-  ctx.fillText(
-    tSast(state.heat.at(-1).time),
-    w - r - 65,
-    h - 8
-  );
-
-  if (state.heatPaused) {
-    ctx.fillStyle = '#f3c979';
-    ctx.font = 'bold 12px sans-serif';
+    const y = top + plotH * i / 6;
 
     ctx.fillText(
-      'PAUSED',
-      l + 14,
-      t + 18
+      price.toFixed(2),
+      w - right + 5,
+      y + 5
     );
   }
+
+  ctx.fillText(
+    samples.length + " snapshots",
+    left + 5,
+    h - 7
+  );
 }
 
-function renderCVD() {
-  const c =
-    setupCanvas($('cvdCanvas'));
+/* ===============================================
+   CUMULATIVE VOLUME DELTA CHART
+=============================================== */
 
-  if (!c) return;
+function drawCVD() {
+  const canvas = prepareCanvas("cvdCanvas");
 
-  const { ctx, w, h } = c;
+  if (!canvas) return;
 
-  const points =
-    state.cvdPoints;
+  const { ctx, width: w, height: h } = canvas;
 
-  if (!points.length) {
+  const data = S.cvdHistory.slice(-150);
+
+  if (data.length < 2) {
     emptyCanvas(
-      ctx, w, h,
-      'CVD starts when trade messages arrive…'
+      canvas,
+      "Waiting for executed trade delta..."
     );
     return;
   }
 
-  const l = 13;
-  const r = 76;
-  const t = 12;
-  const b = 27;
+  const left = 18;
+  const right = 65;
+  const top = 20;
+  const bottom = 28;
 
-  const W = w - l - r;
-  const H = h - t - b;
+  const plotW = w - left - right;
+  const plotH = h - top - bottom;
 
-  const nums =
-    points.map(x => x.cvd);
+  if (plotW <= 0 || plotH <= 0) return;
 
-  const high = Math.max(
-    0,
-    ...nums
+  const values = data.map(x => x.value);
+
+  const max = Math.max(0, ...values);
+  const min = Math.min(0, ...values);
+
+  const range = Math.max(
+    0.01,
+    max - min
   );
 
-  const low = Math.min(
-    0,
-    ...nums
-  );
-
-  const pad = Math.max(
-    (high - low) * 0.15,
-    0.01
-  );
-
-  const max = high + pad;
-  const min = low - pad;
+  const upper = max + range * 0.12;
+  const lower = min - range * 0.12;
 
   const y = v =>
-    t +
-    (max - v) * H / (max - min);
+    top + (upper - v) /
+    (upper - lower) * plotH;
 
   const x = i =>
-    l +
-    i * W / Math.max(
-      1,
-      points.length - 1
-    );
+    left + i / (data.length - 1) * plotW;
 
-  grid(ctx, w, h, l, r, t, b);
+  gridLines(ctx, left, top, plotW, plotH);
 
-  ctx.strokeStyle = '#385268';
-  ctx.setLineDash([3, 5]);
+  ctx.strokeStyle = "rgba(255,255,255,.25)";
+  ctx.setLineDash([4, 5]);
 
   ctx.beginPath();
-
-  ctx.moveTo(l, y(0));
-  ctx.lineTo(w - r, y(0));
+  ctx.moveTo(left, y(0));
+  ctx.lineTo(left + plotW, y(0));
   ctx.stroke();
 
   ctx.setLineDash([]);
 
+  const gradient = ctx.createLinearGradient(
+    0,
+    top,
+    0,
+    top + plotH
+  );
+
+  gradient.addColorStop(
+    0,
+    "rgba(79,181,255,.22)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(79,181,255,0)"
+  );
+
   ctx.beginPath();
 
-  points.forEach((p, i) => {
-    if (i) {
-      ctx.lineTo(
-        x(i),
-        y(p.cvd)
-      );
+  data.forEach((point, i) => {
+    const px = x(i);
+    const py = y(point.value);
+
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+
+  ctx.lineTo(
+    x(data.length - 1),
+    top + plotH
+  );
+
+  ctx.lineTo(
+    x(0),
+    top + plotH
+  );
+
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.beginPath();
+
+  data.forEach((point, i) => {
+    if (i === 0) {
+      ctx.moveTo(x(i), y(point.value));
     } else {
-      ctx.moveTo(
-        x(i),
-        y(p.cvd)
-      );
+      ctx.lineTo(x(i), y(point.value));
     }
   });
 
+  ctx.strokeStyle = "#58baff";
   ctx.lineWidth = 2;
-
-  ctx.strokeStyle =
-    points.at(-1).cvd >= 0
-      ? '#3ee8ab'
-      : '#ff637b';
-
   ctx.stroke();
 
-  ctx.fillStyle = '#98aac1';
-  ctx.font = '10px monospace';
-
-  for (let i = 0; i <= 4; i++) {
-    ctx.fillText(
-      vol(
-        max - (max - min) * i / 4
-      ),
-      w - r + 9,
-      t + H * i / 4 + 3
-    );
-  }
+  ctx.font = "11px system-ui";
+  ctx.fillStyle = "#9aacc4";
 
   ctx.fillText(
-    tSast(points[0].time),
-    l,
-    h - 6
+    qty(upper),
+    w - right + 5,
+    top + 7
   );
 
   ctx.fillText(
-    tSast(points.at(-1).time),
-    w - r - 64,
-    h - 6
+    qty(0),
+    w - right + 5,
+    y(0) + 4
+  );
+
+  ctx.fillText(
+    qty(lower),
+    w - right + 5,
+    top + plotH
+  );
+
+  ctx.fillText(
+    timeText(data[0].time),
+    left,
+    h - 8
+  );
+
+  ctx.fillText(
+    timeText(data[data.length - 1].time),
+    Math.max(left, w - right - 75),
+    h - 8
   );
 }
 
-function draw() {
+/* ===============================================
+   ALERT ENGINE
+=============================================== */
+
+function sendTradeAlert(message) {
+  if (
+    S.notificationGranted &&
+    "Notification" in window
+  ) {
+    try {
+      new Notification(
+        "MKAYFX BLACKBOOK",
+        {
+          body: message
+        }
+      );
+    } catch (_) {
+      // In-app journal remains active.
+    }
+  }
+}
+
+async function toggleAlerts() {
+  S.alertEnabled = !S.alertEnabled;
+
+  if (
+    S.alertEnabled &&
+    "Notification" in window
+  ) {
+    try {
+      const permission =
+        await Notification.requestPermission();
+
+      S.notificationGranted =
+        permission === "granted";
+    } catch (_) {
+      S.notificationGranted = false;
+    }
+  }
+
+  $("notifyBtn").textContent =
+    S.alertEnabled
+      ? "DISABLE ALERTS"
+      : "ENABLE ALERTS";
+
+  logEvent(
+    S.alertEnabled
+      ? "Large trade alerts enabled in journal."
+      : "Large trade alerts disabled."
+  );
+}
+
+/* ===============================================
+   RENDER SCHEDULER
+=============================================== */
+
+function renderAll() {
   renderMetrics();
   renderBook();
   renderTape();
-  renderEvents();
   renderFootprint();
+  renderEvents();
 
-  renderCandles();
-  renderHeatmap();
-  renderCVD();
+  drawChart();
+  drawHeatmap();
+  drawCVD();
+
+  updateConnection();
 }
 
-// USER CONTROLS
+function queueRender() {
+  if (S.renderTimer !== null) return;
 
-$('connectBtn').addEventListener(
-  'click',
-  () =>
-    state.ws && !state.manual
-      ? disconnect()
-      : connect()
-);
+  S.renderTimer = setTimeout(() => {
+    S.renderTimer = null;
+    renderAll();
+  }, 300);
+}
 
-$('pauseBtn').addEventListener(
-  'click',
-  () => {
-    state.heatPaused =
-      !state.heatPaused;
+/* ===============================================
+   CONTROLS
+=============================================== */
 
-    $('pauseBtn').textContent =
-      state.heatPaused
-        ? 'RESUME HEATMAP'
-        : 'PAUSE HEATMAP';
-  }
-);
+function initializeControls() {
+  $("connectBtn").addEventListener(
+    "click",
+    reconnectNow
+  );
 
-$('bucket').addEventListener(
-  'change',
-  e => {
-    state.bucket =
-      N(e.target.value) || 1;
+  $("pauseBtn").addEventListener(
+    "click",
+    () => {
+      S.heatPaused = !S.heatPaused;
 
-    state.heat = [];
+      $("pauseBtn").textContent =
+        S.heatPaused
+          ? "RESUME HEATMAP"
+          : "PAUSE HEATMAP";
 
-    eventLog(
-      'Heatmap bucket changed',
-      'History restarted at new price resolution'
-    );
-  }
-);
-
-$('threshold').addEventListener(
-  'change',
-  e => {
-    state.alertThreshold = Math.max(
-      100,
-      N(e.target.value) || 10000
-    );
-
-    e.target.value =
-      state.alertThreshold;
-  }
-);
-
-$('clearBtn').addEventListener(
-  'click',
-  () => {
-    state.events = [];
-    renderEvents();
-  }
-);
-
-$('notifyBtn').addEventListener(
-  'click',
-  async () => {
-    if (!('Notification' in window)) {
-      eventLog(
-        'Notifications unavailable',
-        'Browser does not support notifications',
-        'red'
-      );
-      return;
-    }
-
-    const result =
-      await Notification.requestPermission();
-
-    state.notifications =
-      result === 'granted';
-
-    $('notifyBtn').textContent =
-      state.notifications
-        ? 'ALERTS ON'
-        : 'ALERTS DISABLED';
-
-    if (state.notifications) {
-      eventLog(
-        'Browser alerts enabled',
-        'Fires on large real executions while tab is hidden'
+      logEvent(
+        S.heatPaused
+          ? "Heatmap recording paused."
+          : "Heatmap recording resumed."
       );
     }
-  }
-);
+  );
 
-// LIVE TERMINAL REFRESH
-setInterval(() => {
-  if (state.active) {
-    cleanVolume();
-    sampleBook();
-  }
+  $("notifyBtn").addEventListener(
+    "click",
+    toggleAlerts
+  );
 
-  draw();
-}, 1000);
+  $("clearBtn").addEventListener(
+    "click",
+    () => {
+      S.events = [];
+      renderEvents();
+    }
+  );
 
-// OPTIONAL SPOT GOLD
-setInterval(
-  refreshSpot,
-  65000
-);
+  $("bucket").addEventListener(
+    "change",
+    () => {
+      // Old heat history uses the previous
+      // bucket size and must be reset.
+      S.heat = [];
+      S.lastHeatAt = 0;
 
-// RESPONSIVE DRAWING
-window.addEventListener(
-  'resize',
-  () => {
-    renderCandles();
-    renderHeatmap();
-    renderCVD();
-  }
-);
+      logEvent(
+        "Price bucket changed to $" +
+        getBucket().toFixed(2)
+      );
 
-// CLEAN SOCKET CLOSURE
-window.addEventListener(
-  'beforeunload',
-  () => {
-    state.manual = true;
+      recordHeat();
+      queueRender();
+    }
+  );
 
-    if (state.ws) {
-      state.ws.close();
+  window.addEventListener(
+    "resize",
+    queueRender
+  );
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+      if (!document.hidden) {
+        const socketUnavailable =
+          !S.socket ||
+          S.socket.readyState !== WebSocket.OPEN;
+
+        if (socketUnavailable) {
+          connectWebSocket();
+        }
+
+        pollREST();
+        queueRender();
+      }
+    }
+  );
+}
+
+/* ===============================================
+   HEALTH WATCHDOG
+=============================================== */
+
+function watchdog() {
+  $("clock").textContent =
+    timeText() + " SAST";
+
+  // Restart a connection that opened but stopped
+  // providing market data.
+  if (
+    S.socket &&
+    S.socket.readyState === WebSocket.OPEN
+  ) {
+    const last = S.lastWsAt ||
+      S.socketOpenedAt;
+
+    if (
+      last &&
+      Date.now() - last > STALE_TIMEOUT
+    ) {
+      logEvent(
+        "WebSocket stale. Restarting connection.",
+        "warning"
+      );
+
+      S.socket.close();
     }
   }
-);
 
-// BOOT
-refreshSpot();
-draw();
-connect();
+  renderMetrics();
+  updateConnection();
+}
+
+/* ===============================================
+   START ENGINE
+=============================================== */
+
+function start() {
+  initializeControls();
+
+  logEvent(
+    "MKAYFX BLACKBOOK X2 engine initialized.",
+    "success"
+  );
+
+  $("clock").textContent =
+    timeText() + " SAST";
+
+  // Start REST immediately so a failed WebSocket
+  // does not leave the dashboard empty.
+  pollREST();
+
+  // Run direct WebSocket simultaneously.
+  connectWebSocket();
+
+  // Keep the REST backup refreshed.
+  setInterval(
+    pollREST,
+    REST_INTERVAL
+  );
+
+  // Optional independent gold spot price.
+  pollSpot();
+
+  setInterval(
+    pollSpot,
+    SPOT_INTERVAL
+  );
+
+  // Display freshness and connection health.
+  setInterval(
+    watchdog,
+    1000
+  );
+
+  renderAll();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    start
+  );
+} else {
+  start();
+}
+
+})();
