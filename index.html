@@ -1,305 +1,269 @@
-
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#050a13">
-<title>MKAYFX — Flow Intelligence V4</title>
-<style>
-:root{color-scheme:dark;--bg:#050a13;--a:#0b1422;--b:#0e1b2c;--edge:#203249;--muted:#7690a8;--text:#e7f1ff;--cyan:#38d4e8;--gold:#f6c36b;--green:#42dcad;--red:#ff728b;--purple:#ae9bff}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse 750px 470px at 65% -140px,#17354c77,transparent),var(--bg);color:var(--text);font:14px/1.48 -apple-system,BlinkMacSystemFont,Inter,system-ui,sans-serif;font-variant-numeric:tabular-nums}
-button,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:wait}button:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}a{color:inherit;text-decoration:none}
-.top{position:sticky;top:0;z-index:20;background:#07101de8;backdrop-filter:blur(18px);border-bottom:1px solid var(--edge)}.top-inner{max-width:1550px;margin:auto;padding:13px 25px;display:flex;align-items:center;gap:24px}.logo{font-size:23px;font-weight:900;letter-spacing:-1px;white-space:nowrap}.logo span{color:var(--gold)}.logo small{font-size:10px;letter-spacing:3px;font-weight:700;color:#9aaec1;margin-left:10px}.nav{display:flex;gap:22px;margin-left:auto}.nav a{font-size:12px;font-weight:700;color:#809cb2}.nav a:hover{color:var(--cyan)}.refresh{background:#122238;color:#d3e4ef;border:1px solid #29445c;border-radius:11px;padding:9px 14px;white-space:nowrap}.refresh:hover{border-color:var(--cyan)}.health{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:1px;color:#c3d5e4;white-space:nowrap}.dot{width:8px;height:8px;background:var(--gold);border-radius:100%;box-shadow:0 0 15px currentColor}.dot.good{background:var(--green);color:var(--green)}.dot.bad{background:var(--red);color:var(--red)}
-main{max-width:1550px;padding:27px 25px 65px;margin:auto}.eyebrow{font-size:10px;letter-spacing:4px;font-weight:800;color:var(--cyan)}.hero{display:flex;justify-content:space-between;gap:15px;align-items:flex-end;margin-bottom:20px}.hero h1{font-size:clamp(28px,3.7vw,49px);line-height:1.12;letter-spacing:-2px;margin:10px 0}.hero h1 span{color:var(--gold)}.hero p{margin:0;color:var(--muted)}.mode{border:1px solid #654f2b;background:#291f13;padding:9px 12px;color:var(--gold);font-weight:800;border-radius:8px;letter-spacing:1.5px;font-size:10px;white-space:nowrap}
-.warning{display:none;margin:0 0 15px;padding:13px 15px;border:1px solid #a26d35;background:#322113;border-radius:12px;color:#ffe0b1;overflow-wrap:anywhere}.warning.show{display:block}
-.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:17px 0}.stat,.panel{background:linear-gradient(148deg,#0d1c2b,#091320);border:1px solid var(--edge);border-radius:16px}.stat{padding:17px 16px;min-width:0;position:relative;overflow:hidden}.stat:after{content:'';position:absolute;bottom:0;left:16px;right:46%;height:2px;background:var(--accent,var(--cyan));opacity:.9}.stat .label{color:#8fa7bb;font-size:10px;font-weight:800;letter-spacing:1.8px;line-height:1.6}.stat .number{font-size:clamp(20px,2.15vw,30px);letter-spacing:-.7px;font-weight:800;margin:12px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stat .note{color:var(--muted);font-size:10px;line-height:1.5;min-height:17px}.gold{color:var(--gold)}.cyan{color:var(--cyan)}.green{color:var(--green)}.red{color:var(--red)}.purple{color:var(--purple)}
-.panel{padding:19px;min-width:0}.head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:14px}.head h2{font-size:14px;letter-spacing:2px;font-weight:900;margin:0}.head p{font-size:11px;color:var(--muted);margin:6px 0 0}.mini-tag{font-size:10px;color:var(--gold);border:1px solid #604c2b;border-radius:7px;background:#241f18;padding:5px 8px;white-space:nowrap;font-weight:750}.workspace{display:grid;grid-template-columns:minmax(0,1.78fr) minmax(295px,.7fr);gap:14px}.left,.right{display:flex;flex-direction:column;gap:14px;min-width:0}
-.chart-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:9px 0 12px}.tabs{display:flex;gap:3px;padding:4px;background:#070f1c;border:1px solid #23374b;border-radius:10px;flex-wrap:wrap}.tabs button{background:transparent;border:0;color:#8ca8bb;border-radius:7px;padding:7px 11px;font-size:12px;font-weight:800}.tabs button.active{background:#173c55;color:#65e4f5}.tools{display:flex;gap:5px}.small-btn{background:#102338;color:#aac2d4;border:1px solid #294359;border-radius:8px;min-width:33px;height:33px}.small-btn:hover{border-color:var(--cyan)}.checks{display:flex;flex-wrap:wrap;gap:15px;margin-bottom:11px;color:#9cb0be;font-size:11px}.checks label{display:flex;align-items:center;gap:6px}.checks input{accent-color:var(--cyan)}.canvas-frame{border:1px solid #1c3549;background:#071321;border-radius:11px;overflow:hidden;position:relative}.canvas-frame canvas{width:100%;height:425px;display:block;touch-action:pan-y;cursor:crosshair}.chart-caption{display:flex;justify-content:space-between;gap:10px;color:#7b9aaf;font-size:10px;margin-top:11px;flex-wrap:wrap}.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:10px;color:#a6bdcf}.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
-.segment{display:flex;gap:4px;border:1px solid #22394e;background:#071222;border-radius:8px;padding:3px;flex-wrap:wrap}.segment button{border:0;border-radius:6px;background:transparent;color:#88a6ba;padding:6px 9px;font-size:10px;letter-spacing:.3px;font-weight:800}.segment button.active{background:#24445d;color:#d6f7ff}.heat-frame canvas{width:100%;height:335px;display:block;cursor:crosshair}.scale{height:8px;border-radius:6px;background:linear-gradient(90deg,#102237,#155368,#22b7d1,#f0ab5a,#ff7187);margin:11px 0 5px}.scale-labels{display:flex;justify-content:space-between;color:#8aa4b7;font-size:10px}
-.pulse-layout{display:flex;gap:14px;align-items:center}.ring{width:124px;height:124px;flex:0 0 124px;border-radius:50%;background:conic-gradient(var(--green) 0 50%,#ff728b 50% 100%);display:grid;place-items:center;transform:rotate(-90deg)}.ringcore{width:91px;height:91px;border-radius:50%;background:#0b1727;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(90deg);border:1px solid #284052}.ringcore strong{font-size:22px}.ringcore small{font-size:10px;color:var(--muted)}.pulse-numbers{flex:1;min-width:0}.pair{display:flex;justify-content:space-between;border-bottom:1px solid #1b3244;padding:6px 0;gap:7px;font-size:11px}.pair:last-child{border-bottom:0}.pair span{color:#90a8ba}.pair strong{font-weight:800}.chip{display:inline-block;border-radius:30px;padding:4px 8px;border:1px solid #355770;font-size:10px;color:#9ec8dd;font-weight:800}.explain{color:#7c98ab;font-size:10px;margin:12px 0 0;line-height:1.7}
-.ladder{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto}.level{background:#0a1828;border:1px solid #243a50;border-left:3px solid var(--cyan);border-radius:10px;padding:11px 12px}.level.buy{border-left-color:var(--gold)}.level .topline{display:flex;justify-content:space-between;gap:7px;align-items:center}.level .money{font-weight:850;font-size:20px}.level .kind{font-size:10px;color:#92aabd;margin:3px 0}.level .details{display:flex;justify-content:space-between;gap:6px;color:#7798aa;font-size:10px}.progress{height:3px;background:#1b3245;margin-top:9px;border-radius:4px;overflow:hidden}.progress i{height:100%;display:block;background:linear-gradient(90deg,var(--cyan),var(--gold))}
-.sesgrid{display:flex;flex-direction:column;gap:8px}.session{border:1px solid #20394d;border-radius:10px;padding:11px;background:#0a1727;display:grid;grid-template-columns:1fr auto;gap:5px}.session strong{font-size:11px;letter-spacing:1px}.session small{color:var(--muted);font-size:10px}.session .prices{font-weight:750;font-size:13px;text-align:right}
-.lower{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.flow-canvas{width:100%;height:250px;display:block}.footprint-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.fp{background:#091828;border:1px solid #233b50;border-radius:9px;padding:10px;min-width:0}.fp .time{font-size:10px;color:#829fb2}.fp .del{font-size:15px;font-weight:850;margin:5px 0}.bar-split{display:flex;width:100%;height:6px;border-radius:5px;overflow:hidden;background:#402635;margin:8px 0}.bar-split span{display:block;background:#36d4a3}.fp .pct{display:flex;justify-content:space-between;font-size:9px;color:#aac4d4}.tape{display:flex;flex-direction:column;gap:5px;max-height:300px;overflow:auto}.tape-row{display:grid;grid-template-columns:80px 1fr 78px;gap:5px;align-items:center;padding:8px 9px;border-radius:7px;background:#0b1a2b;border:1px solid #1b3247;font-size:11px}.tape-row b{text-align:right}.tape-row span:first-child{color:#819bb0}
-.list{display:flex;flex-direction:column;gap:8px}.event{background:#0b1a29;border:1px solid #263d4e;border-radius:9px;padding:11px 12px;display:flex;justify-content:space-between;gap:9px;align-items:center}.event strong{font-size:11px}.event small{font-size:10px;color:#8ca2b6}.event-right{text-align:right;white-space:nowrap}.quality{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.feed{padding:11px;border:1px solid #23394b;border-radius:9px;background:#0a1929;min-width:0}.feed strong{font-size:11px}.feed p{font-size:10px;color:#8da7ba;margin:5px 0 0;overflow-wrap:anywhere}.empty{padding:25px 12px;border:1px dashed #2b455a;border-radius:9px;color:#8aa4b6;text-align:center;font-size:12px}.disclaimer{color:#8297a8;font-size:11px;line-height:1.8;margin-top:22px}
-@media(max-width:1250px){.stats{grid-template-columns:repeat(3,1fr)}.workspace{grid-template-columns:minmax(0,1.5fr) minmax(260px,.7fr)}.footprint-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.nav{gap:12px}}
-@media(max-width:900px){.workspace{grid-template-columns:1fr}.right{display:grid;grid-template-columns:1fr 1fr}.right>.panel:last-child{grid-column:1/-1}.lower{grid-template-columns:1fr}.footprint-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.nav{display:none}}
-@media(max-width:620px){main{padding:19px 12px 40px}.top-inner{padding:11px 12px;gap:9px}.logo{font-size:20px}.logo small{font-size:9px;letter-spacing:1px;margin-left:5px}.health{font-size:0;margin-left:auto}.health .dot{margin-right:0}.refresh{padding:7px 9px}.hero{align-items:flex-start;flex-direction:column;gap:8px}.hero h1{font-size:30px;letter-spacing:-1.5px}.eyebrow{font-size:9px;letter-spacing:2.5px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat{padding:13px 12px}.stat .number{font-size:23px}.stat .label{font-size:9px;letter-spacing:1px}.panel{padding:13px}.head h2{font-size:12px;letter-spacing:1.3px}.head p{font-size:10px}.mini-tag{font-size:9px}.right{display:flex}.canvas-frame canvas{height:320px}.heat-frame canvas{height:275px}.tabs button{font-size:11px;padding:7px 9px}.footprint-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.quality{grid-template-columns:repeat(2,minmax(0,1fr))}.ring{width:108px;height:108px;flex-basis:108px}.ringcore{width:80px;height:80px}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#070c16">
+  <title>MKAYFX | BLACKBOOK X1</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./app.js" defer></script>
 </head>
 <body>
-<header class="top"><div class="top-inner">
-  <a class="logo" href="#top">MKAY<span>FX</span><small>FLOW RADAR</small></a>
-  <nav class="nav"><a href="#chartSection">MARKET</a><a href="#heatSection">HEATMAP</a><a href="#flowSection">ORDER FLOW</a><a href="#levelsSection">LIQUIDITY</a></nav>
-  <div class="health"><i id="statusDot" class="dot"></i><span id="statusText">CONNECTING</span></div>
-  <button id="refresh" class="refresh">↻ Refresh</button>
-</div></header>
-<main id="top">
-<section class="hero"><div><div class="eyebrow">MKAYFX // LIQUIDITY INTELLIGENCE TERMINAL // V4</div>
-  <h1>Institutional <span>Flow Matrix</span></h1>
-  <p>XAU / USD · Multi-timeframe structure · Modeled order flow · Candle-derived liquidity maps</p></div>
-  <span class="mode">◆ RESEARCH TERMINAL · OHLC PROXY</span>
-</section>
-<div id="warning" class="warning" role="alert"></div>
-<div class="stats">
- <div class="stat" style="--accent:var(--gold)"><div class="label">XAU / USD PRICE</div><div class="number gold" id="statPrice">—</div><div class="note" id="statTime">Awaiting feed</div></div>
- <div class="stat"><div class="label">H1 STRUCTURE</div><div class="number" id="statTrend">—</div><div class="note" id="statAgreement">EMA 20 / 50</div></div>
- <div class="stat" style="--accent:var(--purple)"><div class="label">STRONG LIQUIDITY</div><div class="number purple" id="statZones">—</div><div class="note">Ahead · confirmed · rank ≥ 70</div></div>
- <div class="stat"><div class="label">M5 VOLATILITY · ATR</div><div class="number cyan" id="statATR">—</div><div class="note">Completed candle ATR 14</div></div>
- <div class="stat" style="--accent:var(--green)"><div class="label">MODELED BUY PRESSURE</div><div class="number green" id="statBuy">—</div><div class="note">Last 30 completed flow candles</div></div>
- <div class="stat" style="--accent:var(--red)"><div class="label">PROXY NET DELTA</div><div class="number" id="statDelta">—</div><div class="note">Not actual buy/sell volume</div></div>
-</div>
-<div class="workspace">
- <div class="left">
-  <section class="panel" id="chartSection"><div class="head"><div><h2>◈ LIVE CANDLE STRUCTURE</h2><p>Timeframe candles · ranked liquidity zones · fair value gaps</p></div><span class="mini-tag">XAUUSD</span></div>
-   <div class="chart-controls"><div class="tabs" id="tfTabs"><button data-tf="1min">M1</button><button data-tf="5min" class="active">M5</button><button data-tf="15min">M15</button><button data-tf="1h">H1</button><button data-tf="4h">H4</button><button data-tf="1day">D1</button></div>
-   <div class="tools"><button class="small-btn" id="zoomPlus" title="Zoom in">+</button><button class="small-btn" id="zoomMinus" title="Zoom out">−</button><button class="small-btn" id="reset" title="Reset">⟲</button></div></div>
-   <div class="checks"><label><input type="checkbox" id="toggleZones" checked> Rank ≥ 70 levels</label><label><input type="checkbox" id="toggleFVG" checked> M5 FVG</label><label><input type="checkbox" id="togglePrice" checked> Price line</label></div>
-   <div class="canvas-frame"><canvas id="chart"></canvas></div>
-   <div class="chart-caption"><div class="legend"><span><i style="background:var(--green)"></i>Up candle</span><span><i style="background:var(--red)"></i>Down candle</span><span><i style="background:var(--gold)"></i>Buy-side highs</span><span><i style="background:var(--cyan)"></i>Sell-side lows</span></div><span id="chartInfo">Drag to pan · +/- zoom · UTC</span></div>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">M<span>✦</span></span>
+      <div>
+        <strong>MKAYFX <em>BLACKBOOK X1</em></strong>
+        <small>GOLD MARKET MICROSTRUCTURE TERMINAL</small>
+      </div>
+    </div>
+    <div class="righthead">
+      <div class="clock" id="clock">--:--:-- SAST</div>
+      <span class="pill" id="status">
+        <i id="dot"></i>
+        <span id="statusText">OFFLINE</span>
+      </span>
+      <button id="connectBtn" class="primary">CONNECT</button>
+    </div>
+  </header>
+
+  <div class="ribbon">
+    <b>DATA TRUTH:</b>
+    <span>
+      LIVE Binance <strong>PAXG/USDT spot</strong> executions
+      and aggregated Level 2 depth — NOT CME futures,
+      private institutional orders, or XAU/USD spot transactions.
+    </span>
+    <span class="ribbonTail" id="sourceInfo">
+      Connecting to public market data…
+    </span>
+  </div>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">
+        <span class="livepin"></span>
+        FREE EDITION / ACTUAL EXCHANGE EVENTS
+      </div>
+      <h1>Institutional-style <span>Order Flow</span></h1>
+      <p>
+        Real trade tape · synchronized order book · liquidity heatmap
+        · footprint · cumulative delta
+      </p>
+    </div>
+
+    <div class="controls">
+      <label>
+        Large trade alert
+        <input id="threshold" type="number"
+               min="100" step="500" value="10000">
+        <span class="suffix">USDT</span>
+      </label>
+
+      <label>
+        Price bucket
+        <select id="bucket">
+          <option value="0.5">$0.50</option>
+          <option value="1" selected>$1.00</option>
+          <option value="2">$2.00</option>
+          <option value="5">$5.00</option>
+        </select>
+      </label>
+
+      <button id="pauseBtn">PAUSE HEATMAP</button>
+      <button id="notifyBtn">ENABLE ALERTS</button>
+    </div>
   </section>
-  <section class="panel" id="heatSection"><div class="head"><div><h2>▦ DUAL-LAYER LIQUIDITY HEATMAP</h2><p id="heatDesc">Current ranked liquidity zones projected across recent completed M5 candles</p></div><div class="segment" id="heatTabs"><button data-heat="liquidity" class="active">LIQUIDITY</button><button data-heat="activity">RANGE ACTIVITY</button></div></div>
-   <div class="canvas-frame heat-frame"><canvas id="heatmapCanvas"></canvas></div><div class="scale"></div>
-   <div class="scale-labels"><span>LOW INTENSITY</span><span>MODEL STRENGTH / RELATIVE</span><span>HIGH INTENSITY</span></div>
-   <p class="explain">This is a retrospective OHLC model, not Bookmap, DOM depth or historical resting orders. Horizontal bands represent modeled zone concentration; activity cells represent candle-range overlap. Zones are calculated from the current snapshot, not reconstructed point-in-time.</p>
+
+  <section class="metrics">
+    <div class="metric">
+      <span>PAXG/USDT · BINANCE</span>
+      <strong id="price">—</strong>
+      <small id="priceStatus">Waiting for executed trades</small>
+    </div>
+
+    <div class="metric">
+      <span>SPREAD · PAXG</span>
+      <strong id="spread">—</strong>
+      <small>Best ask − best bid</small>
+    </div>
+
+    <div class="metric">
+      <span>TOP-15 DEPTH IMBALANCE</span>
+      <strong id="imbalance">—</strong>
+      <small>Bid quantity share</small>
+    </div>
+
+    <div class="metric">
+      <span>CVD · SINCE CONNECTION</span>
+      <strong id="cvd">—</strong>
+      <small>Net taker-buy PAXG volume</small>
+    </div>
+
+    <div class="metric">
+      <span>LAST 60S TRADED</span>
+      <strong id="volume">—</strong>
+      <small>PAXG · received trade feed</small>
+    </div>
+
+    <div class="metric">
+      <span>XAU/USD · TWELVE DATA</span>
+      <strong id="spot">—</strong>
+      <small id="spotStatus">Optional separate spot quote</small>
+    </div>
   </section>
- </div>
- <aside class="right">
-  <section class="panel"><div class="head"><div><h2>◉ FLOW PRESSURE ENGINE</h2><p>Close-location pressure, 30-bar rolling window</p></div><span class="mini-tag" id="flowTF">M1</span></div>
-   <div class="pulse-layout"><div class="ring" id="pressureRing"><div class="ringcore"><strong id="ringNumber">—</strong><small>MODELED BUY</small></div></div><div class="pulse-numbers">
-    <div class="pair"><span>BUY PRESSURE</span><strong class="green" id="buyShare">—</strong></div>
-    <div class="pair"><span>SELL PRESSURE</span><strong class="red" id="sellShare">—</strong></div>
-    <div class="pair"><span>NET DELTA</span><strong id="netDelta">—</strong></div>
-    <div class="pair"><span>STATE</span><strong id="flowStatus">—</strong></div>
-   </div></div><p class="explain" id="flowMode">No feed. Values do not reflect real traded bid/ask volume.</p>
-  </section>
-  <section class="panel" id="levelsSection"><div class="head"><div><h2>◈ LIQUIDITY WALL RADAR</h2><p>Highest-ranked levels still ahead of indicative price</p></div><select id="rankFilter" class="refresh" aria-label="Minimum rank"><option value="70">70+</option><option value="80">80+</option><option value="90">90+</option><option value="0">ALL</option></select></div><div class="ladder" id="levelList"><div class="empty">Loading level matrix</div></div></section>
-  <section class="panel"><div class="head"><div><h2>◷ GLOBAL SESSION LEVELS</h2><p>Local market time · DST-aware calculations</p></div></div><div class="sesgrid" id="sessionList"><div class="empty">Loading sessions</div></div></section>
- </aside>
+
+  <main>
+    <section class="card chartCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">01 / MARKET STRUCTURE</div>
+          <h2>
+            PAXG Price Action
+            <span class="muted">1-minute candles</span>
+          </h2>
+        </div>
+        <span class="tag">BINANCE SPOT · PAXGUSDT</span>
+      </div>
+      <div class="canvasWrap chart">
+        <canvas id="chartCanvas"></canvas>
+      </div>
+      <div class="legend">
+        <span><i class="sq green"></i> Up candle</span>
+        <span><i class="sq red"></i> Down candle</span>
+        <span><i class="sq blue"></i> Real aggressive executions</span>
+      </div>
+    </section>
+
+    <section class="card ladderCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">02 / VISIBLE LIQUIDITY</div>
+          <h2>Order Book</h2>
+        </div>
+        <span class="tag" id="bookState">AWAITING SYNC</span>
+      </div>
+
+      <div class="bookMeta">
+        <span>ASK SIZE</span>
+        <span>PRICE (USDT)</span>
+        <span>BID SIZE</span>
+      </div>
+      <div class="bookRows" id="bookRows">
+        <div class="empty">Waiting for depth snapshot…</div>
+      </div>
+      <div class="bookBottom">
+        <span>Book sequence</span>
+        <b id="sequence">—</b>
+      </div>
+    </section>
+
+    <section class="card heatCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">03 / RESTING QUANTITY OVER TIME</div>
+          <h2>
+            Liquidity Heatmap
+            <span class="muted">Recorded locally while open</span>
+          </h2>
+        </div>
+        <div class="mini">
+          <span><i class="sq green"></i> bid-side</span>
+          <span><i class="sq red"></i> ask-side</span>
+        </div>
+      </div>
+      <div class="canvasWrap heat">
+        <canvas id="heatCanvas"></canvas>
+      </div>
+      <div class="bottomnote">
+        Each column is an observed book snapshot. Heat represents
+        visible aggregate order quantity at that price—not hidden
+        orders or institutional identity. History starts when this
+        tab opens.
+      </div>
+    </section>
+
+    <section class="card cvdCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">04 / ACTUAL EXECUTIONS</div>
+          <h2>Cumulative Volume Delta</h2>
+        </div>
+        <span class="tag">TAKER BUY − TAKER SELL</span>
+      </div>
+      <div class="canvasWrap cvdChart">
+        <canvas id="cvdCanvas"></canvas>
+      </div>
+      <div class="bottomnote">
+        Calculated only from trades received since the current
+        connection. Not an exchange-published institutional delta.
+      </div>
+    </section>
+
+    <section class="card footprintCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">05 / EXECUTED VOLUME BY PRICE</div>
+          <h2>
+            Footprint
+            <span class="muted">Recent observed trades</span>
+          </h2>
+        </div>
+        <span class="tag">SELL / PRICE / BUY</span>
+      </div>
+      <div class="footHeader">
+        <span>TAKER SELL</span>
+        <span>PRICE</span>
+        <span>TAKER BUY</span>
+      </div>
+      <div id="footRows" class="footRows">
+        <div class="empty">Waiting for trades…</div>
+      </div>
+    </section>
+
+    <section class="card tapeCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">06 / TRADE BY TRADE</div>
+          <h2>Executed Trades</h2>
+        </div>
+        <span class="tag" id="tradeCount">0 RECEIVED</span>
+      </div>
+      <div class="tapeHeader">
+        <span>TIME · SAST</span>
+        <span>PRICE</span>
+        <span>PAXG</span>
+        <span>TAKER</span>
+      </div>
+      <div id="tradeRows" class="tapeRows">
+        <div class="empty">No actual executions received yet…</div>
+      </div>
+    </section>
+
+    <section class="card eventCard">
+      <div class="panelHead">
+        <div>
+          <div class="eyebrow">07 / EXCHANGE EVENT JOURNAL</div>
+          <h2>Market Events</h2>
+        </div>
+        <button id="clearBtn" class="smallBtn">CLEAR</button>
+      </div>
+      <div id="eventRows" class="eventRows">
+        <div class="empty">Waiting for exchange events…</div>
+      </div>
+      <div class="bottomnote">
+        Quote increases/decreases are changes in displayed aggregate
+        depth; they cannot distinguish cancellations from trades
+        or identify spoofing.
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>BLACKBOOK X1 FREE · RESEARCH ONLY · NO AUTOMATED ORDERS</span>
+    <span>REAL DATA OR NO DATA — NEVER SYNTHETIC</span>
+  </footer>
 </div>
-<div class="lower" id="flowSection">
- <section class="panel"><div class="head"><div><h2>⌁ SYNTHETIC CVD + DELTA</h2><p>Rolling sum of candle-pressure estimates · resets at chart window start</p></div><span class="mini-tag">NOT REAL CVD</span></div><canvas class="flow-canvas" id="cvdCanvas"></canvas><div class="chart-caption"><span><b class="cyan">▬</b> Synthetic cumulative delta</span><span><b class="green">▮</b> Positive modeled delta &nbsp; <b class="red">▮</b> Negative modeled delta</span></div></section>
- <section class="panel"><div class="head"><div><h2>▥ CANDLE PRESSURE FOOTPRINTS</h2><p>Modeled buy/sell allocation per completed candle (not bid × ask prints)</p></div><span class="mini-tag" id="fpTF">M1</span></div><div class="footprint-grid" id="footprintList"><div class="empty">Loading footprints</div></div></section>
- <section class="panel"><div class="head"><div><h2>⟡ OHLC EVENT TAPE</h2><p>Recent completed candle-pressure changes, not time-and-sales trades</p></div></div><div class="tape" id="tapeList"><div class="empty">Loading events</div></div></section>
- <section class="panel"><div class="head"><div><h2>⟁ LIQUIDITY RAID DETECTOR</h2><p>Completed M5 swing-break / rejection patterns</p></div></div><div class="list" id="sweepList"><div class="empty">Loading sweeps</div></div><div class="head" style="margin-top:19px"><div><h2>◇ OPEN M5 FAIR VALUE GAPS</h2><p>Three-candle imbalances based on high/low separation</p></div></div><div class="list" id="fvgList"><div class="empty">Loading FVGs</div></div></section>
- <section class="panel" style="grid-column:1/-1"><div class="head"><div><h2>◉ SIX-FEED TELEMETRY</h2><p>Four Twelve Data keys · latest candle ages and request status</p></div><span class="mini-tag">API HEALTH</span></div><div class="quality" id="feedList"><div class="empty">Checking feeds</div></div></section>
-</div>
-<p class="disclaimer">MKAYFX V4 is an educational market-analysis interface. XAU/USD liquidity levels, heatmaps, pressure, synthetic CVD and footprint allocations are heuristic functions of OHLC or optional provider-reported candle volume. They cannot measure actual resting bids and asks, hidden institutional orders, aggressive trade initiators or real executed volume without a suitable order-book and trade feed. Scores are not calibrated probabilities; no BUY/SELL orders are generated automatically.</p>
-</main>
-<script>
-(()=>{'use strict';
-const $=id=>document.getElementById(id),arr=v=>Array.isArray(v)?v:[];
-const TF={'1min':'M1','5min':'M5','15min':'M15','1h':'H1','4h':'H4','1day':'D1'};
-const state={data:null,tf:'5min',count:90,shift:0,hover:-1,drag:null,heat:'liquidity'};
-const fmt=(x,p=2)=>x==null||!Number.isFinite(+x)?'—':(+x).toLocaleString('en-US',{minimumFractionDigits:p,maximumFractionDigits:p});
-const signed=(n,p=2)=>n==null||!Number.isFinite(+n)?'—':(n>=0?'+':'')+fmt(n,p);
-const escape=s=>String(s??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
-const utc=t=>Number.isFinite(+t)&&t!=null?new Date(+t).toLocaleString('en-GB',{timeZone:'UTC',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false})+' UTC':'—';
-const onlyTime=t=>Number.isFinite(+t)&&t!=null?new Date(+t).toLocaleTimeString('en-GB',{timeZone:'UTC',hour:'2-digit',minute:'2-digit'}):'—';
-const ago=s=>s==null?'unknown':s<60?`${Math.floor(s)}s`:s<3600?`${Math.floor(s/60)}m`:`${Math.floor(s/3600)}h`;
-const text=(id,v)=>$(id).textContent=String(v??'—');
-const empty=s=>`<div class="empty">${escape(s)}</div>`;
-function showError(s){text('warning',s);$('warning').classList.toggle('show',!!s)}
-function health(status){$('statusDot').className='dot '+(status==='OK'?'good':status==='ERROR'?'bad':'');text('statusText',status)}
-function updateSummary(d){
- const m=d.market||{},f=d.orderFlow||{};
- text('statPrice',fmt(d.price));text('statTime',`${utc(d.quoteTime)} · ${ago(d.ageSeconds)} ago · ${d.quoteIsCandleClose?'closed':'forming'}`);
- text('statTrend',m.trendH1||'UNKNOWN');$('statTrend').className='number '+(m.trendH1==='BULLISH'?'green':m.trendH1==='BEARISH'?'red':'');
- text('statAgreement',`${m.trendM15||'UNKNOWN'} M15 · ${m.agreement||'MIXED'}`);
- text('statZones',m.strongZones??'—');text('statATR',fmt(m.atrM5,3));
- text('statBuy',f.buyPct==null?'—':fmt(f.buyPct,1)+'%');text('statDelta',signed(f.netDelta,2));
- $('statDelta').className='number '+(f.netDelta>0?'green':f.netDelta<0?'red':'');
-}
-function updateFlow(d){
- const f=d.orderFlow||{},buy=Math.max(0,Math.min(100,f.buyPct??50));
- $('pressureRing').style.background=`conic-gradient(var(--green) 0 ${buy}%,var(--red) ${buy}% 100%)`;
- text('ringNumber',f.buyPct==null?'—':fmt(f.buyPct,0)+'%');
- text('buyShare',f.buyPct==null?'—':fmt(f.buyPct,1)+'%');text('sellShare',f.sellPct==null?'—':fmt(f.sellPct,1)+'%');
- text('netDelta',signed(f.netDelta,2));text('flowStatus',f.status||'NO DATA');
- text('flowTF',TF[f.sourceTf]||'—');text('fpTF',TF[f.sourceTf]||'—');
- text('flowMode',`${f.mode||'UNAVAILABLE'} · ${f.bars||0} completed candles. Candle pressure is inferred from price position within the bar; it is NOT actual bid/ask order flow.`);
- const fp=arr(f.footprints);
- $('footprintList').innerHTML=fp.length?fp.map(x=>{
-  const total=x.buy+x.sell,p=total?Math.round(x.buy/total*100):50;
-  return `<div class="fp"><div class="time">${escape(onlyTime(x.t))} UTC</div><div class="del ${x.delta>=0?'green':'red'}">${signed(x.delta,2)}</div><div class="time">${fmt(x.c)} close</div><div class="bar-split"><span style="width:${p}%"></span></div><div class="pct"><span>B ${p}%</span><span>S ${100-p}%</span></div></div>`;
- }).join(''):empty('No completed M1/M5 candles for pressure footprints');
- $('tapeList').innerHTML=arr(f.tape).length?f.tape.map(x=>`
-  <div class="tape-row"><span>${escape(onlyTime(x.t))} UTC</span><span class="${x.delta>=0?'green':'red'}">${x.delta>=0?'▲ UP PRESSURE':'▼ DOWN PRESSURE'}</span><b>${signed(x.delta,2)}</b></div>`).join(''):empty('No candle-pressure events');
-}
-function updateLevels(d){
- const cut=+$('rankFilter').value;
- const z=arr(d.levels).filter(x=>x.ahead&&!x.forming&&x.score>=cut).slice(0,12);
- $('levelList').innerHTML=z.length?z.map(x=>`
-  <div class="level ${x.side==='BUY_SIDE'?'buy':''}"><div class="topline"><span class="money ${x.side==='BUY_SIDE'?'gold':'cyan'}">${fmt(x.price)}</span><span class="mini-tag">${fmt(x.score,0)} / 99</span></div>
-  <div class="kind">${escape(x.kind||'SWING LEVEL')}</div><div class="details"><span>${x.side==='BUY_SIDE'?'ABOVE HIGHS':'BELOW LOWS'}</span><span>${fmt(x.distanceATR)} ATR · ${fmt(x.confluences,0)} touchpoints</span></div>
-  <div class="progress"><i style="width:${Math.min(100,Math.max(0,x.score))}%"></i></div></div>`).join(''):empty('No confirmed, ahead-of-price zones pass the selected rank');
-}
-function updateSessions(d){
- $('sessionList').innerHTML=arr(d.sessions).length?d.sessions.map(x=>`
- <div class="session"><div><strong>${escape(x.name)}</strong><br><small>${escape(x.status)} · ${fmt(x.bars,0)} completed M5 bars</small><br><small>Prior H/L ${fmt(x.previousHigh)} / ${fmt(x.previousLow)}</small></div>
- <div class="prices"><span class="gold">${fmt(x.high)}</span><br><span class="cyan">${fmt(x.low)}</span></div></div>`).join(''):empty('Session levels unavailable');
-}
-function updateEvents(d){
- $('sweepList').innerHTML=arr(d.sweeps).length?d.sweeps.slice(0,7).map(x=>`
- <div class="event"><div><strong>${escape(x.result)}</strong><br><small>${escape(utc(x.t))} · ${x.side==='BUY_SIDE'?'High raid':'Low raid'}</small></div><div class="event-right"><strong class="gold">${fmt(x.price)}</strong><br><small>Strength ${fmt(x.strength,0)}/99</small></div></div>`).join(''):empty('No recent confirmed sweep pattern');
- $('fvgList').innerHTML=arr(d.fvgs).length?d.fvgs.slice(-6).reverse().map(x=>`
- <div class="event"><div><strong class="${x.side==='BULLISH'?'green':'red'}">${escape(x.side)} FVG</strong><br><small>${escape(x.status)} · ${escape(utc(x.t))}</small></div><div class="event-right"><strong>${fmt(x.low)} – ${fmt(x.high)}</strong></div></div>`).join(''):empty('No open M5 gap');
-}
-function updateQuality(d){
- $('feedList').innerHTML=Object.entries(TF).map(([tf,name])=>{
-  const x=d.dataQuality?.[tf]||{},bad=!x.count,warning=x.delayed||x.stale;
-  return `<div class="feed"><strong><span class="${bad?'red':warning?'gold':'green'}">●</span> ${name} · ${bad?'FAILED':warning?'DELAYED':'READY'}</strong>
-  <p>${fmt(x.count||0,0)} candles · ${ago(x.ageSeconds)} old</p>${x.warning?`<p class="red">${escape(x.warning)}</p>`:''}</div>`;
- }).join('');
-}
-function sizeCanvas(canvas){
- const rect=canvas.getBoundingClientRect(),ratio=Math.min(2,window.devicePixelRatio||1);
- if(!rect.width||!rect.height)return null;
- const w=Math.max(1,Math.round(rect.width*ratio)),h=Math.max(1,Math.round(rect.height*ratio));
- if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}
- const c=canvas.getContext('2d');c.setTransform(ratio,0,0,ratio,0,0);
- return {c,W:rect.width,H:rect.height};
-}
-const grid=(c,L,T,R,B,W,H)=>{c.strokeStyle='#1c3043';c.lineWidth=1;for(let i=0;i<6;i++){
- const y=T+(H-T-B)*i/5;c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();}};
-let chartLayout=null;
-function drawChart(){
- const v=sizeCanvas($('chart'));if(!v)return;const {c,W,H}=v,d=state.data;
- c.clearRect(0,0,W,H);c.fillStyle='#081321';c.fillRect(0,0,W,H);
- const bars=arr(d?.candles?.[state.tf]),L=12,R=77,T=22,B=32,PW=W-L-R,PH=H-T-B;
- if(!bars.length){c.fillStyle='#8ea8bb';c.font='13px system-ui';c.fillText('No candles on this timeframe',20,H/2);chartLayout=null;return}
- state.count=Math.max(14,Math.min(180,state.count));const n=Math.min(state.count,bars.length);
- state.shift=Math.max(0,Math.min(state.shift,bars.length-n));
- const end=bars.length-state.shift,start=end-n,show=bars.slice(start,end);
- let low=Math.min(...show.map(x=>x.l)),high=Math.max(...show.map(x=>x.h));
- const padding=Math.max((high-low)*.12,.1);low-=padding;high+=padding;
- const Y=p=>T+(high-p)/(high-low)*PH,X=i=>L+(i+.5)*PW/n;
- chartLayout={bars,n,start,end,L,PW,PH,X,Y};
- grid(c,L,T,R,B,W,H);c.font='10px system-ui';c.fillStyle='#809eb3';
- for(let k=0;k<=5;k++)c.fillText(fmt(high-(high-low)*k/5),W-R+5,T+PH*k/5+3);
- for(let i=0;i<n;i+=Math.max(1,Math.floor(n/5)))c.fillText(onlyTime(show[i].t),X(i)-14,H-11);
- if($('toggleFVG').checked&&state.tf==='5min'){
-  arr(d?.fvgs).filter(x=>x.low<=high&&x.high>=low).forEach(x=>{
-   const y1=Y(Math.min(high,x.high)),y2=Y(Math.max(low,x.low));
-   c.fillStyle=x.side==='BULLISH'?'#39d6af1b':'#ff728b1b';c.fillRect(L,Math.min(y1,y2),PW,Math.abs(y2-y1));
-  });
- }
- if($('toggleZones').checked)arr(d?.levels).filter(x=>x.ahead&&!x.forming&&x.score>=70&&x.price>=low&&x.price<=high).slice(0,10).forEach(z=>{
-  const y=Y(z.price);c.strokeStyle=z.side==='BUY_SIDE'?'#f6c36bb0':'#38d4e8b0';c.setLineDash([5,4]);
-  c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();c.setLineDash([]);
-  c.fillStyle=z.side==='BUY_SIDE'?'#f6c36b':'#38d4e8';c.fillText(String(z.score),L+3,y-4);
- });
- const bw=Math.max(1,Math.min(14,PW/n*.64));
- show.forEach((b,i)=>{const x=X(i);c.strokeStyle=c.fillStyle=b.c>=b.o?'#42dcad':'#ff728b';
-  c.beginPath();c.moveTo(x,Y(b.h));c.lineTo(x,Y(b.l));c.stroke();
-  c.fillRect(x-bw/2,Math.min(Y(b.o),Y(b.c)),bw,Math.max(1,Math.abs(Y(b.c)-Y(b.o))));
- });
- if($('togglePrice').checked&&Number.isFinite(+d?.price)&&d.price>=low&&d.price<=high){
-  const y=Y(d.price);c.setLineDash([3,4]);c.strokeStyle='#f6c36b';c.beginPath();c.moveTo(L,y);c.lineTo(W-R,y);c.stroke();c.setLineDash([]);
-  c.fillStyle='#b88639';c.fillRect(W-R,y-10,R-2,20);c.fillStyle='#081321';c.font='bold 10px system-ui';c.fillText(fmt(d.price),W-R+4,y+4);
- }
- if(state.hover>=start&&state.hover<end){
-  const x=X(state.hover-start),b=bars[state.hover];c.strokeStyle='#e6eef077';c.beginPath();c.moveTo(x,T);c.lineTo(x,H-B);c.stroke();
-  c.fillStyle='#132a3df0';c.fillRect(9,2,W-18,22);c.fillStyle='#c6e0ef';c.font='10px system-ui';
-  c.fillText(`${onlyTime(b.t)} O ${fmt(b.o)} H ${fmt(b.h)} L ${fmt(b.l)} C ${fmt(b.c)}`,14,17,W-30);
- }
- text('chartInfo',`${TF[state.tf]} · ${n} visible · ${bars.length} loaded · drag to pan · UTC`);
-}
-function drawHeat(){
- const v=sizeCanvas($('heatmapCanvas'));if(!v)return;const {c,W,H}=v,h=state.data?.heatmap;
- c.clearRect(0,0,W,H);c.fillStyle='#081321';c.fillRect(0,0,W,H);
- const a=arr(h?.[state.heat]),prices=arr(h?.prices),times=arr(h?.times),closes=arr(h?.close);
- const R=73,L=12,T=14,B=27,w=W-L-R,ht=H-T-B;
- if(!a.length||!times.length){c.fillStyle='#8aa4b6';c.fillText('Waiting for completed M5 data',20,H/2);return}
- const rows=a.length,cols=times.length,cw=w/cols,ch=ht/rows;
- for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
-  const value=a[r]?.[k]||0;
-  if(value<=0)continue;
-  const hue=value>72?8+30*(100-value)/28:value>36?41+139*(72-value)/36:194;
-  c.fillStyle=`hsla(${hue},85%,${value>72?62:52}%,${Math.min(.94,.10+value/105)})`;
-  c.fillRect(L+k*cw,T+r*ch,Math.ceil(cw+.2),Math.ceil(ch+.2));
- }
- const top=prices[0],bottom=prices.at(-1),min=Math.min(bottom,top),max=Math.max(bottom,top);
- if(closes.length>1&&max>min){
-  c.beginPath();closes.forEach((p,i)=>{
-   const x=L+(i+.5)*cw,y=T+(max-p)/(max-min)*ht;
-   if(i===0)c.moveTo(x,y);else c.lineTo(x,y);
-  });c.strokeStyle='#e7f1ffe6';c.lineWidth=1.5;c.stroke();
- }
- c.fillStyle='#9bb9c9';c.font='10px system-ui';c.fillText(fmt(prices[0]),W-R+5,T+5);
- c.fillText(fmt(prices[Math.floor(rows/2)]),W-R+5,T+ht/2);
- c.fillText(fmt(prices.at(-1)),W-R+5,T+ht);
- [0,Math.floor((cols-1)/2),cols-1].forEach((k,i)=>c.fillText(onlyTime(times[k]),L+(i/2)*Math.max(0,w-32),H-8));
-}
-function drawCVD(){
- const v=sizeCanvas($('cvdCanvas'));if(!v)return;const {c,W,H}=v;
- c.clearRect(0,0,W,H);c.fillStyle='#081321';c.fillRect(0,0,W,H);
- const s=arr(state.data?.orderFlow?.series);if(!s.length){c.fillStyle='#90a7bb';c.fillText('Waiting for completed candles',14,H/2);return}
- const L=15,R=38,T=13,B=25,w=W-L-R,topH=(H-T-B)*.67,botY=T+topH+15,botH=(H-T-B)*.25;
- const values=s.map(x=>x.cvd),min=Math.min(...values,0),max=Math.max(...values,0),span=max-min||1;
- const Y=x=>T+topH-(x-min)/span*topH,X=i=>L+(i+.5)/s.length*w;
- c.strokeStyle='#244156';c.beginPath();c.moveTo(L,Y(0));c.lineTo(W-R,Y(0));c.stroke();
- c.beginPath();s.forEach((x,i)=>{if(i===0)c.moveTo(X(i),Y(x.cvd));else c.lineTo(X(i),Y(x.cvd))});
- c.strokeStyle='#38d4e8';c.lineWidth=2;c.stroke();
- const maxD=Math.max(.0001,...s.map(x=>Math.abs(x.delta)));const bw=Math.max(1,w/s.length*.72);
- s.forEach((x,i)=>{const height=Math.abs(x.delta)/maxD*botH/2;
-  c.fillStyle=x.delta>=0?'#42dcad':'#ff728b';c.fillRect(X(i)-bw/2,botY+botH/2-(x.delta>=0?height:0),bw,height);
- });
- c.font='10px system-ui';c.fillStyle='#849fb4';c.fillText(fmt(max,1),W-R+2,17);c.fillText(fmt(min,1),W-R+2,T+topH);
- c.fillText(onlyTime(s[0].t),L,H-6);c.fillText(onlyTime(s.at(-1).t),W-R-37,H-6);
-}
-const chart=$('chart');
-chart.addEventListener('pointerdown',e=>{
- if(!chartLayout)return;state.drag={x:e.clientX,shift:state.shift};
- chart.setPointerCapture(e.pointerId);
-});
-chart.addEventListener('pointermove',e=>{
- if(!chartLayout)return;
- const rect=chart.getBoundingClientRect(),x=e.clientX-rect.left;
- if(state.drag){const steps=Math.round((e.clientX-state.drag.x)/chartLayout.PW*chartLayout.n);
-  state.shift=Math.max(0,Math.min(chartLayout.bars.length-chartLayout.n,state.drag.shift+steps));
- }
- state.hover=chartLayout.start+Math.max(0,Math.min(chartLayout.n-1,Math.floor((x-chartLayout.L)/chartLayout.PW*chartLayout.n)));
- drawChart();
-});
-chart.addEventListener('pointerup',()=>{state.drag=null});
-chart.addEventListener('pointercancel',()=>{state.drag=null});
-chart.addEventListener('pointerleave',()=>{if(!state.drag){state.hover=-1;drawChart()}});
-chart.addEventListener('wheel',e=>{e.preventDefault();state.count=Math.max(14,Math.min(180,state.count+(e.deltaY>0?10:-10)));drawChart()},{passive:false});
-function repaint(){drawChart();drawHeat();drawCVD()}
-$('tfTabs').addEventListener('click',e=>{
- const b=e.target.closest('[data-tf]');if(!b)return;state.tf=b.dataset.tf;state.count=90;state.shift=0;state.hover=-1;
- document.querySelectorAll('#tfTabs button').forEach(x=>x.classList.toggle('active',x===b));drawChart();
-});
-$('heatTabs').addEventListener('click',e=>{
- const b=e.target.closest('[data-heat]');if(!b)return;state.heat=b.dataset.heat;
- document.querySelectorAll('#heatTabs button').forEach(x=>x.classList.toggle('active',x===b));
- text('heatDesc',state.heat==='liquidity'?'Current ranked liquidity concentrations across recent completed M5 candles':'Normalized historical OHLC candle-range overlap (not executed order flow)');drawHeat();
-});
-$('zoomPlus').onclick=()=>{state.count=Math.max(14,state.count-15);drawChart()};
-$('zoomMinus').onclick=()=>{state.count=Math.min(180,state.count+15);drawChart()};
-$('reset').onclick=()=>{state.count=90;state.shift=0;state.hover=-1;drawChart()};
-$('rankFilter').onchange=()=>{if(state.data)updateLevels(state.data)};
-['toggleZones','toggleFVG','togglePrice'].forEach(id=>$(id).onchange=drawChart);
-async function refresh(){
- $('refresh').disabled=true;text('refresh','↻ Loading');health('LOADING');
- const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),19000);
- try{
-  const r=await fetch('/api/xau',{headers:{accept:'application/json'},signal:ctrl.signal,cache:'no-store'});
-  const d=await r.json();
-  if(!r.ok||!d.ok)throw Error([d.error,...Object.entries(d.feedErrors||{}).map(([k,v])=>`${k}: ${v}`)].filter(Boolean).join(' | '));
-  state.data=d;updateSummary(d);updateFlow(d);updateLevels(d);updateSessions(d);updateEvents(d);updateQuality(d);repaint();
-  const feed=Object.values(d.dataQuality||{}),problem=feed.filter(x=>!x.count||x.delayed||x.stale);
-  const msg=problem.length?`Partial/delayed market feed: ${problem.length} of ${feed.length} timeframes need attention. Review SIX-FEED TELEMETRY; model output may be incomplete.`:'';
-  showError(msg);health(problem.length?'PARTIAL':'OK');
- }catch(e){showError('Update failed: '+e.message+(state.data?' · Showing last successful snapshot.':' · Check Vercel logs and environment variables.'));health('ERROR')}
- finally{clearTimeout(timer);$('refresh').disabled=false;text('refresh','↻ Refresh')}
-}
-$('refresh').onclick=refresh;
-if(window.ResizeObserver)new ResizeObserver(repaint).observe(document.querySelector('.workspace'));
-else window.addEventListener('resize',repaint);
-refresh();setInterval(()=>{if(!document.hidden)refresh()},60000);
-})();
-</script>
 </body>
 </html>
