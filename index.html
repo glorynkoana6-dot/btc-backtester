@@ -1,1222 +1,2972 @@
-
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#070d18">
-  <title>MKAYFX | Institutional Liquidity Radar</title>
-  <style>
-    :root{
-      color-scheme:dark;
-      --bg:#070d18;
-      --panel:#0d1929;
-      --panel2:#101f31;
-      --border:#22384b;
-      --text:#e9f2ff;
-      --muted:#86a0b5;
-      --gold:#f5bd63;
-      --cyan:#32cfe4;
-      --green:#39d6af;
-      --red:#ff7489;
-      --violet:#a987ff;
-    }
-    *{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;
-      background:radial-gradient(ellipse at 50% -20%,#143148 0%,transparent 42%),var(--bg);
-      color:var(--text);
-      font:15px/1.48 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    }
-    button,select{font:inherit}
-    button{cursor:pointer}
-    button:focus-visible,select:focus-visible{
-      outline:2px solid var(--cyan);
-      outline-offset:2px;
-    }
-    .topbar{
-      border-bottom:1px solid var(--border);
-      background:#080f1bcc;
-      backdrop-filter:blur(14px);
-      position:sticky;
-      top:0;
-      z-index:10;
-    }
-    .topin{
-      max-width:1420px;
-      margin:auto;
-      padding:19px 26px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:15px;
-    }
-    .logo{
-      font-size:24px;
-      font-weight:850;
-      letter-spacing:-.9px;
-      white-space:nowrap;
-    }
-    .logo span{color:var(--gold)}
-    .logo small{
-      font-size:13px;
-      letter-spacing:4px;
-      font-weight:500;
-      margin-left:12px;
-      color:var(--gold);
-    }
-    .topactions{display:flex;align-items:center;gap:13px}
-    .light{
-      width:10px;
-      height:10px;
-      border-radius:50%;
-      background:var(--red);
-      box-shadow:0 0 20px #ff748966;
-    }
-    .light.live{
-      background:var(--green);
-      box-shadow:0 0 20px #39d6af66;
-    }
-    .light.wait{background:var(--gold)}
-    .btn{
-      color:#b9cedf;
-      border:1px solid var(--border);
-      background:#101e30;
-      border-radius:13px;
-      padding:10px 15px;
-      transition:.15s;
-    }
-    .btn:hover{border-color:var(--cyan);color:white}
-    .btn:disabled{opacity:.55;cursor:wait}
-    main{
-      max-width:1420px;
-      margin:auto;
-      padding:26px 26px 55px;
-    }
-    .eyebrow{
-      color:var(--cyan);
-      font-size:12px;
-      font-weight:800;
-      letter-spacing:5px;
-      margin:0 0 12px;
-    }
-    .hero h1{
-      font-size:clamp(30px,5vw,50px);
-      letter-spacing:-2px;
-      line-height:1.15;
-      margin:0;
-    }
-    .hero h1 span{color:var(--gold)}
-    .sub{
-      color:var(--muted);
-      font-size:17px;
-      margin:17px 0 22px;
-    }
-    .pills{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-bottom:22px;
-    }
-    .pill{
-      border:1px solid #2d718a;
-      background:#0b2738;
-      color:#57d2e7;
-      border-radius:50px;
-      padding:8px 17px;
-      font-size:12px;
-      font-weight:800;
-      letter-spacing:2px;
-    }
-    .pill.amber{
-      border-color:#855e2c;
-      color:var(--gold);
-      background:#241c15;
-    }
-    .alert{
-      display:none;
-      padding:14px 18px;
-      border:1px solid #926335;
-      border-radius:15px;
-      background:#352316;
-      color:#ffcf94;
-      margin:0 0 20px;
-      overflow-wrap:anywhere;
-    }
-    .alert.visible{display:block}
-    .cards{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:15px;
-      margin:22px 0;
-    }
-    .card,.panel{
-      background:linear-gradient(150deg,#0e2233,#0c1524 78%);
-      border:1px solid var(--border);
-      border-radius:20px;
-      box-shadow:inset 0 1px #ffffff08;
-    }
-    .card{
-      padding:21px 21px 17px;
-      min-height:160px;
-      position:relative;
-      overflow:hidden;
-    }
-    .card:after{
-      content:"";
-      position:absolute;
-      bottom:0;
-      left:21px;
-      width:90px;
-      height:3px;
-      background:var(--cyan);
-    }
-    .card.gold:after{background:var(--gold)}
-    .card.purple:after{background:var(--violet)}
-    .card.green:after{background:var(--green)}
-    .key{
-      font-size:11px;
-      letter-spacing:2px;
-      color:#96acbf;
-      font-weight:800;
-    }
-    .value{
-      font-size:clamp(26px,3vw,40px);
-      font-weight:780;
-      letter-spacing:-1px;
-      margin:17px 0 4px;
-      font-variant-numeric:tabular-nums;
-    }
-    .goldtext{color:var(--gold)}
-    .cyantext{color:var(--cyan)}
-    .greentext{color:var(--green)}
-    .redtext{color:var(--red)}
-    .card-note{
-      font-size:12px;
-      color:var(--muted);
-      word-break:break-word;
-    }
-    .panel{padding:22px;margin-bottom:18px}
-    .panelhead{
-      display:flex;
-      justify-content:space-between;
-      gap:16px;
-      align-items:flex-start;
-      margin-bottom:18px;
-    }
-    .panel h2{
-      margin:0;
-      font-size:19px;
-      letter-spacing:2px;
-      font-weight:850;
-    }
-    .panelnote{
-      font-size:13px;
-      color:var(--muted);
-      margin-top:5px;
-    }
-    .symbol{
-      background:#45351f;
-      border:1px solid #87602d;
-      color:var(--gold);
-      padding:9px 13px;
-      border-radius:10px;
-      font-weight:800;
-      letter-spacing:1px;
-      white-space:nowrap;
-    }
-    .toolbar{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin:17px 0;
-    }
-    .tabs{
-      display:flex;
-      flex-wrap:wrap;
-      gap:4px;
-      padding:4px;
-      background:#071321;
-      border:1px solid var(--border);
-      border-radius:13px;
-    }
-    .tabs button{
-      background:transparent;
-      color:var(--muted);
-      padding:10px 14px;
-      border:0;
-      border-radius:9px;
-      font-weight:750;
-    }
-    .tabs button.active{
-      background:#193b53;
-      color:#6fe2f5;
-    }
-    .tools{display:flex;gap:8px}
-    .tools button{
-      width:42px;
-      height:40px;
-      padding:0;
-      font-size:23px;
-    }
-    .toggleline{
-      display:flex;
-      gap:14px;
-      align-items:center;
-      flex-wrap:wrap;
-      color:#a7bbc9;
-      font-size:12px;
-      letter-spacing:1px;
-      margin-bottom:10px;
-    }
-    .toggleline label{
-      display:flex;
-      gap:7px;
-      align-items:center;
-      cursor:pointer;
-    }
-    .toggleline input{accent-color:var(--cyan)}
-    .chartwrap{
-      border:1px solid #1e3a4b;
-      border-radius:15px;
-      overflow:hidden;
-      background:#081322;
-      position:relative;
-    }
-    .chartwrap canvas{
-      width:100%;
-      height:460px;
-      display:block;
-      touch-action:pan-y;
-      cursor:crosshair;
-    }
-    .charttag{
-      position:absolute;
-      left:14px;
-      top:12px;
-      pointer-events:none;
-      font-size:11px;
-      color:#8bafc6;
-      background:#0b1a2aca;
-      border:1px solid #224258;
-      padding:5px 8px;
-      border-radius:6px;
-    }
-    .chartfoot{
-      display:flex;
-      flex-wrap:wrap;
-      justify-content:space-between;
-      gap:8px;
-      margin-top:9px;
-      font-size:12px;
-      color:var(--muted);
-    }
-    .twocol{
-      display:grid;
-      grid-template-columns:1.08fr .92fr;
-      gap:18px;
-    }
-    .sessiongrid{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:12px;
-    }
-    .session{
-      padding:15px;
-      background:#0a1828;
-      border:1px solid #21394d;
-      border-radius:13px;
-    }
-    .session .sname{
-      font-weight:800;
-      letter-spacing:1.3px;
-      font-size:12px;
-    }
-    .session .state{
-      font-size:11px;
-      color:var(--gold);
-      margin:6px 0 12px;
-    }
-    .session .number{
-      font-size:18px;
-      font-weight:750;
-      font-variant-numeric:tabular-nums;
-    }
-    .session small{color:var(--muted)}
-    .list{
-      display:flex;
-      flex-direction:column;
-      gap:9px;
-    }
-    .item{
-      border:1px solid #24394a;
-      background:#0a1827;
-      border-radius:13px;
-      padding:13px 15px;
-    }
-    .itemtop{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .item strong{font-size:13px}
-    .item small{font-size:11px;color:var(--muted)}
-    .item .meta{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      margin-top:7px;
-      font-size:11px;
-      color:#9db6c6;
-    }
-    .tag{
-      display:inline-block;
-      border:1px solid #29485a;
-      border-radius:30px;
-      padding:3px 8px;
-      color:var(--cyan);
-      font-size:11px;
-      font-weight:750;
-      white-space:nowrap;
-    }
-    .tag.sell{color:var(--red);border-color:#713747}
-    .tag.gold{color:var(--gold);border-color:#76572b}
-    .tag.purple{color:#bba9fc;border-color:#514270}
-    .meter{
-      height:4px;
-      background:#193044;
-      border-radius:8px;
-      margin-top:11px;
-      overflow:hidden;
-    }
-    .meter>i{
-      display:block;
-      height:100%;
-      background:linear-gradient(90deg,var(--cyan),var(--gold));
-      border-radius:8px;
-    }
-    .filter{
-      background:#0c1b2b;
-      color:#cbddea;
-      border:1px solid var(--border);
-      border-radius:9px;
-      padding:8px;
-    }
-    .heatmap{
-      display:grid;
-      grid-template-columns:repeat(26,1fr);
-      gap:3px;
-      margin:8px 0 4px;
-    }
-    .heatcell{
-      height:62px;
-      border-radius:4px;
-      background:var(--cyan);
-      align-self:end;
-    }
-    .heatlabels{
-      display:flex;
-      justify-content:space-between;
-      font-size:11px;
-      color:var(--muted);
-    }
-    .quality{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:10px;
-    }
-    .feed{
-      background:#0a1828;
-      border:1px solid #21394d;
-      padding:12px;
-      border-radius:11px;
-    }
-    .feed strong{font-size:12px}
-    .feed p{
-      margin:5px 0 0;
-      font-size:11px;
-      color:var(--muted);
-      overflow-wrap:anywhere;
-    }
-    .dot{
-      display:inline-block;
-      width:7px;
-      height:7px;
-      border-radius:50%;
-      background:var(--green);
-      margin-right:7px;
-    }
-    .dot.bad{background:var(--red)}
-    .dot.warn{background:var(--gold)}
-    .empty{
-      color:#879daf;
-      padding:18px;
-      text-align:center;
-      background:#0b1929;
-      border:1px dashed #2b4154;
-      border-radius:12px;
-      font-size:13px;
-    }
-    .fineprint{
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.7;
-      margin:24px 2px 0;
-    }
-    @media(max-width:1060px){
-      .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .twocol{grid-template-columns:1fr}
-    }
-    @media(max-width:680px){
-      .topin{padding:14px 16px}
-      .logo{font-size:21px}
-      .logo small{font-size:11px;letter-spacing:2px;margin-left:4px}
-      .topactions{gap:9px}
-      .btn{padding:8px 11px}
-      main{padding:24px 13px 35px}
-      .eyebrow{letter-spacing:3px}
-      .sub{font-size:15px}
-      .cards{gap:10px}
-      .card{padding:17px 14px;min-height:144px}
-      .card:after{left:14px}
-      .key{font-size:10px;letter-spacing:1.4px}
-      .value{font-size:27px;margin:18px 0 6px}
-      .panel{padding:15px}
-      .panel h2{font-size:15px;letter-spacing:1.6px}
-      .chartwrap canvas{height:340px}
-      .tabs button{padding:8px 10px}
-      .tools button{width:35px;height:36px}
-      .sessiongrid{grid-template-columns:1fr}
-      .session{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        align-items:center;
-        gap:4px;
-      }
-      .session .state{margin:0}
-      .quality{grid-template-columns:repeat(2,1fr)}
-      .heatcell{height:48px}
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b14">
+
+<title>MKAYFX | Institutional Liquidity Radar</title>
+
+<style>
+:root{
+  --bg:#070b14;
+  --panel:#0b1321;
+  --panel2:#0d1929;
+  --edge:#1b3042;
+  --txt:#e8effb;
+  --mute:#71859a;
+  --gold:#efbd67;
+  --cyan:#29cee5;
+  --blue:#377bff;
+  --violet:#a46cff;
+  --green:#36dba8;
+  --red:#fb7185;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--txt);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:13px;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  background:radial-gradient(
+    ellipse at 45% -25%,
+    #13355444,
+    transparent 58%
+  );
+  z-index:-1;
+}
+
+button,input{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+}
+
+button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible{
+  outline:2px solid var(--cyan);
+  outline-offset:3px;
+}
+
+.muted{color:var(--mute)}
+.small{font-size:10px}
+.tiny{font-size:9px}
+.up{color:var(--green)}
+.down{color:var(--red)}
+.gold{color:var(--gold)}
+.cyan{color:var(--cyan)}
+
+.mono{
+  font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+.shell{
+  max-width:1880px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:66px minmax(0,1fr);
+  min-height:100vh;
+}
+
+/* SIDE RAIL */
+
+.rail{
+  position:sticky;
+  top:0;
+  height:100vh;
+  border-right:1px solid #152333;
+  background:#080e18;
+  display:flex;
+  align-items:center;
+  flex-direction:column;
+  gap:16px;
+  padding:22px 8px;
+  z-index:2;
+}
+
+.brandmark{
+  height:40px;
+  width:40px;
+  border:1px solid #b1843c;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  color:var(--gold);
+  font-weight:950;
+  font-size:20px;
+  background:linear-gradient(140deg,#40321b,#090f1a);
+}
+
+.rail a{
+  width:42px;
+  height:42px;
+  border:1px solid transparent;
+  display:grid;
+  place-items:center;
+  color:#8291a5;
+  font-size:20px;
+  border-radius:11px;
+  text-decoration:none;
+}
+
+.rail a:hover,
+.rail a.active{
+  border-color:#284e64;
+  background:#112a3a;
+  color:var(--cyan);
+}
+
+.rail .bottom{
+  margin-top:auto;
+  font-size:18px;
+  color:var(--mute);
+}
+
+.workspace{
+  min-width:0;
+}
+
+/* TOP BAR */
+
+.topbar{
+  height:70px;
+  border-bottom:1px solid var(--edge);
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:0 25px;
+  background:#0a101cc7;
+}
+
+.wordmark{
+  font-size:19px;
+  font-weight:850;
+  letter-spacing:-.8px;
+  white-space:nowrap;
+}
+
+.wordmark span{
+  color:var(--gold);
+}
+
+.top-divider{
+  height:26px;
+  width:1px;
+  background:var(--edge);
+}
+
+.top-path{
+  color:#718ba0;
+  font-size:11px;
+  letter-spacing:1.1px;
+}
+
+.top-right{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.signal-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--mute);
+  box-shadow:0 0 14px currentColor;
+  display:inline-block;
+}
+
+.signal-dot.good{
+  background:var(--green);
+  color:var(--green);
+}
+
+.signal-dot.bad{
+  background:var(--red);
+  color:var(--red);
+}
+
+.status-label{
+  color:#abc0d1;
+  font-size:11px;
+}
+
+.outline-btn,
+.icon-btn{
+  border:1px solid var(--edge);
+  color:#ccdae8;
+  background:#0e1a2a;
+  border-radius:8px;
+  padding:9px 12px;
+}
+
+.outline-btn:hover,
+.icon-btn:hover{
+  border-color:#4d92a3;
+  color:white;
+}
+
+/* PAGE */
+
+.content{
+  padding:24px;
+  max-width:1800px;
+  margin:0 auto;
+}
+
+.page-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:20px;
+  margin-bottom:22px;
+}
+
+.eyebrow{
+  font-weight:800;
+  font-size:10px;
+  color:var(--cyan);
+  letter-spacing:2.4px;
+}
+
+.page-heading h1{
+  font-size:clamp(21px,2.2vw,31px);
+  margin:6px 0 8px;
+  font-weight:780;
+  letter-spacing:-.7px;
+}
+
+.subtitle{
+  font-size:12px;
+  color:#879caf;
+  line-height:1.6;
+}
+
+.heading-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.pill{
+  border:1px solid #324555;
+  background:#102131;
+  border-radius:99px;
+  padding:8px 11px;
+  font-weight:700;
+  font-size:10px;
+  white-space:nowrap;
+  letter-spacing:.7px;
+}
+
+.pill.blue{
+  color:#63d9eb;
+  border-color:#245569;
+}
+
+.pill.gold{
+  color:var(--gold);
+  border-color:#775b35;
+}
+
+/* METRICS */
+
+.metrics{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.card,
+.panel{
+  background:linear-gradient(
+    135deg,
+    #0d1929 0%,
+    #0a1220 90%
+  );
+  border:1px solid var(--edge);
+  border-radius:12px;
+  min-width:0;
+}
+
+.metric{
+  padding:17px 17px 15px;
+  position:relative;
+  overflow:hidden;
+}
+
+.metric:after{
+  content:"";
+  position:absolute;
+  right:-18px;
+  top:-25px;
+  width:95px;
+  height:95px;
+  border-radius:50%;
+  background:radial-gradient(
+    circle,
+    #286f8328,
+    transparent 67%
+  );
+  pointer-events:none;
+}
+
+.metric-name{
+  color:#899eb3;
+  letter-spacing:1.2px;
+  font-size:10px;
+  font-weight:800;
+}
+
+.metric-value{
+  font-size:clamp(19px,2vw,28px);
+  letter-spacing:-.8px;
+  font-weight:750;
+  margin:10px 0 8px;
+  white-space:nowrap;
+}
+
+.metric-foot{
+  color:#7e94a9;
+  font-size:10px;
+  line-height:1.5;
+}
+
+.metric-line{
+  height:2px;
+  position:absolute;
+  bottom:0;
+  left:16px;
+  right:50%;
+  background:linear-gradient(
+    90deg,
+    var(--cyan),
+    transparent
+  );
+}
+
+.metric:nth-child(2) .metric-line{
+  background:linear-gradient(90deg,var(--gold),transparent);
+}
+
+.metric:nth-child(3) .metric-line{
+  background:linear-gradient(90deg,var(--violet),transparent);
+}
+
+.metric:nth-child(4) .metric-line{
+  background:linear-gradient(90deg,var(--green),transparent);
+}
+
+/* TERMINAL */
+
+.terminal{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 306px;
+  gap:14px;
+  align-items:start;
+}
+
+.chartpanel{
+  overflow:hidden;
+}
+
+.panel-head{
+  padding:16px 17px;
+  border-bottom:1px solid var(--edge);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+
+.panel-title{
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:1.15px;
+}
+
+.panel-sub{
+  color:#648aa1;
+  font-size:10px;
+  margin-top:5px;
+}
+
+.chart-head{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  flex-wrap:wrap;
+}
+
+.asset-tag{
+  background:#392d1b;
+  color:var(--gold);
+  border:1px solid #705231;
+  padding:7px 9px;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:850;
+}
+
+.tf-buttons{
+  display:flex;
+  gap:3px;
+  padding:3px;
+  background:#07101b;
+  border:1px solid #182c3e;
+  border-radius:9px;
+}
+
+.tf-buttons button{
+  color:#7790a6;
+  background:transparent;
+  border:0;
+  border-radius:6px;
+  padding:7px 9px;
+  font-weight:800;
+  font-size:10px;
+}
+
+.tf-buttons button.selected{
+  background:#173b53;
+  color:#69ecff;
+}
+
+.charttools{
+  display:flex;
+  gap:6px;
+}
+
+.charttools button{
+  font-size:16px;
+  min-width:30px;
+  padding:6px;
+}
+
+/* CHART */
+
+.visual{
+  position:relative;
+  background:
+    radial-gradient(
+      ellipse at 50% 35%,
+      #132b4020,
+      transparent 65%
+    ),
+    #070f1b;
+  min-height:480px;
+  overflow:hidden;
+  touch-action:pan-y;
+}
+
+.visual canvas{
+  display:block;
+  width:100%;
+  height:480px;
+  touch-action:pan-y;
+}
+
+.chart-legend{
+  position:absolute;
+  left:14px;
+  top:12px;
+  display:flex;
+  gap:7px;
+  flex-wrap:wrap;
+  pointer-events:none;
+}
+
+.legend-label{
+  font-size:9px;
+  color:#b2d0dd;
+  border:1px solid #284154;
+  background:#07111bd9;
+  border-radius:5px;
+  padding:5px 7px;
+  letter-spacing:.5px;
+}
+
+.legend-label:before{
+  content:"";
+  display:inline-block;
+  width:6px;
+  height:6px;
+  margin-right:5px;
+  border-radius:50%;
+  background:var(--cyan);
+}
+
+.legend-label.violet:before{
+  background:var(--violet);
+}
+
+.legend-label.gold:before{
+  background:var(--gold);
+}
+
+.hoverbox{
+  display:none;
+  position:absolute;
+  z-index:4;
+  top:44px;
+  left:14px;
+  padding:10px 12px;
+  background:#0a1b2aef;
+  border:1px solid #3b7187;
+  border-radius:8px;
+  pointer-events:none;
+  line-height:1.9;
+  font-size:10px;
+}
+
+.hoverbox.on{
+  display:block;
+}
+
+/* LAYER CONTROLS */
+
+.layerbar{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+  padding:12px 16px;
+  border-top:1px solid var(--edge);
+  background:#0a1522;
+}
+
+.layerbar label{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:#a3b9ca;
+  font-size:10px;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+.layerbar input[type=checkbox]{
+  accent-color:#16c7dc;
+}
+
+.layerbar .intensity{
+  margin-left:auto;
+}
+
+.layerbar input[type=range]{
+  accent-color:var(--cyan);
+  width:88px;
+  vertical-align:middle;
+}
+
+.notice{
+  font-size:10px;
+  padding:12px 16px;
+  background:#0c1623;
+  color:#88a3b6;
+  border-top:1px solid var(--edge);
+  line-height:1.65;
+}
+
+.notice strong{
+  color:var(--gold);
+}
+
+/* RIGHT PANELS */
+
+.sidecol{
+  display:grid;
+  gap:14px;
+}
+
+.panel-body{
+  padding:15px;
+}
+
+.level-row{
+  display:grid;
+  grid-template-columns:1fr 76px 44px;
+  align-items:center;
+  gap:5px;
+  padding:9px 0;
+  border-bottom:1px solid #1a2a3b;
+}
+
+.level-row:last-child{
+  border-bottom:0;
+}
+
+.level-row .name{
+  font-size:10px;
+  color:#cedcea;
+  font-weight:650;
+}
+
+.level-row .type{
+  color:#718ca0;
+  font-size:9px;
+  margin-top:4px;
+}
+
+.level-row .price{
+  color:#cbd7e5;
+  text-align:right;
+  font-family:ui-monospace,monospace;
+  font-size:11px;
+}
+
+.level-row .rank{
+  text-align:right;
+  color:var(--gold);
+  font-size:10px;
+  font-weight:800;
+}
+
+.row-marker{
+  display:inline-block;
+  width:6px;
+  height:6px;
+  background:var(--violet);
+  margin-right:5px;
+  border-radius:50%;
+}
+
+.row-marker.buy{
+  background:var(--gold);
+}
+
+/* DENSITY PROFILE */
+
+.depth-row{
+  display:grid;
+  grid-template-columns:64px 1fr 35px;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.depth-price{
+  color:#a3c0d6;
+  font-family:ui-monospace,monospace;
+  font-size:10px;
+}
+
+.depth-track{
+  height:7px;
+  border-radius:2px;
+  background:#172334;
+  overflow:hidden;
+}
+
+.depth-fill{
+  height:100%;
+  background:linear-gradient(
+    90deg,#283a88,#2e9dff
+  );
+  border-radius:2px;
+}
+
+.depth-fill.buy{
+  background:linear-gradient(
+    90deg,#a4601f,#f8bc52
+  );
+}
+
+.depth-pct{
+  color:#8ca6b9;
+  text-align:right;
+  font-size:10px;
+}
+
+/* SESSION PANELS */
+
+.session-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+
+.session-box{
+  background:#0b1d2b;
+  border:1px solid #22384b;
+  border-radius:8px;
+  padding:10px 8px;
+}
+
+.session-box.active{
+  border-color:#538397;
+  background:#0f3040;
+}
+
+.session-box .name{
+  font-size:9px;
+  letter-spacing:1px;
+  color:#afcce1;
+  font-weight:800;
+}
+
+.session-box .time{
+  margin:5px 0 7px;
+  color:#658ba5;
+  font-size:9px;
+}
+
+.session-box .range{
+  font-size:10px;
+  color:#e4bf75;
+  line-height:1.7;
+  font-family:ui-monospace,monospace;
+}
+
+.session-box .state{
+  font-size:9px;
+  color:var(--green);
+  margin-top:5px;
+}
+
+.bottom-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  margin-top:14px;
+}
+
+/* EVENTS */
+
+.event-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 0;
+  border-top:1px solid #1b2a3a;
+}
+
+.event-row:first-child{
+  border-top:0;
+}
+
+.event-name{
+  font-size:11px;
+  font-weight:700;
+}
+
+.event-info{
+  font-size:10px;
+  color:#8aa4b9;
+  margin-top:3px;
+}
+
+.event-badge{
+  font-size:10px;
+  color:var(--gold);
+  white-space:nowrap;
+}
+
+/* HEALTH */
+
+.health-line{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:11px;
+  padding:6px 0;
+  color:#9ab1c5;
+  gap:8px;
+}
+
+.health-line b{
+  color:#dcebf7;
+}
+
+.warning{
+  border:1px solid #704d30;
+  background:#302012;
+  padding:12px 14px;
+  border-radius:8px;
+  color:#ffd8a8;
+  font-size:11px;
+  line-height:1.7;
+  margin-bottom:15px;
+  display:none;
+}
+
+.warning.show{
+  display:block;
+}
+
+.footer{
+  margin:18px 0;
+  color:#69839a;
+  font-size:10px;
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.empty{
+  color:#8198ad;
+  font-size:11px;
+  line-height:1.7;
+}
+
+.skeleton{
+  height:9px;
+  border-radius:4px;
+  background:linear-gradient(
+    90deg,
+    #1b2f43,
+    #30495a,
+    #1b2f43
+  );
+  background-size:200% 100%;
+  animation:pulse 1.8s infinite;
+}
+
+@keyframes pulse{
+  to{
+    background-position:-200% 0;
+  }
+}
+
+/* DESKTOP */
+
+@media(min-width:1500px){
+  .terminal{
+    grid-template-columns:minmax(0,1fr) 340px;
+  }
+
+  .visual,
+  .visual canvas{
+    height:540px;
+    min-height:540px;
+  }
+}
+
+/* TABLET */
+
+@media(max-width:1150px){
+  .terminal{
+    grid-template-columns:minmax(0,1fr);
+  }
+
+  .sidecol{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .metrics{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+
+/* MOBILE */
+
+@media(max-width:700px){
+  .shell{
+    display:block;
+  }
+
+  .rail{
+    display:none;
+  }
+
+  .topbar{
+    height:62px;
+    padding:0 14px;
+    gap:9px;
+  }
+
+  .wordmark{
+    font-size:17px;
+  }
+
+  .top-path,
+  .top-divider,
+  .top-right .status-label,
+  .utc-label{
+    display:none;
+  }
+
+  .top-right{
+    gap:8px;
+  }
+
+  .content{
+    padding:15px 10px;
+  }
+
+  .page-heading{
+    margin-bottom:17px;
+    display:block;
+  }
+
+  .page-heading h1{
+    font-size:23px;
+  }
+
+  .heading-actions{
+    justify-content:flex-start;
+    margin-top:12px;
+  }
+
+  .metrics{
+    gap:8px;
+    margin-bottom:10px;
+  }
+
+  .metric{
+    padding:13px 11px;
+  }
+
+  .metric-name{
+    font-size:9px;
+    letter-spacing:.7px;
+  }
+
+  .metric-value{
+    font-size:21px;
+  }
+
+  .metric-foot{
+    font-size:9px;
+  }
+
+  .terminal,
+  .bottom-grid,
+  .sidecol{
+    gap:10px;
+  }
+
+  .panel-head{
+    padding:12px;
+  }
+
+  .chart-head{
+    width:100%;
+    justify-content:space-between;
+  }
+
+  .visual,
+  .visual canvas{
+    height:400px;
+    min-height:400px;
+  }
+
+  .layerbar{
+    gap:12px;
+  }
+
+  .layerbar .intensity{
+    margin-left:0;
+  }
+
+  .sidecol,
+  .bottom-grid{
+    grid-template-columns:1fr;
+  }
+
+  .session-grid{
+    gap:5px;
+  }
+
+  .session-box{
+    padding:10px 7px;
+  }
+
+  .top-right .outline-btn{
+    padding:8px;
+  }
+
+  .notice{
+    font-size:9px;
+  }
+}
+</style>
 </head>
+
 <body>
-  <header class="topbar">
-    <div class="topin">
-      <div class="logo">MKAY<span>FX</span> <small>RADAR</small></div>
-      <div class="topactions">
-        <span id="light" class="light wait" title="Loading"></span>
-        <button id="refresh" class="btn">↻ Refresh</button>
+
+<div class="shell">
+
+<nav class="rail" aria-label="Dashboard sections">
+  <div class="brandmark">M</div>
+  <a class="active" href="#terminal" title="Market terminal">◈</a>
+  <a href="#liquidity" title="Liquidity map">▥</a>
+  <a href="#sessions" title="Session overview">◷</a>
+  <a href="#events" title="Recent sweeps">⚡</a>
+  <a href="#health" title="Data health">☷</a>
+  <div class="bottom">⚙</div>
+</nav>
+
+<div class="workspace">
+
+<header class="topbar">
+
+  <div class="wordmark">
+    MKAY<span>FX</span>
+    <span class="muted" style="font-size:11px;margin-left:7px;font-weight:500;letter-spacing:1px">
+      RADAR
+    </span>
+  </div>
+
+  <div class="top-divider"></div>
+
+  <div class="top-path">
+    INTELLIGENCE / INSTITUTIONAL LIQUIDITY
+  </div>
+
+  <div class="top-right">
+    <span id="utc" class="mono small muted utc-label">
+      --:--:-- UTC
+    </span>
+
+    <span class="signal-dot" id="liveDot"></span>
+
+    <span class="status-label" id="feedState">
+      CONNECTING
+    </span>
+
+    <button class="outline-btn" id="refreshBtn">
+      ↻ Refresh
+    </button>
+  </div>
+
+</header>
+
+<main class="content">
+
+<!-- PAGE HEADER -->
+
+<div class="page-heading">
+
+  <div>
+    <div class="eyebrow">
+      LIQUIDITY INTELLIGENCE SYSTEM // V1.0
+    </div>
+
+    <h1>
+      Institutional Liquidity
+      <span class="gold">Matrix</span>
+    </h1>
+
+    <div class="subtitle">
+      XAU / USD · Gold spot · Multi-timeframe market structure
+      · OHLC-derived liquidity model
+    </div>
+  </div>
+
+  <div class="heading-actions">
+    <span class="pill blue">
+      ◉ FOUR-KEY DATA ENGINE
+    </span>
+
+    <span class="pill gold">
+      ● ANALYTICAL MODE
+    </span>
+  </div>
+
+</div>
+
+<div class="warning" id="warning"></div>
+
+<!-- METRICS -->
+
+<section class="metrics">
+
+  <div class="card metric">
+    <div class="metric-name">
+      XAUUSD / INDICATIVE PRICE
+    </div>
+
+    <div class="metric-value gold mono" id="price">
+      —
+    </div>
+
+    <div class="metric-foot" id="quoteTime">
+      Waiting for market data
+    </div>
+
+    <span class="metric-line"></span>
+  </div>
+
+  <div class="card metric">
+    <div class="metric-name">
+      H1 / MARKET CONTEXT
+    </div>
+
+    <div class="metric-value" id="trend">
+      —
+    </div>
+
+    <div class="metric-foot" id="alignment">
+      EMA 20 / 50 confirmation
+    </div>
+
+    <span class="metric-line"></span>
+  </div>
+
+  <div class="card metric">
+    <div class="metric-name">
+      HIGH-RANK LIQUIDITY
+    </div>
+
+    <div class="metric-value mono" id="strongZones">
+      —
+    </div>
+
+    <div class="metric-foot">
+      Model rank ≥ 70 / 99
+    </div>
+
+    <span class="metric-line"></span>
+  </div>
+
+  <div class="card metric">
+    <div class="metric-name">
+      M5 VOLATILITY / ATR 14
+    </div>
+
+    <div class="metric-value mono cyan" id="atr">
+      —
+    </div>
+
+    <div class="metric-foot" id="signalState">
+      Decision: waiting for data
+    </div>
+
+    <span class="metric-line"></span>
+  </div>
+
+</section>
+
+<!-- MAIN TERMINAL -->
+
+<section class="terminal" id="terminal">
+
+<div class="panel chartpanel">
+
+  <div class="panel-head">
+
+    <div class="chart-head">
+      <span class="asset-tag">XAUUSD</span>
+
+      <div>
+        <div class="panel-title">
+          LIQUIDITY HEATMAP + CANDLE STRUCTURE
+        </div>
+
+        <div class="panel-sub">
+          Price action / estimated resting liquidity / UTC sessions
+        </div>
       </div>
     </div>
-  </header>
-  <main>
-    <section class="hero">
-      <p class="eyebrow">LIQUIDITY INTELLIGENCE SYSTEM // V3.0</p>
-      <h1>Institutional Liquidity <span>Matrix</span></h1>
-      <p class="sub">XAU / USD · Gold spot · Multi-timeframe market structure · OHLC-derived liquidity model</p>
-      <div class="pills">
-        <span class="pill">◉ FOUR-KEY DATA ENGINE</span>
-        <span class="pill amber">● ANALYTICAL MODE</span>
+
+    <div class="chart-head">
+
+      <div class="tf-buttons">
+        <button data-tf="1min">M1</button>
+        <button data-tf="5min" class="selected">M5</button>
+        <button data-tf="15min">M15</button>
+        <button data-tf="1h">H1</button>
+        <button data-tf="4h">H4</button>
       </div>
-      <div id="alert" role="alert" class="alert"></div>
-    </section>
-    <section class="cards" aria-label="Market summary">
-      <div class="card gold">
-        <div class="key">XAUUSD / INDICATIVE PRICE</div>
-        <div id="price" class="value goldtext">—</div>
-        <div id="priceNote" class="card-note">Waiting for quote</div>
+
+      <div class="charttools">
+        <button class="icon-btn" id="zoomIn">+</button>
+        <button class="icon-btn" id="zoomOut">−</button>
+        <button class="icon-btn" id="resetView">⌖</button>
       </div>
-      <div class="card">
-        <div class="key">H1 / MARKET CONTEXT</div>
-        <div id="trend" class="value">—</div>
-        <div id="trendNote" class="card-note">EMA 20 / 50 confirmation</div>
-      </div>
-      <div class="card purple">
-        <div class="key">HIGH-RANK LIQUIDITY</div>
-        <div id="zones" class="value">—</div>
-        <div class="card-note">Confirmed, ahead of price · score ≥ 70 / 99</div>
-      </div>
-      <div class="card green">
-        <div class="key">M5 VOLATILITY / ATR 14</div>
-        <div id="atr" class="value cyantext">—</div>
-        <div id="atrNote" class="card-note">Waiting for completed M5 candles</div>
-      </div>
-    </section>
-    <section class="panel">
-      <div class="panelhead">
-        <div>
-          <h2>LIQUIDITY HEATMAP + CANDLE STRUCTURE</h2>
-          <div class="panelnote">Candles / modeled resting-liquidity proxies / UTC timestamps</div>
+
+    </div>
+  </div>
+
+  <!-- INTERACTIVE CHART -->
+
+  <div class="visual" id="visual">
+
+    <canvas
+      id="chart"
+      aria-label="XAUUSD candlestick chart with estimated liquidity heatmap"
+    ></canvas>
+
+    <div class="chart-legend">
+      <span class="legend-label gold">
+        OHLC
+      </span>
+
+      <span class="legend-label">
+        BUY-SIDE SUPPORT PROXY
+      </span>
+
+      <span class="legend-label violet">
+        SELL-SIDE RESISTANCE PROXY
+      </span>
+    </div>
+
+    <div class="hoverbox mono" id="hover"></div>
+
+  </div>
+
+  <!-- DISPLAY CONTROLS -->
+
+  <div class="layerbar">
+
+    <label>
+      <input type="checkbox" checked data-layer="heat">
+      Heatmap
+    </label>
+
+    <label>
+      <input type="checkbox" checked data-layer="levels">
+      Liquidity levels
+    </label>
+
+    <label>
+      <input type="checkbox" checked data-layer="sessions">
+      Sessions
+    </label>
+
+    <label>
+      <input type="checkbox" data-layer="gaps">
+      Fair value gaps
+    </label>
+
+    <label class="intensity">
+      Intensity
+      <input
+        type="range"
+        id="intensity"
+        min="20"
+        max="100"
+        value="73"
+      >
+    </label>
+
+  </div>
+
+  <div class="notice">
+    <strong>MODEL DISCLOSURE:</strong>
+    Heat bands are estimates derived from historical OHLC
+    swing clustering. They are not broker order-book depth,
+    stop orders, true institutional positions, or verified
+    trade volume. Prices may lag. Levels do not constitute
+    trade signals.
+  </div>
+
+</div>
+
+<!-- RIGHT PANELS -->
+
+<div class="sidecol">
+
+  <!-- LEVELS -->
+
+  <div class="panel" id="liquidity">
+
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">
+          PRIORITY LIQUIDITY CLUSTERS
         </div>
-        <span class="symbol">XAUUSD</span>
-      </div>
-      <div class="toolbar">
-        <div id="tabs" class="tabs" aria-label="Chart timeframe">
-          <button data-tf="1min">M1</button>
-          <button data-tf="5min" class="active">M5</button>
-          <button data-tf="15min">M15</button>
-          <button data-tf="1h">H1</button>
-          <button data-tf="4h">H4</button>
-          <button data-tf="1day">D1</button>
-        </div>
-        <div class="tools">
-          <button id="zoomIn" class="btn" title="Zoom in">+</button>
-          <button id="zoomOut" class="btn" title="Zoom out">−</button>
-          <button id="reset" class="btn" title="Reset chart">◎</button>
+
+        <div class="panel-sub">
+          Ranked price-level hypotheses
         </div>
       </div>
-      <div class="toggleline">
-        <label><input id="showLevels" type="checkbox" checked> High-rank liquidity zones</label>
-        <label><input id="showFvg" type="checkbox" checked> M5 FVGs</label>
-        <label><input id="showPrice" type="checkbox" checked> Price marker</label>
+
+      <span class="pill gold">
+        TOP 6
+      </span>
+    </div>
+
+    <div class="panel-body">
+      <div id="levels">
+        <div class="skeleton"></div>
       </div>
-      <div class="chartwrap">
-        <canvas id="chart" aria-label="XAUUSD price candle chart"></canvas>
-        <div id="chartLabel" class="charttag">M5 · no data</div>
+    </div>
+
+  </div>
+
+  <!-- HEAT DENSITY -->
+
+  <div class="panel">
+
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">
+          LIQUIDITY DENSITY PROFILE
+        </div>
+
+        <div class="panel-sub">
+          Estimated strength · Not actual DOM
+        </div>
       </div>
-      <div class="chartfoot">
-        <span>
-          <span class="greentext">●</span> Bull candle &nbsp;
-          <span class="redtext">●</span> Bear candle &nbsp;
-          <span class="goldtext">●</span> Buy-side highs &nbsp;
-          <span class="cyantext">●</span> Sell-side lows
+
+      <span class="cyan">◫</span>
+    </div>
+
+    <div class="panel-body" id="depth">
+      <div class="skeleton"></div>
+    </div>
+
+  </div>
+
+  <!-- BIAS MATRIX -->
+
+  <div class="panel">
+
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">
+          MARKET BIAS MATRIX
+        </div>
+
+        <div class="panel-sub">
+          Confluence observations
+        </div>
+      </div>
+
+      <span class="pill blue">
+        M15 + H1
+      </span>
+    </div>
+
+    <div class="panel-body" id="matrix">
+      <div class="empty">
+        Waiting for market data…
+      </div>
+    </div>
+
+  </div>
+
+  <!-- API HEALTH -->
+
+  <div class="panel" id="health">
+
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">
+          DATA ENGINE HEALTH
+        </div>
+
+        <div class="panel-sub">
+          Four Twelve Data server-side keys
+        </div>
+      </div>
+
+      <span class="cyan">◆</span>
+    </div>
+
+    <div class="panel-body" id="healthBody">
+      <div class="empty">
+        Connecting to data engine…
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+</section>
+
+<!-- BOTTOM PANELS -->
+
+<section class="bottom-grid">
+
+  <div class="panel" id="sessions">
+
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">
+          GLOBAL TRADING SESSIONS
+        </div>
+
+        <div class="panel-sub">
+          Reference hours in UTC; DST may shift actual market activity
+        </div>
+      </div>
+
+      <span class="pill blue">
+        SESSION RADAR
+      </span>
+    </div>
+
+    <div class="panel-body">
+      <div class="session-grid" id="sessionGrid">
+        <span class="empty">
+          Loading sessions…
         </span>
-        <span>Drag horizontally to pan · +/- to zoom</span>
       </div>
-    </section>
-    <section class="twocol">
+    </div>
+
+  </div>
+
+  <div class="panel" id="events">
+
+    <div class="panel-head">
+
       <div>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>HIGH-CONFLUENCE LIQUIDITY</h2>
-              <div class="panelnote">Ranked heuristic estimates, not confirmed stop orders</div>
-            </div>
-            <select class="filter" id="minScore" aria-label="Minimum liquidity score">
-              <option value="70">70+ rank</option>
-              <option value="80">80+ rank</option>
-              <option value="90">90+ rank</option>
-              <option value="0">All ranks</option>
-            </select>
-          </div>
-          <div id="levels" class="list">
-            <div class="empty">Waiting for liquidity model</div>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>PRICE-DENSITY HEATMAP</h2>
-              <div class="panelnote">Weighted concentration of modeled levels ±12 M5 ATR</div>
-            </div>
-          </div>
-          <div id="density" class="heatmap"></div>
-          <div id="densityLabels" class="heatlabels">
-            <span>—</span><span>—</span><span>—</span>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>RECENT LIQUIDITY SWEEPS</h2>
-              <div class="panelnote">Completed M5 breakout-and-rejection patterns</div>
-            </div>
-          </div>
-          <div id="sweeps" class="list">
-            <div class="empty">No data</div>
-          </div>
-        </section>
+        <div class="panel-title">
+          SWEEP / REJECTION OBSERVATIONS
+        </div>
+
+        <div class="panel-sub">
+          Historical price-action events; not entry alerts
+        </div>
       </div>
-      <div>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>GLOBAL SESSION MATRIX</h2>
-              <div class="panelnote">Local exchange-market clocks · daylight saving aware</div>
-            </div>
-          </div>
-          <div class="sessiongrid" id="sessions">
-            <div class="empty">Waiting for session data</div>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>MARKET STRUCTURE</h2>
-              <div class="panelnote">Confirmed M15 and H1 directional context</div>
-            </div>
-          </div>
-          <div class="list" id="structure">
-            <div class="empty">Waiting for market structure</div>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>UNFILLED M5 IMBALANCES</h2>
-              <div class="panelnote">Three-candle fair value gaps, OHLC-derived</div>
-            </div>
-          </div>
-          <div id="fvgs" class="list">
-            <div class="empty">No data</div>
-          </div>
-        </section>
-        <section class="panel">
-          <div class="panelhead">
-            <div>
-              <h2>DATA ENGINE HEALTH</h2>
-              <div class="panelnote">Six timeframe feeds across four configured keys</div>
-            </div>
-          </div>
-          <div id="quality" class="quality">
-            <div class="empty">Checking API feeds</div>
-          </div>
-        </section>
+
+      <button class="outline-btn small" id="exportBtn">
+        Export CSV
+      </button>
+
+    </div>
+
+    <div class="panel-body" id="eventList">
+      <div class="empty">
+        Waiting for confirmed M5 bars…
       </div>
-    </section>
-    <p class="fineprint">
-      MKAYFX Radar is a candle-derived analytical research interface.
-      It does not access live order-book liquidity or reveal institutional orders.
-      Level scores and sweep strengths are heuristic rankings, not actual trade probabilities.
-      Twelve Data candles can be delayed depending on the subscription and market conditions.
-      This is not an automatic trading or execution system.
-    </p>
-  </main>
+    </div>
+
+  </div>
+
+</section>
+
+<div class="footer">
+  <span>
+    © MKAYFX Radar · Quantitative analysis, not financial advice
+  </span>
+
+  <span id="refreshStamp">
+    Not connected · Auto refresh every 60 seconds
+  </span>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- DASHBOARD JAVASCRIPT -->
+
 <script>
-(()=>{
-  'use strict';
-  const $=id=>document.getElementById(id);
-  const state={
-    data:null,tf:'5min',zoom:90,shift:0,
-    hover:-1,drag:null,lastError:''
-  };
-  const TF={
-    '1min':'M1','5min':'M5','15min':'M15',
-    '1h':'H1','4h':'H4','1day':'D1'
-  };
-  const esc=s=>String(s??'—').replace(/[&<>"']/g,c=>({
-    '&':'&amp;','<':'&lt;','>':'&gt;',
-    '"':'&quot;',"'":'&#39;'
-  }[c]));
-  const fmt=(n,d=2)=>n!=null&&n!==''&&Number.isFinite(Number(n))
-    ?Number(n).toLocaleString('en-US',{
-      minimumFractionDigits:d,maximumFractionDigits:d
-    }):'—';
-  const utc=t=>Number.isFinite(Number(t))
-    ?new Date(+t).toLocaleString('en-GB',{
-      timeZone:'UTC',day:'2-digit',month:'short',
-      hour:'2-digit',minute:'2-digit',hour12:false
-    })+' UTC':'—';
-  const age=s=>!Number.isFinite(Number(s))?'unknown age'
-    :s<60?`${Math.max(0,Math.floor(s))}s old`
-    :s<3600?`${Math.floor(s/60)}m old`
-    :`${Math.floor(s/3600)}h old`;
-  const arr=x=>Array.isArray(x)?x:[];
-  const show=(id,text)=>$(id).textContent=text;
+"use strict";
 
-  function alertMessage(msg){
-    $('alert').textContent=msg||'';
-    $('alert').classList.toggle('visible',!!msg);
-  }
-  function setHealth(status){
-    $('light').className='light '+status;
-  }
-  function empty(text){
-    return `<div class="empty">${esc(text)}</div>`;
-  }
-  function tagSide(side){
-    return side==='BUY_SIDE'
-      ?'<span class="tag gold">BUY-SIDE / ABOVE HIGHS</span>'
-      :'<span class="tag sell">SELL-SIDE / BELOW LOWS</span>';
-  }
-  function renderSummary(d){
-    const m=d.market||{};
-    show('price',fmt(d.price));
-    show('priceNote',
-      `${utc(d.quoteTime)} · ${TF[d.quoteTimeframe]||d.quoteTimeframe||'?'} · ${age(d.ageSeconds)} · ${d.quoteIsCandleClose?'closed':'forming'} candle`
+/* ====================================================
+   DOM HELPERS
+==================================================== */
+
+const $ = id =>
+  document.getElementById(id);
+
+const money = n =>
+  Number.isFinite(+n)
+    ? Number(n).toLocaleString("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    : "—";
+
+const esc = s =>
+  String(s ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[c])
+  );
+
+const clock = t =>
+  t
+    ? new Date(t)
+        .toLocaleString("en-GB", {
+          timeZone: "UTC",
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit"
+        })
+        .replace(",", "") + " UTC"
+    : "—";
+
+/* ====================================================
+   APPLICATION STATE
+==================================================== */
+
+const state = {
+  data: null,
+  tf: "5min",
+  count: 90,
+  offset: 0,
+  loading: false,
+  hover: -1,
+  dragX: null,
+
+  layers: {
+    heat: true,
+    levels: true,
+    sessions: true,
+    gaps: false
+  },
+
+  intensity: 0.73
+};
+
+const canvas = $("chart");
+const ctx = canvas.getContext("2d");
+
+/* ====================================================
+   STATUS
+==================================================== */
+
+function status(message, kind) {
+  $("liveDot").className =
+    "signal-dot " + (kind || "");
+
+  $("feedState").textContent =
+    message;
+}
+
+function message(s) {
+  $("warning").textContent = s;
+
+  $("warning").classList.toggle(
+    "show",
+    !!s
+  );
+}
+
+function showNum(id, val) {
+  $(id).textContent = val;
+}
+
+function sideOf(level) {
+  return level.side === "BUY_SIDE"
+    ? "buy"
+    : "sell";
+}
+
+/* ====================================================
+   RENDER ANALYTICS
+==================================================== */
+
+function renderData(d) {
+  state.data = d;
+
+  showNum(
+    "price",
+    money(d.price)
+  );
+
+  showNum(
+    "quoteTime",
+    d.quoteSource +
+    " · " +
+    clock(d.quoteTime)
+  );
+
+  const tr = d.analytics.trend;
+
+  showNum(
+    "trend",
+    tr.h1
+  );
+
+  $("trend").className =
+    "metric-value " +
+    (
+      tr.h1 === "BULLISH"
+        ? "up"
+        : tr.h1 === "BEARISH"
+          ? "down"
+          : "muted"
     );
-    show('trend',m.trendH1||'UNKNOWN');
-    $('trend').className='value '+(
-      m.trendH1==='BULLISH'?'greentext':
-      m.trendH1==='BEARISH'?'redtext':''
-    );
-    show('trendNote',
-      `M15 ${m.trendM15||'UNKNOWN'} · ${m.agreement||'MIXED'} · bias ${m.bias||'NEUTRAL'}`
-    );
-    show('zones',String(m.strongZones??'—'));
-    show('atr',m.atrM5==null?'—':fmt(m.atrM5,3));
-    show('atrNote',m.atrM5==null
-      ?'M5 feed unavailable'
-      :'ATR calculated on completed M5 candles');
-  }
-  function renderSessions(d){
-    const ses=arr(d.sessions);
-    $('sessions').innerHTML=ses.length?ses.map(s=>`
-      <div class="session">
+
+  showNum(
+    "alignment",
+    "M15 " +
+    tr.m15 +
+    " / " +
+    tr.agreement
+  );
+
+  showNum(
+    "strongZones",
+    d.analytics.strongZones
+  );
+
+  showNum(
+    "atr",
+    money(d.analytics.atr5)
+  );
+
+  showNum(
+    "signalState",
+    d.analytics.stance
+  );
+
+  /* PRIORITY LEVELS */
+
+  const top = d.levels.slice(0, 6);
+
+  $("levels").innerHTML =
+    top.map(l => `
+      <div class="level-row">
         <div>
-          <div class="sname">${esc(s.id.replaceAll('_',' '))}</div>
-          <div class="state">● ${esc(s.status)}</div>
-          <small>${esc(s.display)}</small>
+          <div class="name">
+            <i class="row-marker ${sideOf(l)}"></i>
+            ${esc(l.kind)}
+          </div>
+          <div class="type">
+            ${l.touches} confluences · ${esc(l.status)}
+          </div>
         </div>
-        <div>
-          <small>SESSION HIGH / LOW</small>
-          <div class="number goldtext">${fmt(s.high)}</div>
-          <div class="number cyantext">${fmt(s.low)}</div>
-          <small>Previous: ${fmt(s.previousHigh)} / ${fmt(s.previousLow)}</small>
+
+        <div class="price">
+          ${money(l.price)}
+        </div>
+
+        <div class="rank">
+          ${l.score}/99
         </div>
       </div>
-    `).join(''):empty('No completed M5 session candles');
-  }
-  function renderLevels(d){
-    const cutoff=+$('minScore').value;
-    const levels=arr(d.levels)
-      .filter(z=>z.score>=cutoff&&z.ahead&&!z.forming)
-      .slice(0,14);
-    $('levels').innerHTML=levels.length?levels.map(z=>`
-      <div class="item">
-        <div class="itemtop">
-          <div>
-            <strong>${esc(z.kind)}</strong>
-            <div style="font-size:23px;font-weight:800;margin-top:3px">
-              ${fmt(z.price)}
+    `).join("") ||
+    '<div class="empty">No qualified clusters from available history.</div>';
+
+  /* ESTIMATED DEPTH */
+
+  const relative = d.levels
+    .filter(
+      l =>
+        Math.abs(
+          l.price - d.price
+        ) <
+        Math.max(
+          50,
+          d.analytics.atr5 * 16
+        )
+    )
+    .sort(
+      (a, b) =>
+        Math.abs(a.price - d.price) -
+        Math.abs(b.price - d.price)
+    )
+    .slice(0, 7);
+
+  $("depth").innerHTML =
+    relative.map(l => `
+      <div class="depth-row">
+
+        <span class="depth-price">
+          ${money(l.price)}
+        </span>
+
+        <div class="depth-track">
+          <div
+            class="depth-fill ${sideOf(l)}"
+            style="width:${l.score}%"
+          ></div>
+        </div>
+
+        <span class="depth-pct">
+          ${l.score}
+        </span>
+
+      </div>
+    `).join("") +
+    `
+      <p class="muted tiny">
+        Bar length = heuristic cluster rank,
+        not buy/sell quantities or real volume.
+      </p>
+    `;
+
+  /* MARKET BIAS */
+
+  $("matrix").innerHTML = `
+    <div class="health-line">
+      <span>H1 regime</span>
+      <b class="${
+        tr.h1 === "BULLISH"
+          ? "up"
+          : tr.h1 === "BEARISH"
+            ? "down"
+            : ""
+      }">
+        ${tr.h1}
+      </b>
+    </div>
+
+    <div class="health-line">
+      <span>M15 regime</span>
+      <b>${tr.m15}</b>
+    </div>
+
+    <div class="health-line">
+      <span>Timeframe agreement</span>
+      <b>${tr.agreement}</b>
+    </div>
+
+    <div class="health-line">
+      <span>Nearest sell-side level</span>
+      <b>
+        ${
+          d.analytics.upper
+            ? money(d.analytics.upper.price)
+            : "—"
+        }
+      </b>
+    </div>
+
+    <div class="health-line">
+      <span>Nearest buy-side level</span>
+      <b>
+        ${
+          d.analytics.lower
+            ? money(d.analytics.lower.price)
+            : "—"
+        }
+      </b>
+    </div>
+
+    <div class="health-line">
+      <span>Indicative stance</span>
+      <b>${esc(d.analytics.stance)}</b>
+    </div>
+  `;
+
+  /* DATA HEALTH */
+
+  const warned = Object.keys(
+    d.quality.warnings
+  );
+
+  $("healthBody").innerHTML = `
+    <div class="health-line">
+      <span>Available feeds</span>
+      <b>
+        ${d.quality.dataFrames}
+        /
+        ${d.quality.totalFrames}
+      </b>
+    </div>
+
+    <div class="health-line">
+      <span>Estimated feed lag</span>
+      <b>
+        ${Math.round(d.feedAgeSeconds / 60)} min
+      </b>
+    </div>
+
+    <div class="health-line">
+      <span>Last M5 confirmation</span>
+      <b>
+        ${clock(d.asOfClosedCandle)}
+      </b>
+    </div>
+
+    <div class="health-line">
+      <span>Model source</span>
+      <b>OHLC only</b>
+    </div>
+
+    <div class="health-line">
+      <span>Failed or stale frames</span>
+      <b>${warned.length}</b>
+    </div>
+
+    ${
+      warned.length
+        ? `
+          <p class="down tiny">
+            ${
+              warned.map(
+                k =>
+                  esc(k) +
+                  ": " +
+                  esc(d.quality.warnings[k])
+              ).join("<br>")
+            }
+          </p>
+        `
+        : ""
+    }
+  `;
+
+  /* SESSIONS */
+
+  $("sessionGrid").innerHTML =
+    d.sessions.map(s => `
+      <div class="session-box ${
+        s.status === "ACTIVE"
+          ? "active"
+          : ""
+      }">
+
+        <div class="name">
+          ${s.label}
+        </div>
+
+        <div class="time">
+          ${String(s.start).padStart(2, "0")}:00
+          –
+          ${String(s.end).padStart(2, "0")}:00
+        </div>
+
+        <div class="range">
+          H ${
+            s.high === null
+              ? "—"
+              : money(s.high)
+          }
+          <br>
+          L ${
+            s.low === null
+              ? "—"
+              : money(s.low)
+          }
+        </div>
+
+        <div class="state">
+          ${s.status}
+        </div>
+      </div>
+    `).join("");
+
+  /* SWEEP EVENTS */
+
+  $("eventList").innerHTML =
+    d.events.length
+      ? d.events.map(e => `
+          <div class="event-row">
+            <div>
+              <div class="event-name">
+                ${esc(e.label)}
+              </div>
+
+              <div class="event-info">
+                ${clock(e.time)}
+                ·
+                ${money(e.price)}
+              </div>
+            </div>
+
+            <div class="event-badge">
+              RANK ${e.score}
             </div>
           </div>
-          <div style="text-align:right">
-            <strong class="goldtext">${fmt(z.score,0)}/99</strong>
-            <br>
-            <small>${esc(z.status)}</small>
-          </div>
+        `).join("")
+      : `
+        <div class="empty">
+          No matching sweep-and-rejection observations
+          in the recent M5 sample.
+          This does not imply a trade.
         </div>
-        <div class="meta">
-          ${tagSide(z.side)}
-          <span class="tag purple">${fmt(z.distanceATR)} ATR</span>
-          <span class="tag">${fmt(z.confluences,0)} CONFLUENCES</span>
-        </div>
-        <div class="meter">
-          <i style="width:${Math.max(0,Math.min(100,z.score))}%"></i>
-        </div>
-      </div>
-    `).join(''):empty(
-      'No confirmed, unpassed levels match this score threshold.'
+      `;
+
+  /* FEED FRESHNESS */
+
+  const fresher =
+    d.feedAgeSeconds < 240;
+
+  status(
+    fresher
+      ? "FEED RECENT"
+      : "FEED DELAYED",
+
+    fresher
+      ? "good"
+      : "bad"
+  );
+
+  $("refreshStamp").textContent =
+    `Updated ${clock(d.generatedAt)} · Auto refresh 60s`;
+
+  const issue =
+    Object.keys(d.quality.warnings).length
+      ? `Some timeframes unavailable or stale: ${
+          Object.keys(d.quality.warnings).join(", ")
+        }. See Data Engine Health.`
+      : "";
+
+  message(
+    issue ||
+    (
+      d.feedAgeSeconds > 600
+        ? "Market quote is older than 10 minutes. Market may be closed or the data provider may be delayed."
+        : ""
+    )
+  );
+
+  draw();
+}
+
+/* ====================================================
+   API REFRESH
+==================================================== */
+
+async function refresh() {
+  if (state.loading) return;
+
+  state.loading = true;
+  $("refreshBtn").disabled = true;
+
+  status("UPDATING", "");
+
+  try {
+    const r = await fetch(
+      "/api/xau",
+      {
+        cache: "no-store"
+      }
+    );
+
+    const d = await r.json();
+
+    if (!r.ok || !d.ok) {
+      throw Error(
+        (d.error || "Data endpoint failed") +
+        (
+          d.errors
+            ? " · " +
+              Object.entries(d.errors)
+                .map(
+                  ([k, v]) =>
+                    k + ": " + v
+                )
+                .join(" | ")
+            : ""
+        )
+      );
+    }
+
+    renderData(d);
+  } catch (e) {
+    status(
+      "DATA ERROR",
+      "bad"
+    );
+
+    message(
+      String(
+        e.message || e
+      )
+    );
+  } finally {
+    state.loading = false;
+    $("refreshBtn").disabled = false;
+  }
+}
+
+/* ====================================================
+   CHART VIEW
+==================================================== */
+
+function getView() {
+  const all =
+    state.data?.candles?.[state.tf] || [];
+
+  const n = Math.max(
+    24,
+    Math.min(
+      state.count,
+      all.length
+    )
+  );
+
+  const maxOffset = Math.max(
+    0,
+    all.length - n
+  );
+
+  state.offset = Math.max(
+    0,
+    Math.min(
+      state.offset,
+      maxOffset
+    )
+  );
+
+  const end =
+    all.length - state.offset;
+
+  return all.slice(
+    Math.max(
+      0,
+      end - n
+    ),
+    end
+  );
+}
+
+function sessionType(t) {
+  const hr =
+    new Date(t).getUTCHours();
+
+  if (hr < 8) return "ASIA";
+  if (hr < 13) return "LONDON";
+  if (hr < 21) return "NEW YORK";
+
+  return "LATE";
+}
+
+/* ====================================================
+   CANVAS CHART ENGINE
+==================================================== */
+
+function draw() {
+  const bounds =
+    canvas.getBoundingClientRect();
+
+  const width = bounds.width;
+  const height = bounds.height;
+
+  if (width < 1) return;
+
+  const ratio = Math.min(
+    2,
+    window.devicePixelRatio || 1
+  );
+
+  canvas.width =
+    Math.round(width * ratio);
+
+  canvas.height =
+    Math.round(height * ratio);
+
+  ctx.setTransform(
+    ratio,
+    0,
+    0,
+    ratio,
+    0,
+    0
+  );
+
+  const W = width;
+  const H = height;
+
+  const P = {
+    l: 55,
+    r: 82,
+    t: 54,
+    b: 48
+  };
+
+  const plotW =
+    W - P.l - P.r;
+
+  const plotH =
+    H - P.t - P.b;
+
+  ctx.clearRect(
+    0, 0, W, H
+  );
+
+  ctx.fillStyle = "#07101c";
+
+  ctx.fillRect(
+    0, 0, W, H
+  );
+
+  if (!state.data) {
+    ctx.fillStyle = "#7393a8";
+    ctx.textAlign = "center";
+    ctx.font = "12px sans-serif";
+
+    ctx.fillText(
+      "Connecting to Twelve Data · XAU/USD",
+      W / 2,
+      H / 2
+    );
+
+    return;
+  }
+
+  const candles = getView();
+
+  if (!candles.length) {
+    ctx.fillStyle = "#9ab5c4";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+      "No candles for this timeframe",
+      W / 2,
+      H / 2
+    );
+
+    return;
+  }
+
+  const aMin = Math.min(
+    ...candles.map(c => c.l)
+  );
+
+  const aMax = Math.max(
+    ...candles.map(c => c.h)
+  );
+
+  const range = Math.max(
+    aMax - aMin,
+    state.data.analytics.atr5 * 2,
+    0.5
+  );
+
+  const min =
+    aMin - range * 0.12;
+
+  const max =
+    aMax + range * 0.12;
+
+  const toY = price =>
+    P.t +
+    (max - price) /
+    (max - min) *
+    plotH;
+
+  const step =
+    plotW / candles.length;
+
+  const toX = i =>
+    P.l +
+    (i + 0.5) * step;
+
+  /* SESSION BACKGROUND */
+
+  if (state.layers.sessions) {
+    candles.forEach((b, i) => {
+      const kind =
+        sessionType(b.t);
+
+      ctx.fillStyle =
+        kind === "ASIA"
+          ? "#0cd2a309"
+          : kind === "LONDON"
+            ? "#328dff0b"
+            : kind === "NEW YORK"
+              ? "#efb84f09"
+              : "#a46cff08";
+
+      ctx.fillRect(
+        P.l + i * step,
+        P.t,
+        step + 1,
+        plotH
+      );
+    });
+  }
+
+  /* PRICE GRID */
+
+  ctx.font =
+    "10px ui-monospace,monospace";
+
+  ctx.textAlign = "left";
+
+  for (let i = 0; i <= 6; i++) {
+    const y =
+      P.t + plotH * i / 6;
+
+    ctx.strokeStyle =
+      "#24405560";
+
+    ctx.lineWidth = 0.7;
+
+    ctx.beginPath();
+    ctx.moveTo(P.l, y);
+    ctx.lineTo(W - P.r + 2, y);
+    ctx.stroke();
+
+    ctx.fillStyle =
+      "#7390a6";
+
+    ctx.fillText(
+      money(
+        max -
+        (max - min) * i / 6
+      ),
+      W - P.r + 8,
+      y + 3
     );
   }
-  function renderDensity(d){
-    const bins=arr(d.density);
-    $('density').innerHTML=bins.map(x=>`
-      <div
-        class="heatcell"
-        title="${fmt(x.price)} · rank ${fmt(x.strength,0)}"
-        style="opacity:${Math.max(.08,x.strength/100)};height:${Math.max(8,Math.round(x.strength*.6))}px"
-      ></div>
-    `).join('');
-    $('densityLabels').innerHTML=bins.length
-      ?`<span>${fmt(bins[0].price)}</span>
-        <span>CURRENT ${fmt(d.price)}</span>
-        <span>${fmt(bins.at(-1).price)}</span>`
-      :'<span>No density data</span>';
-  }
-  function renderSweeps(d){
-    const sw=arr(d.sweeps).slice(0,7);
-    $('sweeps').innerHTML=sw.length?sw.map(z=>`
-      <div class="item">
-        <div class="itemtop">
-          <strong>${esc(z.result)}</strong>
-          <strong>${fmt(z.strength,0)}/99</strong>
-        </div>
-        <div class="meta">
-          ${tagSide(z.side)}
-          <span>${utc(z.t)}</span>
-          <span>Level ${fmt(z.price)} · Extreme ${fmt(z.extreme)}</span>
-        </div>
-      </div>
-    `).join(''):empty('No recent M5 sweep/rejection patterns detected.');
-  }
-  function renderFVG(d){
-    const f=arr(d.fvgs).slice(-7).reverse();
-    $('fvgs').innerHTML=f.length?f.map(z=>`
-      <div class="item">
-        <div class="itemtop">
-          <strong class="${z.side==='BULLISH'?'greentext':'redtext'}">
-            ${esc(z.side)} FVG
-          </strong>
-          <span class="tag">${esc(z.status)}</span>
-        </div>
-        <div class="meta">
-          <span>${fmt(z.low)} — ${fmt(z.high)}</span>
-          <span>${utc(z.t)}</span>
-        </div>
-      </div>
-    `).join(''):empty('No currently unfilled M5 fair value gaps.');
-  }
-  function renderStructure(d){
-    const m=d.market||{};
-    const items=[
-      ['M15 EMA 20/50',m.trendM15],
-      ['H1 EMA 20/50',m.trendH1],
-      ['DIRECTIONAL ALIGNMENT',m.agreement],
-      ['MODEL BIAS',m.bias]
-    ];
-    $('structure').innerHTML=items.map(([name,value])=>`
-      <div class="item itemtop">
-        <strong>${esc(name)}</strong>
-        <span class="tag ${value==='BEARISH'?'sell':value==='BULLISH'?'gold':''}">
-          ${esc(value||'UNKNOWN')}
-        </span>
-      </div>
-    `).join('')+`
-      <div class="item">
-        <small>NEAREST BUY-SIDE ABOVE PRICE</small>
-        <div class="goldtext">
-          <strong>${fmt(m.nearestBuySide?.price)}</strong>
-          · ${esc(m.nearestBuySide?.kind||'None detected')}
-        </div>
-      </div>
-      <div class="item">
-        <small>NEAREST SELL-SIDE BELOW PRICE</small>
-        <div class="cyantext">
-          <strong>${fmt(m.nearestSellSide?.price)}</strong>
-          · ${esc(m.nearestSellSide?.kind||'None detected')}
-        </div>
-      </div>`;
-  }
-  function renderQuality(d){
-    const q=d.dataQuality||{};
-    $('quality').innerHTML=Object.entries(TF).map(([key,name])=>{
-      const x=q[key]||{};
-      const bad=!x.count;
-      const warn=!bad&&(x.stale||x.delayed);
-      const status=bad?'FAILED':warn?'DELAYED':'READY';
-      return `
-        <div class="feed" title="${esc(x.warning||'')}">
-          <strong>
-            <i class="dot ${bad?'bad':warn?'warn':''}"></i>
-            ${name} · ${status}
-          </strong>
-          <p>${fmt(x.count||0,0)} candles · ${x.ageSeconds==null?'no quote':age(x.ageSeconds)}</p>
-          ${x.warning?`<p class="redtext">${esc(x.warning)}</p>`:''}
-        </div>`;
-    }).join('');
-  }
 
-  const canvas=$('chart');
-  const ctx=canvas.getContext('2d');
-  let layout=null;
+  /* LIQUIDITY LEVELS */
 
-  function renderChart(){
-    const d=state.data;
-    const rect=canvas.getBoundingClientRect();
-    if(!rect.width||!rect.height)return;
-    const ratio=Math.min(2,window.devicePixelRatio||1);
-    canvas.width=Math.max(1,Math.floor(rect.width*ratio));
-    canvas.height=Math.max(1,Math.floor(rect.height*ratio));
-    ctx.setTransform(ratio,0,0,ratio,0,0);
+  const raw = state.data.levels
+    .filter(
+      l =>
+        l.price > min &&
+        l.price < max
+    )
+    .sort(
+      (a, b) =>
+        b.score - a.score
+    )
+    .slice(0, 22);
 
-    const W=rect.width,H=rect.height;
-    const L=12,R=77,T=23,B=35;
-    const PW=W-L-R,PH=H-T-B;
+  /* HEATMAP */
 
-    ctx.clearRect(0,0,W,H);
-    ctx.fillStyle='#081322';
-    ctx.fillRect(0,0,W,H);
+  if (state.layers.heat) {
+    for (const level of raw) {
+      const y =
+        toY(level.price);
 
-    const bars=arr(d?.candles?.[state.tf]);
-    $('chartLabel').textContent=`${TF[state.tf]} · ${bars.length} candles · OHLC-derived`;
+      const rad = Math.max(
+        7,
+        Math.min(
+          38,
+          level.score / 4
+        )
+      );
 
-    if(!bars.length){
-      ctx.fillStyle='#91a9bc';
-      ctx.font='14px system-ui';
-      ctx.fillText('No candles available for this timeframe',20,H/2);
-      layout=null;
-      return;
-    }
+      const alpha =
+        state.intensity *
+        (level.score / 100);
 
-    state.zoom=Math.max(12,Math.min(180,state.zoom));
-    const visibleCount=Math.min(state.zoom,bars.length);
-    state.shift=Math.max(0,Math.min(state.shift,bars.length-visibleCount));
-    const end=bars.length-state.shift;
-    const start=Math.max(0,end-visibleCount);
-    const visible=bars.slice(start,end);
+      const rgb =
+        level.side === "BUY_SIDE"
+          ? "242,178,69"
+          : "125,74,240";
 
-    let low=Math.min(...visible.map(x=>x.l));
-    let high=Math.max(...visible.map(x=>x.h));
-    let pad=(high-low)*.1||Math.max(.5,(d?.market?.atrM5||1));
-    low-=pad;
-    high+=pad;
+      const g =
+        ctx.createLinearGradient(
+          0,
+          y - rad,
+          0,
+          y + rad
+        );
 
-    const Y=p=>T+(high-p)/(high-low)*PH;
-    const X=i=>L+(i+.5)*PW/visible.length;
+      g.addColorStop(
+        0,
+        `rgba(${rgb},0)`
+      );
 
-    layout={
-      bars,visible,start,end,L,R,T,B,PW,PH,W,H,low,high,Y,X
-    };
+      g.addColorStop(
+        0.5,
+        `rgba(${rgb},${(
+          alpha * 0.35
+        ).toFixed(3)})`
+      );
 
-    ctx.strokeStyle='#1c3143';
-    ctx.lineWidth=1;
-    ctx.fillStyle='#7896aa';
-    ctx.font='11px system-ui';
+      g.addColorStop(
+        1,
+        `rgba(${rgb},0)`
+      );
 
-    for(let i=0;i<=5;i++){
-      const y=T+i*PH/5;
-      const p=high-(high-low)*i/5;
-      ctx.beginPath();
-      ctx.moveTo(L,y);
-      ctx.lineTo(W-R,y);
-      ctx.stroke();
-      ctx.fillText(fmt(p),W-R+6,y+4);
-    }
+      ctx.fillStyle = g;
 
-    const stride=Math.max(1,Math.floor(visible.length/5));
-    for(let i=0;i<visible.length;i+=stride){
-      ctx.fillText(
-        new Date(visible[i].t).toLocaleString('en-GB',{
-          timeZone:'UTC',
-          day:'2-digit',month:'2-digit',
-          hour:'2-digit',minute:'2-digit',hour12:false
-        }),
-        Math.max(2,X(i)-26),
-        H-11
+      ctx.fillRect(
+        P.l,
+        y - rad,
+        plotW,
+        rad * 2
+      );
+
+      const gx =
+        ctx.createLinearGradient(
+          P.l,
+          0,
+          W - P.r,
+          0
+        );
+
+      gx.addColorStop(
+        0,
+        "#00000000"
+      );
+
+      gx.addColorStop(
+        0.3,
+        `rgba(${rgb},${(
+          alpha * 0.10
+        ).toFixed(3)})`
+      );
+
+      gx.addColorStop(
+        1,
+        `rgba(${rgb},${(
+          alpha * 0.28
+        ).toFixed(3)})`
+      );
+
+      ctx.fillStyle = gx;
+
+      ctx.fillRect(
+        P.l,
+        y - 2,
+        plotW,
+        4
       );
     }
+  }
 
-    if($('showFvg').checked && state.tf==='5min'){
-      for(const f of arr(d.fvgs)){
-        if(f.high<low||f.low>high)continue;
-        const y1=Y(Math.min(high,f.high));
-        const y2=Y(Math.max(low,f.low));
-        ctx.fillStyle=f.side==='BULLISH'?'#39d6af15':'#ff748915';
-        ctx.fillRect(L,Math.min(y1,y2),PW,Math.abs(y2-y1));
+  /* FAIR VALUE GAPS */
+
+  if (state.layers.gaps) {
+    for (const g of state.data.gaps) {
+      if (
+        g.high < min ||
+        g.low > max
+      ) {
+        continue;
       }
+
+      const i =
+        candles.findIndex(
+          b => b.t >= g.t
+        );
+
+      if (i < 0) continue;
+
+      ctx.fillStyle =
+        g.side === "BULLISH"
+          ? "#36dba818"
+          : "#fb718518";
+
+      ctx.fillRect(
+        toX(i),
+        toY(g.high),
+        W - P.r - toX(i),
+        Math.max(
+          1,
+          toY(g.low) -
+          toY(g.high)
+        )
+      );
     }
+  }
 
-    if($('showLevels').checked){
-      const zones=arr(d.levels)
-        .filter(z=>z.ahead&&!z.forming&&z.score>=70&&
-          z.price>=low&&z.price<=high)
-        .slice(0,8);
+  /* CANDLES */
 
-      zones.forEach(z=>{
-        const y=Y(z.price);
-        ctx.setLineDash([5,5]);
-        ctx.strokeStyle=z.side==='BUY_SIDE'
-          ?'#f5bd63a8':'#32cfe4a8';
-        ctx.beginPath();
-        ctx.moveTo(L,y);
-        ctx.lineTo(W-R,y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle=z.side==='BUY_SIDE'?'#f5bd63':'#32cfe4';
-        ctx.fillText(`${z.score}`,L+6,y-5);
-      });
-    }
+  for (
+    let i = 0;
+    i < candles.length;
+    i++
+  ) {
+    const b = candles[i];
+    const x = toX(i);
 
-    const step=PW/visible.length;
-    const bw=Math.max(1,Math.min(16,step*.63));
-    visible.forEach((b,i)=>{
-      const x=X(i);
-      const bull=b.c>=b.o;
-      const color=bull?'#39d6af':'#ff7489';
-      ctx.strokeStyle=color;
-      ctx.fillStyle=color;
-      ctx.lineWidth=1.3;
+    const yo = toY(b.o);
+    const yc = toY(b.c);
+
+    const col =
+      b.c >= b.o
+        ? "#efd079"
+        : "#4dbde3";
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = col;
+
+    ctx.beginPath();
+    ctx.moveTo(x, toY(b.h));
+    ctx.lineTo(x, toY(b.l));
+    ctx.stroke();
+
+    const bw = Math.max(
+      1,
+      Math.min(
+        10,
+        step * 0.64
+      )
+    );
+
+    ctx.fillStyle = col;
+
+    ctx.fillRect(
+      x - bw / 2,
+      Math.min(yo, yc),
+      bw,
+      Math.max(
+        1,
+        Math.abs(yc - yo)
+      )
+    );
+  }
+
+  /* LEVEL LABELS */
+
+  if (state.layers.levels) {
+    const printed = [];
+
+    for (
+      const l of raw
+        .filter(x => x.score >= 65)
+        .slice(0, 12)
+    ) {
+      const y = toY(l.price);
+
+      if (
+        printed.some(
+          v =>
+            Math.abs(v - y) < 17
+        )
+      ) {
+        continue;
+      }
+
+      printed.push(y);
+
+      ctx.strokeStyle =
+        l.side === "BUY_SIDE"
+          ? "#dba7488f"
+          : "#9d6ee08f";
+
+      ctx.lineWidth = 0.9;
+
+      ctx.setLineDash([4, 6]);
+
       ctx.beginPath();
-      ctx.moveTo(x,Y(b.h));
-      ctx.lineTo(x,Y(b.l));
+      ctx.moveTo(P.l, y);
+      ctx.lineTo(W - P.r, y);
       ctx.stroke();
-      const top=Math.min(Y(b.o),Y(b.c));
-      const height=Math.max(1,Math.abs(Y(b.c)-Y(b.o)));
-      ctx.fillRect(x-bw/2,top,bw,height);
-    });
 
-    if($('showPrice').checked&&d?.price!=null&&
-      d.price>=low&&d.price<=high){
-      const py=Y(d.price);
-      ctx.strokeStyle='#f5bd63';
-      ctx.setLineDash([3,4]);
-      ctx.beginPath();
-      ctx.moveTo(L,py);
-      ctx.lineTo(W-R,py);
-      ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle='#b3833b';
-      ctx.fillRect(W-R,py-10,R-3,20);
-      ctx.fillStyle='#071321';
-      ctx.font='bold 11px system-ui';
-      ctx.fillText(fmt(d.price),W-R+4,py+4);
-    }
 
-    if(state.hover>=start&&state.hover<end){
-      const i=state.hover-start;
-      const b=bars[state.hover];
-      const x=X(i);
-      ctx.strokeStyle='#9cb0c180';
-      ctx.beginPath();
-      ctx.moveTo(x,T);
-      ctx.lineTo(x,H-B);
-      ctx.stroke();
+      const label = l.kind
+        .replace(
+          "PREVIOUS ",
+          "P. "
+        )
+        .replace(
+          "SWING ",
+          "SW "
+        );
 
-      const text=`${utc(b.t)}  O ${fmt(b.o)}  H ${fmt(b.h)}  L ${fmt(b.l)}  C ${fmt(b.c)}`;
-      ctx.font='11px system-ui';
-      const tw=ctx.measureText(text).width;
-      ctx.fillStyle='#14293de8';
-      ctx.fillRect(10,5,Math.min(tw+18,W-20),24);
-      ctx.fillStyle='#e3effa';
-      ctx.fillText(text,17,21,Math.max(20,W-33));
-    }
-  }
+      ctx.textAlign = "left";
+      ctx.font =
+        "9px ui-monospace,monospace";
 
-  function chartPointer(evt){
-    if(!layout)return -1;
-    const r=canvas.getBoundingClientRect();
-    const x=evt.clientX-r.left;
-    const i=Math.floor((x-layout.L)/layout.PW*layout.visible.length);
-    return layout.start+Math.max(0,Math.min(layout.visible.length-1,i));
-  }
+      ctx.fillStyle =
+        l.side === "BUY_SIDE"
+          ? "#e8b66b"
+          : "#bd96ff";
 
-  canvas.addEventListener('pointerdown',e=>{
-    if(!layout)return;
-    state.drag={x:e.clientX,shift:state.shift,moved:false};
-    canvas.setPointerCapture(e.pointerId);
-    state.hover=chartPointer(e);
-    renderChart();
-  });
-  canvas.addEventListener('pointermove',e=>{
-    if(!layout)return;
-    if(state.drag){
-      const delta=e.clientX-state.drag.x;
-      state.drag.moved=state.drag.moved||Math.abs(delta)>4;
-      const barsMoved=Math.round(delta/layout.PW*layout.visible.length);
-      state.shift=Math.max(0,Math.min(
-        layout.bars.length-layout.visible.length,
-        state.drag.shift+barsMoved
-      ));
-    }
-    state.hover=chartPointer(e);
-    renderChart();
-  });
-  canvas.addEventListener('pointerup',()=>{state.drag=null;});
-  canvas.addEventListener('pointercancel',()=>{state.drag=null;});
-  canvas.addEventListener('pointerleave',()=>{
-    if(!state.drag){
-      state.hover=-1;
-      renderChart();
-    }
-  });
-  canvas.addEventListener('wheel',e=>{
-    e.preventDefault();
-    state.zoom=Math.max(12,Math.min(180,
-      state.zoom+(e.deltaY>0?10:-10)
-    ));
-    renderChart();
-  },{passive:false});
-
-  function render(d){
-    state.data=d;
-    renderSummary(d);
-    renderSessions(d);
-    renderLevels(d);
-    renderDensity(d);
-    renderSweeps(d);
-    renderFVG(d);
-    renderStructure(d);
-    renderQuality(d);
-    renderChart();
-  }
-
-  async function refresh(){
-    const button=$('refresh');
-    button.disabled=true;
-    button.textContent='↻ Loading';
-    setHealth('wait');
-    try{
-      const controller=new AbortController();
-      const timer=setTimeout(()=>controller.abort(),18000);
-      let r;
-      try{
-        r=await fetch('/api/xau',{
-          headers:{accept:'application/json'},
-          signal:controller.signal
-        });
-      }finally{
-        clearTimeout(timer);
-      }
-      const data=await r.json();
-      if(!r.ok||!data.ok){
-        throw Error([
-          data.error,
-          ...Object.entries(data.feedErrors||{})
-            .map(([tf,msg])=>`${tf}: ${msg}`)
-        ].filter(Boolean).join(' | '));
-      }
-
-      const q=Object.values(data.dataQuality||{});
-      const broken=q.filter(x=>!x.count||x.delayed||x.stale);
-      alertMessage(broken.length
-        ?`Partial or delayed data: ${broken.length} of ${q.length} timeframe feeds need attention. See Data Engine Health. Models may be incomplete.`
-        :'');
-      render(data);
-      setHealth(broken.length?'wait':'live');
-    }catch(e){
-      alertMessage(
-        `Unable to refresh: ${e.message}. ${
-          state.data
-            ?'Showing the last successful snapshot.'
-            :'Check Vercel environment variables, API credits and function logs.'
-        }`
+      ctx.fillText(
+        label,
+        P.l + 8,
+        Math.max(
+          P.t + 10,
+          y - 5
+        )
       );
-      setHealth('');
-    }finally{
-      button.disabled=false;
-      button.textContent='↻ Refresh';
     }
   }
 
-  $('refresh').addEventListener('click',refresh);
-  $('minScore').addEventListener('change',()=>{
-    if(state.data)renderLevels(state.data);
-  });
-  $('tabs').addEventListener('click',e=>{
-    const btn=e.target.closest('button[data-tf]');
-    if(!btn)return;
-    state.tf=btn.dataset.tf;
-    state.zoom=90;
-    state.shift=0;
-    state.hover=-1;
-    document.querySelectorAll('#tabs button').forEach(x=>{
-      x.classList.toggle('active',x===btn);
-    });
-    renderChart();
-  });
-  $('zoomIn').addEventListener('click',()=>{
-    state.zoom=Math.max(12,state.zoom-16);
-    renderChart();
-  });
-  $('zoomOut').addEventListener('click',()=>{
-    state.zoom=Math.min(180,state.zoom+16);
-    renderChart();
-  });
-  $('reset').addEventListener('click',()=>{
-    state.zoom=90;
-    state.shift=0;
-    state.hover=-1;
-    renderChart();
-  });
-  ['showLevels','showFvg','showPrice'].forEach(id=>{
-    $(id).addEventListener('change',renderChart);
-  });
-  if(window.ResizeObserver){
-    new ResizeObserver(renderChart).observe(canvas);
-  }else{
-    window.addEventListener('resize',renderChart);
+  /* CURRENT PRICE MARKER */
+
+  const last =
+    candles[candles.length - 1];
+
+  const py =
+    toY(last.c);
+
+  if (
+    py >= P.t &&
+    py <= H - P.b
+  ) {
+    ctx.strokeStyle =
+      "#f0cc7a96";
+
+    ctx.setLineDash([2, 3]);
+
+    ctx.beginPath();
+    ctx.moveTo(P.l, py);
+    ctx.lineTo(W - P.r, py);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    ctx.fillStyle =
+      "#d9a84c";
+
+    ctx.fillRect(
+      W - P.r,
+      py - 10,
+      P.r - 6,
+      20
+    );
+
+    ctx.fillStyle =
+      "#10141b";
+
+    ctx.font =
+      "bold 10px ui-monospace,monospace";
+
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+      money(last.c),
+      W - P.r / 2 - 3,
+      py + 4
+    );
   }
-  refresh();
-  setInterval(()=>{
-    if(!document.hidden)refresh();
-  },60000);
-})();
+
+  /* TIME AXIS */
+
+  ctx.textAlign = "center";
+
+  ctx.font =
+    "10px ui-monospace,monospace";
+
+  const spacing = Math.max(
+    1,
+    Math.ceil(
+      candles.length / 7
+    )
+  );
+
+  for (
+    let i = 0;
+    i < candles.length;
+    i += spacing
+  ) {
+    const x = toX(i);
+
+    ctx.fillStyle =
+      "#768ea1";
+
+    const d =
+      new Date(candles[i].t);
+
+    ctx.fillText(
+      `${
+        String(
+          d.getUTCHours()
+        ).padStart(2, "0")
+      }:${
+        String(
+          d.getUTCMinutes()
+        ).padStart(2, "0")
+      }`,
+      x,
+      H - 29
+    );
+  }
+
+  ctx.fillStyle =
+    "#496575";
+
+  ctx.fillRect(
+    P.l,
+    H - 12,
+    plotW,
+    2
+  );
+
+  ctx.font =
+    "9px sans-serif";
+
+  ctx.fillStyle =
+    "#829db0";
+
+  ctx.textAlign = "left";
+
+  ctx.fillText(
+    "UTC · " +
+    state.tf.toUpperCase() +
+    " · OHLC LIQUIDITY PROXY",
+    P.l,
+    P.t - 22
+  );
+
+  /* CROSSHAIR */
+
+  if (
+    state.hover >= 0 &&
+    state.hover < candles.length
+  ) {
+    const x =
+      toX(state.hover);
+
+    const b =
+      candles[state.hover];
+
+    ctx.strokeStyle =
+      "#bdd7e6b0";
+
+    ctx.setLineDash([3, 4]);
+
+    ctx.beginPath();
+    ctx.moveTo(x, P.t);
+    ctx.lineTo(x, H - P.b);
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+    $("hover").innerHTML = `
+      ${clock(b.t)}
+      <br>
+      O ${money(b.o)}
+      &nbsp;
+      H ${money(b.h)}
+      <br>
+      L ${money(b.l)}
+      &nbsp;
+      C ${money(b.c)}
+    `;
+
+    $("hover").classList.add("on");
+  } else {
+    $("hover").classList.remove("on");
+  }
+}
+
+/* ====================================================
+   CHART INTERACTIONS
+==================================================== */
+
+function resize() {
+  draw();
+}
+
+new ResizeObserver(
+  resize
+).observe($("visual"));
+
+canvas.addEventListener(
+  "pointermove",
+  e => {
+    if (!state.data) return;
+
+    const r =
+      canvas.getBoundingClientRect();
+
+    const view = getView();
+
+    const step =
+      (r.width - 137) /
+      Math.max(
+        1,
+        view.length
+      );
+
+    if (state.dragX !== null) {
+      const diff = Math.trunc(
+        (e.clientX - state.dragX) /
+        Math.max(4, step)
+      );
+
+      if (diff) {
+        state.offset += diff;
+        state.dragX = e.clientX;
+      }
+    } else {
+      state.hover = Math.floor(
+        (e.clientX - r.left - 55) /
+        step
+      );
+    }
+
+    state.hover = Math.max(
+      -1,
+      Math.min(
+        state.hover,
+        view.length - 1
+      )
+    );
+
+    draw();
+  }
+);
+
+canvas.addEventListener(
+  "pointerdown",
+  e => {
+    state.dragX = e.clientX;
+
+    canvas.setPointerCapture(
+      e.pointerId
+    );
+  }
+);
+
+canvas.addEventListener(
+  "pointerup",
+  () => {
+    state.dragX = null;
+  }
+);
+
+canvas.addEventListener(
+  "pointercancel",
+  () => {
+    state.dragX = null;
+  }
+);
+
+canvas.addEventListener(
+  "pointerleave",
+  () => {
+    state.hover = -1;
+    state.dragX = null;
+    draw();
+  }
+);
+
+canvas.addEventListener(
+  "wheel",
+  e => {
+    e.preventDefault();
+
+    state.count = Math.max(
+      28,
+      Math.min(
+        250,
+        state.count +
+        (
+          e.deltaY > 0
+            ? 12
+            : -12
+        )
+      )
+    );
+
+    draw();
+  },
+  {
+    passive: false
+  }
+);
+
+/* TIMEFRAME BUTTONS */
+
+for (
+  const b of document.querySelectorAll(
+    "[data-tf]"
+  )
+) {
+  b.addEventListener(
+    "click",
+    () => {
+      document
+        .querySelectorAll("[data-tf]")
+        .forEach(
+          x => x.classList.remove(
+            "selected"
+          )
+        );
+
+      b.classList.add(
+        "selected"
+      );
+
+      state.tf =
+        b.dataset.tf;
+
+      state.offset = 0;
+      state.hover = -1;
+
+      draw();
+    }
+  );
+}
+
+/* LAYER TOGGLES */
+
+for (
+  const i of document.querySelectorAll(
+    "[data-layer]"
+  )
+) {
+  i.addEventListener(
+    "change",
+    () => {
+      state.layers[
+        i.dataset.layer
+      ] = i.checked;
+
+      draw();
+    }
+  );
+}
+
+/* INTENSITY */
+
+$("intensity").addEventListener(
+  "input",
+  e => {
+    state.intensity =
+      +e.target.value / 100;
+
+    draw();
+  }
+);
+
+/* CHART TOOLS */
+
+$("zoomIn").onclick = () => {
+  state.count = Math.max(
+    28,
+    state.count - 18
+  );
+
+  draw();
+};
+
+$("zoomOut").onclick = () => {
+  state.count = Math.min(
+    250,
+    state.count + 18
+  );
+
+  draw();
+};
+
+$("resetView").onclick = () => {
+  state.count = 90;
+  state.offset = 0;
+  state.hover = -1;
+
+  draw();
+};
+
+/* REFRESH */
+
+$("refreshBtn").onclick = refresh;
+
+/* CSV EXPORT */
+
+$("exportBtn").onclick = () => {
+  if (!state.data) return;
+
+  const rows = [
+    [
+      "level",
+      "side",
+      "type",
+      "rank_0_99",
+      "touches",
+      "status"
+    ],
+
+    ...state.data.levels.map(l => [
+      l.price,
+      l.side,
+      l.kind,
+      l.score,
+      l.touches,
+      l.status
+    ])
+  ];
+
+  const csv = rows
+    .map(
+      row =>
+        row.map(
+          v =>
+            '"' +
+            String(v)
+              .replace(/"/g, '""') +
+            '"'
+        ).join(",")
+    )
+    .join("\n");
+
+  const url =
+    URL.createObjectURL(
+      new Blob(
+        [csv],
+        {
+          type: "text/csv"
+        }
+      )
+    );
+
+  const a =
+    document.createElement("a");
+
+  a.href = url;
+
+  a.download =
+    "mkayfx_xau_liquidity.csv";
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+};
+
+/* ====================================================
+   CLOCK + AUTOMATIC REFRESH
+==================================================== */
+
+function tick() {
+  $("utc").textContent =
+    new Date().toLocaleTimeString(
+      "en-GB",
+      {
+        timeZone: "UTC",
+        hour12: false
+      }
+    ) + " UTC";
+}
+
+tick();
+
+setInterval(
+  tick,
+  1000
+);
+
+setInterval(
+  () => {
+    if (
+      document.visibilityState === "visible"
+    ) {
+      refresh();
+    }
+  },
+  60000
+);
+
+document.addEventListener(
+  "visibilitychange",
+  () => {
+    if (
+      document.visibilityState === "visible" &&
+      state.data &&
+      Date.now() - state.data.generatedAt > 100000
+    ) {
+      refresh();
+    }
+  }
+);
+
+/* INITIALIZE */
+
+refresh();
+draw();
+
 </script>
+
 </body>
 </html>
