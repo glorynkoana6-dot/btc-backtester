@@ -1,12 +1,11 @@
 
 {
-  "name": "mkayfx-institutional-liquidity-radar",
-  "version": "3.0.0",
+  "name": "mkayfx-radar-v4",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev"
+    "dev": "vercel dev"
   },
   "engines": {
     "node": ">=20"
