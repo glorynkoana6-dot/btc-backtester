@@ -1,9 +1,9 @@
+
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "functions": {
     "api/xau.js": {
-      "maxDuration": 15
+      "maxDuration": 30
     }
   }
 }
