@@ -1,74 +1,672 @@
-
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#08101c">
-  <meta name="description" content="MKAYFX BLACKBOOK X3 public PAXG/USDT order flow research and paper-trade laboratory">
-  <title>MKAYFX | BLACKBOOK X3</title>
-  <link rel="stylesheet" href="/style.css">
-  <script defer src="/app.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#050a13">
+
+<title>MKAYFX — BLACKBOOK X4 / Quantum Intelligence</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/style.css">
+<script src="/app.js" defer></script>
 </head>
+
 <body>
+<div class="ambient ambient-a"></div>
+<div class="ambient ambient-b"></div>
+<div class="noise"></div>
+
 <div class="shell">
-  <header class="topbar">
-    <div class="brand"><div class="mark">M<span>✦</span></div><div><strong>MKAYFX <em>BLACKBOOK X3</em></strong><small>MARKET MICROSTRUCTURE INTELLIGENCE TERMINAL</small></div></div>
-    <div class="topright"><span id="clock">--:--:-- SAST</span><span class="connection" id="connection"><i></i><b id="connText">CONNECTING</b></span></div>
-  </header>
-  <section class="hero">
-    <div class="eyebrow">● PUBLIC EXCHANGE EVENTS / FORWARD RESEARCH / PAXG-USDT</div>
-    <h1>Order flow, <span>decoded.</span></h1>
-    <p>Trade tape, visible liquidity, multi-timeframe structure and simulated trade outcomes. <strong>Not</strong> CME futures or OTC XAU/USD order flow.</p>
-    <div class="controls">
-      <label>Minimum score<select id="minScore"><option>70</option><option selected>75</option><option>80</option><option>85</option></select></label>
-      <label>Target R<select id="rr"><option>1.5</option><option selected>2</option><option>2.5</option><option>3</option></select></label>
-      <label>Fee / side (bps)<input id="fee" type="number" min="0" max="100" step="1" value="10" inputmode="decimal"></label>
-      <label>Slippage / side (bps)<input id="slippage" type="number" min="0" max="100" step="1" value="2" inputmode="decimal"></label>
-      <label>Heat bucket<select id="bucket"><option value="0.5">0.50</option><option value="1" selected>1.00</option><option value="2">2.00</option><option value="5">5.00</option></select></label>
-      <button id="alerts" type="button">ENABLE ALERTS</button><button id="reconnect" class="outline" type="button">RECONNECT</button>
+
+<aside class="sidebar">
+ <div class="identity">
+  <div class="logo">M<span>✦</span></div>
+  <div>
+   <b>MKAY<span>FX</span></b>
+   <small>BLACKBOOK <em>X4</em></small>
+  </div>
+ </div>
+
+ <div class="side-section">OPERATIONS</div>
+
+ <nav id="nav">
+  <button class="navitem active" data-target="overview">
+   <span>◈</span> Command Center
+  </button>
+  <button class="navitem" data-target="liquidity">
+   <span>◉</span> Liquidity Radar
+  </button>
+  <button class="navitem" data-target="flow">
+   <span>⌁</span> Order Flow <i>PAXG</i>
+  </button>
+  <button class="navitem" data-target="scientist">
+   <span>⬡</span> Strategy Lab
+  </button>
+  <button class="navitem" data-target="journal">
+   <span>▣</span> Trade Journal
+  </button>
+ </nav>
+
+ <div class="sidebar-bottom">
+  <div class="mini-label">FEED HEALTH</div>
+
+  <div class="side-feed">
+   <span class="dot" id="sideXauDot"></span>
+   XAU / TWELVE DATA
+   <strong id="sideXauState">WAIT</strong>
+  </div>
+
+  <div class="side-feed">
+   <span class="dot" id="sidePaxgDot"></span>
+   PAXG / BINANCE
+   <strong id="sidePaxgState">WAIT</strong>
+  </div>
+
+  <p>
+   Data sources are separate. PAXG activity does not
+   identify spot gold institutional orders.
+  </p>
+ </div>
+</aside>
+
+<main class="main">
+
+<header class="header">
+ <div class="top-left">
+  <div class="breadcrumb">
+   TERMINAL <span>/</span>
+   QUANTUM INTELLIGENCE <span>/</span>
+   XAUUSD
+  </div>
+
+  <div class="headline">
+   MARKET <strong>COMMAND</strong>
+   <span class="vtag">X4.0</span>
+  </div>
+ </div>
+
+ <div class="top-right">
+  <div class="clock">
+   <span>LOCAL MARKET TIME</span>
+   <strong id="clock">--:--:-- SAST</strong>
+  </div>
+
+  <div class="status">
+   <span class="dot" id="mainDot"></span>
+   <b id="systemStatus">CONNECTING</b>
+  </div>
+
+  <button class="icon-btn" id="refresh"
+   title="Request the latest cached/provider snapshot">↻</button>
+ </div>
+</header>
+
+<div id="notification" class="notice hidden"></div>
+
+<section id="overview" class="section">
+
+ <div class="strip">
+  <div class="strip-item featured">
+   <small>SPOT GOLD · INDICATIVE</small>
+   <div>
+    <strong id="price">—</strong>
+    <span id="priceChange" class="change">XAU / USD</span>
+   </div>
+   <small id="asof">Awaiting market feed</small>
+  </div>
+
+  <div class="strip-item">
+   <small>MARKET REGIME / M5</small>
+   <strong id="regime">—</strong>
+   <small id="regimeNote">EMA 20 / 50 structure</small>
+  </div>
+
+  <div class="strip-item">
+   <small>ATR / M5</small>
+   <strong id="atr">—</strong>
+   <small>14-period realized range</small>
+  </div>
+
+  <div class="strip-item">
+   <small>ACTIVE STRONG ZONES</small>
+   <strong id="zoneCount">—</strong>
+   <small>Heuristic score ≥ 70</small>
+  </div>
+
+  <div class="strip-item">
+   <small>SIGNAL STATUS</small>
+   <strong id="signalMini">WAIT</strong>
+   <small>Closed M5 bars only</small>
+  </div>
+ </div>
+
+ <div class="section-top">
+  <div>
+   <div class="eyebrow">01 / MARKET OVERVIEW</div>
+   <h2>Gold price architecture</h2>
+  </div>
+  <span class="tag">CANDLE-DERIVED DATA</span>
+ </div>
+
+ <div class="two-col chart-row">
+
+  <article class="panel chart-panel">
+   <div class="panel-head">
+    <div>
+     <b>XAU/USD</b>
+     <span class="sub">· M5 structural chart</span>
     </div>
-  </section>
-  <section class="metrics">
-    <article class="metric"><small>BINANCE PAXG/USDT</small><strong id="price">—</strong><span id="priceMeta">Waiting for real trades</span></article>
-    <article class="metric"><small>XAU/USD REFERENCE</small><strong id="xauPrice">—</strong><span id="xauMeta">Twelve Data separate market</span></article>
-    <article class="metric"><small>TOP-15 BID SHARE</small><strong id="imbalance">—</strong><span>Displayed order book only</span></article>
-    <article class="metric"><small>SESSION LIVE CVD</small><strong id="cvd">—</strong><span>Observed PAXG taker-volume delta</span></article>
-    <article class="metric"><small>BEST BID-ASK SPREAD</small><strong id="spread">—</strong><span>USDT per PAXG</span></article>
-    <article class="metric"><small>60S LIVE TRADE NOTIONAL</small><strong id="volume60">—</strong><span>WebSocket observations only</span></article>
-  </section>
-  <section class="columns prime">
-    <article class="panel signal">
-      <header class="panel-head"><div><small>01 / SIGNAL LAB</small><h2>Automatic trade research</h2></div><span class="tag" id="signalBadge">WAITING</span></header>
-      <div class="signal-body"><div class="signal-main"><div><div class="eyelabel">PAXG/USDT SPOT / OBSERVATION ONLY</div><div class="direction" id="direction">NO TRADE</div><p id="reason">Waiting for live market structure and completed candles.</p></div><div class="score"><strong id="score">—</strong><span>HEURISTIC / 100</span></div></div>
-        <div class="levels"><div><small>ENTRY REFERENCE</small><b id="entry">—</b></div><div><small>STOP LEVEL</small><b id="stop">—</b></div><div><small>TARGET LEVEL</small><b id="target">—</b></div><div><small>REWARD / RISK</small><b id="riskRatio">—</b></div></div>
-        <div class="subrow"><span id="signalTime">No qualifying idea</span><span id="signalState">No orders sent</span></div><div class="checks" id="checks"></div>
-      </div><div class="panel-note">Ideas are created only after a newly closed 1m stream candle with fresh executions and displayed depth. The next observed live trade supplies a hypothetical paper entry; fills and results are estimates, not broker executions.</div>
-    </article>
-    <article class="panel">
-      <header class="panel-head"><div><small>02 / MARKET REGIME</small><h2>Confluence monitor</h2></div><span class="tag" id="marketMode">WAITING</span></header>
-      <div class="state-table">
-        <div><small>M1 EMA 9/21</small><b id="trend1">—</b></div><div><small>M5 EMA 9/21</small><b id="trend5">—</b></div><div><small>M15 EMA 9/21</small><b id="trend15">—</b></div><div><small>M1 ATR(14)</small><b id="atr">—</b></div><div><small>90S TAKER BUY SHARE</small><b id="pressure">—</b></div><div><small>OBSERVED QUOTE BEHAVIOUR</small><b id="absorption">—</b></div><div><small>DATA HEALTH</small><b id="feedHealth">—</b></div>
-      </div>
-    </article>
-  </section>
-  <section class="columns charts">
-    <article class="panel"><header class="panel-head"><div><small>03 / EXCHANGE PRICE</small><h2>1m candlesticks + idea levels</h2></div><span class="tag" id="candleMeta">WAITING</span></header><div class="chart"><canvas id="candles"></canvas></div><div class="panel-note">PAXG/USDT Binance candles, not XAU/USD. Signal reference levels are indicative.</div></article>
-    <article class="panel"><header class="panel-head"><div><small>04 / EXECUTED TRADES</small><h2>Live tape</h2></div><span class="tag" id="tradeMeta">0 LIVE</span></header><div class="trade-head"><span>TIME SAST</span><span>SIDE</span><span>PRICE</span><span>USDT</span></div><div id="tape" class="tape scroll"><p class="empty">Waiting for executed trades...</p></div><div class="panel-note">Aggressor side from Binance buyer-maker flag. REST records are backfill, not live confirmation.</div></article>
-  </section>
-  <section class="panel section"><header class="panel-head"><div><small>05 / RESTING ORDER DISTRIBUTION</small><h2>Liquidity persistence heatmap</h2></div><span class="tag" id="heatMeta">0 SAMPLES</span></header><div class="heat"><canvas id="heatmap"></canvas></div><div class="legend"><span class="buy">■ RESTING BIDS</span><span class="sell">■ RESTING ASKS</span><span>BRIGHTNESS = OBSERVED QUANTITY</span><span>TIME → RIGHT</span></div><div class="panel-note">Top-20 order-book snapshots sampled about every 2 seconds, with recent snapshots saved on this device. No full depth history, hidden orders or spoofing proof.</div></section>
-  <section class="columns">
-    <article class="panel"><header class="panel-head"><div><small>06 / ORDER BOOK</small><h2>Visible top-20 depth</h2></div><span class="tag" id="depthMeta">WAITING</span></header><div class="books"><div><h3 class="sell">ASKS / SELL LIMITS</h3><div id="asks" class="book"></div></div><div><h3 class="buy">BIDS / BUY LIMITS</h3><div id="bids" class="book"></div></div></div></article>
-    <article class="panel"><header class="panel-head"><div><small>07 / TRADE MICROSTRUCTURE</small><h2>3-minute footprint</h2></div><span class="tag">OBSERVED TRADES</span></header><div class="foot-head"><span>PRICE</span><span>SELL QTY</span><span>BUY QTY</span><span>DELTA</span></div><div id="footprint" class="footprint"><p class="empty">Waiting for trades...</p></div></article>
-  </section>
-  <section class="columns">
-    <article class="panel"><header class="panel-head"><div><small>08 / LIQUIDITY WATCH</small><h2>Persistent visible walls</h2></div><span class="tag">OBSERVATIONAL</span></header><div id="walls" class="wall-list"><p class="empty">Collecting book snapshots...</p></div><div class="panel-note">Size and lifespan are measured only within the sampled top-20 view. A large quote is not necessarily institutional.</div></article>
-    <article class="panel"><header class="panel-head"><div><small>09 / PERFORMANCE</small><h2>Paper-trade analytics</h2></div><span class="tag">FORWARD ONLY</span></header><div class="stats"><div><small>RESOLVED</small><b id="statTrades">0</b></div><div><small>WIN RATE</small><b id="statWin">—</b></div><div><small>PROFIT FACTOR</small><b id="statPF">—</b></div><div><small>EXPECTANCY</small><b id="statExp">—</b></div><div><small>NET R</small><b id="statR">—</b></div><div><small>MAX DD (R)</small><b id="statDD">—</b></div></div><div class="panel-note" id="statExtra">Live-tick paper fills with estimated execution costs. Gapped/unfilled ideas excluded from performance.</div></article>
-  </section>
-  <section class="panel section"><header class="panel-head"><div><small>10 / PAPER JOURNAL</small><h2>Trade ideas and outcomes</h2></div><div class="head-actions"><button id="export" type="button" class="outline">EXPORT CSV</button><button id="clearPaper" type="button" class="outline danger">RESET PAPER LOG</button></div></header><div class="journal-wrap"><table><thead><tr><th>TIME SAST</th><th>IDEA</th><th>SCORE</th><th>PLANNED ENTRY</th><th>PAPER FILL</th><th>STATUS</th><th>NET R</th></tr></thead><tbody id="paperRows"><tr><td colspan="7" class="empty">No forward-tested ideas yet.</td></tr></tbody></table></div><div class="panel-note">Browser-local records only. Reloading with a paper trade open marks it INTERRUPTED; outcomes are not invented. Export the CSV regularly.</div></section>
-  <section class="panel section"><header class="panel-head"><div><small>11 / DIAGNOSTICS</small><h2>Connection & event journal</h2></div><button class="outline" type="button" id="clearEvents">CLEAR</button></header><div class="events scroll" id="events"></div></section>
-  <footer>MKAYFX BLACKBOOK X3 · PAXG/USDT SPOT RESEARCH · SEPARATE XAU/USD REFERENCE · NO REAL ORDERS · NO GUARANTEED RETURNS</footer>
+
+    <div class="legend">
+     <span class="legend-line cyan"></span>
+     Active SSL
+     <span class="legend-line pink"></span>
+     Active BSL
+    </div>
+   </div>
+
+   <div class="chart-wrap">
+    <canvas id="priceChart"></canvas>
+    <div id="chartEmpty" class="empty-layer">
+     Awaiting gold candles
+    </div>
+   </div>
+
+   <div class="chart-foot">
+    <span>TWELVE DATA · M5 OHLC</span>
+    <span id="chartAge">—</span>
+   </div>
+  </article>
+
+  <article class="panel decision-panel">
+   <div class="panel-head">
+    <b>QUANTUM SIGNAL CORE</b>
+    <span class="tag" id="signalTag">RULE-BASED</span>
+   </div>
+
+   <div class="signal-box">
+    <div class="orb" id="signalOrb">◇</div>
+    <div class="decision" id="decision">WAIT</div>
+    <div class="decision-caption" id="signalReason">
+     Waiting for a confirmed setup
+    </div>
+   </div>
+
+   <div class="score-line">
+    <span>SETUP SCORE</span>
+    <b id="signalScore">— / 100</b>
+   </div>
+
+   <div class="progress">
+    <i id="scoreFill"></i>
+   </div>
+
+   <div class="signal-grid">
+    <div>
+     ENTRY
+     <strong id="entry">—</strong>
+    </div>
+    <div>
+     STOP LOSS
+     <strong id="stop">—</strong>
+    </div>
+    <div>
+     TARGET 1
+     <strong id="tp1">—</strong>
+    </div>
+    <div>
+     TARGET 2
+     <strong id="tp2">—</strong>
+    </div>
+   </div>
+
+   <button class="primary-btn" id="paperButton" disabled>
+    ADD CONFIRMED SIGNAL TO PAPER JOURNAL
+   </button>
+
+   <small class="fineprint">
+    No automatic live brokerage orders.
+    A signal is not a guarantee of profit.
+   </small>
+  </article>
+ </div>
+
+ <div class="three-col">
+  <article class="panel compact">
+   <div class="panel-head">
+    <b>TIMEFRAME ALIGNMENT</b>
+    <span class="tag">EMA 20 / 50</span>
+   </div>
+
+   <div id="trendRows" class="trend-rows">
+    <div class="placeholder">Connecting...</div>
+   </div>
+  </article>
+
+  <article class="panel compact">
+   <div class="panel-head">
+    <b>GLOBAL SESSIONS</b>
+    <span class="tag">UTC RANGES</span>
+   </div>
+
+   <div id="sessionRows" class="list-rows">
+    <div class="placeholder">Connecting...</div>
+   </div>
+  </article>
+
+  <article class="panel compact">
+   <div class="panel-head">
+    <b>INTELLIGENCE FEED</b>
+    <span class="tag">HEALTH</span>
+   </div>
+
+   <div id="healthRows" class="list-rows">
+    <div class="placeholder">Connecting...</div>
+   </div>
+  </article>
+ </div>
+
+</section>
+
+<section id="liquidity" class="section">
+
+ <div class="section-top">
+  <div>
+   <div class="eyebrow">02 / LIQUIDITY RADAR</div>
+   <h2>High-conviction price zones</h2>
+  </div>
+
+  <span class="tag">
+   ESTIMATED, NOT ORDER BOOK
+  </span>
+ </div>
+
+ <div class="two-col liquidity-layout">
+
+  <article class="panel">
+   <div class="panel-head">
+    <b>ZONE CONCENTRATION MAP</b>
+    <span class="sub">
+     XAU/USD price-derived intensity
+    </span>
+   </div>
+
+   <div class="heat-wrap">
+    <canvas id="zoneCanvas"></canvas>
+    <div id="zoneEmpty" class="empty-layer">
+     Awaiting historical price levels
+    </div>
+   </div>
+
+   <div class="chart-foot">
+    <span>CYAN / SELL-SIDE LOWS</span>
+    <span>MAGENTA / BUY-SIDE HIGHS</span>
+   </div>
+  </article>
+
+  <article class="panel">
+   <div class="panel-head">
+    <b>STRONGEST ACTIVE ZONES</b>
+    <span class="tag">SCORE ≥ 70</span>
+   </div>
+
+   <div class="zone-list" id="zoneRows">
+    <div class="placeholder">
+     Waiting for levels...
+    </div>
+   </div>
+  </article>
+
+ </div>
+</section>
+
+<section id="flow" class="section">
+
+ <div class="section-top">
+  <div>
+   <div class="eyebrow">
+    03 / EXECUTED TRADE MONITOR
+   </div>
+   <h2>PAXG market microstructure</h2>
+  </div>
+
+  <span class="tag warn">
+   BINANCE PAXG/USDT ≠ XAU/USD
+  </span>
+ </div>
+
+ <div class="strip flow-strip">
+
+  <div class="strip-item">
+   <small>PAXG LAST TRADE</small>
+   <strong id="paxgPrice">—</strong>
+   <small>Binance spot token</small>
+  </div>
+
+  <div class="strip-item">
+   <small>SESSION BUY NOTIONAL</small>
+   <strong id="buyVolume">—</strong>
+   <small>Observed since connection</small>
+  </div>
+
+  <div class="strip-item">
+   <small>SESSION SELL NOTIONAL</small>
+   <strong id="sellVolume">—</strong>
+   <small>Observed since connection</small>
+  </div>
+
+  <div class="strip-item">
+   <small>CUMULATIVE DELTA</small>
+   <strong id="cvd">—</strong>
+   <small>Observed quote notional</small>
+  </div>
+ </div>
+
+ <div class="three-col flow-panels">
+
+  <article class="panel">
+   <div class="panel-head">
+    <b>VISIBLE DEPTH HEATMAP</b>
+    <span id="depthStatus" class="sub">
+     Disconnected
+    </span>
+   </div>
+
+   <div class="heat-wrap">
+    <canvas id="depthCanvas"></canvas>
+   </div>
+
+   <div class="chart-foot">
+    Top 20 visible levels · Binance snapshots
+   </div>
+  </article>
+
+  <article class="panel">
+   <div class="panel-head">
+    <b>LIVE ORDER LADDER</b>
+    <span class="tag">PAXG</span>
+   </div>
+
+   <div class="ladder" id="ladder">
+    <div class="placeholder">
+     Awaiting depth...
+    </div>
+   </div>
+  </article>
+
+  <article class="panel">
+   <div class="panel-head">
+    <b>EXECUTION TAPE</b>
+    <span class="tag">PAXG</span>
+   </div>
+
+   <div class="tape" id="tape">
+    <div class="placeholder">
+     Awaiting trades...
+    </div>
+   </div>
+  </article>
+
+ </div>
+
+ <div class="two-col">
+
+  <article class="panel">
+   <div class="panel-head">
+    <b>TRADE FOOTPRINT</b>
+    <span class="sub">
+     Price buckets · observed trades
+    </span>
+   </div>
+
+   <div id="footprint" class="footprint">
+    <div class="placeholder">
+     Awaiting trades...
+    </div>
+   </div>
+  </article>
+
+  <article class="panel compact">
+   <div class="panel-head">
+    <b>MARKET EVENT JOURNAL</b>
+    <span class="tag">LIVE EVENTS</span>
+   </div>
+
+   <div id="events" class="event-list">
+    <div class="placeholder">
+     No events yet
+    </div>
+   </div>
+
+   <p class="fineprint">
+    Displayed PAXG depth shows resting orders,
+    not institutional identities. Order changes
+    alone cannot establish spoofing or iceberg orders.
+   </p>
+  </article>
+
+ </div>
+</section>
+
+<section id="scientist" class="section">
+
+ <div class="section-top">
+  <div>
+   <div class="eyebrow">
+    04 / STRATEGY LABORATORY
+   </div>
+   <h2>Evidence before execution</h2>
+  </div>
+
+  <span class="tag">
+   HISTORICAL · OHLC
+  </span>
+ </div>
+
+ <article class="panel lab">
+
+  <div class="lab-controls">
+
+   <label>
+    MINIMUM SCORE
+    <strong id="thresholdValue">70</strong>
+
+    <input
+     type="range"
+     id="threshold"
+     min="55"
+     max="95"
+     value="70"
+     step="5">
+   </label>
+
+   <label>
+    TARGET R MULTIPLE
+    <strong id="rrValue">2.0</strong>
+
+    <input
+     type="range"
+     id="rr"
+     min="1"
+     max="4"
+     value="2"
+     step="0.5">
+   </label>
+
+   <label>
+    ROUND-TRIP COST IN $/OZ
+    <strong id="costValue">0.35</strong>
+
+    <input
+     type="range"
+     id="cost"
+     min="0"
+     max="3"
+     value="0.35"
+     step="0.05">
+   </label>
+
+   <button id="runBacktest" class="primary-btn">
+    RUN HISTORICAL TEST ↗
+   </button>
+  </div>
+
+  <div class="stats-grid">
+
+   <div>
+    <small>TESTED TRADES</small>
+    <strong id="testTrades">—</strong>
+   </div>
+
+   <div>
+    <small>WIN RATE</small>
+    <strong id="testWin">—</strong>
+   </div>
+
+   <div>
+    <small>PROFIT FACTOR</small>
+    <strong id="testPf">—</strong>
+   </div>
+
+   <div>
+    <small>NET RESULT</small>
+    <strong id="testR">—</strong>
+   </div>
+
+   <div>
+    <small>MAX DRAWDOWN</small>
+    <strong id="testDD">—</strong>
+   </div>
+
+  </div>
+
+  <div class="chart-wrap small-chart">
+   <canvas id="equityChart"></canvas>
+  </div>
+
+  <div class="validation">
+
+   <div>
+    <small>DEVELOPMENT · FIRST 70%</small>
+    <strong id="devResult">—</strong>
+   </div>
+
+   <div>
+    <small>UNSEEN VALIDATION · LAST 30%</small>
+    <strong id="valResult">—</strong>
+   </div>
+
+   <div>
+    <small>SAMPLE COVERAGE</small>
+    <strong id="sampleRange">—</strong>
+   </div>
+
+  </div>
+
+  <p class="fineprint" id="testNote">
+   Backtest uses next-candle open, SL-first when
+   both exits touch, and a configurable simplified
+   cost. No look-ahead entries. This is not
+   tick-level execution simulation.
+  </p>
+
+ </article>
+</section>
+
+<section id="journal" class="section">
+
+ <div class="section-top">
+  <div>
+   <div class="eyebrow">
+    05 / EXECUTION INTELLIGENCE
+   </div>
+   <h2>Paper trade journal</h2>
+  </div>
+
+  <div class="actions">
+   <button id="exportCsv" class="outline-btn">
+    EXPORT CSV ↓
+   </button>
+
+   <button id="clearJournal" class="outline-btn danger">
+    CLEAR LOCAL DATA
+   </button>
+  </div>
+ </div>
+
+ <article class="panel">
+
+  <div class="stats-grid journal-stats">
+   <div>
+    <small>RECORDED SIGNALS</small>
+    <strong id="journalCount">0</strong>
+   </div>
+
+   <div>
+    <small>FINISHED TRADES</small>
+    <strong id="journalFinished">0</strong>
+   </div>
+
+   <div>
+    <small>WIN RATE</small>
+    <strong id="journalWin">—</strong>
+   </div>
+
+   <div>
+    <small>NET R</small>
+    <strong id="journalR">0.00</strong>
+   </div>
+  </div>
+
+  <div class="table-scroller">
+   <table>
+    <thead>
+     <tr>
+      <th>TIME (SAST)</th>
+      <th>SETUP</th>
+      <th>SCORE</th>
+      <th>ENTRY</th>
+      <th>SL / TP</th>
+      <th>STATUS</th>
+      <th>NET R</th>
+     </tr>
+    </thead>
+
+    <tbody id="journalBody">
+     <tr>
+      <td colspan="7">No paper trades recorded</td>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+
+  <p class="fineprint">
+   Trades are stored on this device only.
+   Evaluation uses subsequent available closed
+   M1 OHLC candles. Missing history is marked
+   UNVERIFIED—not assumed profitable. If your phone
+   suspends this page, live streaming also pauses.
+  </p>
+
+ </article>
+</section>
+
+<footer>
+ MKAYFX BLACKBOOK X4
+ <span>•</span>
+ QUANTUM INTELLIGENCE RESEARCH TERMINAL
+ <span>•</span>
+ NO GUARANTEED SIGNALS
+ <span>•</span>
+ NOT INVESTMENT ADVICE
+</footer>
+
+</main>
 </div>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
