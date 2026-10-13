@@ -1,2470 +1,523 @@
 
-/*
- MKAYFX BLACKBOOK X2 — Browser engine
- Binance PAXG/USDT public market data (NOT XAUUSD futures).
- Trade ideas are rule-based research, not executable orders.
+/* MKAYFX BLACKBOOK X3 — client engine.
+   Actual market source: Binance PAXG/USDT public spot data.
+   Reference only: Twelve Data XAU/USD. NO broker orders.
+   Local paper trade results are approximate; historical REST trades do not qualify signals.
 */
-
 (() => {
   "use strict";
-
-  const SYMBOL = "paxgusdt";
-  const CHANNELS = `${SYMBOL}@trade/${SYMBOL}@depth20@100ms/${SYMBOL}@kline_1m`;
-  const STREAM = `wss://data-stream.binance.vision:443/stream?streams=${CHANNELS}`;
-  const STREAM_BACKUP = `wss://stream.binance.com:443/stream?streams=${CHANNELS}`;
-
   const $ = id => document.getElementById(id);
-  const n = v => Number(v);
-  const valid = v => Number.isFinite(v) && v > 0;
-
-  const fmt = (v, d = 2) =>
-    Number.isFinite(v)
-      ? v.toLocaleString("en-US", {
-          minimumFractionDigits: d,
-          maximumFractionDigits: d
-        })
-      : "—";
-
-  const compact = v =>
-    !Number.isFinite(v)
-      ? "—"
-      : Math.abs(v) >= 1e6
-        ? fmt(v / 1e6, 2) + "M"
-        : Math.abs(v) >= 1000
-          ? fmt(v / 1000, 1) + "K"
-          : fmt(v);
-
-  const signed = (v, d = 3) =>
-    Number.isFinite(v)
-      ? (v > 0 ? "+" : "") + fmt(v, d)
-      : "—";
-
-  const clock = t =>
-    new Date(t).toLocaleTimeString("en-GB", {
-      timeZone: "Africa/Johannesburg",
-      hour12: false
-    });
-
-  const esc = x =>
-    String(x).replace(/[&<>"']/g, c => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    })[c]);
-
-  const clamp = (x, a, b) =>
-    Math.max(a, Math.min(b, x));
-
-  const s = {
-    start: Date.now(),
-    mode: "connecting",
-    lastFrame: 0,
-    lastDepth: 0,
-    lastLiveTrade: 0,
-    price: NaN,
-    priceAt: 0,
-    ticker: null,
-
-    book: {
-      bids: [],
-      asks: []
-    },
-
-    candles: [],
-    trades: [],
-    ids: new Set(),
-    idQueue: [],
-    heat: [],
-    lastHeat: 0,
-
-    cvd: 0,
-    liveCount: 0,
-    events: [],
-    xau: null,
-
-    threshold: 10000,
-    bucket: 1,
-    scoreMin: 75,
-    rr: 1.8,
-
-    alerts: false,
-    active: null,
-    lastIdeaBar: 0,
-    lastAlert: 0,
-
-    decision: "Waiting for market data",
-    decisionScore: null,
-    decisionChecks: [],
-
-    trend: "—",
-    atr: NaN,
-    pressure: NaN,
-    depthShare: NaN
+  const STREAMS = "paxgusdt@trade/paxgusdt@depth20@100ms/paxgusdt@kline_1m";
+  const URLS = [
+    `wss://data-stream.binance.vision:443/stream?streams=${STREAMS}`,
+    `wss://stream.binance.com:443/stream?streams=${STREAMS}`
+  ];
+  const STORE = "mkayfx-blackbook-x3-v1";
+  const fmt = (v, dp = 2) => Number.isFinite(v) ? v.toLocaleString("en-US", {minimumFractionDigits: dp, maximumFractionDigits: dp}) : "—";
+  const short = v => !Number.isFinite(v) ? "—" : Math.abs(v) >= 1e6 ? `${fmt(v / 1e6, 2)}M` : Math.abs(v) >= 1000 ? `${fmt(v / 1000, 1)}K` : fmt(v);
+  const signed = (v, dp = 2) => Number.isFinite(v) ? `${v > 0 ? "+" : ""}${fmt(v, dp)}` : "—";
+  const tm = t => new Date(t).toLocaleTimeString("en-GB", {timeZone: "Africa/Johannesburg", hour12: false});
+  const num = Number;
+  const good = v => Number.isFinite(v) && v > 0;
+  const clamp = (x, low, high) => Math.max(low, Math.min(high, x));
+  const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const S = {
+    begin: Date.now(), mode: "connecting", lastFrame: 0, lastDepth: 0,
+    lastLiveTrade: 0, lastLiveClose: 0, lastClosedBar: 0,
+    price: NaN, priceAt: 0, xau: null, ticker: null,
+    book: {bids:[], asks:[]}, bars:[], trades:[], seen: new Set(), seenQueue:[],
+    heat:[], heatAt:0, cvd:0, liveTotal:0, events:[], lastAlertAt:0, lastQuoteAlert:0, lastSavedAt:0,
+    records:[], lastIdeaBar:0, decision:"Waiting for market data", checks:[],
+    candidateScore:null, trend1:"—", trend5:"—", trend15:"—", atr:NaN,
+    buyShare:NaN, takerShare:NaN, absorption:"Insufficient observations",
+    settings:{minScore:75,rr:2,fee:10,slippage:2,bucket:1}, alerts:false
   };
+  let ws = null, restTimer = null, retryTimer = null, restBusy = false;
+  let attempts = 0, pendingRender = null, toastTimer = null, paused = false;
 
-  let socket = null;
-  let polling = null;
-  let reconnect = null;
-  let busy = false;
-  let attempts = 0;
-  let rendering = null;
-  let xauPolling = null;
-  let toastTimer = null;
-  let stopped = false;
-
-  // ================================
-  // EVENT JOURNAL
-  // ================================
-
-  function log(title, detail = "", type = "info") {
-    s.events.unshift({
-      at: Date.now(),
-      title,
-      detail,
-      type
-    });
-
-    s.events.length = Math.min(
-      s.events.length,
-      100
-    );
-
-    $("events").innerHTML =
-      s.events.slice(0, 35).map(e => `
-        <div class="event ${e.type}">
-          <time>${clock(e.at)}</time>
-          <div>
-            <b>${esc(e.title)}</b>
-            <p>${esc(e.detail)}</p>
-          </div>
-        </div>
-      `).join("");
+  // ---------- Persistent local journal ----------
+  function save() {
+    try {
+      const heat = S.heat.slice(-100).map(f => ({at:f.at,
+        bids:f.bids.map(x=>[x.p,x.q]), asks:f.asks.map(x=>[x.p,x.q])}));
+      localStorage.setItem(STORE, JSON.stringify({
+        records:S.records.slice(-300),lastIdeaBar:S.lastIdeaBar,
+        settings:S.settings,heat
+      }));
+    } catch (e) { /* Private mode / storage quota; UI still runs */ }
   }
-
-  function toast(msg) {
-    const el = $("toast");
-
-    el.textContent = msg;
-    el.classList.add("show");
-
-    clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(
-      () => el.classList.remove("show"),
-      4300
-    );
-  }
-
-  function renderSoon() {
-    if (rendering) return;
-
-    rendering = setTimeout(() => {
-      rendering = null;
-      render();
-    }, 250);
-  }
-
-  // ================================
-  // ORDER BOOK PROCESSING
-  // ================================
-
-  function ingestBook(obj) {
-    if (
-      !Array.isArray(obj?.bids) ||
-      !Array.isArray(obj?.asks)
-    ) {
-      return;
-    }
-
-    const parse = (rows, desc) =>
-      rows
-        .map(x => ({
-          p: n(x[0]),
-          q: n(x[1])
-        }))
-        .filter(x =>
-          valid(x.p) && valid(x.q)
-        )
-        .sort((a, b) =>
-          desc
-            ? b.p - a.p
-            : a.p - b.p
-        )
-        .slice(0, 20);
-
-    const bids = parse(obj.bids, true);
-    const asks = parse(obj.asks, false);
-
-    if (
-      !bids.length ||
-      !asks.length ||
-      bids[0].p >= asks[0].p
-    ) {
-      return;
-    }
-
-    s.book = { bids, asks };
-    s.lastDepth = Date.now();
-
-    if (!valid(s.price)) {
-      s.price = (
-        bids[0].p + asks[0].p
-      ) / 2;
-    }
-
-    if (Date.now() - s.lastHeat > 2000) {
-      s.lastHeat = Date.now();
-
-      s.heat.push({
-        bids: bids.map(x => ({ ...x })),
-        asks: asks.map(x => ({ ...x })),
-        at: Date.now()
+  function restore() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORE) || "null");
+      if (!data || typeof data !== "object") return;
+      for (const key of Object.keys(S.settings)) {
+        const v = +data.settings?.[key];
+        if (Number.isFinite(v)) S.settings[key] = v;
+      }
+      S.settings.minScore = clamp(S.settings.minScore,70,85);
+      S.settings.rr = clamp(S.settings.rr,1.5,3);
+      S.settings.fee = clamp(S.settings.fee,0,100);
+      S.settings.slippage = clamp(S.settings.slippage,0,100);
+      if (![.5,1,2,5].includes(S.settings.bucket)) S.settings.bucket=1;
+      S.lastIdeaBar = Number(data.lastIdeaBar) || 0;
+      if (Array.isArray(data.records)) S.records = data.records.slice(-300).filter(x=>x && typeof x === "object");
+      S.records.forEach(r => {
+        if (["PENDING","OPEN"].includes(r.status)) {
+          r.status = "INTERRUPTED"; r.closedAt = Date.now(); r.note = "Page ended before a continuous market outcome could be observed";
+          r.netR = null;
+        }
       });
+      if (Array.isArray(data.heat)) S.heat = data.heat.slice(-100).filter(f => f && Date.now()-f.at < 6*3600000).map(f => ({
+        at:+f.at, bids:(f.bids||[]).map(x=>({p:+x[0],q:+x[1]})),
+        asks:(f.asks||[]).map(x=>({p:+x[0],q:+x[1]}))
+      })).filter(f=>f.bids.length && f.asks.length);
+    } catch (e) { /* Bad previously stored state is ignored */ }
+  }
+  function currentPaper() {return S.records.find(r=>r.status==="PENDING"||r.status==="OPEN") || null;}
+  function recordEvent(title, description="", type="info") {
+    S.events.unshift({at:Date.now(),title,description,type});
+    S.events.length=Math.min(90,S.events.length);
+    renderEvents();
+  }
+  function renderEvents() {
+    $("events").innerHTML=S.events.length?S.events.slice(0,35).map(e=>
+      `<div class="event ${e.type}"><time>${tm(e.at)}</time><div><b>${esc(e.title)}</b><p>${esc(e.description)}</p></div></div>`
+    ).join(""):'<p class="empty">No events yet.</p>';
+  }
+  function toast(message) {
+    const el=$("toast");el.textContent=message;el.classList.add("show");
+    clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),4000);
+  }
+  function scheduleRender() {if(pendingRender)return;pendingRender=setTimeout(()=>{pendingRender=null;render();},280);}
 
-      if (s.heat.length > 70) {
-        s.heat.shift();
+  // ---------- Live trades and maker-side normalization ----------
+  function parseBuyerMaker(t) {
+    if(typeof t.m === "boolean")return t.m;
+    if(typeof t.isBuyerMaker === "boolean")return t.isBuyerMaker;
+    return null; // Never assume unknown data is a buy or sell.
+  }
+  function ingestTrade(raw, live=false) {
+    const id=String(raw?.t ?? raw?.id ?? "");
+    const price=+(raw?.p ?? raw?.price), qty=+(raw?.q ?? raw?.qty), at=+(raw?.T ?? raw?.time);
+    if(!id||!good(price)||!good(qty)||!Number.isFinite(at)||S.seen.has(id))return;
+    const maker=parseBuyerMaker(raw), buy=maker===null?null:!maker;
+    S.seen.add(id);S.seenQueue.push(id);
+    if(S.seenQueue.length>5000)S.seen.delete(S.seenQueue.shift());
+    const t={id,price,qty,at,buy,live,notional:price*qty};
+    S.trades.push(t);S.trades.sort((a,b)=>b.at-a.at||Number(b.id)-Number(a.id));
+    if(S.trades.length>900)S.trades.length=900;
+    if(at>=S.priceAt){S.price=price;S.priceAt=at;}
+    if(live){
+      S.lastLiveTrade=Date.now();
+      S.liveTotal++;
+      if(buy!==null)S.cvd += buy?qty:-qty;
+      handlePaperTick(t);
+      if(t.notional>=10000 && Date.now()-S.lastAlertAt>3000){
+        S.lastAlertAt=Date.now();
+        recordEvent("Large executed trade",`${buy===null?"UNKNOWN":buy?"BUY":"SELL"} ${fmt(t.notional,0)} USDT @ ${fmt(price)}`,"warn");
+        if(S.alerts)toast(`LARGE TRADE ${fmt(t.notional,0)} USDT`);
       }
     }
-
-    renderSoon();
+    scheduleRender();
   }
-
-  // ================================
-  // EXECUTED TRADE PROCESSING
-  // ================================
-
-  function ingestTrade(t, fromRest = false) {
-    const id = String(
-      t.t ?? t.id ?? ""
-    );
-
-    const price = n(
-      t.p ?? t.price
-    );
-
-    const qty = n(
-      t.q ?? t.qty
-    );
-
-    const at = n(
-      t.T ?? t.time
-    );
-
-    if (
-      !id ||
-      !valid(price) ||
-      !valid(qty) ||
-      !Number.isFinite(at) ||
-      s.ids.has(id)
-    ) {
-      return;
+  // ---------- Top-20 order book snapshots ----------
+  function ingestBook(raw, fromLive) {
+    if(!Array.isArray(raw?.bids)||!Array.isArray(raw?.asks))return;
+    const clean=(arr,descending)=>arr.map(x=>({p:+x[0],q:+x[1]})).filter(x=>good(x.p)&&good(x.q)).sort((a,b)=>descending?b.p-a.p:a.p-b.p).slice(0,20);
+    const bids=clean(raw.bids,true), asks=clean(raw.asks,false);
+    if(!bids.length||!asks.length||bids[0].p>=asks[0].p)return;
+    if(!fromLive && S.mode==="ws" && S.lastDepth)return; // Don't regress a live book to REST.
+    const old=S.book;S.book={bids,asks};S.lastDepth=Date.now();
+    if(!good(S.price)){S.price=(bids[0].p+asks[0].p)/2;}
+    if(fromLive && Date.now()-S.lastQuoteAlert>5000 && old.bids.length && old.asks.length){
+      const prior=[...old.bids,...old.asks];
+      const mean=prior.reduce((sum,x)=>sum+x.q,0)/prior.length;
+      const big=prior.find(x=>x.q>=mean*4 && ![...bids,...asks].some(y=>y.p===x.p&&y.q>=x.q*.2));
+      if(big){S.lastQuoteAlert=Date.now();recordEvent("Large displayed quote reduced",`${fmt(big.p)}: previous ${fmt(big.q,4)} PAXG; cancellation/execution unknown`,"warn");}
     }
-
-    s.ids.add(id);
-    s.idQueue.push(id);
-
-    if (s.idQueue.length > 3500) {
-      s.ids.delete(
-        s.idQueue.shift()
-      );
+    if(Date.now()-S.heatAt>=2000){
+      S.heatAt=Date.now();S.heat.push({at:S.heatAt,bids:bids.map(x=>({...x})),asks:asks.map(x=>({...x}))});
+      if(S.heat.length>100)S.heat.shift();
     }
-
-    // Binance m=false:
-    // Aggressor is the buyer.
-    // Binance m=true:
-    // Aggressor is the seller.
-
-    const buy = t.m === false;
-
-    const trade = {
-      id,
-      price,
-      qty,
-      at,
-      buy,
-      notional: price * qty,
-      live: !fromRest
-    };
-
-    s.trades.push(trade);
-
-    s.trades.sort(
-      (a, b) =>
-        b.at - a.at ||
-        n(b.id) - n(a.id)
-    );
-
-    s.trades.length = Math.min(
-      600,
-      s.trades.length
-    );
-
-    if (at >= s.priceAt) {
-      s.price = price;
-      s.priceAt = at;
+    scheduleRender();
+  }
+  function ingestBar(raw, source="rest") {
+    const b={t:+raw.t,o:+raw.o,h:+raw.h,l:+raw.l,c:+raw.c,v:+raw.v,closed:!!raw.closed,source};
+    if(!Number.isFinite(b.t)||![b.o,b.h,b.l,b.c].every(good)||!Number.isFinite(b.v)||b.v<0||b.h<b.l)return;
+    const index=S.bars.findIndex(x=>x.t===b.t);
+    if(index===-1)S.bars.push(b);
+    else {
+      const existing=S.bars[index];
+      if(source==="rest" && existing.source==="ws")return;
+      S.bars[index]={...b,closed:b.closed||existing.closed};
     }
-
-    if (
-      !fromRest &&
-      at >= s.start
-    ) {
-      s.cvd += buy ? qty : -qty;
-      s.liveCount++;
-      s.lastLiveTrade = Date.now();
-
-      if (
-        trade.notional >= s.threshold &&
-        Date.now() - s.lastAlert >= 1300
-      ) {
-        s.lastAlert = Date.now();
-
-        const detail =
-          `${buy ? "BUY" : "SELL"} ` +
-          `${fmt(trade.notional, 0)} USDT ` +
-          `@ ${fmt(price)}`;
-
-        log(
-          "Large executed PAXG trade",
-          detail,
-          "warn"
-        );
-
-        if (s.alerts) {
-          toast(
-            "LARGE TRADE · " + detail
-          );
-        }
+    S.bars.sort((a,b)=>a.t-b.t);
+    if(S.bars.length>850)S.bars=S.bars.slice(-850);
+    scheduleRender();
+  }
+  function ingestStream(raw) {
+    let message;try{message=JSON.parse(raw);}catch{return;}
+    const d=message?.data ?? message;if(!d)return;
+    S.lastFrame=Date.now();
+    if(d.e==="trade")ingestTrade(d,true);
+    else if(Array.isArray(d.bids)&&Array.isArray(d.asks))ingestBook(d,true);
+    else if(d.e==="kline" && d.k){
+      const k=d.k;
+      ingestBar({t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v,closed:k.x},"ws");
+      if(k.x && +k.t>S.lastLiveClose){
+        S.lastLiveClose=+k.t;S.lastClosedBar=Date.now();
+        evaluate();
       }
     }
-
-    renderSoon();
-  }
-
-  // ================================
-  // CANDLE PROCESSING
-  // ================================
-
-  function ingestCandle(c) {
-    const bar = {
-      t: n(c.t),
-      o: n(c.o),
-      h: n(c.h),
-      l: n(c.l),
-      c: n(c.c),
-      v: n(c.v),
-      closed: !!c.closed
-    };
-
-    if (
-      ![
-        bar.t,
-        bar.o,
-        bar.h,
-        bar.l,
-        bar.c,
-        bar.v
-      ].every(Number.isFinite) ||
-      ![
-        bar.o,
-        bar.h,
-        bar.l,
-        bar.c
-      ].every(valid) ||
-      bar.h < bar.l
-    ) {
-      return;
-    }
-
-    const i = s.candles.findIndex(
-      x => x.t === bar.t
-    );
-
-    if (i === -1) {
-      s.candles.push(bar);
-    } else {
-      s.candles[i] = {
-        ...bar,
-        closed:
-          s.candles[i].closed ||
-          bar.closed
-      };
-    }
-
-    s.candles.sort(
-      (a, b) => a.t - b.t
-    );
-
-    if (s.candles.length > 150) {
-      s.candles =
-        s.candles.slice(-150);
-    }
-
-    renderSoon();
-  }
-
-  // ================================
-  // LIVE WEBSOCKET MESSAGES
-  // ================================
-
-  function onFeed(message) {
-    let d;
-
-    try {
-      const raw = JSON.parse(message);
-      d = raw.data || raw;
-    } catch (_) {
-      return;
-    }
-
-    if (!d) return;
-
-    s.lastFrame = Date.now();
-
-    if (d.e === "trade") {
-      ingestTrade(d);
-
-    } else if (
-      Array.isArray(d.bids) &&
-      Array.isArray(d.asks)
-    ) {
-      ingestBook(d);
-
-    } else if (
-      d.e === "kline" &&
-      d.k
-    ) {
-      const k = d.k;
-
-      ingestCandle({
-        t: k.t,
-        o: k.o,
-        h: k.h,
-        l: k.l,
-        c: k.c,
-        v: k.v,
-        closed: k.x
-      });
-    }
-
     updateConnection();
   }
 
-  // ================================
-  // HTTP FALLBACK
-  // ================================
-
-  function stopPolling() {
-    clearInterval(polling);
-    polling = null;
-  }
-
-  function beginPolling() {
-    if (
-      stopped ||
-      document.hidden
-    ) {
-      return;
-    }
-
-    s.mode = "poll";
-
-    if (!polling) {
-      fetchMarket();
-
-      polling = setInterval(
-        fetchMarket,
-        12000
-      );
-    }
-
-    updateConnection();
-  }
-
-  async function fetchMarket() {
-    if (busy || stopped) return;
-
-    busy = true;
-
+  // ---------- Bootstrap and REST failover ----------
+  async function fetchMarket(history=false) {
+    if(paused || restBusy)return;
+    restBusy=true;
     try {
-      const response = await fetch(
-        "/api/market",
-        {
-          cache: "no-store"
-        }
-      );
-
-      const d = await response.json();
-
-      if (
-        !response.ok ||
-        !d.ok
-      ) {
-        throw Error(
-          (d.errors || []).join("; ") ||
-          "No public data"
-        );
-      }
-
-      if (Array.isArray(d.candles)) {
-        d.candles.forEach(
-          ingestCandle
-        );
-      }
-
-      if (
-        d.depth &&
-        s.mode !== "ws"
-      ) {
-        ingestBook(d.depth);
-      }
-
-      if (Array.isArray(d.trades)) {
-        d.trades.forEach(
-          t => ingestTrade(t, true)
-        );
-      }
-
-      if (d.ticker) {
-        s.ticker = d.ticker;
-      }
-
-      if (
-        !valid(s.price) &&
-        valid(n(d.ticker?.lastPrice))
-      ) {
-        s.price = n(
-          d.ticker.lastPrice
-        );
-      }
-
-      if (s.mode !== "ws") {
-        s.mode = "poll";
-        s.lastFrame = Date.now();
-      }
-
-      renderSoon();
-      updateConnection();
-
-    } catch (e) {
-      if (s.mode !== "ws") {
-        s.mode = "error";
-      }
-
-      log(
-        "HTTP snapshot failed",
-        e.message ||
-        "Exchange request failed",
-        "bad"
-      );
-
-      updateConnection();
-
-    } finally {
-      busy = false;
-    }
+      const response=await fetch(`/api/market${history?"?history=1":""}`,{cache:"no-store"});
+      const d=await response.json();
+      if(!response.ok||!d.ok)throw Error(Object.values(d.errors||{}).join("; ")||"Exchange data unavailable");
+      if(Array.isArray(d.candles))d.candles.forEach(c=>ingestBar(c,"rest"));
+      if(d.depth)ingestBook(d.depth,false);
+      if(Array.isArray(d.trades))d.trades.forEach(t=>ingestTrade(t,false));
+      if(d.ticker){S.ticker=d.ticker;if(!good(S.price)&&good(+d.ticker.lastPrice))S.price=+d.ticker.lastPrice;}
+      if(S.mode!=="ws"){S.mode="rest";S.lastFrame=Date.now();}
+      if(Object.keys(d.errors||{}).length&&history)recordEvent("Partial market bootstrap",JSON.stringify(d.errors),"warn");
+      scheduleRender();updateConnection();
+    } catch(e){if(S.mode!=="ws")S.mode="error";recordEvent("REST market endpoint failed",e.message,"bad");updateConnection();}
+    finally {restBusy=false;}
+  }
+  async function fetchXau(){
+    if(paused)return;
+    try{const r=await fetch("/api/xau",{cache:"no-store"});const d=await r.json();
+      if(d.ok&&good(+d.price)){S.xau=d;$("xauPrice").textContent=fmt(+d.price);$("xauMeta").textContent=`1m reference close · ${d.candleUTC} UTC`;}
+      else $("xauMeta").textContent=d.error||"Reference unavailable";
+    }catch{$("xauMeta").textContent="Reference unavailable";}
+  }
+  function beginRest(){if(paused||document.hidden)return;if(!restTimer){fetchMarket();restTimer=setInterval(()=>fetchMarket(),12000);}S.mode="rest";updateConnection();}
+  function stopRest(){clearInterval(restTimer);restTimer=null;}
+  function interruptPaper(reason){const r=currentPaper();if(!r)return;r.status="INTERRUPTED";r.closedAt=Date.now();r.netR=null;r.note=reason;recordEvent("Paper tracking interrupted",reason,"warn");save();}
+  function reconnectLater(){if(retryTimer||paused||document.hidden)return;const wait=Math.min(3500*2**Math.min(attempts,4),55000);retryTimer=setTimeout(()=>{retryTimer=null;connect();},wait);}
+  function connect(){
+    if(ws||paused||document.hidden)return;
+    if(typeof WebSocket==="undefined"){recordEvent("WebSocket unavailable","Using REST only; new signals are disabled","warn");beginRest();return;}
+    const url=URLS[attempts++%URLS.length];let conn;
+    try{conn=new WebSocket(url);}catch(e){recordEvent("Socket creation failed",e.message,"warn");beginRest();reconnectLater();return;}
+    ws=conn;let opened=false;
+    const timeout=setTimeout(()=>{if(!opened&&ws===conn)conn.close();},9000);
+    conn.onopen=()=>{if(ws!==conn)return;opened=true;clearTimeout(timeout);attempts=0;S.mode="ws";S.lastFrame=Date.now();S.lastDepth=0;S.lastLiveTrade=0;S.lastLiveClose=0;stopRest();recordEvent("Live exchange stream connected","PAXG trade + 20-level snapshots + 1m candles","good");updateConnection();};
+    conn.onmessage=e=>{if(ws===conn)ingestStream(e.data);};
+    conn.onerror=()=>{if(ws===conn)conn.close();};
+    conn.onclose=()=>{clearTimeout(timeout);if(ws!==conn)return;ws=null;if(paused||document.hidden)return;interruptPaper("Live stream disconnected; execution path unknown");recordEvent("Stream disconnected","REST fallback active; attempting to reconnect","warn");beginRest();reconnectLater();};
+  }
+  function disconnect(){clearTimeout(retryTimer);retryTimer=null;stopRest();if(ws){const old=ws;ws=null;try{old.close();}catch{}}}
+  function restart(){interruptPaper("Reconnected before paper result confirmed");disconnect();paused=false;S.mode="connecting";S.lastDepth=0;S.lastLiveTrade=0;S.lastLiveClose=0;S.lastFrame=0;updateConnection();fetchMarket(S.bars.length<400);connect();}
+  function updateConnection(){
+    const age=Date.now()-S.lastFrame,live=S.mode==="ws"&&age<30000,rest=S.mode==="rest"&&age<30000;
+    $("connection").className="connection"+(live?" live":rest?"":" off");
+    $("connText").textContent=live?"LIVE STREAM":rest?"REST FALLBACK":S.mode==="connecting"?"CONNECTING":"DATA OFFLINE";
+    $("marketMode").textContent=live?"LIVE ORDER FLOW":rest?"REST / SIGNALS OFF":"NO LIVE CONFIRMATION";
+    $("feedHealth").textContent=live?`STREAM ${Math.round(age/1000)}s · DEPTH ${S.lastDepth?Math.round((Date.now()-S.lastDepth)/1000)+"s":"WAIT"}`:rest?"REST SNAPSHOTS — NO SIGNALS":"STALE OR OFFLINE";
   }
 
-  // ================================
-  // SEPARATE XAU/USD REFERENCE
-  // ================================
-
-  async function fetchXau() {
-    if (stopped) return;
-
-    try {
-      const response = await fetch(
-        "/api/xau",
-        {
-          cache: "no-store"
-        }
-      );
-
-      const d = await response.json();
-
-      if (
-        d.ok &&
-        valid(n(d.price))
-      ) {
-        s.xau = d;
-
-        $("xauPrice").textContent =
-          fmt(n(d.price));
-
-        $("xauInfo").textContent =
-          `1m candle · ${d.candleUTC} UTC`;
-
-      } else {
-        $("xauInfo").textContent =
-          d.error ||
-          "Reference unavailable";
-      }
-
-    } catch (_) {
-      $("xauInfo").textContent =
-        "Reference unavailable";
-    }
+  // ---------- Market structure / indicators ----------
+  function ema(bars,length){
+    if(bars.length<length)return NaN;
+    let v=bars.slice(0,length).reduce((a,b)=>a+b.c,0)/length;
+    const alpha=2/(length+1);
+    for(let i=length;i<bars.length;i++)v+=alpha*(bars[i].c-v);
+    return v;
   }
-
-  // ================================
-  // WEBSOCKET CONNECTION
-  // ================================
-
-  function connect() {
-    if (
-      stopped ||
-      document.hidden ||
-      socket
-    ) {
-      return;
-    }
-
-    if (
-      typeof WebSocket === "undefined"
-    ) {
-      log(
-        "WebSocket unavailable",
-        "Using public REST snapshots",
-        "warn"
-      );
-
-      beginPolling();
-      return;
-    }
-
-    attempts++;
-
-    const url =
-      attempts % 2
-        ? STREAM
-        : STREAM_BACKUP;
-
-    let ws;
-
-    try {
-      ws = new WebSocket(url);
-    } catch (e) {
-      log(
-        "WebSocket setup failed",
-        e.message,
-        "warn"
-      );
-
-      beginPolling();
-      retry();
-      return;
-    }
-
-    socket = ws;
-    let opened = false;
-
-    const timeout = setTimeout(() => {
-      if (
-        !opened &&
-        socket === ws
-      ) {
-        ws.close();
-      }
-    }, 9000);
-
-    ws.onopen = () => {
-      if (socket !== ws) return;
-
-      opened = true;
-      clearTimeout(timeout);
-
-      attempts = 0;
-      s.mode = "ws";
-      s.lastFrame = Date.now();
-
-      stopPolling();
-
-      log(
-        "WebSocket connected",
-        "Binance PAXG trades / top-20 book / M1 candles",
-        "good"
-      );
-
-      updateConnection();
-    };
-
-    ws.onmessage = ev => {
-      if (socket === ws) {
-        onFeed(ev.data);
-      }
-    };
-
-    ws.onerror = () => {
-      if (socket === ws) {
-        ws.close();
-      }
-    };
-
-    ws.onclose = () => {
-      clearTimeout(timeout);
-
-      if (socket !== ws) {
-        return;
-      }
-
-      socket = null;
-
-      if (
-        !stopped &&
-        !document.hidden
-      ) {
-        log(
-          "Stream disconnected",
-          "Switching to REST and retrying",
-          "warn"
-        );
-
-        beginPolling();
-        retry();
-      }
-    };
+  function atr(bars,length=14){
+    if(bars.length<length+1)return NaN;
+    const tr=[];
+    for(let i=1;i<bars.length;i++)tr.push(Math.max(bars[i].h-bars[i].l,Math.abs(bars[i].h-bars[i-1].c),Math.abs(bars[i].l-bars[i-1].c)));
+    return tr.slice(-length).reduce((a,b)=>a+b,0)/length;
   }
-
-  function retry() {
-    if (
-      stopped ||
-      document.hidden ||
-      reconnect
-    ) {
-      return;
+  function aggregate(bars,minutes){
+    const step=minutes*60000, output=[];let group=[], key=null;
+    function push(){
+      if(group.length!==minutes || group[0].t!==key)return;
+      for(let i=1;i<group.length;i++)if(group[i].t!==group[i-1].t+60000)return;
+      output.push({t:key,o:group[0].o,h:Math.max(...group.map(b=>b.h)),l:Math.min(...group.map(b=>b.l)),c:group.at(-1).c,v:group.reduce((a,b)=>a+b.v,0),closed:true});
     }
-
-    reconnect = setTimeout(() => {
-      reconnect = null;
-      connect();
-    }, Math.min(
-      3000 * Math.pow(
-        2,
-        Math.min(attempts, 4)
-      ),
-      45000
-    ));
+    for(const bar of bars){const k=Math.floor(bar.t/step)*step;if(k!==key){if(group.length)push();group=[];key=k;}group.push(bar);}
+    if(group.length)push();return output;
   }
-
-  function disconnect() {
-    clearTimeout(reconnect);
-    reconnect = null;
-
-    stopPolling();
-
-    if (socket) {
-      const old = socket;
-      socket = null;
-
-      try {
-        old.close();
-      } catch (_) {
-        // Ignore close error.
-      }
-    }
+  function trend(bars){const a=ema(bars,9),b=ema(bars,21);return !Number.isFinite(a)||!Number.isFinite(b)?"—":a>b?"UP":a<b?"DOWN":"FLAT";}
+  function takerStats(){
+    const ts=S.trades.filter(t=>t.live&&t.buy!==null&&t.at>=Date.now()-90000);
+    const buy=ts.filter(t=>t.buy).reduce((a,b)=>a+b.qty,0);
+    const sell=ts.filter(t=>!t.buy).reduce((a,b)=>a+b.qty,0);
+    return {count:ts.length,buy,sell,share:buy+sell?buy/(buy+sell):NaN};
   }
-
-  function restart() {
-    disconnect();
-
-    stopped = false;
-    s.mode = "connecting";
-    s.lastDepth = 0;
-    s.lastLiveTrade = 0;
-
-    updateConnection();
-
-    fetchMarket();
-    connect();
+  function bookStats(){
+    const b=S.book.bids.slice(0,15).reduce((a,x)=>a+x.q,0);
+    const a=S.book.asks.slice(0,15).reduce((x,y)=>x+y.q,0);
+    return b+a?b/(b+a):NaN;
   }
-
-  // ================================
-  // CONNECTION HEALTH
-  // ================================
-
-  function updateConnection() {
-    const age =
-      Date.now() - s.lastFrame;
-
-    const live =
-      s.mode === "ws" &&
-      age < 35000;
-
-    const poll =
-      s.mode === "poll" &&
-      age < 30000;
-
-    const tag = $("connection");
-
-    tag.className =
-      "pill" +
-      (
-        live
-          ? " live"
-          : poll
-            ? ""
-            : s.mode === "connecting"
-              ? ""
-              : " off"
-      );
-
-    $("connectionText").textContent =
-      live
-        ? "LIVE STREAM"
-        : poll
-          ? "REST FALLBACK"
-          : s.mode === "connecting"
-            ? "CONNECTING"
-            : "OFFLINE";
-
-    $("freshness").textContent =
-      live
-        ? `${Math.round(age / 1000)}s stream · book ${
-            s.lastDepth
-              ? Math.round(
-                  (Date.now() - s.lastDepth) / 1000
-                ) + "s"
-              : "waiting"
-          }`
-        : poll
-          ? "REST ONLY · signals paused"
-          : "OFFLINE · signals paused";
-
-    $("marketMode").textContent =
-      live
-        ? "LIVE"
-        : poll
-          ? "POLLING"
-          : "DATA UNAVAILABLE";
-  }
-
-  // ================================
-  // BLACKBOOK X2 SIGNAL ENGINE
-  // ================================
-
-  /*
-    Strictly completed 1-minute candles.
-
-    Signals require:
-    - EMA trend alignment
-    - Breakout or liquidity sweep
-    - Strong directional candle
-    - Current resting book agreement
-    - Live taker-volume agreement
-    - Acceptable spread
-    - No excessive entry chase
-
-    Scores are NOT calibrated probabilities.
-  */
-
-  function ema(bars, length) {
-    if (
-      bars.length < length
-    ) {
-      return NaN;
-    }
-
-    let value =
-      bars.slice(0, length).reduce(
-        (sum, b) => sum + b.c,
-        0
-      ) / length;
-
-    const a = 2 / (length + 1);
-
-    for (
-      let i = length;
-      i < bars.length;
-      i++
-    ) {
-      value += (
-        bars[i].c - value
-      ) * a;
-    }
-
-    return value;
-  }
-
-  function atr(bars, length = 14) {
-    if (
-      bars.length < length + 1
-    ) {
-      return NaN;
-    }
-
-    const tr = [];
-
-    for (
-      let i = 1;
-      i < bars.length;
-      i++
-    ) {
-      tr.push(
-        Math.max(
-          bars[i].h - bars[i].l,
-          Math.abs(
-            bars[i].h -
-            bars[i - 1].c
-          ),
-          Math.abs(
-            bars[i].l -
-            bars[i - 1].c
-          )
-        )
-      );
-    }
-
-    return tr.slice(-length).reduce(
-      (a, b) => a + b,
-      0
-    ) / length;
-  }
-
-  function depthStats() {
-    const bids =
-      s.book.bids.slice(0, 15).reduce(
-        (a, b) => a + b.q,
-        0
-      );
-
-    const asks =
-      s.book.asks.slice(0, 15).reduce(
-        (a, b) => a + b.q,
-        0
-      );
-
-    return bids + asks
-      ? bids / (bids + asks)
-      : NaN;
-  }
-
-  function tradeStats() {
-    /*
-      Only browser WebSocket events count as
-      fresh trade confirmation.
-
-      REST backfill is not treated as an
-      uninterrupted execution stream.
-    */
-
-    const recent = s.trades.filter(
-      t =>
-        t.live &&
-        t.at >= Math.max(
-          s.start,
-          Date.now() - 90000
-        )
-    );
-
-    const buy = recent
-      .filter(t => t.buy)
-      .reduce(
-        (a, b) => a + b.qty,
-        0
-      );
-
-    const sell = recent
-      .filter(t => !t.buy)
-      .reduce(
-        (a, b) => a + b.qty,
-        0
-      );
-
-    return {
-      count: recent.length,
-      buy,
-      sell,
-      share:
-        buy + sell
-          ? buy / (buy + sell)
-          : NaN
-    };
-  }
-
-  function freshnessError(lastClosed) {
-    if (
-      s.mode !== "ws" ||
-      !socket ||
-      socket.readyState !== WebSocket.OPEN
-    ) {
-      return "No fresh WebSocket order-flow confirmation";
-    }
-
-    if (
-      Date.now() - s.lastFrame > 12000
-    ) {
-      return "Stream has stopped updating";
-    }
-
-    if (
-      Date.now() - s.lastDepth > 12000
-    ) {
-      return "Order-book snapshot is stale";
-    }
-
-    if (
-      Date.now() - s.lastLiveTrade > 45000
-    ) {
-      return "Recent executed trades are missing";
-    }
-
-    if (
-      !lastClosed ||
-      Date.now() -
-        (lastClosed.t + 60000) > 105000
-    ) {
-      return "Completed 1m candle is stale";
-    }
-
-    if (
-      !valid(s.price) ||
-      Date.now() - s.priceAt > 45000
-    ) {
-      return "Latest traded price is stale";
-    }
-
+  function freshReason(last){
+    if(S.mode!=="ws"||!ws||ws.readyState!==WebSocket.OPEN)return "Live stream required (REST is insufficient)";
+    if(Date.now()-S.lastFrame>12000)return "WebSocket messages are stale";
+    if(Date.now()-S.lastDepth>10000)return "Order-book depth is stale";
+    if(Date.now()-S.lastLiveTrade>45000)return "No recent live executions";
+    if(!good(S.price)||Date.now()-S.priceAt>45000)return "Latest executed price is stale";
+    if(S.lastLiveClose!==last?.t||Date.now()-S.lastClosedBar>16000)return "Waiting for a newly completed stream candle";
     return "";
   }
-
-  // ================================
-  // SCORING CANDIDATES
-  // ================================
-
-  function makeCandidate(side, context) {
-    const {
-      last,
-      prev,
-      ema9,
-      ema21,
-      currentAtr,
-      share,
-      taker,
-      volRatio,
-      spread
-    } = context;
-
-    const buy = side === "BUY";
-    const dir = buy ? 1 : -1;
-
-    const body =
-      Math.abs(last.c - last.o) /
-      Math.max(
-        last.h - last.l,
-        1e-10
-      );
-
-    const high = Math.max(
-      ...prev.map(x => x.h)
-    );
-
-    const low = Math.min(
-      ...prev.map(x => x.l)
-    );
-
-    const breakout = buy
-      ? last.c > high &&
-        last.o <= high &&
-        last.c > last.o
-      : last.c < low &&
-        last.o >= low &&
-        last.c < last.o;
-
-    const sweep = buy
-      ? last.l < low &&
-        last.c > low &&
-        last.c > last.o
-      : last.h > high &&
-        last.c < high &&
-        last.c < last.o;
-
-    const trigger =
-      breakout
-        ? "CONFIRMED BREAKOUT"
-        : sweep
-          ? "SWEEP REJECTION"
-          : "NONE";
-
-    const trend = buy
-      ? ema9 > ema21
-      : ema9 < ema21;
-
-    const bookOK = buy
-      ? share >= .55
-      : share <= .45;
-
-    const pressureOK =
-      taker.count >= 4 &&
-      (
-        buy
-          ? taker.share >= .56
-          : taker.share <= .44
-      );
-
-    const candleOK =
-      body >= .42 &&
-      (
-        buy
-          ? last.c > last.o
-          : last.c < last.o
-      );
-
-    const spreadOK =
-      Number.isFinite(spread) &&
-      spread >= 0 &&
-      spread <= currentAtr * .65;
-
-    const closeDist = Math.abs(
-      s.price - last.c
-    );
-
-    const chaseOK =
-      (s.price - last.c) * dir <=
-        currentAtr * .35 &&
-      closeDist <=
-        currentAtr * .8;
-
-    // 100 total possible points.
-
-    const score =
-      (trend ? 15 : 0) +
-      (trigger !== "NONE" ? 23 : 0) +
-      (candleOK ? 12 : 0) +
-      (bookOK ? 20 : 0) +
-      (pressureOK ? 20 : 0) +
-      (volRatio >= 1 ? 5 : 0) +
-      (spreadOK ? 5 : 0);
-
-    const checks = [
-      ["Trend aligned", trend],
-      [
-        "Completed candle trigger",
-        trigger !== "NONE"
-      ],
-      ["Candle body", candleOK],
-      ["Visible book agrees", bookOK],
-      ["Live taker flow agrees", pressureOK],
-      ["Spread acceptable", spreadOK],
-      ["Not chasing price", chaseOK]
-    ];
-
-    const qualified =
-      trend &&
-      trigger !== "NONE" &&
-      candleOK &&
-      bookOK &&
-      pressureOK &&
-      spreadOK &&
-      chaseOK &&
-      score >= s.scoreMin;
-
-    if (!qualified) {
-      return {
-        side,
-        score,
-        trigger,
-        checks,
-        qualified: false
-      };
+  function evaluate(){
+    const bars=S.bars.filter(b=>b.closed&&b.t+60000<=Date.now());
+    const last=bars.at(-1),b5=aggregate(bars,5),b15=aggregate(bars,15),tf=takerStats();
+    S.atr=atr(bars);S.trend1=trend(bars);S.trend5=trend(b5);S.trend15=trend(b15);
+    S.buyShare=bookStats();S.takerShare=tf.share;
+    const recent=S.trades.filter(t=>t.live&&t.buy!==null&&t.at>=Date.now()-60000);
+    const buyRecent=recent.filter(t=>t.buy).reduce((a,t)=>a+t.qty,0), sellRecent=recent.filter(t=>!t.buy).reduce((a,t)=>a+t.qty,0);
+    const three=bars.slice(-3);const range=three.length===3?Math.max(...three.map(b=>b.h))-Math.min(...three.map(b=>b.l)):NaN;
+    S.absorption="NO CLEAR CANDIDATE";
+    if(recent.length>=5&&Number.isFinite(S.atr)&&range<=S.atr*.8){
+      if(buyRecent>sellRecent*2.2)S.absorption="BUYING ABSORBED?";
+      if(sellRecent>buyRecent*2.2)S.absorption="SELLING ABSORBED?";
     }
-
-    // Latest observed trade price is only
-    // an indicative entry reference.
-
-    const entry = s.price;
-
-    const previousBars =
-      s.candles
-        .filter(x =>
-          x.closed &&
-          x.t < last.t
-        )
-        .slice(-5);
-
-    const structural = buy
-      ? Math.min(
-          last.l,
-          ...previousBars.map(x => x.l)
-        )
-      : Math.max(
-          last.h,
-          ...previousBars.map(x => x.h)
-        );
-
-    const referenceStop =
-      structural -
-      dir * currentAtr * .18;
-
-    const distance = buy
-      ? entry - referenceStop
-      : referenceStop - entry;
-
-    const risk = Math.max(
-      currentAtr * .95,
-      distance
-    );
-
-    if (
-      !valid(risk) ||
-      risk > currentAtr * 2.8
-    ) {
-      return {
-        side,
-        score,
-        trigger,
-        checks: [
-          ...checks,
-          ["Stop distance reasonable", false]
-        ],
-        qualified: false
-      };
+    $("trend1").textContent=S.trend1;$("trend5").textContent=S.trend5;$("trend15").textContent=S.trend15;
+    $("atr").textContent=fmt(S.atr);$("pressure").textContent=Number.isFinite(tf.share)?`${fmt(tf.share*100,1)}% BUY · ${tf.count} events`:"WAITING";
+    $("absorption").textContent=S.absorption;
+    if(currentPaper()){renderSignal();return;}
+    if(bars.length<35 || b5.length<22 || b15.length<22 || !good(S.atr)){
+      S.decision="Building complete M1/M5/M15 candle history";S.candidateScore=null;S.checks=[];renderSignal();return;
     }
-
-    const stop =
-      entry - dir * risk;
-
-    const target =
-      entry + dir * risk * s.rr;
-
-    if (
-      ![
-        entry,
-        stop,
-        target
-      ].every(valid)
-    ) {
-      return {
-        side,
-        score,
-        trigger,
-        checks,
-        qualified: false
-      };
-    }
-
-    return {
-      side,
-      score,
-      trigger,
-      checks,
-      qualified: true,
-      entry,
-      stop,
-      target,
-      rr: s.rr,
-
-      reason:
-        `${trigger.toLowerCase()} · ` +
-        `EMA trend aligned · ` +
-        `${fmt(share * 100, 1)}% ` +
-        `bid-side book · ` +
-        `${fmt(taker.share * 100, 1)}% ` +
-        `taker-buy share`
-    };
+    const stale=freshReason(last);
+    if(stale){S.decision=stale;S.candidateScore=null;S.checks=[["Live data freshness",false]];renderSignal();return;}
+    const prev=bars.slice(-13,-1);const previousHigh=Math.max(...prev.map(b=>b.h)),previousLow=Math.min(...prev.map(b=>b.l));
+    const body=Math.abs(last.c-last.o)/Math.max(last.h-last.l,1e-8);
+    const avgVol=bars.slice(-21,-1).reduce((a,b)=>a+b.v,0)/20;
+    const spread=S.book.asks[0].p-S.book.bids[0].p;
+    const candidates=[1,-1].map(dir=>{
+      const buy=dir===1;
+      const breakout=buy?(last.c>previousHigh&&last.o<=previousHigh&&last.c>last.o):(last.c<previousLow&&last.o>=previousLow&&last.c<last.o);
+      const sweep=buy?(last.l<previousLow&&last.c>previousLow&&last.c>last.o):(last.h>previousHigh&&last.c<previousHigh&&last.c<last.o);
+      const trigger=breakout?"BREAKOUT":sweep?"SWEEP REJECTION":null;
+      const t1=buy?S.trend1==="UP":S.trend1==="DOWN",t5=buy?S.trend5==="UP":S.trend5==="DOWN",t15=buy?S.trend15==="UP":S.trend15==="DOWN";
+      const candle=body>=.45&&(buy?last.c>last.o:last.c<last.o);
+      const depth=buy?S.buyShare>=.54:S.buyShare<=.46;
+      const tape=tf.count>=3&&(buy?tf.share>=.56:tf.share<=.44);
+      const vol=avgVol>0&&last.v>=avgVol;
+      const cost=Number.isFinite(spread)&&spread>=0&&spread<=Math.max(S.atr*.6,S.price*.0012);
+      const chase=Math.abs(S.price-last.c)<=S.atr*.6 && (S.price-last.c)*dir<=S.atr*.35;
+      const score=(t1?15:0)+(t5?10:0)+(t15?10:0)+(trigger?20:0)+(candle?10:0)+(depth?12:0)+(tape?13:0)+(vol?5:0)+(cost?5:0);
+      const checks=[["M1 direction",t1],["M5 direction",t5],["M15 direction",t15],["Sweep or breakout",!!trigger],["Strong close",candle],["Resting depth confirms",depth],["Live trade aggression",tape],["Spread acceptable",cost],["Entry not chased",chase]];
+      return {dir,side:buy?"BUY":"SELL",score,checks,trigger,qualified:t1&&t5&&!!trigger&&candle&&depth&&tape&&cost&&chase&&score>=S.settings.minScore};
+    }).sort((a,b)=>b.score-a.score);
+    const winner=candidates[0];S.candidateScore=winner.score;S.checks=winner.checks;
+    if(!winner.qualified){const failed=winner.checks.filter(c=>!c[1]).map(c=>c[0]);S.decision=failed.length?`NO TRADE — ${failed.slice(0,3).join(" · ")}`:`Score below ${S.settings.minScore}`;renderSignal();return;}
+    if(S.lastIdeaBar===last.t){S.decision="Already evaluated this completed candle";renderSignal();return;}
+    const structural=winner.dir===1?Math.min(...bars.slice(-6).map(b=>b.l)):Math.max(...bars.slice(-6).map(b=>b.h));
+    const protective=winner.dir===1?structural-S.atr*.12:structural+S.atr*.12;
+    const risk=Math.max(S.atr*.95,(S.price-protective)*winner.dir);
+    if(!good(risk)||risk>S.atr*3){S.decision="NO TRADE — structural stop too wide";renderSignal();return;}
+    const entry=S.price,stop=entry-winner.dir*risk,target=entry+winner.dir*risk*S.settings.rr;
+    if(![entry,stop,target].every(good)){S.decision="NO TRADE — invalid levels";renderSignal();return;}
+    S.lastIdeaBar=last.t;
+    const r={id:`${last.t}-${winner.side}`,createdAt:Date.now(),candleAt:last.t,side:winner.side,
+      dir:winner.dir,setup:winner.trigger,score:winner.score,checks:winner.checks,
+      plannedEntry:entry,plannedSL:stop,plannedTP:target,rr:S.settings.rr,
+      risk,entry:null,stop:null,target:null,exit:null,netR:null,status:"PENDING",
+      feeBps:S.settings.fee,slippageBps:S.settings.slippage,
+      note:"Pending first subsequent live trade (maximum 30 seconds)"};
+    S.records.unshift(r);S.records.length=Math.min(S.records.length,300);save();
+    recordEvent(`${r.side} research idea · ${r.score}/100`,`${r.setup} | reference ${fmt(entry)} | SL ${fmt(stop)} | TP ${fmt(target)}`,"good");
+    if(S.alerts)toast(`${r.side} PAXG IDEA · score ${r.score}/100`);
+    renderSignal();renderPaper();
   }
 
-  // ================================
-  // AUTOMATIC SIGNAL EVALUATION
-  // ================================
-
-  function evaluate() {
-    const complete =
-      s.candles.filter(
-        b =>
-          b.closed &&
-          b.t + 60000 <= Date.now()
-      );
-
-    const last =
-      complete.at(-1);
-
-    s.atr = atr(complete);
-
-    const e9 = ema(
-      complete,
-      9
-    );
-
-    const e21 = ema(
-      complete,
-      21
-    );
-
-    s.trend =
-      !Number.isFinite(e9) ||
-      !Number.isFinite(e21)
-        ? "—"
-        : e9 > e21
-          ? "UP"
-          : e9 < e21
-            ? "DOWN"
-            : "FLAT";
-
-    s.depthShare = depthStats();
-
-    const taker = tradeStats();
-    s.pressure = taker.share;
-
-    $("trend").textContent =
-      s.trend;
-
-    $("atr").textContent =
-      fmt(s.atr, 2);
-
-    $("pressure").textContent =
-      Number.isFinite(taker.share)
-        ? `${fmt(taker.share * 100, 1)}% BUY (${taker.count} trades)`
-        : "WAITING";
-
-    $("bookBias").textContent =
-      Number.isFinite(s.depthShare)
-        ? `${fmt(s.depthShare * 100, 1)}% bids`
-        : "WAITING";
-
-    if (s.active) {
-      /*
-        Ideas expire after four minutes.
-
-        No fill is assumed.
-        No historical win/loss is fabricated.
-      */
-
-      if (
-        Date.now() -
-          s.active.createdAt >
-        4 * 60000
-      ) {
-        log(
-          "Trade idea expired",
-          `${s.active.side} ` +
-          `${fmt(s.active.entry)} — ` +
-          `not an executed order`,
-          "warn"
-        );
-
-        s.active = null;
-
-      } else {
-        showSignal();
-        return;
-      }
+  // ---------- Forward paper fills and conservative exits ----------
+  function finalize(r,status,trade,reason){
+    if(!r||r.status!=="OPEN")return;
+    const spread=S.book.bids.length&&S.book.asks.length&&Date.now()-S.lastDepth<10000?S.book.asks[0].p-S.book.bids[0].p:0;
+    const extra=Math.max(0,spread/2)+trade.price*r.slippageBps/10000;
+    // Paper exit is always made worse by the half-spread and configured slippage.
+    let exit=trade.price-r.dir*extra;
+    if(status==="TP")exit=r.dir===1?Math.min(exit,r.target):Math.max(exit,r.target);
+    if(status==="SL")exit=r.dir===1?Math.min(exit,r.stop):Math.max(exit,r.stop);
+    r.exit=exit;r.closedAt=trade.at;r.status=status;r.note=reason;
+    const gross=r.dir*(exit-r.entry);
+    const fees=(Math.abs(r.entry)+Math.abs(exit))*r.feeBps/10000;
+    r.netR=(gross-fees)/r.risk;
+    recordEvent(`Paper ${status}`,`${r.side} net ${signed(r.netR,3)}R · exit ~${fmt(exit)}`,status==="TP"?"good":"warn");
+    save();renderPaper();
+  }
+  function handlePaperTick(t){
+    const r=currentPaper();if(!r||!t.live)return;
+    if(r.status==="PENDING"){
+      if(t.at<=r.createdAt)return;
+      if(Date.now()-r.createdAt>30000){r.status="MISSED";r.closedAt=Date.now();r.note="No timely live paper entry";save();renderPaper();return;}
+      if(Date.now()-S.lastDepth>10000)return; // No reliable quote to approximate an entry.
+      const spread=Math.max(0,S.book.asks[0].p-S.book.bids[0].p);
+      const adverse=spread/2+t.price*r.slippageBps/10000;
+      r.entry=t.price+r.dir*adverse;r.stop=r.entry-r.dir*r.risk;r.target=r.entry+r.dir*r.risk*r.rr;
+      r.filledAt=t.at;r.status="OPEN";r.note="Hypothetical fill at observed trade, plus estimated costs";
+      recordEvent("Paper entry estimated",`${r.side} ${fmt(r.entry)} | SL ${fmt(r.stop)} | TP ${fmt(r.target)}`,"good");
+      save();renderPaper();return;
     }
-
-    if (
-      complete.length < 35 ||
-      !valid(s.atr)
-    ) {
-      s.decision =
-        "Need at least 35 completed 1-minute candles";
-
-      s.decisionScore = null;
-      s.decisionChecks = [];
-
-      showSignal();
-      return;
+    if(r.status==="OPEN"){
+      if(t.at<=r.filledAt)return;
+      if(r.dir===1&&t.price<=r.stop || r.dir===-1&&t.price>=r.stop)finalize(r,"SL",t,"Stop touched by subsequently observed trade");
+      else if(r.dir===1&&t.price>=r.target || r.dir===-1&&t.price<=r.target)finalize(r,"TP",t,"Target touched by subsequently observed trade");
+      else if(t.at-r.filledAt>=20*60000)finalize(r,"TIME_EXIT",t,"20-minute paper holding limit");
     }
-
-    const stale = freshnessError(
-      last
-    );
-
-    if (stale) {
-      s.decision = stale;
-      s.decisionScore = null;
-
-      s.decisionChecks = [
-        [
-          "Fresh exchange inputs",
-          false
-        ]
-      ];
-
-      showSignal();
-      return;
-    }
-
-    const prev =
-      complete.slice(-13, -1);
-
-    if (prev.length < 12) {
-      return;
-    }
-
-    const vol =
-      complete
-        .slice(-21, -1)
-        .reduce(
-          (a, b) => a + b.v,
-          0
-        ) / 20;
-
-    const bid =
-      s.book.bids[0]?.p;
-
-    const ask =
-      s.book.asks[0]?.p;
-
-    const spread =
-      valid(bid) && valid(ask)
-        ? ask - bid
-        : NaN;
-
-    const ctx = {
-      last,
-      prev,
-      ema9: e9,
-      ema21: e21,
-      currentAtr: s.atr,
-      share: s.depthShare,
-      taker,
-      volRatio:
-        vol > 0
-          ? last.v / vol
-          : 0,
-      spread
-    };
-
-    const candidates = [
-      makeCandidate("BUY", ctx),
-      makeCandidate("SELL", ctx)
-    ].sort(
-      (a, b) =>
-        b.score - a.score
-    );
-
-    const winner =
-      candidates[0];
-
-    s.decisionScore =
-      winner.score;
-
-    s.decisionChecks =
-      winner.checks;
-
-    if (
-      winner.qualified &&
-      s.lastIdeaBar !== last.t
-    ) {
-      s.lastIdeaBar = last.t;
-
-      s.active = {
-        ...winner,
-        candleAt: last.t,
-        createdAt: Date.now()
-      };
-
-      log(
-        `${winner.side} research idea`,
-        `Entry ~${fmt(winner.entry)} · ` +
-        `SL ${fmt(winner.stop)} · ` +
-        `TP ${fmt(winner.target)} · ` +
-        `Score ${winner.score}/100`,
-        "good"
-      );
-
-      if (s.alerts) {
-        toast(
-          `${winner.side} IDEA · ` +
-          `PAXG/USDT · ` +
-          `${winner.score}/100`
-        );
-      }
-
-    } else {
-      const failed =
-        winner.checks
-          .filter(x => !x[1])
-          .map(x => x[0]);
-
-      s.decision =
-        failed.length
-          ? `No confirmed setup: ${
-              failed.slice(0, 3).join(", ")
-            }`
-          : "Score below threshold / waiting for next candle";
-    }
-
-    showSignal();
+  }
+  function periodicPaper(){
+    const r=currentPaper();if(!r)return;
+    if(r.status==="PENDING"&&Date.now()-r.createdAt>30000){r.status="MISSED";r.closedAt=Date.now();r.note="No timely live paper fill";save();renderPaper();}
+    // OPEN paper positions require another live tick to close; no simulated future prices.
+  }
+  function renderSignal(){
+    const r=currentPaper(),dir=$("direction");
+    dir.textContent=r?`${r.side} IDEA`:"NO TRADE";
+    dir.className="direction"+(r?(r.side==="BUY"?" positive":" negative"):"");
+    $("signalBadge").textContent=r?`PAPER ${r.status}`:"WAITING FOR SETUP";
+    $("reason").textContent=r?`${r.setup} · reference entry, awaiting/monitoring hypothetical paper execution`:S.decision;
+    $("score").textContent=r?r.score:Number.isFinite(S.candidateScore)?S.candidateScore:"—";
+    $("entry").textContent=r?fmt(r.entry??r.plannedEntry):"—";
+    $("stop").textContent=r?fmt(r.stop??r.plannedSL):"—";
+    $("target").textContent=r?fmt(r.target??r.plannedTP):"—";
+    $("riskRatio").textContent=r?`1 : ${fmt(r.rr,1)}`:"—";
+    $("signalTime").textContent=r?`Created ${tm(r.createdAt)} SAST`:`Updated ${tm(Date.now())} SAST`;
+    $("signalState").textContent=r?`Paper status: ${r.status}`:"No broker orders placed";
+    $("checks").innerHTML=(r?r.checks:S.checks).map(([name,ok])=>`<span class="check ${ok?"good":"bad"}">${ok?"✓":"×"} ${esc(name)}</span>`).join("")||'<span class="check">Awaiting completed candle</span>';
   }
 
-  // ================================
-  // SIGNAL PANEL RENDERER
-  // ================================
-
-  function showSignal() {
-    const idea = s.active;
-
-    $("direction").textContent =
-      idea
-        ? `${idea.side} IDEA`
-        : "NO TRADE";
-
-    $("direction").className =
-      "direction " +
-      (
-        idea
-          ? idea.side === "BUY"
-            ? "positive"
-            : "negative"
-          : ""
-      );
-
-    $("signalBadge").textContent =
-      idea
-        ? "IDEA ACTIVE"
-        : "WAITING FOR CONFLUENCE";
-
-    $("signalReason").textContent =
-      idea
-        ? idea.reason
-        : s.decision;
-
-    $("score").textContent =
-      idea
-        ? idea.score
-        : Number.isFinite(
-            s.decisionScore
-          )
-          ? s.decisionScore
-          : "—";
-
-    $("entry").textContent =
-      idea
-        ? fmt(idea.entry)
-        : "—";
-
-    $("stop").textContent =
-      idea
-        ? fmt(idea.stop)
-        : "—";
-
-    $("target").textContent =
-      idea
-        ? fmt(idea.target)
-        : "—";
-
-    $("riskReward").textContent =
-      idea
-        ? `1 : ${fmt(idea.rr, 1)}`
-        : "—";
-
-    $("signalTime").textContent =
-      idea
-        ? `Trigger candle ${
-            clock(
-              idea.candleAt + 60000
-            )
-          } SAST`
-        : "Last evaluation: " +
-          clock(Date.now());
-
-    $("signalStatus").textContent =
-      idea
-        ? "Reference levels only · expires after 4 minutes"
-        : "No broker order placed";
-
-    const checks =
-      idea
-        ? idea.checks
-        : s.decisionChecks;
-
-    $("checks").innerHTML =
-      checks.length
-        ? checks.map(
-            ([name, ok]) => `
-              <span class="check ${ok ? "ok" : "fail"}">
-                ${ok ? "✓" : "×"}
-                ${esc(name)}
-              </span>
-            `
-          ).join("")
-        : '<span class="check">Waiting for market observations</span>';
+  // ---------- Paper analytics + export ----------
+  function renderPaper(){
+    const records=S.records, done=records.filter(r=>["TP","SL","TIME_EXIT"].includes(r.status)&&Number.isFinite(r.netR));
+    const wins=done.filter(r=>r.netR>0),losses=done.filter(r=>r.netR<=0);
+    const sum=done.reduce((a,r)=>a+r.netR,0),profit=wins.reduce((a,r)=>a+r.netR,0),loss=Math.abs(losses.reduce((a,r)=>a+r.netR,0));
+    let equity=0,peak=0,dd=0;
+    [...done].sort((a,b)=>a.closedAt-b.closedAt).forEach(r=>{equity+=r.netR;peak=Math.max(peak,equity);dd=Math.max(dd,peak-equity);});
+    $("statTrades").textContent=done.length;
+    $("statWin").textContent=done.length?fmt(wins.length/done.length*100,1)+"%":"—";
+    $("statPF").textContent=loss>0?fmt(profit/loss):"—";
+    $("statExp").textContent=done.length?signed(sum/done.length,3)+"R":"—";
+    $("statR").textContent=done.length?signed(sum,3)+"R":"—";
+    $("statDD").textContent=done.length?fmt(dd,3)+"R":"—";
+    $("statR").className=sum>0?"positive":sum<0?"negative":"";
+    $("statExtra").textContent=`${records.filter(r=>r.status==="OPEN").length} open · ${records.filter(r=>r.status==="PENDING").length} pending · ${records.filter(r=>r.status==="MISSED").length} missed · ${records.filter(r=>r.status==="INTERRUPTED").length} interrupted. Net R uses estimated fee, spread and slippage; historical backtesting is NOT performed.`;
+    $("paperRows").innerHTML=records.length?records.slice(0,45).map(r=>`<tr><td>${tm(r.createdAt)}</td><td class="${r.side==="BUY"?"buy":"sell"}">${esc(r.side)} ${esc(r.setup||"")}</td><td>${fmt(r.score,0)}</td><td>${fmt(r.plannedEntry)}</td><td>${fmt(r.entry)}</td><td>${esc(r.status)}</td><td class="${r.netR>0?"positive":r.netR<0?"negative":""}">${r.netR===null?"—":signed(r.netR,3)}</td></tr>`).join(""):'<tr><td colspan="7" class="empty">No paper trades yet. Only forward live ideas appear here.</td></tr>';
   }
-
-  // ================================
-  // ORDER BOOK RENDERER
-  // ================================
-
-  function bookRows(
-    id,
-    data,
-    color
-  ) {
-    const top =
-      data.slice(0, 15);
-
-    const max = Math.max(
-      .000001,
-      ...top.map(x => x.q)
-    );
-
-    $(id).innerHTML =
-      top.length
-        ? top.map(x => `
-            <div
-              class="book-row"
-              style="
-                --fill:${
-                  clamp(
-                    100 * x.q / max,
-                    0,
-                    100
-                  )
-                }%;
-                --bar:${color}
-              "
-            >
-              <b>${fmt(x.p)}</b>
-              <em>${fmt(x.q, 4)}</em>
-            </div>
-          `).join("")
-        : '<div class="empty">No visible depth</div>';
+  function exportCSV(){
+    const keys=["id","createdAt","side","setup","score","status","plannedEntry","plannedSL","plannedTP","entry","stop","target","filledAt","exit","closedAt","rr","risk","feeBps","slippageBps","netR","note"];
+    const csv=[keys.join(","),...S.records.map(r=>keys.map(k=>`"${String(r[k]??"").replace(/"/g,'""')}"`).join(","))].join("\r\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    const a=document.createElement("a");a.href=url;a.download="mkayfx_blackbook_x3_paper.csv";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
   }
-
-  // ================================
-  // LIVE TRADE TAPE
-  // ================================
-
-  function renderTape() {
-    $("tradeCount").textContent =
-      `${s.liveCount} LIVE EVENTS`;
-
-    $("tape").innerHTML =
-      s.trades.length
-        ? s.trades.slice(0, 50).map(t => `
-            <div class="tape-row">
-              <span>${clock(t.at)}</span>
-
-              <b class="${t.buy ? "bull" : "bear"}">
-                ${t.buy ? "BUY" : "SELL"}
-              </b>
-
-              <span>${fmt(t.price)}</span>
-              <span>${compact(t.notional)}</span>
-            </div>
-          `).join("")
-        : '<div class="empty">Waiting for actual trades…</div>';
+  // ---------- Tape, footprint, quote walls ----------
+  function drawBook(id,levels,color){
+    const max=Math.max(.00001,...levels.map(x=>x.q));
+    $(id).innerHTML=levels.length?levels.slice(0,15).map(x=>`<div class="book-row" style="--fill:${fmt(100*x.q/max,1)}%;--bar:${color}"><b>${fmt(x.p)}</b><em>${fmt(x.q,4)}</em></div>`).join(""):'<p class="empty">No book snapshot</p>';
   }
-
-  // ================================
-  // FOOTPRINT RENDERER
-  // ================================
-
-  function renderFootprint() {
-    const data =
-      s.trades.filter(
-        t =>
-          t.at >=
-          Date.now() - 180000
-      );
-
-    const levels =
-      new Map();
-
-    for (const t of data) {
-      const key =
-        Math.floor(
-          t.price / s.bucket
-        ) * s.bucket;
-
-      const p =
-        levels.get(key) || {
-          buy: 0,
-          sell: 0
-        };
-
-      p[t.buy ? "buy" : "sell"] +=
-        t.qty;
-
-      levels.set(key, p);
+  function drawTape(){
+    $("tradeMeta").textContent=`${S.liveTotal} LIVE EVENTS`;
+    $("tape").innerHTML=S.trades.length?S.trades.slice(0,55).map(t=>`<div class="trade-row"><span>${tm(t.at)}</span><b class="${t.buy===null?"":t.buy?"buy":"sell"}">${t.buy===null?"?":t.buy?"BUY":"SELL"}${t.live?"":"·"}</b><span>${fmt(t.price)}</span><span>${short(t.notional)}</span></div>`).join(""):'<p class="empty">Waiting for real exchange executions...</p>';
+  }
+  function drawFootprint(){
+    const data=S.trades.filter(t=>t.buy!==null&&t.at>=Date.now()-180000),m=new Map();
+    for(const t of data){const k=Math.floor(t.price/S.settings.bucket)*S.settings.bucket;const v=m.get(k)||{buy:0,sell:0};v[t.buy?"buy":"sell"]+=t.qty;m.set(k,v);}
+    const rows=[...m].sort((a,b)=>(b[1].buy+b[1].sell)-(a[1].buy+a[1].sell)).slice(0,16).sort((a,b)=>b[0]-a[0]);
+    $("footprint").innerHTML=rows.length?rows.map(([p,v])=>`<div class="foot-row"><span>${fmt(p)}</span><span class="sell">${fmt(v.sell,3)}</span><span class="buy">${fmt(v.buy,3)}</span><span class="${v.buy>=v.sell?"buy":"sell"}">${signed(v.buy-v.sell,3)}</span></div>`).join(""):'<p class="empty">Waiting for observed executed trades...</p>';
+  }
+  function drawWalls(){
+    const frames=S.heat.slice(-12);
+    if(frames.length<4){$("walls").innerHTML='<p class="empty">Collecting at least four snapshots...</p>';return;}
+    const m=new Map(),bucket=S.settings.bucket;
+    for(const f of frames)for(const side of ["bids","asks"]) {
+      const summed=new Map();for(const x of f[side]){const k=Math.floor(x.p/bucket)*bucket;summed.set(k,(summed.get(k)||0)+x.q);}
+      for(const [p,q] of summed){const id=side+":"+p;const v=m.get(id)||{p,side,hits:0,total:0,max:0};v.hits++;v.total+=q;v.max=Math.max(v.max,q);m.set(id,v);}
     }
-
-    const selected =
-      [...levels]
-        .sort(
-          (a, b) =>
-            (
-              b[1].buy +
-              b[1].sell
-            ) -
-            (
-              a[1].buy +
-              a[1].sell
-            )
-        )
-        .slice(0, 14)
-        .sort(
-          (a, b) =>
-            b[0] - a[0]
-        );
-
-    $("footprint").innerHTML =
-      selected.length
-        ? selected.map(
-            ([p, v]) => `
-              <div class="foot-row">
-                <span>${fmt(p)}</span>
-
-                <span class="bear">
-                  ${fmt(v.sell, 3)}
-                </span>
-
-                <span class="bull">
-                  ${fmt(v.buy, 3)}
-                </span>
-
-                <span class="${
-                  v.buy >= v.sell
-                    ? "bull"
-                    : "bear"
-                }">
-                  ${signed(
-                    v.buy - v.sell,
-                    3
-                  )}
-                </span>
-              </div>
-            `
-          ).join("")
-        : '<div class="empty">Waiting for observed trades…</div>';
+    const current=[...S.book.bids,...S.book.asks].map(x=>x.q).sort((a,b)=>a-b);
+    const median=current.length?current[Math.floor(current.length/2)]:0;
+    const walls=[...m.values()].filter(v=>v.hits>=4&&v.total/v.hits>=median*1.8).sort((a,b)=>(b.total/b.hits)-(a.total/a.hits)).slice(0,6);
+    $("walls").innerHTML=walls.length?walls.map(v=>`<div class="wall"><div><strong class="${v.side==="bids"?"buy":"sell"}">${v.side==="bids"?"BID":"ASK"} WALL · ${fmt(v.p)}</strong><small>Visible in ${v.hits}/${frames.length} recent samples</small></div><em>AVG ${fmt(v.total/v.hits,4)} PAXG<br>MAX ${fmt(v.max,4)}</em></div>`).join(""):'<p class="empty">No unusually persistent top-20 wall observed.</p>';
   }
-
-  // ================================
-  // CANVAS UTILITIES
-  // ================================
-
-  function canvas(id) {
-    const element = $(id);
-    const box =
-      element.getBoundingClientRect();
-
-    if (
-      box.width < 2 ||
-      box.height < 2
-    ) {
-      return null;
-    }
-
-    const dpr =
-      Math.min(
-        window.devicePixelRatio || 1,
-        2
-      );
-
-    element.width =
-      Math.round(
-        box.width * dpr
-      );
-
-    element.height =
-      Math.round(
-        box.height * dpr
-      );
-
-    const ctx =
-      element.getContext("2d");
-
-    ctx.scale(dpr, dpr);
-
-    return {
-      ctx,
-      w: box.width,
-      h: box.height
-    };
+  // ---------- Canvas chart / heatmap ----------
+  function prepareCanvas(id){const el=$(id),r=el.getBoundingClientRect();if(r.width<3||r.height<3)return null;const dpr=Math.min(devicePixelRatio||1,2);el.width=Math.round(r.width*dpr);el.height=Math.round(r.height*dpr);const ctx=el.getContext("2d");ctx.scale(dpr,dpr);return {ctx,w:r.width,h:r.height};}
+  function noCanvas(g,msg){g.ctx.font="12px system-ui";g.ctx.fillStyle="#8ca3bd";g.ctx.textAlign="center";g.ctx.fillText(msg,g.w/2,g.h/2);g.ctx.textAlign="left";}
+  function drawCandles(){
+    const g=prepareCanvas("candles");if(!g)return;const {ctx,w,h}=g,bars=S.bars.slice(-70);if(!bars.length)return noCanvas(g,"Loading Binance one-minute candles...");
+    const L=12,R=68,T=15,B=29,W=w-L-R,H=h-T-B;
+    let low=Math.min(...bars.map(x=>x.l)),high=Math.max(...bars.map(x=>x.h));const pad=Math.max(.05,(high-low)*.11);low-=pad;high+=pad;
+    const y=p=>T+(high-p)/(high-low)*H;
+    ctx.font="10px system-ui";ctx.fillStyle="#8da4c0";
+    for(let i=0;i<=4;i++){const yy=T+H*i/4;ctx.strokeStyle="#263a51";ctx.beginPath();ctx.moveTo(L,yy);ctx.lineTo(w-R,yy);ctx.stroke();ctx.fillText(fmt(high-(high-low)*i/4),w-R+6,yy+3);}
+    const cw=W/bars.length;
+    bars.forEach((b,i)=>{const x=L+(i+.5)*cw;ctx.fillStyle=ctx.strokeStyle=b.c>=b.o?"#3de2ad":"#fa6a83";ctx.beginPath();ctx.moveTo(x,y(b.h));ctx.lineTo(x,y(b.l));ctx.stroke();ctx.fillRect(x-Math.max(1,cw*.31),Math.min(y(b.o),y(b.c)),Math.max(2,cw*.62),Math.max(1,Math.abs(y(b.c)-y(b.o))));});
+    const active=currentPaper();const lines=active?[[active.entry??active.plannedEntry,"#70c4ff","ENTRY"],[active.stop??active.plannedSL,"#fa6c86","SL"],[active.target??active.plannedTP,"#35dfaa","TP"]]:[[S.price,"#70c4ff","LAST"]];
+    for(const [p,color,label] of lines){if(!good(p)||p>high||p<low)continue;ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle=color;ctx.beginPath();ctx.moveTo(L,y(p));ctx.lineTo(w-R,y(p));ctx.stroke();ctx.restore();ctx.fillStyle=color;ctx.fillText(label,w-R-35,y(p)-3);}
+    ctx.fillStyle="#90a7c2";for(const i of [0,Math.floor((bars.length-1)/2),bars.length-1])ctx.fillText(new Date(bars[i].t).toLocaleTimeString("en-GB",{timeZone:"Africa/Johannesburg",hour:"2-digit",minute:"2-digit"}),L+cw*i,h-5);
   }
-
-  function textCenter(
-    c,
-    message
-  ) {
-    c.ctx.fillStyle = "#849bb8";
-    c.ctx.font = "12px system-ui";
-    c.ctx.textAlign = "center";
-
-    c.ctx.fillText(
-      message,
-      c.w / 2,
-      c.h / 2
-    );
-
-    c.ctx.textAlign = "left";
+  function drawHeat(){
+    const g=prepareCanvas("heatmap");if(!g)return;const {ctx,w,h}=g,frames=S.heat;if(!frames.length)return noCanvas(g,"Collecting top-20 visible depth snapshots...");
+    const f=frames.at(-1),bucket=S.settings.bucket,center=Math.round(((f.bids[0].p+f.asks[0].p)/2)/bucket),rows=26;
+    const L=12,R=73,T=12,B=25,W=w-L-R,H=h-T-B,cw=W/frames.length,rh=H/rows;
+    const maps=frames.map(frame=>{const m=new Map();for(const side of ["bids","asks"])for(const x of frame[side]){const p=Math.floor(x.p/bucket+1e-8),v=m.get(p)||{bid:0,ask:0};v[side==="bids"?"bid":"ask"]+=x.q;m.set(p,v);}return m;});
+    let max=0;for(const m of maps)for(let row=0;row<rows;row++){const v=m.get(center+Math.floor(rows/2)-row);if(v)max=Math.max(max,v.bid,v.ask);}
+    ctx.fillStyle="#0d1b2c";ctx.fillRect(L,T,W,H);
+    maps.forEach((m,col)=>{for(let row=0;row<rows;row++){const v=m.get(center+Math.floor(rows/2)-row);if(!v||!max)continue;const buy=v.bid>=v.ask,q=Math.max(v.bid,v.ask),a=clamp(.1+.82*Math.sqrt(q/max),.1,.94);ctx.fillStyle=buy?`rgba(45,222,168,${a})`:`rgba(250,95,125,${a})`;ctx.fillRect(L+col*cw,T+row*rh,Math.max(1,cw+.35),Math.max(1,rh-.4));}});
+    // Explicitly mark gaps between persisted snapshots and new sessions.
+    for(let col=1;col<frames.length;col++)if(frames[col].at-frames[col-1].at>10000){
+      const x=L+col*cw;ctx.strokeStyle="#e9effa";ctx.setLineDash([2,4]);ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,T+H);ctx.stroke();ctx.setLineDash([]);
+    }
+    ctx.font="10px system-ui";ctx.fillStyle="#98aec8";
+    for(let r=0;r<rows;r+=4){const py=T+r*rh;ctx.strokeStyle="#253950";ctx.beginPath();ctx.moveTo(L,py);ctx.lineTo(L+W,py);ctx.stroke();ctx.fillText(fmt((center+Math.floor(rows/2)-r)*bucket),L+W+5,py+8);}
+    ctx.fillText("OLDER",L+3,h-4);ctx.fillText("LATEST",L+W-39,h-4);
   }
-
-  // ================================
-  // CANDLESTICK CHART
-  // ================================
-
-  function drawCandles() {
-    const g = canvas(
-      "candles"
-    );
-
-    if (!g) return;
-
-    const { ctx, w, h } = g;
-    const bars =
-      s.candles.slice(-65);
-
-    if (!bars.length) {
-      return textCenter(
-        g,
-        "Waiting for Binance candle data…"
-      );
-    }
-
-    const L = 11;
-    const R = 64;
-    const T = 13;
-    const B = 25;
-
-    const W = w - L - R;
-    const H = h - T - B;
-
-    let high =
-      Math.max(
-        ...bars.map(b => b.h)
-      );
-
-    let low =
-      Math.min(
-        ...bars.map(b => b.l)
-      );
-
-    const padding =
-      Math.max(
-        .01,
-        (high - low) * .10
-      );
-
-    high += padding;
-    low -= padding;
-
-    const y = x =>
-      T +
-      (high - x) /
-      (high - low) * H;
-
-    for (
-      let j = 0;
-      j <= 4;
-      j++
-    ) {
-      const yy =
-        T + j * H / 4;
-
-      ctx.strokeStyle = "#22344c";
-      ctx.beginPath();
-      ctx.moveTo(L, yy);
-      ctx.lineTo(L + W, yy);
-      ctx.stroke();
-
-      ctx.fillStyle = "#8099b5";
-      ctx.font = "10px system-ui";
-
-      ctx.fillText(
-        fmt(
-          high -
-          (high - low) * j / 4
-        ),
-        L + W + 5,
-        yy + 3
-      );
-    }
-
-    const slot =
-      W / bars.length;
-
-    bars.forEach(
-      (b, i) => {
-        const x =
-          L + (i + .5) * slot;
-
-        ctx.strokeStyle =
-          ctx.fillStyle =
-            b.c >= b.o
-              ? "#3fdfaa"
-              : "#fa6680";
-
-        ctx.beginPath();
-        ctx.moveTo(x, y(b.h));
-        ctx.lineTo(x, y(b.l));
-        ctx.stroke();
-
-        ctx.fillRect(
-          x - Math.max(
-            1,
-            slot * .3
-          ),
-          Math.min(
-            y(b.c),
-            y(b.o)
-          ),
-          Math.max(
-            2,
-            slot * .6
-          ),
-          Math.max(
-            1,
-            Math.abs(
-              y(b.c) - y(b.o)
-            )
-          )
-        );
-      }
-    );
-
-    if (
-      valid(s.price) &&
-      s.price <= high &&
-      s.price >= low
-    ) {
-      ctx.strokeStyle = "#6abfff";
-      ctx.setLineDash([3, 4]);
-      ctx.beginPath();
-
-      ctx.moveTo(
-        L,
-        y(s.price)
-      );
-
-      ctx.lineTo(
-        L + W,
-        y(s.price)
-      );
-
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    ctx.font = "10px system-ui";
-    ctx.fillStyle = "#849bb8";
-
-    [
-      0,
-      Math.floor(
-        (bars.length - 1) / 2
-      ),
-      bars.length - 1
-    ].forEach(i => {
-      ctx.fillText(
-        new Date(
-          bars[i].t
-        ).toLocaleTimeString(
-          "en-GB",
-          {
-            timeZone:
-              "Africa/Johannesburg",
-
-            hour: "2-digit",
-            minute: "2-digit"
-          }
-        ),
-        L + i * slot,
-        h - 5
-      );
-    });
+  // ---------- UI refresh ----------
+  function render(){
+    $("price").textContent=fmt(S.price);$("priceMeta").textContent=S.ticker&&Number.isFinite(+S.ticker.priceChangePercent)?`${signed(+S.ticker.priceChangePercent,2)}% · 24h PAXG change`:"Latest observed PAXG/USDT price";
+    const b=S.book.bids,a=S.book.asks;$("spread").textContent=b.length&&a.length?fmt(a[0].p-b[0].p):"—";
+    $("imbalance").textContent=Number.isFinite(bookStats())?fmt(bookStats()*100,1)+"%":"—";
+    $("cvd").textContent=S.liveTotal?signed(S.cvd,4):"—";$("cvd").className=S.cvd>0?"positive":S.cvd<0?"negative":"";
+    const recent=S.trades.filter(t=>t.live&&t.at>=Date.now()-60000);$("volume60").textContent=S.liveTotal?short(recent.reduce((a,t)=>a+t.notional,0)):"—";
+    $("depthMeta").textContent=S.lastDepth?tm(S.lastDepth)+" SAST":"WAITING";$("heatMeta").textContent=`${S.heat.length} RECENT SAMPLES`;
+    $("candleMeta").textContent=`${S.bars.filter(x=>x.closed).length} CLOSED M1`;
+    drawBook("bids",b,"#35dfaa");drawBook("asks",a,"#fa6c86");drawTape();drawFootprint();drawWalls();drawCandles();drawHeat();renderSignal();
   }
-
-  // ================================
-  // LIQUIDITY HEATMAP
-  // ================================
-
-  function drawHeat() {
-    const g = canvas(
-      "heatmap"
-    );
-
-    if (!g) return;
-
-    if (!s.heat.length) {
-      return textCenter(
-        g,
-        "Heatmap records depth while this page is open…"
-      );
-    }
-
-    const { ctx, w, h } = g;
-
-    const data = s.heat;
-    const bucket = s.bucket;
-    const count = 26;
-
-    const latest =
-      data.at(-1);
-
-    const midpoint =
-      (
-        latest.bids[0].p +
-        latest.asks[0].p
-      ) / 2;
-
-    const center =
-      Math.round(
-        midpoint / bucket
-      );
-
-    const left = 9;
-    const top = 11;
-    const right = 74;
-    const bottom = 24;
-
-    const W =
-      w - left - right;
-
-    const H =
-      h - top - bottom;
-
-    const cw =
-      W / data.length;
-
-    const rh =
-      H / count;
-
-    const frames =
-      data.map(item => {
-        const m = new Map();
-
-        for (
-          const [name, type] of [
-            ["bids", "buy"],
-            ["asks", "sell"]
-          ]
-        ) {
-          for (
-            const level of item[name]
-          ) {
-            const k =
-              Math.floor(
-                level.p / bucket +
-                1e-8
-              );
-
-            const v =
-              m.get(k) || {
-                buy: 0,
-                sell: 0
-              };
-
-            v[type] +=
-              level.q;
-
-            m.set(k, v);
-          }
-        }
-
-        return m;
+  function init(){
+    restore();
+    const settings={minScore:"minScore",rr:"rr",fee:"fee",slippage:"slippage",bucket:"bucket"};
+    for(const [k,id] of Object.entries(settings)){
+      $(id).value=String(S.settings[k]);$(id).addEventListener("change",e=>{
+        const raw=+e.target.value;if(!Number.isFinite(raw))return;
+        S.settings[k]=k==="minScore"?clamp(raw,70,85):k==="rr"?clamp(raw,1.5,3):k==="bucket"?([.5,1,2,5].includes(raw)?raw:1):clamp(raw,0,100);
+        e.target.value=String(S.settings[k]);save();evaluate();scheduleRender();
       });
-
-    let max = 0;
-
-    for (const m of frames) {
-      for (
-        let row = 0;
-        row < count;
-        row++
-      ) {
-        const v = m.get(
-          center +
-          Math.floor(count / 2) -
-          row
-        );
-
-        if (v) {
-          max = Math.max(
-            max,
-            v.buy,
-            v.sell
-          );
-        }
-      }
     }
-
-    ctx.fillStyle = "#0e1b2b";
-
-    ctx.fillRect(
-      left,
-      top,
-      W,
-      H
-    );
-
-    frames.forEach(
-      (m, col) => {
-        for (
-          let row = 0;
-          row < count;
-          row++
-        ) {
-          const v = m.get(
-            center +
-            Math.floor(count / 2) -
-            row
-          );
-
-          if (!v || !max) {
-            continue;
-          }
-
-          const buy =
-            v.buy >= v.sell;
-
-          const size =
-            Math.max(
-              v.buy,
-              v.sell
-            );
-
-          const alpha = clamp(
-            .12 +
-            Math.sqrt(size / max) *
-            .8,
-            .12,
-            .95
-          );
-
-          ctx.fillStyle =
-            buy
-              ? `rgba(50,229,172,${alpha})`
-              : `rgba(255,93,128,${alpha})`;
-
-          ctx.fillRect(
-            left + col * cw,
-            top + row * rh,
-            Math.max(
-              1,
-              cw + .25
-            ),
-            Math.max(
-              1,
-              rh - .4
-            )
-          );
-        }
-      }
-    );
-
-    ctx.font = "10px system-ui";
-    ctx.fillStyle = "#9cb2cc";
-
-    for (
-      let row = 0;
-      row < count;
-      row += 4
-    ) {
-      const py =
-        top + row * rh;
-
-      ctx.strokeStyle = "#213249";
-      ctx.beginPath();
-      ctx.moveTo(left, py);
-      ctx.lineTo(left + W, py);
-      ctx.stroke();
-
-      ctx.fillText(
-        fmt(
-          (
-            center +
-            Math.floor(count / 2) -
-            row
-          ) * bucket
-        ),
-        left + W + 5,
-        py + 8
-      );
-    }
-
-    ctx.fillText(
-      "OLDER",
-      left + 4,
-      h - 5
-    );
-
-    ctx.fillText(
-      "LATEST",
-      left + W - 40,
-      h - 5
-    );
+    $("reconnect").addEventListener("click",()=>{recordEvent("Manual reconnect","Refreshing snapshot and live connection");restart();});
+    $("alerts").addEventListener("click",()=>{S.alerts=!S.alerts;$("alerts").textContent=S.alerts?"ALERTS ON":"ENABLE ALERTS";toast(S.alerts?"In-page alerts enabled":"Alerts disabled");});
+    $("clearEvents").addEventListener("click",()=>{S.events=[];renderEvents();});
+    $("export").addEventListener("click",exportCSV);
+    $("clearPaper").addEventListener("click",()=>{
+      if(!confirm("Permanently clear this browser's BLACKBOOK X3 paper records? Export CSV first if needed."))return;
+      S.records=[];save();renderPaper();evaluate();recordEvent("Paper journal cleared","This browser's local paper records were reset","warn");
+    });
+    window.addEventListener("resize",scheduleRender);
+    document.addEventListener("visibilitychange",()=>{
+      if(document.hidden){paused=true;interruptPaper("App went into background; market event sequence may have gaps");disconnect();}
+      else {restart();fetchXau();}
+    });
+    window.addEventListener("pageshow",()=>{if(!document.hidden&&paused)restart();});
+    setInterval(()=>{
+      $("clock").textContent=`${tm(Date.now())} SAST`;
+      if(paused)return;
+      updateConnection();periodicPaper();evaluate();scheduleRender();
+      if(ws&&ws.readyState===WebSocket.OPEN&&Date.now()-S.lastFrame>35000)ws.close();
+      if(S.heat.length&&Date.now()-S.lastSavedAt>15000){S.lastSavedAt=Date.now();save();}
+    },4000);
+    setInterval(fetchXau,90000);
+    renderEvents();renderPaper();render();
+    recordEvent("BLACKBOOK X3 initialized","PAXG spot public order flow + browser-local paper lab");
+    fetchMarket(true);connect();fetchXau();
   }
-
-  // ================================
-  // MAIN DASHBOARD RENDER
-  // ================================
-
-  function render() {
-    $("price").textContent =
-      valid(s.price)
-        ? fmt(s.price)
-        : "—";
-
-    const pc =
-      n(
-        s.ticker?.priceChangePercent
-      );
-
-    $("priceInfo").textContent =
-      s.ticker &&
-      Number.isFinite(pc)
-        ? `${signed(pc, 2)}% 24h move`
-        : "Latest observed PAXG price";
-
-    const book = s.book;
-
-    const bid =
-      book.bids[0]?.p;
-
-    const ask =
-      book.asks[0]?.p;
-
-    $("spread").textContent =
-      valid(bid) &&
-      valid(ask)
-        ? fmt(ask - bid)
-        : "—";
-
-    s.depthShare = depthStats();
-
-    $("imbalance").textContent =
-      Number.isFinite(
-        s.depthShare
-      )
-        ? fmt(
-            s.depthShare * 100,
-            1
-          ) + "%"
-        : "—";
-
-    $("cvd").textContent =
-      s.liveCount
-        ? signed(s.cvd, 4)
-        : "—";
-
-    $("cvd").className =
-      s.cvd > 0
-        ? "positive"
-        : s.cvd < 0
-          ? "negative"
-          : "";
-
-    const recent =
-      s.trades.filter(
-        t =>
-          t.live &&
-          t.at >=
-            Date.now() - 60000
-      );
-
-    $("volume60").textContent =
-      s.liveCount
-        ? compact(
-            recent.reduce(
-              (a, b) =>
-                a + b.notional,
-              0
-            )
-          )
-        : "—";
-
-    $("candleCount").textContent =
-      `${
-        s.candles.filter(
-          b => b.closed
-        ).length
-      } CLOSED / M1`;
-
-    $("heatCount").textContent =
-      `${s.heat.length} SAMPLES`;
-
-    $("depthTime").textContent =
-      s.lastDepth
-        ? clock(s.lastDepth) +
-          " SAST"
-        : "WAITING";
-
-    bookRows(
-      "bids",
-      book.bids,
-      "#41e0af"
-    );
-
-    bookRows(
-      "asks",
-      book.asks,
-      "#ff627e"
-    );
-
-    renderTape();
-    renderFootprint();
-
-    drawCandles();
-    drawHeat();
-  }
-
-  // ================================
-  // INITIALIZATION
-  // ================================
-
-  function init() {
-    $("clock").textContent =
-      clock(Date.now()) +
-      " SAST";
-
-    $("minimumScore").addEventListener(
-      "change",
-      ev => {
-        s.scoreMin =
-          n(ev.target.value);
-
-        evaluate();
-      }
-    );
-
-    $("rr").addEventListener(
-      "change",
-      ev => {
-        s.rr =
-          n(ev.target.value);
-
-        evaluate();
-      }
-    );
-
-    $("threshold").addEventListener(
-      "change",
-      ev => {
-        s.threshold = Math.max(
-          100,
-          n(ev.target.value) ||
-          10000
-        );
-
-        ev.target.value =
-          s.threshold;
-      }
-    );
-
-    $("bucket").addEventListener(
-      "change",
-      ev => {
-        s.bucket =
-          n(ev.target.value) || 1;
-
-        renderSoon();
-      }
-    );
-
-    $("reconnect").addEventListener(
-      "click",
-      () => {
-        log(
-          "Manual reconnection",
-          "Refreshing public market sources"
-        );
-
-        restart();
-      }
-    );
-
-    $("clear").addEventListener(
-      "click",
-      () => {
-        s.events = [];
-
-        $("events").innerHTML = "";
-      }
-    );
-
-    $("alerts").addEventListener(
-      "click",
-      () => {
-        s.alerts = !s.alerts;
-
-        $("alerts").textContent =
-          s.alerts
-            ? "ALERTS ON"
-            : "ENABLE ALERTS";
-
-        toast(
-          s.alerts
-            ? "In-page alerts enabled"
-            : "In-page alerts disabled"
-        );
-      }
-    );
-
-    window.addEventListener(
-      "resize",
-      renderSoon
-    );
-
-    document.addEventListener(
-      "visibilitychange",
-      () => {
-        if (document.hidden) {
-          stopped = true;
-
-          disconnect();
-
-          s.mode = "connecting";
-
-        } else {
-          restart();
-          fetchXau();
-        }
-      }
-    );
-
-    window.addEventListener(
-      "pageshow",
-      () => {
-        if (
-          !document.hidden &&
-          stopped
-        ) {
-          restart();
-        }
-      }
-    );
-
-    setInterval(() => {
-      if (stopped) return;
-
-      $("clock").textContent =
-        clock(Date.now()) +
-        " SAST";
-
-      updateConnection();
-      evaluate();
-      renderSoon();
-
-      if (
-        socket &&
-        socket.readyState ===
-          WebSocket.OPEN &&
-        Date.now() -
-          s.lastFrame > 35000
-      ) {
-        socket.close();
-      }
-
-    }, 4000);
-
-    xauPolling = setInterval(
-      fetchXau,
-      90000
-    );
-
-    log(
-      "BLACKBOOK X2 started",
-      "PAXG/USDT research; live confirmation required"
-    );
-
-    showSignal();
-    render();
-
-    restart();
-    fetchXau();
-  }
-
   init();
-
 })();
