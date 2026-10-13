@@ -1,13 +1,14 @@
 
 {
-  "name": "mkayfx-blackbook-x2",
-  "version": "2.0.0",
+  "name": "mkayfx-blackbook-x3",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "vercel dev"
+    "dev": "vercel dev",
+    "check": "node --check app.js && node --check api/market.js && node --check api/xau.js"
   }
 }
